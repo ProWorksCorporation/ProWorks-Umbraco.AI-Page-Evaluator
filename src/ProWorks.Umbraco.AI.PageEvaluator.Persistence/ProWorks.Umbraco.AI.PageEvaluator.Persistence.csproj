@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>ProWorks.Umbraco.AI.PageEvaluator.Persistence</RootNamespace>
+    <AssemblyName>ProWorks.Umbraco.AI.PageEvaluator.Persistence</AssemblyName>
+    <Description>EFCore DbContext, entities, and repository implementations for the ProWorks Umbraco AI Page Evaluator package.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ProWorks.Umbraco.AI.PageEvaluator.Core\ProWorks.Umbraco.AI.PageEvaluator.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- EFCore base — provider-specific packages live in the migration projects -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.2" />
+    <!-- Umbraco's EFCore scope provider (IEFCoreScopeProvider<TDbContext>) -->
+    <!-- Verify version against target Umbraco installation before building -->
+    <PackageReference Include="Umbraco.Cms.Persistence.EFCore" Version="[17.2.2,18.0.0)" />
+  </ItemGroup>
+
+</Project>

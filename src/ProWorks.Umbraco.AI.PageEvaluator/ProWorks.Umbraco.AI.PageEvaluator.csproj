@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>ProWorks.Umbraco.AI.PageEvaluator</RootNamespace>
+    <AssemblyName>ProWorks.Umbraco.AI.PageEvaluator</AssemblyName>
+    <Description>Web layer for the ProWorks Umbraco AI Page Evaluator package: Management API controller, services, and Umbraco composer.</Description>
+    <StaticWebAssetBasePath>App_Plugins/ProWorks.AI.PageEvaluator</StaticWebAssetBasePath>
+    <AddRazorSupportForMvc>false</AddRazorSupportForMvc>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ProWorks.Umbraco.AI.PageEvaluator.Core\ProWorks.Umbraco.AI.PageEvaluator.Core.csproj" />
+    <ProjectReference Include="..\ProWorks.Umbraco.AI.PageEvaluator.Persistence\ProWorks.Umbraco.AI.PageEvaluator.Persistence.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="wwwroot\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Umbraco.AI.Core provides IAIProfileService and IAIContextService -->
+    <!-- Verify version against installed Umbraco.AI package before building -->
+    <PackageReference Include="Umbraco.AI.Core" Version="[1.7.0,2.0.0)" />
+    <!-- Umbraco.AI.Startup provides UmbracoAIComposer (required for [ComposeAfter]) -->
+    <PackageReference Include="Umbraco.AI.Startup" Version="[1.7.0,2.0.0)" />
+    <!-- IChatClient — registered by Umbraco.AI in the DI container -->
+    <PackageReference Include="Microsoft.Extensions.AI.Abstractions" Version="10.4.1" />
+  </ItemGroup>
+
+</Project>

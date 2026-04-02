@@ -1,0 +1,57 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <CompressionEnabled>false</CompressionEnabled> <!-- Disable compression. E.g. for umbraco backoffice files. These files should be precompressed by node and not let dotnet handle it -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Umbraco.AI.Agent" Version="1.6.0" />
+    <PackageReference Include="Umbraco.AI.Agent.Copilot" Version="1.0.0-alpha5" />
+    <PackageReference Include="Umbraco.AI.Anthropic" Version="1.2.2" />
+    <!-- Umbraco.AI.OpenAI 1.1.3 omitted: its DLL was compiled against a private OpenAI SDK build
+         with GetResponsesClient(string) which doesn't exist in the public OpenAI 2.9.1 release.
+         Re-add when a compatible version is published. Use Anthropic profiles for testing. -->
+    <PackageReference Include="Umbraco.AI.Prompt" Version="1.6.0" />
+    <PackageReference Include="Umbraco.Cms" Version="17.2.2" />
+    <PackageReference Include="Umbraco.Cms.DevelopmentMode.Backoffice" Version="17.2.2" />
+    <PackageReference Include="Umbraco.AI" Version="1.7.0" />
+    <PackageReference Include="uSync" Version="17.0.4" />
+    <!-- Pin Microsoft.Extensions.AI packages to align with the resolved Abstractions 10.4.1 -->
+    <PackageReference Include="Microsoft.Extensions.AI" Version="10.4.1" />
+    <PackageReference Include="Microsoft.Extensions.AI.Abstractions" Version="10.4.1" />
+    <PackageReference Include="Microsoft.Extensions.AI.OpenAI" Version="10.4.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ProWorks.Umbraco.AI.PageEvaluator\ProWorks.Umbraco.AI.PageEvaluator.csproj" />
+    <ProjectReference Include="..\ProWorks.Umbraco.AI.PageEvaluator.Persistence.Sqlite\ProWorks.Umbraco.AI.PageEvaluator.Persistence.Sqlite.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Required by dotnet-ef when this project is used as the startup project for migrations -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.2">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Opt-in to app-local ICU to ensure consistent globalization APIs across different platforms -->
+    <PackageReference Include="Microsoft.ICU.ICU4C.Runtime" Version="72.1.0.3" />
+    <RuntimeHostConfigurationOption Include="System.Globalization.AppLocalIcu" Value="72.1.0.3" Condition="$(RuntimeIdentifier.StartsWith('linux')) or $(RuntimeIdentifier.StartsWith('win')) or ('$(RuntimeIdentifier)' == '' and !$([MSBuild]::IsOSPlatform('osx')))" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <!-- Razor files are needed for the backoffice to work correctly -->
+    <CopyRazorGenerateFilesToPublishDirectory>true</CopyRazorGenerateFilesToPublishDirectory>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- Remove RazorCompileOnBuild and RazorCompileOnPublish when not using ModelsMode InMemoryAuto -->
+    <RazorCompileOnBuild>false</RazorCompileOnBuild>
+    <RazorCompileOnPublish>false</RazorCompileOnPublish>
+  </PropertyGroup>
+
+</Project>

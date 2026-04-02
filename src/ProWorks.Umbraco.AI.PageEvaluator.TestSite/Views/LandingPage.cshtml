@@ -1,0 +1,97 @@
+@using Umbraco.Cms.Web.Common.PublishedModels;
+@using Umbraco.Cms.Core.Models.PublishedContent;
+@using Umbraco.Cms.Core.Models;
+@using Umbraco.Cms.Core.Strings;
+@using Umbraco.Extensions;
+@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage<ContentModels.LandingPage>
+@using ContentModels = Umbraco.Cms.Web.Common.PublishedModels;
+@{
+    Layout = "_Layout";
+
+    var pageTitle      = Model.Value<string>("pageTitle").NullOrWhiteSpaceAsNull() ?? Model.Name;
+    var pageSubtitle   = Model.Value<string>("pageSubtitle");
+    var headerImage    = Model.Value<IPublishedContent>("headerImage");
+    var introText      = Model.Value<IHtmlEncodedString>("introText");
+    var ctaHeading     = Model.Value<string>("ctaHeading");
+    var ctaBody        = Model.Value<string>("ctaBody");
+    var ctaButtonLabel = Model.Value<string>("ctaButtonLabel");
+    var ctaLinks       = Model.Value<IEnumerable<Link>>("ctaButtonLink");
+    var ctaLink        = ctaLinks?.FirstOrDefault();
+
+    ViewBag.MetaTitle       = Model.Value<string>("metaTitle").NullOrWhiteSpaceAsNull() ?? pageTitle;
+    ViewBag.MetaDescription = Model.Value<string>("metaDescription");
+    var ogImg = Model.Value<IPublishedContent>("ogImage");
+    ViewBag.OgImageUrl = ogImg?.Url();
+}
+
+<!-- =========================================================
+     PAGE HEADER
+     ========================================================= -->
+<header class="relative bg-indigo-700 text-white overflow-hidden">
+    @if (headerImage != null)
+    {
+        <img src="@headerImage.Url()"
+             alt=""
+             class="absolute inset-0 w-full h-full object-cover opacity-20" />
+    }
+    <div class="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
+        <h1 class="text-4xl sm:text-5xl font-bold mb-4 leading-tight">@pageTitle</h1>
+        @if (!string.IsNullOrWhiteSpace(pageSubtitle))
+        {
+            <p class="text-indigo-200 text-lg sm:text-xl max-w-2xl mx-auto">@pageSubtitle</p>
+        }
+    </div>
+    <!-- Wave divider -->
+    <div class="absolute bottom-0 left-0 right-0">
+        <svg viewBox="0 0 1440 60" preserveAspectRatio="none" class="w-full h-10 fill-white">
+            <path d="M0,60 C360,0 1080,0 1440,60 L1440,60 L0,60 Z"/>
+        </svg>
+    </div>
+</header>
+
+<!-- =========================================================
+     INTRO TEXT
+     ========================================================= -->
+@if (introText != null)
+{
+    <section class="py-16 bg-white">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 prose prose-slate prose-lg">
+            @Html.Raw(introText)
+        </div>
+    </section>
+}
+
+<!-- =========================================================
+     CALL TO ACTION BANNER
+     ========================================================= -->
+@if (!string.IsNullOrWhiteSpace(ctaHeading) || !string.IsNullOrWhiteSpace(ctaBody))
+{
+    <section class="py-16 bg-slate-50">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-8 sm:p-12
+                        flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+                <div class="flex-1">
+                    @if (!string.IsNullOrWhiteSpace(ctaHeading))
+                    {
+                        <h2 class="text-2xl sm:text-3xl font-bold text-slate-800 mb-2">@ctaHeading</h2>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(ctaBody))
+                    {
+                        <p class="text-slate-500 text-base max-w-lg">@ctaBody</p>
+                    }
+                </div>
+                @if (!string.IsNullOrWhiteSpace(ctaButtonLabel) && ctaLink != null)
+                {
+                    <div class="flex-shrink-0">
+                        <a href="@ctaLink.Url"
+                           target="@(ctaLink.Target ?? "_self")"
+                           class="inline-block bg-indigo-500 hover:bg-indigo-600 text-white font-semibold
+                                  px-8 py-3 rounded-full shadow-sm transition-colors text-base whitespace-nowrap">
+                            @ctaButtonLabel
+                        </a>
+                    </div>
+                }
+            </div>
+        </div>
+    </section>
+}

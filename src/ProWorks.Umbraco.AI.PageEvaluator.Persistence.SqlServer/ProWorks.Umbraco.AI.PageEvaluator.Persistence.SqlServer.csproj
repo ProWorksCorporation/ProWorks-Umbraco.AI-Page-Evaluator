@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>ProWorks.Umbraco.AI.PageEvaluator.Persistence.SqlServer</RootNamespace>
+    <AssemblyName>ProWorks.Umbraco.AI.PageEvaluator.Persistence.SqlServer</AssemblyName>
+    <Description>SQL Server EFCore migrations for the ProWorks Umbraco AI Page Evaluator package.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ProWorks.Umbraco.AI.PageEvaluator.Persistence\ProWorks.Umbraco.AI.PageEvaluator.Persistence.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.2" />
+    <!-- Design-time only: required for `dotnet ef migrations add` — not included in NuGet output -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.2">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>

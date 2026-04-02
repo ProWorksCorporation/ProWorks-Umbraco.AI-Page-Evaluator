@@ -1,0 +1,148 @@
+@using Umbraco.Cms.Web.Common.PublishedModels;
+@using Umbraco.Cms.Core.Models.PublishedContent;
+@using Umbraco.Cms.Core.Models;
+@using Umbraco.Cms.Core.Strings;
+@using Umbraco.Extensions;
+@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage<ContentModels.Home>
+@using ContentModels = Umbraco.Cms.Web.Common.PublishedModels;
+@{
+    Layout = "_Layout";
+
+    var heroHeadline    = Model.Value<string>("heroHeadline");
+    var heroSubheadline = Model.Value<string>("heroSubheadline");
+    var heroImage       = Model.Value<IPublishedContent>("heroImage");
+    var heroCtaLabel    = Model.Value<string>("heroCtaLabel");
+    var heroCtaLinks    = Model.Value<IEnumerable<Link>>("heroCtaLink");
+    var heroCtaLink     = heroCtaLinks?.FirstOrDefault();
+    var introHeading    = Model.Value<string>("introHeading");
+    var introText       = Model.Value<IHtmlEncodedString>("introText");
+    var featuredItems   = Model.Value<IEnumerable<IPublishedContent>>("featuredItems");
+
+    ViewBag.MetaTitle       = Model.Value<string>("metaTitle").NullOrWhiteSpaceAsNull() ?? Model.Name;
+    ViewBag.MetaDescription = Model.Value<string>("metaDescription");
+    var ogImg = Model.Value<IPublishedContent>("ogImage");
+    ViewBag.OgImageUrl = ogImg?.Url();
+}
+
+<!-- =========================================================
+     HERO
+     ========================================================= -->
+<section class="relative min-h-screen flex items-center justify-center overflow-hidden bg-slate-900">
+    @if (heroImage != null)
+    {
+        <img src="@heroImage.Url()"
+             alt=""
+             class="absolute inset-0 w-full h-full object-cover opacity-50" />
+    }
+    <div class="absolute inset-0 bg-gradient-to-b from-black/30 via-black/50 to-black/70"></div>
+
+    <div class="relative z-10 text-center text-white px-4 sm:px-6 max-w-4xl mx-auto">
+        @if (!string.IsNullOrWhiteSpace(heroHeadline))
+        {
+            <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight mb-4 drop-shadow-lg">
+                @heroHeadline
+            </h1>
+        }
+        @if (!string.IsNullOrWhiteSpace(heroSubheadline))
+        {
+            <p class="text-lg sm:text-xl lg:text-2xl text-slate-200 mb-8 max-w-2xl mx-auto">
+                @heroSubheadline
+            </p>
+        }
+        @if (!string.IsNullOrWhiteSpace(heroCtaLabel) && heroCtaLink != null)
+        {
+            <a href="@heroCtaLink.Url"
+               target="@(heroCtaLink.Target ?? "_self")"
+               class="inline-block bg-indigo-500 hover:bg-indigo-600 text-white font-semibold px-8 py-3 rounded-full shadow-lg transition-colors text-lg">
+                @heroCtaLabel
+            </a>
+        }
+    </div>
+
+    <!-- Scroll cue -->
+    <div class="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/60 animate-bounce">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+        </svg>
+    </div>
+</section>
+
+<!-- =========================================================
+     INTRODUCTION
+     ========================================================= -->
+@if (!string.IsNullOrWhiteSpace(introHeading) || introText != null)
+{
+    <section class="py-20 bg-white">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+                <div>
+                    @if (!string.IsNullOrWhiteSpace(introHeading))
+                    {
+                        <h2 class="text-3xl sm:text-4xl font-bold text-slate-800 leading-snug">
+                            @introHeading
+                        </h2>
+                        <div class="mt-3 w-12 h-1 bg-indigo-500 rounded"></div>
+                    }
+                </div>
+                <div class="prose prose-slate prose-lg max-w-none">
+                    @Html.Raw(introText)
+                </div>
+            </div>
+        </div>
+    </section>
+}
+
+<!-- =========================================================
+     FEATURED CARDS
+     ========================================================= -->
+@if (featuredItems != null && featuredItems.Any())
+{
+    <section class="py-20 bg-slate-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-2xl font-bold text-slate-800 mb-8">Featured</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                @foreach (var item in featuredItems)
+                {
+                    var cardImage   = item.Value<IPublishedContent>("headerImage") ?? item.Value<IPublishedContent>("heroImage");
+                    var cardSummary = item.Value<string>("summary") ?? item.Value<string>("pageSubtitle") ?? item.Value<string>("heroSubheadline");
+                    var cardTitle   = item.Value<string>("pageTitle").NullOrWhiteSpaceAsNull() ?? item.Name;
+
+                    <a href="@item.Url()"
+                       class="group flex flex-col bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow overflow-hidden border border-slate-100">
+                        @if (cardImage != null)
+                        {
+                            <div class="aspect-video overflow-hidden">
+                                <img src="@cardImage.Url()"
+                                     alt="@cardTitle"
+                                     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="aspect-video bg-gradient-to-br from-indigo-100 to-indigo-200 flex items-center justify-center">
+                                <svg class="w-12 h-12 text-indigo-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                            </div>
+                        }
+                        <div class="p-6 flex flex-col flex-1">
+                            <h3 class="font-semibold text-slate-800 text-lg group-hover:text-indigo-600 transition-colors mb-2">
+                                @cardTitle
+                            </h3>
+                            @if (!string.IsNullOrWhiteSpace(cardSummary))
+                            {
+                                <p class="text-slate-500 text-sm line-clamp-3 flex-1">@cardSummary</p>
+                            }
+                            <span class="mt-4 text-sm font-medium text-indigo-600 group-hover:text-indigo-700 flex items-center gap-1">
+                                Read more
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                </svg>
+                            </span>
+                        </div>
+                    </a>
+                }
+            </div>
+        </div>
+    </section>
+}

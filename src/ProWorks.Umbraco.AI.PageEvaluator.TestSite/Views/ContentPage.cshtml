@@ -1,0 +1,126 @@
+@using Umbraco.Cms.Web.Common.PublishedModels;
+@using Umbraco.Cms.Core.Models.PublishedContent;
+@using Umbraco.Cms.Core.Strings;
+@using Umbraco.Extensions;
+@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage<ContentModels.ContentPage>
+@using ContentModels = Umbraco.Cms.Web.Common.PublishedModels;
+@{
+    Layout = "_Layout";
+
+    var pageTitle    = Model.Value<string>("pageTitle").NullOrWhiteSpaceAsNull() ?? Model.Name;
+    var headerImage  = Model.Value<IPublishedContent>("headerImage");
+    var summary      = Model.Value<string>("summary");
+    var bodyText     = Model.Value<IHtmlEncodedString>("bodyText");
+    var author       = Model.Value<string>("author");
+    var publishDate  = Model.Value<DateTime?>("publishDate") ?? Model.CreateDate;
+    var relatedPages = Model.Value<IEnumerable<IPublishedContent>>("relatedPages");
+
+    ViewBag.MetaTitle       = Model.Value<string>("metaTitle").NullOrWhiteSpaceAsNull() ?? pageTitle;
+    ViewBag.MetaDescription = Model.Value<string>("metaDescription").NullOrWhiteSpaceAsNull() ?? summary;
+    var ogImg = Model.Value<IPublishedContent>("ogImage") ?? headerImage;
+    ViewBag.OgImageUrl = ogImg?.Url();
+}
+
+<!-- =========================================================
+     ARTICLE HEADER
+     ========================================================= -->
+<div class="relative w-full h-64 sm:h-80 lg:h-96 bg-slate-800 overflow-hidden">
+    @if (headerImage != null)
+    {
+        <img src="@headerImage.Url()"
+             alt="@pageTitle"
+             class="absolute inset-0 w-full h-full object-cover opacity-70" />
+    }
+    <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent"></div>
+    <div class="absolute bottom-0 left-0 right-0 px-4 sm:px-6 pb-8 max-w-3xl mx-auto">
+        <div class="flex items-center gap-3 text-slate-300 text-sm mb-3">
+            @if (!string.IsNullOrWhiteSpace(author))
+            {
+                <span class="flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                    </svg>
+                    @author
+                </span>
+                <span class="text-slate-500">·</span>
+            }
+            <time datetime="@publishDate.ToString("yyyy-MM-dd")">
+                @publishDate.ToString("MMMM d, yyyy")
+            </time>
+        </div>
+        <h1 class="text-2xl sm:text-3xl lg:text-4xl font-bold text-white leading-snug">
+            @pageTitle
+        </h1>
+    </div>
+</div>
+
+<!-- =========================================================
+     ARTICLE BODY
+     ========================================================= -->
+<article class="py-12 bg-white">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+        @if (!string.IsNullOrWhiteSpace(summary))
+        {
+            <p class="text-lg text-slate-500 italic border-l-4 border-indigo-400 pl-4 mb-10">
+                @summary
+            </p>
+        }
+        <div class="prose prose-slate prose-lg max-w-none
+                    prose-headings:font-bold prose-headings:text-slate-800
+                    prose-a:text-indigo-600 prose-a:no-underline hover:prose-a:underline
+                    prose-img:rounded-xl prose-img:shadow-md">
+            @Html.Raw(bodyText)
+        </div>
+    </div>
+</article>
+
+<!-- =========================================================
+     RELATED PAGES
+     ========================================================= -->
+@if (relatedPages != null && relatedPages.Any())
+{
+    <section class="border-t border-slate-100 py-12 bg-white">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-xl font-bold text-slate-800 mb-6">Related Articles</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                @foreach (var related in relatedPages)
+                {
+                    var relImage   = related.Value<IPublishedContent>("headerImage");
+                    var relTitle   = related.Value<string>("pageTitle").NullOrWhiteSpaceAsNull() ?? related.Name;
+                    var relSummary = related.Value<string>("summary");
+                    var relDate    = related.Value<DateTime?>("publishDate") ?? related.CreateDate;
+
+                    <a href="@related.Url()"
+                       class="group flex flex-col rounded-xl overflow-hidden border border-slate-100 hover:shadow-md transition-shadow bg-white">
+                        @if (relImage != null)
+                        {
+                            <div class="aspect-video overflow-hidden">
+                                <img src="@relImage.Url()"
+                                     alt="@relTitle"
+                                     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="aspect-video bg-indigo-50 flex items-center justify-center">
+                                <svg class="w-8 h-8 text-indigo-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                            </div>
+                        }
+                        <div class="p-4 flex flex-col flex-1">
+                            <p class="text-xs text-slate-400 mb-1">@relDate.ToString("MMM d, yyyy")</p>
+                            <h3 class="font-semibold text-slate-700 text-sm group-hover:text-indigo-600 transition-colors leading-snug">
+                                @relTitle
+                            </h3>
+                            @if (!string.IsNullOrWhiteSpace(relSummary))
+                            {
+                                <p class="text-slate-400 text-xs mt-1 line-clamp-2">@relSummary</p>
+                            }
+                        </div>
+                    </a>
+                }
+            </div>
+        </div>
+    </section>
+}
