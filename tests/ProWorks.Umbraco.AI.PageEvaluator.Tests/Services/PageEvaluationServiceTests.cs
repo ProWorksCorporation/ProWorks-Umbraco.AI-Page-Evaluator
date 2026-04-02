@@ -8,6 +8,7 @@ using ProWorks.Umbraco.AI.PageEvaluator.Services;
 using Umbraco.AI.Core.Chat;
 using Umbraco.AI.Core.Contexts;
 using Umbraco.AI.Core.Profiles;
+using Umbraco.Cms.Core.Web;
 using Xunit;
 
 namespace ProWorks.Umbraco.AI.PageEvaluator.Tests.Services;
@@ -24,6 +25,7 @@ public class PageEvaluationServiceTests
     private readonly IAIContextService _contextService = Substitute.For<IAIContextService>();
     private readonly IAIChatClientFactory _chatClientFactory = Substitute.For<IAIChatClientFactory>();
     private readonly IChatClient _chatClient = Substitute.For<IChatClient>();
+    private readonly IUmbracoContextAccessor _contextAccessor = Substitute.For<IUmbracoContextAccessor>();
     private readonly ILogger<PageEvaluationService> _logger = Substitute.For<ILogger<PageEvaluationService>>();
     private readonly PageEvaluationService _sut;
 
@@ -36,7 +38,11 @@ public class PageEvaluationServiceTests
         _chatClientFactory.CreateClientAsync(Arg.Any<AIProfile>(), Arg.Any<CancellationToken>())
             .Returns(_chatClient);
 
-        _sut = new PageEvaluationService(_configService, _profileService, _contextService, _chatClientFactory, _logger);
+        // Tests run without a live Umbraco context — ResolveProperties falls back to raw draft values.
+        IUmbracoContext? nullCtx = null;
+        _contextAccessor.TryGetUmbracoContext(out nullCtx).Returns(false);
+
+        _sut = new PageEvaluationService(_configService, _profileService, _contextService, _chatClientFactory, _contextAccessor, _logger);
     }
 
     // ---------------------------------------------------------------------------
