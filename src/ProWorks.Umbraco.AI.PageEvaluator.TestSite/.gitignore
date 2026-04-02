@@ -478,5 +478,6 @@ umbraco-package-schema.json
 # Log files
 /umbraco/Logs/
 
-# Media files
-/wwwroot/media/
+# Media files — exclude runtime-generated images but keep the committed demo media
+/wwwroot/media/MediaCache/
+!/wwwroot/media/

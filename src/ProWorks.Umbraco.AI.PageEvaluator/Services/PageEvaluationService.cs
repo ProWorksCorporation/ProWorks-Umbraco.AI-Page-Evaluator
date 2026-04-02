@@ -1,4 +1,3 @@
-using System.Text.RegularExpressions;
 using System.Text.Json;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
@@ -7,10 +6,8 @@ using ProWorks.Umbraco.AI.PageEvaluator.Evaluators;
 using Umbraco.AI.Core.Chat;
 using Umbraco.AI.Core.Contexts;
 using Umbraco.AI.Core.Profiles;
-using Umbraco.Cms.Core.Models;
-using Umbraco.Cms.Core.Models.Blocks;
+using Umbraco.Cms.Core.DeliveryApi;
 using Umbraco.Cms.Core.Models.PublishedContent;
-using Umbraco.Cms.Core.Strings;
 using Umbraco.Cms.Core.Web;
 
 namespace ProWorks.Umbraco.AI.PageEvaluator.Services;
@@ -21,13 +18,14 @@ namespace ProWorks.Umbraco.AI.PageEvaluator.Services;
 /// instructions and property data, calls <see cref="IChatClient"/>, and returns a
 /// structured <see cref="EvaluationReport"/>.
 /// </summary>
-public sealed partial class PageEvaluationService : IPageEvaluationService
+public sealed class PageEvaluationService : IPageEvaluationService
 {
     private readonly IAIEvaluatorConfigService _configService;
     private readonly IAIProfileService _profileService;
     private readonly IAIContextService _contextService;
     private readonly IAIChatClientFactory _chatClientFactory;
     private readonly IUmbracoContextAccessor _umbracoContextAccessor;
+    private readonly IApiContentBuilder _contentBuilder;
     private readonly ILogger<PageEvaluationService> _logger;
 
     public PageEvaluationService(
@@ -36,6 +34,7 @@ public sealed partial class PageEvaluationService : IPageEvaluationService
         IAIContextService contextService,
         IAIChatClientFactory chatClientFactory,
         IUmbracoContextAccessor umbracoContextAccessor,
+        IApiContentBuilder contentBuilder,
         ILogger<PageEvaluationService> logger)
     {
         _configService = configService;
@@ -43,6 +42,7 @@ public sealed partial class PageEvaluationService : IPageEvaluationService
         _contextService = contextService;
         _chatClientFactory = chatClientFactory;
         _umbracoContextAccessor = umbracoContextAccessor;
+        _contentBuilder = contentBuilder;
         _logger = logger;
     }
 
@@ -111,17 +111,16 @@ public sealed partial class PageEvaluationService : IPageEvaluationService
     /// Returns an LLM-friendly property dictionary for the given content node.
     ///
     /// Strategy:
-    ///   1. Fetch the <em>published</em> version of the node via the Umbraco published
-    ///      cache and use <see cref="FormatValueForAi"/> to resolve each property —
-    ///      the same approach used by Umbraco.AI.Agent internally. This resolves media
-    ///      pickers to meaningful metadata (name, alt text, file type), strips HTML from
-    ///      rich-text fields, and recursively surfaces Block List / Block Grid / MNTP
-    ///      content in a form the AI can understand.
-    ///   2. Overlay <em>draft</em> values sent by the back-office for simple text
-    ///      properties (non-JSON strings) so that unsaved edits in text boxes / textareas
-    ///      are still included in the evaluation.
-    ///   3. Fall back to raw draft values when the published cache is unavailable
-    ///      or the node has never been published.
+    ///   1. Fetch the published version of the node and call
+    ///      <see cref="IApiContentBuilder.Build"/> — Umbraco's own Content Delivery API
+    ///      builder. It resolves every property type: rich text → plain HTML, media
+    ///      pickers → URL + metadata, Block List/Grid → structured JSON, MNTP → named
+    ///      references. The resulting <c>Properties</c> dictionary is directly
+    ///      JSON-serialisable and AI-readable.
+    ///   2. Overlay simple text draft values (non-JSON strings) from the back-office so
+    ///      that unsaved edits in text boxes / textareas are still evaluated.
+    ///   3. Fall back to raw draft values when the published cache is unavailable or
+    ///      the node has never been published.
     /// </summary>
     private IReadOnlyDictionary<string, object?> ResolveProperties(
         Guid nodeId,
@@ -129,34 +128,24 @@ public sealed partial class PageEvaluationService : IPageEvaluationService
     {
         if (!_umbracoContextAccessor.TryGetUmbracoContext(out IUmbracoContext? ctx) || ctx.Content is null)
         {
-            _logger.LogDebug("[PageEvaluator] No UmbracoContext available — using raw draft properties.");
+            _logger.LogDebug("[PageEvaluator] No UmbracoContext — using raw draft properties.");
             return draftProperties;
         }
 
         IPublishedContent? publishedContent = ctx.Content.GetById(nodeId);
         if (publishedContent is null)
         {
-            _logger.LogDebug("[PageEvaluator] Node {NodeId} not found in published cache — using raw draft properties.", nodeId);
+            _logger.LogDebug("[PageEvaluator] Node {NodeId} not in published cache — using raw draft properties.", nodeId);
             return draftProperties;
         }
 
-        var merged = new Dictionary<string, object?>();
+        IDictionary<string, object?> resolved = _contentBuilder.Build(publishedContent)?.Properties
+            ?? new Dictionary<string, object?>();
 
-        foreach (IPublishedProperty prop in publishedContent.Properties)
-        {
-            try
-            {
-                merged[prop.Alias] = FormatValueForAi(prop.GetValue());
-            }
-            catch (Exception ex)
-            {
-                _logger.LogDebug(ex, "[PageEvaluator] Skipping property '{Alias}' — value resolution failed.", prop.Alias);
-            }
-        }
+        var merged = new Dictionary<string, object?>(resolved);
 
-        // Overlay simple draft text values (e.g. unsaved edits to text boxes, textareas).
-        // JSON-shaped values (media pickers, blocks, MNTP) are intentionally left as the
-        // resolved published values because the raw editor format is not AI-readable.
+        // Overlay simple draft text values so unsaved editor changes reach the AI.
+        // Complex draft values (media pickers, blocks) stay as the CD-API-resolved form.
         int draftOverrides = 0;
         foreach ((string alias, object? value) in draftProperties)
         {
@@ -167,102 +156,11 @@ public sealed partial class PageEvaluationService : IPageEvaluationService
             }
         }
 
-        _logger.LogDebug("[PageEvaluator] Resolved {Resolved} published properties; {Draft} draft text overrides applied.",
-            merged.Count - draftOverrides, draftOverrides);
+        _logger.LogDebug("[PageEvaluator] CD API resolved {Resolved} properties; {Draft} draft overrides applied.",
+            resolved.Count, draftOverrides);
 
         return merged;
     }
-
-    // ---------------------------------------------------------------------------
-    // LLM property formatting — mirrors what Umbraco.AI.Core.PropertyValueFormatter
-    // does internally but using only public Umbraco APIs.
-    // ---------------------------------------------------------------------------
-
-    /// <summary>
-    /// Converts a typed Umbraco property value into a plain, JSON-serialisable
-    /// object that is easy for an LLM to read.
-    /// </summary>
-    private static object? FormatValueForAi(object? value, int depth = 0)
-    {
-        if (value is null) return null;
-        if (depth > 5) return value.ToString(); // guard against deep block nesting
-
-        // Rich text: strip HTML tags → plain text
-        if (value is IHtmlEncodedString html)
-            return HtmlTagRegex().Replace(html.ToString() ?? string.Empty, " ").Trim();
-
-        // Media picker (single) — MediaWithCrops extends IPublishedContent, check first
-        if (value is MediaWithCrops media)
-            return FormatElement(media.Content, depth);
-
-        // Block List
-        if (value is BlockListModel blockList)
-            return blockList.Select(b => FormatElement(b.Content, depth + 1)).ToList();
-
-        // Block Grid
-        if (value is BlockGridModel blockGrid)
-            return FormatBlockGrid(blockGrid, depth + 1);
-
-        // Content reference (single) — MNTP single, Content Picker
-        if (value is IPublishedContent content)
-            return new Dictionary<string, object?> { ["name"] = content.Name, ["contentType"] = content.ContentType.Alias };
-
-        // Media picker (multiple)
-        if (value is IEnumerable<MediaWithCrops> mediaList)
-            return mediaList.Select(m => FormatElement(m.Content, depth)).ToList();
-
-        // Content references (multiple) — MNTP
-        if (value is IEnumerable<IPublishedContent> contentList)
-            return contentList.Select(c => (object?)new Dictionary<string, object?> { ["name"] = c.Name, ["contentType"] = c.ContentType.Alias }).ToList();
-
-        // String selections (checkbox list, dropdown)
-        if (value is IEnumerable<string> strings)
-            return string.Join(", ", strings);
-
-        // Primitives pass through as-is
-        if (value is string or bool or int or long or double or decimal or float)
-            return value;
-
-        if (value is DateTime dt)
-            return dt.ToString("O");
-
-        return value.ToString();
-    }
-
-    private static Dictionary<string, object?> FormatElement(IPublishedElement element, int depth)
-    {
-        var result = new Dictionary<string, object?>();
-        result["contentType"] = element.ContentType.Alias;
-        if (element is IPublishedContent c) result["name"] = c.Name;
-
-        foreach (IPublishedProperty prop in element.Properties)
-        {
-            try { result[prop.Alias] = FormatValueForAi(prop.GetValue(), depth + 1); }
-            catch { /* skip unresolvable properties */ }
-        }
-        return result;
-    }
-
-    private static List<object?> FormatBlockGrid(BlockGridModel grid, int depth)
-    {
-        var items = new List<object?>();
-        foreach (BlockGridItem item in grid)
-        {
-            Dictionary<string, object?> block = FormatElement(item.Content, depth);
-            if (item.Areas.Any())
-            {
-                block["areas"] = item.Areas
-                    .SelectMany(a => a)
-                    .Select(areaItem => (object?)FormatElement(areaItem.Content, depth + 1))
-                    .ToList();
-            }
-            items.Add(block);
-        }
-        return items;
-    }
-
-    [GeneratedRegex("<[^>]+>")]
-    private static partial Regex HtmlTagRegex();
 
     /// <summary>
     /// Returns <see langword="true"/> when <paramref name="value"/> is a plain string

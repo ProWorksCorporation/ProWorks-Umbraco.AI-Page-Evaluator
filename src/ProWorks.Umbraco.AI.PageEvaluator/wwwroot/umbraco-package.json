@@ -1,0 +1,14 @@
+{
+  "$schema": "../../umbraco-package-schema.json",
+  "name": "ProWorks.AI.PageEvaluator",
+  "version": "1.0.0",
+  "allowPublicAccess": false,
+  "extensions": [
+    {
+      "type": "backofficeEntryPoint",
+      "alias": "ProWorks.AI.PageEvaluator.EntryPoint",
+      "name": "Page Evaluator Entry Point",
+      "js": "/App_Plugins/ProWorks.AI.PageEvaluator/dist/entry-point.js"
+    }
+  ]
+}
