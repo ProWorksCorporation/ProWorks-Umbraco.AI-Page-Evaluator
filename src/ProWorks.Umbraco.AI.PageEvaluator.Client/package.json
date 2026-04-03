@@ -2,6 +2,12 @@
   "name": "@proworks/umbraco-ai-page-evaluator",
   "version": "1.0.0",
   "description": "AI-powered page evaluation package for the Umbraco v17 back-office",
+  "author": "ProWorks Corporation",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ProWorksCorporation/ProWorks-Umbraco.AI-Page-Evaluator"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -16,8 +22,7 @@
   "peerDependencies": {
     "@umbraco-cms/backoffice": ">=17.0.0",
     "@umbraco-ui/uui": ">=1.0.0",
-    "@umbraco-ai/core": ">=1.7.0",
-    "lit": ">=3.0.0"
+    "@umbraco-ai/core": ">=1.7.0"
   },
   "devDependencies": {
     "@umbraco-cms/backoffice": "^17.0.0",

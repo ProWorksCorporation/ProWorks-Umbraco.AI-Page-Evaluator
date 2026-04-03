@@ -167,6 +167,36 @@ After a fresh clone, import the demo content via **Settings → uSync → Import
 dotnet test
 ```
 
+### Build the NuGet package
+
+Build the client JS first so `wwwroot/dist/` is up to date, then pack:
+
+```bash
+# 1. Build client JS
+cd src/ProWorks.Umbraco.AI.PageEvaluator.Client
+npm run build
+cd ../..
+
+# 2. Pack
+dotnet pack src/ProWorks.Umbraco.AI.PageEvaluator/ProWorks.Umbraco.AI.PageEvaluator.csproj \
+  --configuration Release \
+  --output ./nupkg
+```
+
+The `.nupkg` file is written to `./nupkg/`.
+
+To publish to NuGet.org:
+
+```bash
+dotnet nuget push ./nupkg/ProWorks.Umbraco.AI.PageEvaluator.*.nupkg \
+  --api-key <YOUR_API_KEY> \
+  --source https://api.nuget.org/v3/index.json
+```
+
+Before publishing, update the `<Version>` in
+`src/ProWorks.Umbraco.AI.PageEvaluator/ProWorks.Umbraco.AI.PageEvaluator.csproj`
+and update `<PackageReleaseNotes>` to describe what changed.
+
 ### Database migrations
 
 ```bash
