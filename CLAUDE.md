@@ -1,6 +1,6 @@
 # ProWorks-Umbraco-AI-Page-Evaluator Development Guidelines
 
-Last updated: 2026-04-02 (rev 3)
+Last updated: 2026-04-02 (rev 4)
 
 ## Active Technologies
 
@@ -65,8 +65,14 @@ dotnet ef migrations add <Name> \
 
 ### Backoffice Extensions
 - Menu alias for Umbraco.AI Add-ons section: **`"Uai.Menu.Addons"`** (not `"Umb.Menu.Addons"`)
-- The `entry-point.ts` registers: `workspaceAction`, `modal`, `menuItem`, `workspace`, `workspaceView`
+- The `entry-point.ts` registers: `condition`, `workspaceAction`, `modal`, `menuItem`, `workspace`, `workspaceView`
 - After changing TypeScript source, rebuild the client and the RCL project
+
+### Workspace Action Visibility
+- **Never use `element` alone** (without `kind`) for a `workspaceAction` manifest — Umbraco requires a `kind` to resolve the renderer; without it the action is never instantiated
+- **Never use `disable()` to hide** — it greys the button but keeps it in the DOM
+- To **completely hide** an action based on async state, register a `type: 'condition'` manifest with a class extending `UmbConditionBase` and set `this.permitted = true/false`. Add the condition alias to the `workspaceAction`'s `conditions` array alongside `Umb.Condition.WorkspaceAlias`
+- `UmbConditionBase` is imported from `@umbraco-cms/backoffice/extension-registry`; use `this.consumeContext(...)` inside the constructor for async checks
 
 ### Lit Imports
 - **Never** import from bare `lit` or `lit/decorators.js` — Umbraco 17's browser import map has no entry for these specifiers, causing a runtime `Failed to resolve module specifier` error
@@ -90,6 +96,14 @@ dotnet ef migrations add <Name> \
 - Do **not** use `HasColumnType("nvarchar(max)")` in `OnModelCreating` — it breaks SQLite migrations. Leave unlimited strings without a column type and let each provider use its default (`TEXT` for SQLite, `nvarchar(max)` for SQL Server)
 - A design-time factory exists at `UmbracoAIPageEvaluatorDbContextFactory.cs` in the Sqlite project
 - Migration handler is `RunPageEvaluatorMigrationNotificationHandler` — fires on `UmbracoApplicationStartedNotification`
+
+### Evaluation Cache
+- Cached results are stored in `umbracoAIEvaluationCache` — one row per content node (keyed on `NodeId`)
+- `IEvaluationCacheRepository` is registered as Singleton in `UmbracoBuilderExtensions`
+- The API controller is responsible for cache read/write — `PageEvaluationService` has no knowledge of caching
+- Cache is **invalidated automatically** (all rows for the affected `DocumentTypeAlias`) whenever a config is created, updated, activated, or deleted — call `_cacheRepository.DeleteByDocumentTypeAliasAsync(alias, ct)` in any controller action that mutates a config
+- `EvaluationReport.WithCachedAt(DateTime)` returns a copy with `CachedAt` set — used by the controller before returning the response so the frontend knows when the result was cached
+- The modal checks `GET /evaluate/cached/{nodeId}` on open; falls through to `POST /evaluate` only when no cache entry exists or when the user clicks **Re-run Evaluation**
 
 ### Package Version Constraints
 - `Microsoft.Extensions.AI.*` must all be pinned to the same version (currently `10.4.1`) — mismatches between `Microsoft.Extensions.AI` and `Abstractions` cause `TypeLoadException: FunctionApprovalRequestContent`

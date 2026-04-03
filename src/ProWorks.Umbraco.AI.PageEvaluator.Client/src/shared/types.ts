@@ -15,6 +15,7 @@ export interface EvaluatorConfigItem {
   readonly name: string;
   readonly description: string | null;
   readonly documentTypeAlias: string;
+  readonly documentTypeName: string | null;
   readonly profileId: string;
   readonly profileName: string | null;
   readonly contextId: string | null;
@@ -73,8 +74,9 @@ export interface EvaluationScore {
 }
 
 /**
- * Response body for POST /evaluate.
+ * Response body for POST /evaluate and GET /evaluate/cached/{nodeId}.
  * When parseFailed is true, score is null and checks is empty; rawResponse contains the AI output.
+ * cachedAt is the UTC ISO-8601 timestamp when the result was saved; always populated on success.
  */
 export interface EvaluationReportResponse {
   readonly parseFailed: boolean;
@@ -82,6 +84,7 @@ export interface EvaluationReportResponse {
   readonly checks: readonly CheckResult[];
   readonly suggestions: string | null;
   readonly rawResponse: string | null;
+  readonly cachedAt: string | null;
 }
 
 /** Request body for POST /evaluate. */

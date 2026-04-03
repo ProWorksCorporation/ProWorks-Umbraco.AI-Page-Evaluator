@@ -32,9 +32,7 @@ export class PageEvaluatorActionElement extends UmbLitElement {
     const workspaceCtx = await this.getContext(UMB_DOCUMENT_WORKSPACE_CONTEXT);
     if (!workspaceCtx) return;
 
-    // getContentTypeUnique returns the document type UUID; we use it as the alias
-    // identifier for the active config lookup until a full alias resolution is added.
-    const documentTypeAlias: string = workspaceCtx.getContentTypeUnique?.() ?? '';
+    const documentTypeAlias: string = workspaceCtx.structure.getOwnerContentType()?.alias ?? '';
     this._documentTypeAlias = documentTypeAlias;
 
     if (!documentTypeAlias) {

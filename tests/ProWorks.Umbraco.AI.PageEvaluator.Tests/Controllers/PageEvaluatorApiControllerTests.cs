@@ -22,11 +22,12 @@ public class PageEvaluatorApiControllerTests
     private readonly IAIProfileService _profileService = Substitute.For<IAIProfileService>();
     private readonly IAIContextService _contextService = Substitute.For<IAIContextService>();
     private readonly IContentTypeService _contentTypeService = Substitute.For<IContentTypeService>();
+    private readonly IEvaluationCacheRepository _cacheRepository = Substitute.For<IEvaluationCacheRepository>();
     private readonly PageEvaluatorApiController _sut;
 
     public PageEvaluatorApiControllerTests()
     {
-        _sut = new PageEvaluatorApiController(_evaluationService, _configService, _profileService, _contextService, _contentTypeService);
+        _sut = new PageEvaluatorApiController(_evaluationService, _configService, _profileService, _contextService, _contentTypeService, _cacheRepository);
     }
 
     // ---------------------------------------------------------------------------
@@ -63,6 +64,29 @@ public class PageEvaluatorApiControllerTests
         Assert.False(report.ParseFailed);
         Assert.Equal(14, report.Score!.Passed);
         Assert.Equal(2, report.Checks.Count);
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_HappyPath_SavesResultToCacheAndSetsCachedAt()
+    {
+        var nodeId = Guid.NewGuid();
+        const string alias = "blogPost";
+        var request = new EvaluatePageRequest { NodeId = nodeId, DocumentTypeAlias = alias, Properties = new() };
+
+        _evaluationService.EvaluateAsync(nodeId, alias, Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<CancellationToken>())
+            .Returns(EvaluationReport.Parsed(new EvaluationScore(1, 1), [], null));
+
+        IActionResult result = await _sut.EvaluateAsync(request);
+
+        // Cache must be written exactly once with the correct node id.
+        await _cacheRepository.Received(1).SaveAsync(
+            Arg.Is<EvaluationCacheEntry>(e => e.NodeId == nodeId && e.DocumentTypeAlias == alias),
+            Arg.Any<CancellationToken>());
+
+        // The returned report must have CachedAt populated.
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var report = Assert.IsAssignableFrom<EvaluationReport>(ok.Value);
+        Assert.NotNull(report.CachedAt);
     }
 
     [Fact]
@@ -119,6 +143,45 @@ public class PageEvaluatorApiControllerTests
 
         var statusResult = Assert.IsType<ObjectResult>(result);
         Assert.Equal(502, statusResult.StatusCode);
+    }
+
+    // ---------------------------------------------------------------------------
+    // GET /evaluate/cached/{nodeId}
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public async Task GetCachedEvaluationAsync_WhenCacheHit_Returns200WithCachedAt()
+    {
+        var nodeId = Guid.NewGuid();
+        var cachedAt = new DateTime(2026, 4, 2, 12, 0, 0, DateTimeKind.Utc);
+        var cachedReport = EvaluationReport.Parsed(new EvaluationScore(5, 6), [], "Looks good.");
+        _cacheRepository.GetAsync(nodeId, Arg.Any<CancellationToken>())
+            .Returns(new EvaluationCacheEntry
+            {
+                NodeId = nodeId,
+                DocumentTypeAlias = "blogPost",
+                Report = cachedReport,
+                CachedAt = cachedAt,
+            });
+
+        IActionResult result = await _sut.GetCachedEvaluationAsync(nodeId);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var report = Assert.IsAssignableFrom<EvaluationReport>(ok.Value);
+        Assert.Equal(cachedAt, report.CachedAt);
+        Assert.Equal(5, report.Score!.Passed);
+    }
+
+    [Fact]
+    public async Task GetCachedEvaluationAsync_WhenCacheMiss_Returns404()
+    {
+        var nodeId = Guid.NewGuid();
+        _cacheRepository.GetAsync(nodeId, Arg.Any<CancellationToken>())
+            .Returns((EvaluationCacheEntry?)null);
+
+        IActionResult result = await _sut.GetCachedEvaluationAsync(nodeId);
+
+        Assert.IsType<NotFoundObjectResult>(result);
     }
 
     // ---------------------------------------------------------------------------
@@ -204,7 +267,7 @@ public class PageEvaluatorApiControllerTests
     // ---------------------------------------------------------------------------
 
     [Fact]
-    public async Task CreateConfigurationAsync_HappyPath_Returns201WithCreatedConfig()
+    public async Task CreateConfigurationAsync_HappyPath_Returns201AndInvalidatesCache()
     {
         var request = new CreateEvaluatorConfigRequest
         {
@@ -221,6 +284,8 @@ public class PageEvaluatorApiControllerTests
 
         var created201 = Assert.IsType<CreatedAtActionResult>(result);
         Assert.NotNull(created201.Value);
+        await _cacheRepository.Received(1).DeleteByDocumentTypeAliasAsync(
+            "blogPost", Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -247,7 +312,7 @@ public class PageEvaluatorApiControllerTests
     // ---------------------------------------------------------------------------
 
     [Fact]
-    public async Task UpdateConfigurationAsync_HappyPath_Returns200WithUpdatedConfig()
+    public async Task UpdateConfigurationAsync_HappyPath_Returns200AndInvalidatesCache()
     {
         var id = Guid.NewGuid();
         var request = new UpdateEvaluatorConfigRequest
@@ -264,6 +329,8 @@ public class PageEvaluatorApiControllerTests
         IActionResult result = await _sut.UpdateConfigurationAsync(id, request);
 
         Assert.IsType<OkObjectResult>(result);
+        await _cacheRepository.Received(1).DeleteByDocumentTypeAliasAsync(
+            "blogPost", Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -305,11 +372,42 @@ public class PageEvaluatorApiControllerTests
     }
 
     // ---------------------------------------------------------------------------
+    // POST /configurations/{id}/activate
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public async Task ActivateConfigurationAsync_WhenExists_Returns200AndInvalidatesCache()
+    {
+        var id = Guid.NewGuid();
+        var config = BuildConfig("blogPost");
+        _configService.GetByIdAsync(id, Arg.Any<CancellationToken>()).Returns(config);
+        _configService.UpdateAsync(Arg.Any<AIEvaluatorConfig>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(config);
+
+        IActionResult result = await _sut.ActivateConfigurationAsync(id);
+
+        Assert.IsType<OkObjectResult>(result);
+        await _cacheRepository.Received(1).DeleteByDocumentTypeAliasAsync(
+            config.DocumentTypeAlias, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ActivateConfigurationAsync_WhenNotFound_Returns404()
+    {
+        var id = Guid.NewGuid();
+        _configService.GetByIdAsync(id, Arg.Any<CancellationToken>()).Returns((AIEvaluatorConfig?)null);
+
+        IActionResult result = await _sut.ActivateConfigurationAsync(id);
+
+        Assert.IsType<NotFoundObjectResult>(result);
+    }
+
+    // ---------------------------------------------------------------------------
     // DELETE /configurations/{id}  (T048 RED)
     // ---------------------------------------------------------------------------
 
     [Fact]
-    public async Task DeleteConfigurationAsync_WhenExists_Returns200()
+    public async Task DeleteConfigurationAsync_WhenExists_Returns200AndInvalidatesCache()
     {
         var id = Guid.NewGuid();
         var config = BuildConfig("blogPost");
@@ -318,6 +416,8 @@ public class PageEvaluatorApiControllerTests
         IActionResult result = await _sut.DeleteConfigurationAsync(id);
 
         Assert.IsType<OkObjectResult>(result);
+        await _cacheRepository.Received(1).DeleteByDocumentTypeAliasAsync(
+            "blogPost", Arg.Any<CancellationToken>());
     }
 
     [Fact]

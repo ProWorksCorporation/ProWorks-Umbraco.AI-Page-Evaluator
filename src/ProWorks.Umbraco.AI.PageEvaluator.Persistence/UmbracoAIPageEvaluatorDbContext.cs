@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using ProWorks.Umbraco.AI.PageEvaluator.Persistence.Cache;
 using ProWorks.Umbraco.AI.PageEvaluator.Persistence.Evaluators;
 
 namespace ProWorks.Umbraco.AI.PageEvaluator.Persistence;
@@ -18,6 +19,7 @@ public sealed class UmbracoAIPageEvaluatorDbContext : DbContext
     }
 
     public DbSet<AIEvaluatorConfigEntity> EvaluatorConfigs => Set<AIEvaluatorConfigEntity>();
+    public DbSet<EvaluationCacheEntity> EvaluationCache => Set<EvaluationCacheEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -30,6 +32,11 @@ public sealed class UmbracoAIPageEvaluatorDbContext : DbContext
             // Composite index used by the active-config lookup and list queries.
             entity.HasIndex(e => new { e.DocumentTypeAlias, e.IsActive })
                 .HasDatabaseName("IX_umbracoAIEvaluatorConfig_DocumentTypeAlias_IsActive");
+        });
+
+        modelBuilder.Entity<EvaluationCacheEntity>(entity =>
+        {
+            entity.HasKey(e => e.NodeId);
         });
     }
 }

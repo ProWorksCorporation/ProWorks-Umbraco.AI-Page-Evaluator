@@ -1,6 +1,6 @@
 import { property as _, state as s, customElement as f, LitElement as v, html as r, nothing as l, css as b } from "@umbraco-cms/backoffice/external/lit";
 import { UmbLitElement as x } from "@umbraco-cms/backoffice/lit-element";
-import { b as m, c as T, u as $, f as C } from "./api-client-CgRHi73O.js";
+import { c as m, f as T, u as $, h as C } from "./entry-point-8sa3rU5d.js";
 const g = [
   {
     id: "required-fields",
@@ -595,4 +595,4 @@ a = n([
 export {
   a as EvaluatorFormElement
 };
-//# sourceMappingURL=evaluator-form.element-BbKnzl6p.js.map
+//# sourceMappingURL=evaluator-form.element-D9PCb31F.js.map

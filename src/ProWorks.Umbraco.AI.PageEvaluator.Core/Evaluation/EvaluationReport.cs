@@ -29,6 +29,12 @@ public sealed class EvaluationReport
     /// </summary>
     public string? RawResponse { get; init; }
 
+    /// <summary>
+    /// UTC timestamp when this result was cached. Null when freshly computed and not yet persisted.
+    /// Populated by the API controller after saving to cache.
+    /// </summary>
+    public DateTime? CachedAt { get; init; }
+
     /// <summary>Creates a successfully parsed report.</summary>
     public static EvaluationReport Parsed(EvaluationScore score, IReadOnlyList<CheckResult> checks, string? suggestions) =>
         new() { Score = score, Checks = checks, Suggestions = suggestions };
@@ -36,4 +42,15 @@ public sealed class EvaluationReport
     /// <summary>Creates a parse-failure report containing only the raw response text.</summary>
     public static EvaluationReport Failed(string rawResponse) =>
         new() { ParseFailed = true, RawResponse = rawResponse };
+
+    /// <summary>Returns a copy of this report with the specified <see cref="CachedAt"/> timestamp.</summary>
+    public EvaluationReport WithCachedAt(DateTime cachedAt) => new()
+    {
+        ParseFailed = ParseFailed,
+        Score = Score,
+        Checks = Checks,
+        Suggestions = Suggestions,
+        RawResponse = RawResponse,
+        CachedAt = cachedAt,
+    };
 }

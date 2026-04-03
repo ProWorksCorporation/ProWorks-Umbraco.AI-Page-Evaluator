@@ -1,5 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
+using ProWorks.Umbraco.AI.PageEvaluator.Evaluation;
 using ProWorks.Umbraco.AI.PageEvaluator.Evaluators;
+using ProWorks.Umbraco.AI.PageEvaluator.Persistence.Cache;
 using ProWorks.Umbraco.AI.PageEvaluator.Persistence.Evaluators;
 using ProWorks.Umbraco.AI.PageEvaluator.Persistence.Notifications;
 using Umbraco.Cms.Core.DependencyInjection;
@@ -20,8 +22,9 @@ public static class UmbracoBuilderExtensions
     public static IUmbracoBuilder AddUmbracoAIPageEvaluatorPersistence(
         this IUmbracoBuilder builder)
     {
-        // Register the repository as Singleton — IEFCoreScopeProvider handles internal lifetimes.
+        // Register repositories as Singleton — IEFCoreScopeProvider handles internal lifetimes.
         builder.Services.AddSingleton<IAIEvaluatorConfigRepository, EFCoreAIEvaluatorConfigRepository>();
+        builder.Services.AddSingleton<IEvaluationCacheRepository, EFCoreEvaluationCacheRepository>();
 
         // Register the migration handler to auto-run on application start.
         builder.AddNotificationAsyncHandler<

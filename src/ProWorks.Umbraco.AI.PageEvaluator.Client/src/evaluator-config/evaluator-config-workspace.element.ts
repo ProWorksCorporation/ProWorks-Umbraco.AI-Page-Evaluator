@@ -1,6 +1,6 @@
 import { customElement, state, html, css, nothing, type TemplateResult } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
-import { getConfigurations, deleteConfiguration } from '../shared/api-client.js';
+import { getConfigurations, activateConfiguration, deleteConfiguration } from '../shared/api-client.js';
 import type { EvaluatorConfigItem, EvaluatorConfigListResponse } from '../shared/types.js';
 import './evaluator-form.element.js';
 
@@ -99,6 +99,15 @@ export class EvaluatorConfigWorkspaceElement extends UmbLitElement {
     return groups;
   }
 
+  private async _handleActivate(id: string): Promise<void> {
+    try {
+      await activateConfiguration(id);
+      await this._loadConfigs();
+    } catch {
+      this._error = 'Failed to activate the evaluator configuration.';
+    }
+  }
+
   private async _handleDelete(id: string): Promise<void> {
     if (!confirm('Are you sure you want to delete this evaluator configuration?')) return;
     try {
@@ -175,7 +184,7 @@ export class EvaluatorConfigWorkspaceElement extends UmbLitElement {
           ? html`<p>No evaluator configurations found. Create one to get started.</p>`
           : Array.from(groups.entries()).map(
               ([alias, items]) => html`
-                <uui-box headline=${alias}>
+                <uui-box headline=${items[0]?.documentTypeName ?? alias}>
                   <uui-table>
                     <uui-table-head>
                       <uui-table-head-cell>Name</uui-table-head-cell>
@@ -199,6 +208,14 @@ export class EvaluatorConfigWorkspaceElement extends UmbLitElement {
                               : html`<uui-tag look="secondary">Inactive</uui-tag>`}
                           </uui-table-cell>
                           <uui-table-cell>
+                            ${!config.isActive
+                              ? html`<uui-button
+                                  look="secondary"
+                                  label="Activate"
+                                  @click=${() => this._handleActivate(config.id)}>
+                                  Activate
+                                </uui-button>`
+                              : nothing}
                             <uui-button
                               look="secondary"
                               label="Edit"
