@@ -22,6 +22,29 @@ namespace ProWorks.Umbraco.AI.PageEvaluator.Persistence.SqlServer.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("ProWorks.Umbraco.AI.PageEvaluator.Persistence.Cache.EvaluationCacheEntity", b =>
+                {
+                    b.Property<Guid>("NodeId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CachedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DocumentTypeAlias")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("ReportJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("NodeId");
+
+                    b.ToTable("umbracoAIEvaluationCache");
+                });
+
             modelBuilder.Entity("ProWorks.Umbraco.AI.PageEvaluator.Persistence.Evaluators.AIEvaluatorConfigEntity", b =>
                 {
                     b.Property<Guid>("Id")

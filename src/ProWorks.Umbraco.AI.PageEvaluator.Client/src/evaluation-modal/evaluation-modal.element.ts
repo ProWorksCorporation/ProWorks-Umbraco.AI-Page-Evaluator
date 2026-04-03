@@ -1,6 +1,6 @@
 import { html, css, nothing, type TemplateResult, customElement, state } from '@umbraco-cms/backoffice/external/lit';
 import { UmbModalBaseElement } from '@umbraco-cms/backoffice/modal';
-import { evaluatePage } from '../shared/api-client.js';
+import { getCachedEvaluation, evaluatePage } from '../shared/api-client.js';
 import type { EvaluationReportResponse } from '../shared/types.js';
 import type { EvaluationModalData, EvaluationModalValue } from './evaluation-modal.token.js';
 import './evaluation-report.element.js';
@@ -16,9 +16,8 @@ const PROGRESS_MESSAGES: Readonly<Record<string, string>> = {
 
 /**
  * Slide-in modal element for the page evaluation flow.
- * Extends UmbModalBaseElement so this.data and this.modalContext are wired
- * automatically by the framework. Uses umb-body-layout for the standard
- * Umbraco modal chrome (headline + close button).
+ * On open, checks the server-side cache first. If a cached result exists it is shown
+ * immediately without calling the AI. The "Re-run Evaluation" button forces a fresh call.
  */
 @customElement('page-evaluator-modal')
 export class EvaluationModalElement extends UmbModalBaseElement<EvaluationModalData, EvaluationModalValue> {
@@ -30,6 +29,18 @@ export class EvaluationModalElement extends UmbModalBaseElement<EvaluationModalD
       justify-content: center;
       gap: var(--uui-size-space-4, 16px);
       padding: var(--uui-size-space-8, 32px);
+    }
+
+    .cache-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--uui-size-space-3, 12px);
+      padding: var(--uui-size-space-3, 12px) var(--uui-size-space-4, 16px);
+      background: var(--uui-color-surface-emphasis, #f3f3f3);
+      border-bottom: 1px solid var(--uui-color-border, #e0e0e0);
+      font-size: 0.85rem;
+      color: var(--uui-color-text-alt, #666);
     }
 
     .error-container {
@@ -46,6 +57,24 @@ export class EvaluationModalElement extends UmbModalBaseElement<EvaluationModalD
 
   override connectedCallback(): void {
     super.connectedCallback();
+    void this._checkCacheAndLoad();
+  }
+
+  private async _checkCacheAndLoad(): Promise<void> {
+    const data = this.data;
+    if (!data) return;
+
+    try {
+      const cached = await getCachedEvaluation(data.nodeId);
+      if (cached) {
+        this._report = cached;
+        this._modalState = cached.parseFailed ? 'parse-failed' : 'success';
+        return;
+      }
+    } catch {
+      // Cache check failed — fall through to a fresh evaluation.
+    }
+
     void this._runEvaluation();
   }
 
@@ -73,7 +102,7 @@ export class EvaluationModalElement extends UmbModalBaseElement<EvaluationModalD
     }
   }
 
-  private _retry(): void {
+  private _rerun(): void {
     void this._runEvaluation();
   }
 
@@ -86,11 +115,33 @@ export class EvaluationModalElement extends UmbModalBaseElement<EvaluationModalD
     return new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
   }
 
+  private _formatCachedAt(isoString: string | null): string {
+    if (!isoString) return '';
+    try {
+      return new Date(isoString).toLocaleString(undefined, {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+      });
+    } catch {
+      return isoString;
+    }
+  }
+
   override render(): TemplateResult {
     return html`
       <umb-body-layout headline="Page Evaluation">
         ${this._renderBody()}
         <div slot="actions">
+          ${this._modalState === 'success' || this._modalState === 'parse-failed'
+            ? html`
+                <uui-button
+                  look="secondary"
+                  label="Re-run Evaluation"
+                  @click=${() => this._rerun()}>
+                  Re-run Evaluation
+                </uui-button>
+              `
+            : nothing}
           <uui-button
             label="Close"
             @click=${() => this._close()}>
@@ -116,12 +167,14 @@ export class EvaluationModalElement extends UmbModalBaseElement<EvaluationModalD
 
       case 'success':
         return html`
+          ${this._renderCacheBar()}
           <page-evaluator-report
             .report="${this._report!}"></page-evaluator-report>
         `;
 
       case 'parse-failed':
         return html`
+          ${this._renderCacheBar()}
           <page-evaluator-warning
             .rawResponse="${this._report?.rawResponse ?? null}"></page-evaluator-warning>
         `;
@@ -134,12 +187,22 @@ export class EvaluationModalElement extends UmbModalBaseElement<EvaluationModalD
               look="primary"
               color="warning"
               label="Retry"
-              @click="${() => this._retry()}">
+              @click="${() => this._rerun()}">
               Retry
             </uui-button>
           </div>
         `;
     }
+  }
+
+  private _renderCacheBar(): TemplateResult | typeof nothing {
+    const cachedAt = this._report?.cachedAt;
+    if (!cachedAt) return nothing;
+    return html`
+      <div class="cache-bar">
+        <span>Last evaluated: ${this._formatCachedAt(cachedAt)}</span>
+      </div>
+    `;
   }
 }
 

@@ -1,47 +1,47 @@
-import { css as f, property as w, customElement as b, LitElement as x, nothing as u, html as a, state as h } from "@umbraco-cms/backoffice/external/lit";
+import { css as f, property as w, customElement as _, LitElement as x, nothing as u, html as s, state as h } from "@umbraco-cms/backoffice/external/lit";
 import { UmbModalBaseElement as z } from "@umbraco-cms/backoffice/modal";
-import { e as k } from "./api-client-CgRHi73O.js";
-var P = Object.defineProperty, S = Object.getOwnPropertyDescriptor, y = (e, r, i, s) => {
-  for (var t = s > 1 ? void 0 : s ? S(r, i) : r, n = e.length - 1, o; n >= 0; n--)
-    (o = e[n]) && (t = (s ? o(r, i, t) : o(t)) || t);
-  return s && t && P(r, i, t), t;
+import { g as k, e as C } from "./entry-point-8sa3rU5d.js";
+var S = Object.defineProperty, P = Object.getOwnPropertyDescriptor, y = (e, r, i, a) => {
+  for (var t = a > 1 ? void 0 : a ? P(r, i) : r, n = e.length - 1, o; n >= 0; n--)
+    (o = e[n]) && (t = (a ? o(r, i, t) : o(t)) || t);
+  return a && t && S(r, i, t), t;
 };
 let d = class extends x {
   render() {
     if (!this.report) return u;
-    const { checks: e, suggestions: r } = this.report, i = e.filter((l) => l.status === "Pass").length, s = e.filter((l) => l.status === "Warn").length, t = e.filter((l) => l.status === "Fail").length, n = e.length, o = e.filter((l) => l.status === "Fail" || l.status === "Warn"), v = e.filter((l) => l.status === "Pass");
-    return a`
-      ${n > 0 ? a`
+    const { checks: e, suggestions: r } = this.report, i = e.filter((l) => l.status === "Pass").length, a = e.filter((l) => l.status === "Warn").length, t = e.filter((l) => l.status === "Fail").length, n = e.length, o = e.filter((l) => l.status === "Fail" || l.status === "Warn"), v = e.filter((l) => l.status === "Pass");
+    return s`
+      ${n > 0 ? s`
             <div class="score-row">
               <span class="score-total">${n} checks</span>
               <span class="score-pill score-pill--pass">
                 <uui-icon name="icon-check"></uui-icon>${i} passed
               </span>
-              ${s > 0 ? a`
+              ${a > 0 ? s`
                 <span class="score-pill score-pill--warn">
-                  <uui-icon name="icon-alert"></uui-icon>${s} warning${s !== 1 ? "s" : ""}
+                  <uui-icon name="icon-alert"></uui-icon>${a} warning${a !== 1 ? "s" : ""}
                 </span>` : u}
-              ${t > 0 ? a`
+              ${t > 0 ? s`
                 <span class="score-pill score-pill--fail">
                   <uui-icon name="icon-wrong"></uui-icon>${t} failed
                 </span>` : u}
             </div>
           ` : u}
 
-      ${r ? a`
+      ${r ? s`
             <uui-box headline="Suggestions" class="suggestions-box">
               ${this._renderSuggestions(r)}
             </uui-box>
           ` : u}
 
-      ${o.length > 0 ? a`
+      ${o.length > 0 ? s`
             <p class="section-title">Items Needing Attention (${o.length})</p>
             <ul class="check-list">
               ${o.map((l) => this._renderCheck(l))}
             </ul>
           ` : u}
 
-      ${v.length > 0 ? a`
+      ${v.length > 0 ? s`
             <p class="section-title">Passing Items (${v.length})</p>
             <ul class="check-list">
               ${v.map((l) => this._renderCheck(l))}
@@ -50,15 +50,15 @@ let d = class extends x {
     `;
   }
   _renderSuggestions(e) {
-    const r = C(e);
-    return r.length === 1 ? a`<p style="margin:0; font-size: var(--uui-type-small-size, 0.875rem); line-height: 1.5;">${_(r[0])}</p>` : a`
+    const r = R(e);
+    return r.length === 1 ? s`<p style="margin:0; font-size: var(--uui-type-small-size, 0.875rem); line-height: 1.5;">${b(r[0])}</p>` : s`
       <ul class="suggestions-list">
-        ${r.map((i) => a`<li>${_(i)}</li>`)}
+        ${r.map((i) => s`<li>${b(i)}</li>`)}
       </ul>
     `;
   }
   _renderCheck(e) {
-    return a`
+    return s`
       <li class="check-item">
         <uui-icon
           class="check-icon"
@@ -66,7 +66,7 @@ let d = class extends x {
           name="${E(e.status)}"></uui-icon>
         <div class="check-body">
           <div class="check-label">${e.label}</div>
-          ${e.explanation ? a`<div class="check-explanation">${e.explanation}</div>` : u}
+          ${e.explanation ? s`<div class="check-explanation">${e.explanation}</div>` : u}
         </div>
       </li>
     `;
@@ -196,7 +196,7 @@ y([
   w({ attribute: !1 })
 ], d.prototype, "report", 2);
 d = y([
-  b("page-evaluator-report")
+  _("page-evaluator-report")
 ], d);
 function E(e) {
   switch (e) {
@@ -208,26 +208,26 @@ function E(e) {
       return "icon-alert";
   }
 }
-function C(e) {
+function R(e) {
   const i = e.split(`
-`).map((s) => s.trim()).filter(Boolean).filter((s) => /^\d+\.\s+/.test(s));
-  return i.length > 1 ? i.map((s) => s.replace(/^\d+\.\s+/, "").trim()) : [e.trim()];
+`).map((a) => a.trim()).filter(Boolean).filter((a) => /^\d+\.\s+/.test(a));
+  return i.length > 1 ? i.map((a) => a.replace(/^\d+\.\s+/, "").trim()) : [e.trim()];
 }
-function _(e) {
+function b(e) {
   const r = e.split(/\*\*([^*]+)\*\*/g);
-  return a`${r.map((i, s) => s % 2 === 1 ? a`<strong>${i}</strong>` : i)}`;
+  return s`${r.map((i, a) => a % 2 === 1 ? s`<strong>${i}</strong>` : i)}`;
 }
-var M = Object.defineProperty, R = Object.getOwnPropertyDescriptor, $ = (e, r, i, s) => {
-  for (var t = s > 1 ? void 0 : s ? R(r, i) : r, n = e.length - 1, o; n >= 0; n--)
-    (o = e[n]) && (t = (s ? o(r, i, t) : o(t)) || t);
-  return s && t && M(r, i, t), t;
+var M = Object.defineProperty, O = Object.getOwnPropertyDescriptor, $ = (e, r, i, a) => {
+  for (var t = a > 1 ? void 0 : a ? O(r, i) : r, n = e.length - 1, o; n >= 0; n--)
+    (o = e[n]) && (t = (a ? o(r, i, t) : o(t)) || t);
+  return a && t && M(r, i, t), t;
 };
 let g = class extends x {
   constructor() {
     super(...arguments), this.rawResponse = null;
   }
   render() {
-    return a`
+    return s`
       <div class="warning-banner">
         <p>
           <uui-icon name="icon-alert"></uui-icon>
@@ -238,7 +238,7 @@ let g = class extends x {
           to improve structured output.
         </p>
       </div>
-      ${this.rawResponse ? a`<pre class="raw-response">${this.rawResponse}</pre>` : ""}
+      ${this.rawResponse ? s`<pre class="raw-response">${this.rawResponse}</pre>` : ""}
     `;
   }
 };
@@ -274,12 +274,12 @@ $([
   w({ type: String })
 ], g.prototype, "rawResponse", 2);
 g = $([
-  b("page-evaluator-warning")
+  _("page-evaluator-warning")
 ], g);
-var O = Object.defineProperty, j = Object.getOwnPropertyDescriptor, p = (e, r, i, s) => {
-  for (var t = s > 1 ? void 0 : s ? j(r, i) : r, n = e.length - 1, o; n >= 0; n--)
-    (o = e[n]) && (t = (s ? o(r, i, t) : o(t)) || t);
-  return s && t && O(r, i, t), t;
+var A = Object.defineProperty, j = Object.getOwnPropertyDescriptor, p = (e, r, i, a) => {
+  for (var t = a > 1 ? void 0 : a ? j(r, i) : r, n = e.length - 1, o; n >= 0; n--)
+    (o = e[n]) && (t = (a ? o(r, i, t) : o(t)) || t);
+  return a && t && A(r, i, t), t;
 };
 const m = {
   sending: "Sending page data…",
@@ -291,20 +291,34 @@ let c = class extends z {
     super(...arguments), this._modalState = "idle", this._progressMessage = "", this._report = null, this._errorMessage = "";
   }
   connectedCallback() {
-    super.connectedCallback(), this._runEvaluation();
+    super.connectedCallback(), this._checkCacheAndLoad();
+  }
+  async _checkCacheAndLoad() {
+    const e = this.data;
+    if (e) {
+      try {
+        const r = await k(e.nodeId);
+        if (r) {
+          this._report = r, this._modalState = r.parseFailed ? "parse-failed" : "success";
+          return;
+        }
+      } catch {
+      }
+      this._runEvaluation();
+    }
   }
   async _runEvaluation() {
     const e = this.data;
     if (e)
       try {
         this._modalState = "loading", this._progressMessage = m.sending ?? "", await this._tick(), this._progressMessage = m.waiting ?? "";
-        const r = await k(e);
+        const r = await C(e);
         this._progressMessage = m.rendering ?? "", await this._tick(), this._report = r, this._modalState = r.parseFailed ? "parse-failed" : "success";
       } catch {
         this._modalState = "error", this._errorMessage = "The evaluation could not be completed. The AI provider returned an error.";
       }
   }
-  _retry() {
+  _rerun() {
     this._runEvaluation();
   }
   _close() {
@@ -314,11 +328,30 @@ let c = class extends z {
   _tick() {
     return new Promise((e) => requestAnimationFrame(() => e()));
   }
+  _formatCachedAt(e) {
+    if (!e) return "";
+    try {
+      return new Date(e).toLocaleString(void 0, {
+        dateStyle: "medium",
+        timeStyle: "short"
+      });
+    } catch {
+      return e;
+    }
+  }
   render() {
-    return a`
+    return s`
       <umb-body-layout headline="Page Evaluation">
         ${this._renderBody()}
         <div slot="actions">
+          ${this._modalState === "success" || this._modalState === "parse-failed" ? s`
+                <uui-button
+                  look="secondary"
+                  label="Re-run Evaluation"
+                  @click=${() => this._rerun()}>
+                  Re-run Evaluation
+                </uui-button>
+              ` : u}
           <uui-button
             label="Close"
             @click=${() => this._close()}>
@@ -334,36 +367,47 @@ let c = class extends z {
       case "idle":
         return u;
       case "loading":
-        return a`
+        return s`
           <div class="progress-container">
             <uui-loader></uui-loader>
             <p aria-live="polite" aria-atomic="true">${this._progressMessage}</p>
           </div>
         `;
       case "success":
-        return a`
+        return s`
+          ${this._renderCacheBar()}
           <page-evaluator-report
             .report="${this._report}"></page-evaluator-report>
         `;
       case "parse-failed":
-        return a`
+        return s`
+          ${this._renderCacheBar()}
           <page-evaluator-warning
             .rawResponse="${((e = this._report) == null ? void 0 : e.rawResponse) ?? null}"></page-evaluator-warning>
         `;
       case "error":
-        return a`
+        return s`
           <div class="error-container" role="alert">
             <p>${this._errorMessage}</p>
             <uui-button
               look="primary"
               color="warning"
               label="Retry"
-              @click="${() => this._retry()}">
+              @click="${() => this._rerun()}">
               Retry
             </uui-button>
           </div>
         `;
     }
+  }
+  _renderCacheBar() {
+    var r;
+    const e = (r = this._report) == null ? void 0 : r.cachedAt;
+    return e ? s`
+      <div class="cache-bar">
+        <span>Last evaluated: ${this._formatCachedAt(e)}</span>
+      </div>
+    ` : u;
   }
 };
 c.styles = f`
@@ -374,6 +418,18 @@ c.styles = f`
       justify-content: center;
       gap: var(--uui-size-space-4, 16px);
       padding: var(--uui-size-space-8, 32px);
+    }
+
+    .cache-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--uui-size-space-3, 12px);
+      padding: var(--uui-size-space-3, 12px) var(--uui-size-space-4, 16px);
+      background: var(--uui-color-surface-emphasis, #f3f3f3);
+      border-bottom: 1px solid var(--uui-color-border, #e0e0e0);
+      font-size: 0.85rem;
+      color: var(--uui-color-text-alt, #666);
     }
 
     .error-container {
@@ -395,9 +451,9 @@ p([
   h()
 ], c.prototype, "_errorMessage", 2);
 c = p([
-  b("page-evaluator-modal")
+  _("page-evaluator-modal")
 ], c);
 export {
   c as EvaluationModalElement
 };
-//# sourceMappingURL=evaluation-modal.element-BsV1ExVk.js.map
+//# sourceMappingURL=evaluation-modal.element-kCXq-xj0.js.map

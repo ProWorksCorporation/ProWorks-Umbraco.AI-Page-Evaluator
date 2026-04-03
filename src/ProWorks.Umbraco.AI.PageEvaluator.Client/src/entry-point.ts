@@ -11,6 +11,10 @@
 
 import { umbExtensionsRegistry } from '@umbraco-cms/backoffice/extension-registry';
 import type { UmbEntryPointOnInit } from '@umbraco-cms/backoffice/extension-api';
+import {
+  PageEvaluatorActiveConfigCondition,
+  PROWORKS_AI_ACTIVE_CONFIG_CONDITION_ALIAS,
+} from './workspace-action/page-evaluator-active-config.condition.js';
 
 /** Alias for the Umbraco.AI Addons menu. */
 const UAI_ADDONS_MENU_ALIAS = 'Uai.Menu.Addons';
@@ -28,22 +32,35 @@ const manifests: UmbExtensionManifest[] = [
   // US1 — Content Editor Evaluates a Page
   // ---------------------------------------------------------------------------
 
+  // Condition: resolves true only when an active evaluator config exists for
+  // the current document type. Registered before the workspaceAction so it is
+  // available when the action's conditions are evaluated.
+  {
+    type: 'condition',
+    alias: PROWORKS_AI_ACTIVE_CONFIG_CONDITION_ALIAS,
+    name: 'Page Evaluator Has Active Config Condition',
+    api: PageEvaluatorActiveConfigCondition,
+  },
+
   {
     type: 'workspaceAction',
     kind: 'default',
     alias: 'ProWorks.AI.PageEvaluator.WorkspaceAction',
     name: 'Page Evaluator Workspace Action',
-    conditions: [
-      {
-        alias: 'Umb.Condition.WorkspaceAlias',
-        match: 'Umb.Workspace.Document',
-      },
-    ],
     api: () => import('./workspace-action/page-evaluator-action.api.js'),
     meta: {
       label: 'Evaluate Page',
       look: 'secondary',
     },
+    conditions: [
+      {
+        alias: 'Umb.Condition.WorkspaceAlias',
+        match: 'Umb.Workspace.Document',
+      },
+      {
+        alias: PROWORKS_AI_ACTIVE_CONFIG_CONDITION_ALIAS,
+      },
+    ],
   },
 
   {

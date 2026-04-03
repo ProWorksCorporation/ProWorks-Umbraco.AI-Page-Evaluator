@@ -25,19 +25,22 @@ public sealed class PageEvaluatorApiController : UmbracoApiController
     private readonly IAIProfileService _profileService;
     private readonly IAIContextService _contextService;
     private readonly IContentTypeService _contentTypeService;
+    private readonly IEvaluationCacheRepository _cacheRepository;
 
     public PageEvaluatorApiController(
         IPageEvaluationService evaluationService,
         IAIEvaluatorConfigService configService,
         IAIProfileService profileService,
         IAIContextService contextService,
-        IContentTypeService contentTypeService)
+        IContentTypeService contentTypeService,
+        IEvaluationCacheRepository cacheRepository)
     {
         _evaluationService = evaluationService;
         _configService = configService;
         _profileService = profileService;
         _contextService = contextService;
         _contentTypeService = contentTypeService;
+        _cacheRepository = cacheRepository;
     }
 
     // ---------------------------------------------------------------------------
@@ -96,6 +99,7 @@ public sealed class PageEvaluatorApiController : UmbracoApiController
         {
             // TODO: replace Guid.Empty with the authenticated back-office user's Id.
             AIEvaluatorConfig created = await _configService.CreateAsync(config, Guid.Empty, cancellationToken);
+            await _cacheRepository.DeleteByDocumentTypeAliasAsync(created.DocumentTypeAlias, cancellationToken);
             EvaluatorConfigResponse response = await ToResponseAsync(created, cancellationToken);
             return CreatedAtAction(nameof(GetConfigurationAsync), new { id = created.Id }, response);
         }
@@ -130,6 +134,7 @@ public sealed class PageEvaluatorApiController : UmbracoApiController
         {
             // TODO: replace Guid.Empty with the authenticated back-office user's Id.
             AIEvaluatorConfig updated = await _configService.UpdateAsync(config, Guid.Empty, cancellationToken);
+            await _cacheRepository.DeleteByDocumentTypeAliasAsync(updated.DocumentTypeAlias, cancellationToken);
             return Ok(await ToResponseAsync(updated, cancellationToken));
         }
         catch (InvalidOperationException ex)
@@ -140,6 +145,28 @@ public sealed class PageEvaluatorApiController : UmbracoApiController
         {
             return UnprocessableEntity(new { errors = new Dictionary<string, string[]> { [ex.ParamName ?? "config"] = [ex.Message] } });
         }
+    }
+
+    // ---------------------------------------------------------------------------
+    // POST /configurations/{id}/activate
+    // ---------------------------------------------------------------------------
+
+    /// <summary>
+    /// Promotes an inactive configuration to active for its document type.
+    /// All other configurations for the same document type are deactivated.
+    /// </summary>
+    [HttpPost("configurations/{id:guid}/activate")]
+    public async Task<IActionResult> ActivateConfigurationAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        AIEvaluatorConfig? existing = await _configService.GetByIdAsync(id, cancellationToken);
+        if (existing is null)
+            return NotFound(new { title = $"Evaluator configuration '{id}' not found." });
+
+        AIEvaluatorConfig updated = await _configService.UpdateAsync(existing, Guid.Empty, cancellationToken);
+        await _cacheRepository.DeleteByDocumentTypeAliasAsync(updated.DocumentTypeAlias, cancellationToken);
+        return Ok(await ToResponseAsync(updated, cancellationToken));
     }
 
     // ---------------------------------------------------------------------------
@@ -156,7 +183,28 @@ public sealed class PageEvaluatorApiController : UmbracoApiController
             return NotFound(new { title = $"Evaluator configuration '{id}' not found." });
 
         await _configService.DeleteAsync(id, cancellationToken);
+        await _cacheRepository.DeleteByDocumentTypeAliasAsync(existing.DocumentTypeAlias, cancellationToken);
         return Ok(new { message = "Deleted" });
+    }
+
+    // ---------------------------------------------------------------------------
+    // GET /evaluate/cached/{nodeId}
+    // ---------------------------------------------------------------------------
+
+    /// <summary>
+    /// Returns the cached evaluation report for a content node, if one exists.
+    /// Returns 404 when no cached result is available — the client should then call POST /evaluate.
+    /// </summary>
+    [HttpGet("evaluate/cached/{nodeId:guid}")]
+    public async Task<IActionResult> GetCachedEvaluationAsync(
+        Guid nodeId,
+        CancellationToken cancellationToken = default)
+    {
+        EvaluationCacheEntry? entry = await _cacheRepository.GetAsync(nodeId, cancellationToken);
+        if (entry is null)
+            return NotFound(new { title = $"No cached evaluation for node '{nodeId}'." });
+
+        return Ok(entry.Report.WithCachedAt(entry.CachedAt));
     }
 
     // ---------------------------------------------------------------------------
@@ -164,9 +212,10 @@ public sealed class PageEvaluatorApiController : UmbracoApiController
     // ---------------------------------------------------------------------------
 
     /// <summary>
-    /// Triggers an AI evaluation for a content page.
-    /// Returns 200 with a structured (or parse-failed) report, 404 when no active
-    /// evaluator is configured for the document type, or 502 on AI provider failure.
+    /// Triggers a fresh AI evaluation for a content page.
+    /// Saves the result to the evaluation cache (keyed on NodeId) and returns the report
+    /// with <c>cachedAt</c> set to the current UTC time.
+    /// Returns 404 when no active evaluator is configured, or 502 on AI provider failure.
     /// </summary>
     [HttpPost("evaluate")]
     public async Task<IActionResult> EvaluateAsync(
@@ -181,7 +230,16 @@ public sealed class PageEvaluatorApiController : UmbracoApiController
                 request.Properties,
                 cancellationToken);
 
-            return Ok(report);
+            DateTime cachedAt = DateTime.UtcNow;
+            await _cacheRepository.SaveAsync(new EvaluationCacheEntry
+            {
+                NodeId = request.NodeId,
+                DocumentTypeAlias = request.DocumentTypeAlias,
+                Report = report,
+                CachedAt = cachedAt,
+            }, cancellationToken);
+
+            return Ok(report.WithCachedAt(cachedAt));
         }
         catch (InvalidOperationException ex)
         {
@@ -280,12 +338,15 @@ public sealed class PageEvaluatorApiController : UmbracoApiController
             contextName = context?.Name;
         }
 
+        string? documentTypeName = _contentTypeService.Get(config.DocumentTypeAlias)?.Name;
+
         return new EvaluatorConfigResponse
         {
             Id = config.Id,
             Name = config.Name,
             Description = config.Description,
             DocumentTypeAlias = config.DocumentTypeAlias,
+            DocumentTypeName = documentTypeName,
             ProfileId = config.ProfileId,
             ProfileName = profileName,
             ContextId = config.ContextId,
@@ -347,6 +408,7 @@ public sealed class EvaluatorConfigResponse
     public string Name { get; init; } = string.Empty;
     public string? Description { get; init; }
     public string DocumentTypeAlias { get; init; } = string.Empty;
+    public string? DocumentTypeName { get; init; }
     public Guid ProfileId { get; init; }
     public string? ProfileName { get; init; }
     public Guid? ContextId { get; init; }

@@ -1,38 +1,45 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: N/A (initial template fill) → 1.0.0
-Bump rationale: MINOR — first concrete fill; all principles and sections are new material.
+Version change: 1.0.0 → 1.1.0
+Bump rationale: MINOR — new mandatory implementation rules added to Principles II and IV;
+  new "Umbraco-First Development" guidance added to Principle IV; TDD principle corrected
+  to reflect actual C# test stack (xUnit + NSubstitute) and honest status of TypeScript
+  client tests (aspirational); Development Workflow updated with Umbraco skills gate.
 
-Modified principles: None (initial fill; no prior principles existed)
-Added sections:
-  - Core Principles I–V (TypeScript Type Safety, TDD, Back-Office UX Consistency,
-    Umbraco Extension Architecture, Vite Build & Bundle Performance)
-  - Technology Stack & Constraints
-  - Development Workflow & Quality Gates
-  - Governance
+Modified principles:
+  - II. Test-Driven Development — corrected test tooling to reflect reality:
+      C# (xUnit + NSubstitute) is the active layer; Vitest/MSW/Playwright are aspirational
+      targets for the TypeScript client layer and MUST be established before that layer
+      grows further.
+  - IV. Umbraco Extension Architecture — materially expanded with hard-won rules:
+      - Umbraco skills agent MUST be consulted first for any extension work
+      - Lit MUST be imported from @umbraco-cms/backoffice/external/lit
+      - workspaceAction MUST declare kind: + api: (element-only is forbidden)
+      - Visibility MUST be controlled via UmbConditionBase conditions, not disable()
+      - API calls MUST use umbHttpClient from @umbraco-cms/backoffice/http-client
 
+Added sections: None
 Removed sections: None
 
 Templates reviewed:
   ✅ .specify/templates/plan-template.md
-       Constitution Check gate placeholder is intentionally generic; will be filled
-       per-feature using these principles. No structural change required.
+       Constitution Check gate (Principles I–V) updated to I–V reflecting no renumbering.
+       No structural change required.
   ✅ .specify/templates/spec-template.md
-       Requirements and success-criteria sections are compatible with the new
-       principles. No change required.
+       No changes needed; principle additions are implementation-level rules.
   ✅ .specify/templates/tasks-template.md
-       "Tests are OPTIONAL" note is template boilerplate; generated task lists for
-       this project MUST follow Principle II (TDD). No structural change required.
+       "Tests are OPTIONAL" note is template boilerplate; project MUST still follow
+       Principle II (TDD). No structural change required.
   ✅ .specify/templates/checklist-template.md
        Generic; no outdated references. No change required.
   ✅ .specify/templates/agent-file-template.md
-       Generic guidance doc template; no outdated references. No change required.
-  ✅ .claude/commands/*.md
-       No agent-specific (CLAUDE-only) references found that conflict with
-       generic guidance. No change required.
+       Generic; no outdated references. No change required.
 
-Deferred TODOs: None — all placeholders resolved.
+Deferred TODOs:
+  - TypeScript client tests (Vitest/MSW/Playwright): currently zero tests exist for the
+    client layer. These MUST be established before significant new TypeScript is added.
+    Tracked as a known gap in Principle II.
 -->
 
 # ProWorks Umbraco AI Page Evaluator Constitution
@@ -57,15 +64,28 @@ self-documenting, and enables confident refactoring as the CMS evolves.
 
 Tests MUST be written before implementation for all business logic and UI component
 behaviour. The red–green–refactor cycle is mandatory; no implementation task is considered
-complete until its accompanying tests exist and pass. Specifically:
+complete until its accompanying tests exist and pass.
 
-- **Unit tests** (Vitest) MUST cover all Umbraco context consumers, property editor logic,
-  AI evaluation utilities, and pure TypeScript helpers.
-- **Integration tests** using MSW (Mock Service Worker) are REQUIRED for any code that
-  calls the Umbraco Management API or an external AI provider endpoint.
-- **E2E tests** (Playwright via `@umbraco-cms/playwright-testhelpers`) are REQUIRED for
-  each user-facing extension point (property editors, dashboards, workspaces).
+**Current active test layer (C# — server-side):**
+
+- **Unit tests** (xUnit + NSubstitute) MUST cover all API controller actions, service
+  methods, domain model behaviour, and repository contracts.
+- The test project lives at `tests/ProWorks.Umbraco.AI.PageEvaluator.Tests/`.
+- Run with `dotnet test` from the repository root.
 - Test coverage MUST NOT decrease from the established baseline on any merge.
+
+**Aspirational test layer (TypeScript — client-side):**
+
+- The TypeScript client currently has zero automated tests. This is a known gap.
+- Before any significant new TypeScript feature is added, the following MUST be established:
+  - **Unit tests** (Vitest) for Umbraco context consumers, property editor logic,
+    AI evaluation utilities, and pure TypeScript helpers.
+  - **Integration tests** using MSW (Mock Service Worker) for code that calls the
+    Umbraco Management API or an external AI provider endpoint.
+  - **E2E tests** (Playwright via `@umbraco-cms/playwright-testhelpers`) for each
+    user-facing extension point (workspace actions, modals, config workspace).
+- Until these are established, extra care MUST be taken to test TypeScript changes
+  manually in the test site before merging.
 
 **Rationale**: Umbraco back-office extensions are hard to debug in isolation inside the
 CMS. Test-first discipline validates extension contracts before integration with the live
@@ -93,6 +113,13 @@ accessibility, and the perception of quality.
 
 ### IV. Umbraco Extension Architecture
 
+All Umbraco extension work MUST begin by consulting the `umbraco-cms-backoffice-skills`
+agent (via the `Skill` tool or the dedicated subagent). Before implementing any new
+manifest type, condition, workspace, property editor, context, or back-office pattern,
+invoke the relevant skill to get authoritative, up-to-date guidance from the Umbraco v17
+extension model. Do not rely on memory or prior examples alone — the extension API is
+large and the correct pattern is often non-obvious.
+
 All extension points MUST be declared as Umbraco extension manifests in the package entry
 point and MUST NOT mutate global state outside the manifest lifecycle. Specific rules:
 
@@ -107,9 +134,36 @@ point and MUST NOT mutate global state outside the manifest lifecycle. Specific 
   a custom Umbraco API controller — direct browser-to-AI-provider calls with credentials
   are forbidden.
 
+**Lit import rule (NON-NEGOTIABLE)**: All Lit primitives (`html`, `css`, `LitElement`,
+`customElement`, `state`, `property`, etc.) MUST be imported from
+`@umbraco-cms/backoffice/external/lit`. Importing from bare `lit` or `lit/decorators.js`
+is forbidden — Umbraco v17's browser import map has no entry for these specifiers,
+causing a runtime `Failed to resolve module specifier` error that is silent during build.
+
+**workspaceAction manifest rules**:
+- A `workspaceAction` manifest MUST declare both `kind:` and `api:`; using `element:`
+  alone (without `kind:`) is forbidden — Umbraco requires `kind` to resolve the renderer.
+  An element-only manifest is never instantiated and produces no visible button.
+- Workspace action visibility MUST be controlled via a `type: 'condition'` manifest
+  backed by a class extending `UmbConditionBase`. Setting `this.permitted = false`
+  removes the action from the DOM entirely. Using `disable()` on the action API is
+  forbidden for visibility — it greys the button but leaves it in the DOM.
+- `UmbConditionBase` MUST be imported from `@umbraco-cms/backoffice/extension-registry`.
+  Use `this.consumeContext(...)` inside the constructor for async permission checks.
+
+**API client rules**:
+- Use `umbHttpClient` from `@umbraco-cms/backoffice/http-client` (re-exported as
+  `apiClient` from `shared/api-client.ts`) for all Management API calls.
+- Do NOT import `createClient` from `@umbraco-cms/backoffice/external/backend-api` —
+  that package only exports the `client` singleton and generated service classes.
+- All API call functions MUST include `security: [{ scheme: 'bearer', type: 'http' }]`
+  so the client attaches the Bearer token on each request.
+
 **Rationale**: Manifest-driven, context-mediated architecture is the contract Umbraco v17
 defines for package authors. Violating it produces silent failures on upgrade and makes
-extensions incompatible with future Umbraco back-office changes.
+extensions incompatible with future back-office changes. The specific implementation rules
+above were learned through direct failures during development of this package — they are
+non-negotiable.
 
 ### V. Vite Build & Bundle Performance
 
@@ -125,6 +179,9 @@ runtime overhead. Specific rules:
   `.html` files to support rapid back-office development iteration.
 - Circular dependency warnings from Vite MUST be resolved before merge; they are treated
   as build failures.
+- The Vite `external` list does NOT need `/^lit/` or `/^@lit\//` entries — Lit is covered
+  by the existing `/^@umbraco-cms\//` rule (since Lit is consumed via
+  `@umbraco-cms/backoffice/external/lit`).
 
 **Rationale**: Umbraco back-office loads extensions as ES modules at runtime inside the
 editor shell. Oversized or incorrectly-externalised bundles inflate editor load time and
@@ -132,32 +189,40 @@ can cause symbol conflicts with CMS internals.
 
 ## Technology Stack & Constraints
 
-- **Language**: TypeScript 5.x (`strict: true`, `noUncheckedIndexedAccess: true`)
+- **Language**: TypeScript 5.x (`strict: true`, `noUncheckedIndexedAccess: true`) + C# .NET 10
 - **Build Tool**: Vite 6.x in `build.lib` mode, ES module output
 - **UI Framework**: Lit 3.x web components; React, Vue, and Angular MUST NOT appear in
-  extension code
+  extension code. Lit MUST be imported via `@umbraco-cms/backoffice/external/lit`.
 - **CMS Platform**: Umbraco v17; all APIs used MUST be published in the Umbraco v17
   package docs or the `@umbraco-cms/backoffice` typings
+- **Server**: ASP.NET Core (Umbraco RCL), EF Core 10.0.2, SQLite (dev) / SQL Server (prod)
 - **AI Integration**: Calls to AI providers MUST be proxied via a server-side Umbraco API
-  controller; direct browser-to-provider credential usage is forbidden
+  controller using `IAIChatClientFactory`; direct browser-to-provider credential usage is
+  forbidden
 - **Package Distribution**: Primary artefact is a NuGet package containing the compiled
   JS; npm publishing is secondary and optional
 - **Browser Support**: Evergreen browsers only — Chrome, Edge, Firefox, Safari (current
   and current−1)
 - **Accessibility**: WCAG 2.1 AA compliance is REQUIRED for all custom UI components
+- **Extension development guidance**: The `umbraco-cms-backoffice-skills` agent MUST be
+  the first resource consulted for any Umbraco-specific extension patterns
 
 ## Development Workflow & Quality Gates
 
 Every pull request MUST satisfy all of the following gates before merge is permitted:
 
-1. **Type check**: `tsc --noEmit` passes with zero errors
-2. **Lint**: ESLint with `@typescript-eslint/recommended-type-checked` passes with zero
+1. **Umbraco skills check**: For any new or modified Umbraco extension point, the
+   relevant `umbraco-cms-backoffice-skills` skill MUST have been consulted before
+   implementation. Note this in the PR description.
+2. **Type check**: `tsc --noEmit` passes with zero errors
+3. **Lint**: ESLint with `@typescript-eslint/recommended-type-checked` passes with zero
    warnings
-3. **Unit tests**: All Vitest unit tests pass; coverage MUST NOT decrease from baseline
-4. **Integration tests**: All MSW-based integration tests pass
-5. **E2E tests**: All Playwright tests pass against a local Umbraco v17 instance
+4. **C# unit tests**: `dotnet test` passes; all xUnit tests pass; coverage MUST NOT
+   decrease from baseline
+5. **TypeScript unit tests**: (aspirational — MUST be established before the client layer
+   grows significantly) All Vitest unit tests pass; coverage MUST NOT decrease from baseline
 6. **Build**: `vite build` completes without circular-dependency warnings or unresolved
-   external warnings
+   external warnings; `dotnet build` passes for all projects
 7. **Bundle size**: No single extension bundle exceeds 150 KB uncompressed
 8. **Constitution Check**: Reviewer explicitly confirms each Core Principle (I–V) is
    satisfied in the PR review comment
@@ -184,4 +249,4 @@ removes or redefines a Core Principle.
 All PRs and code reviews MUST verify compliance with each Core Principle. Complexity
 violations MUST be documented in the Complexity Tracking table of the relevant feature plan.
 
-**Version**: 1.0.0 | **Ratified**: 2026-03-30 | **Last Amended**: 2026-03-30
+**Version**: 1.1.0 | **Ratified**: 2026-03-30 | **Last Amended**: 2026-04-02

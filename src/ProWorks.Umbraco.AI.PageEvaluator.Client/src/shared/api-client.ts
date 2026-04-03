@@ -95,6 +95,14 @@ export async function updateConfiguration(
   return checkResult<EvaluatorConfigItem>(result);
 }
 
+export async function activateConfiguration(id: string): Promise<EvaluatorConfigItem> {
+  const result = await apiClient.post({
+    security: BEARER,
+    url: `${BASE}/configurations/${encodeURIComponent(id)}/activate`,
+  });
+  return checkResult<EvaluatorConfigItem>(result);
+}
+
 export async function deleteConfiguration(id: string): Promise<void> {
   const result = await apiClient.delete({
     security: BEARER,
@@ -107,9 +115,26 @@ export async function deleteConfiguration(id: string): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
-// Evaluation endpoint
+// Evaluation endpoints
 // ---------------------------------------------------------------------------
 
+/**
+ * Returns a previously cached evaluation for a node, or null if none exists.
+ * Call this first when opening the modal; only call evaluatePage when this returns null
+ * or when the user clicks "Re-run Evaluation".
+ */
+export async function getCachedEvaluation(
+  nodeId: string,
+): Promise<EvaluationReportResponse | null> {
+  const result = await apiClient.get({
+    security: BEARER,
+    url: `${BASE}/evaluate/cached/${encodeURIComponent(nodeId)}`,
+  });
+  if (result.response.status === 404) return null;
+  return checkResult<EvaluationReportResponse>(result);
+}
+
+/** Runs a fresh AI evaluation and saves the result to the server-side cache. */
 export async function evaluatePage(
   request: EvaluatePageRequest,
 ): Promise<EvaluationReportResponse> {

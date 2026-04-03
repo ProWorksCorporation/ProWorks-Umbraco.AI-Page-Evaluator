@@ -1,13 +1,13 @@
 import { html as l, nothing as c, css as h, state as s, customElement as f } from "@umbraco-cms/backoffice/external/lit";
-import { UmbLitElement as p } from "@umbraco-cms/backoffice/lit-element";
-import { a as g, d as v } from "./api-client-CgRHi73O.js";
-import "./evaluator-form.element-BbKnzl6p.js";
-var _ = Object.defineProperty, b = Object.getOwnPropertyDescriptor, u = (e, i, o, t) => {
-  for (var a = t > 1 ? void 0 : t ? b(i, o) : i, n = e.length - 1, d; n >= 0; n--)
-    (d = e[n]) && (a = (t ? d(i, o, a) : d(a)) || a);
-  return t && a && _(i, o, a), a;
+import { UmbLitElement as v } from "@umbraco-cms/backoffice/lit-element";
+import { a as p, b as _, d as g } from "./entry-point-8sa3rU5d.js";
+import "./evaluator-form.element-D9PCb31F.js";
+var b = Object.defineProperty, m = Object.getOwnPropertyDescriptor, u = (t, i, a, o) => {
+  for (var e = o > 1 ? void 0 : o ? m(i, a) : i, n = t.length - 1, d; n >= 0; n--)
+    (d = t[n]) && (e = (o ? d(i, a, e) : d(e)) || e);
+  return o && e && b(i, a, e), e;
 };
-let r = class extends p {
+let r = class extends v {
   constructor() {
     super(...arguments), this._configs = [], this._loading = !1, this._error = null, this._view = "list", this._editId = null;
   }
@@ -17,8 +17,8 @@ let r = class extends p {
   async _loadConfigs() {
     this._loading = !0, this._error = null;
     try {
-      const e = await g();
-      this._configs = [...e.items];
+      const t = await p();
+      this._configs = [...t.items];
     } catch {
       this._error = "Failed to load evaluator configurations.";
     } finally {
@@ -26,25 +26,32 @@ let r = class extends p {
     }
   }
   _groupByDocType() {
-    const e = /* @__PURE__ */ new Map();
+    const t = /* @__PURE__ */ new Map();
     for (const i of this._configs) {
-      const o = e.get(i.documentTypeAlias) ?? [];
-      o.push(i), e.set(i.documentTypeAlias, o);
+      const a = t.get(i.documentTypeAlias) ?? [];
+      a.push(i), t.set(i.documentTypeAlias, a);
     }
-    for (const [i, o] of e)
-      o.sort((t, a) => t.isActive !== a.isActive ? t.isActive ? -1 : 1 : a.dateModified.localeCompare(t.dateModified)), e.set(i, o);
-    return e;
+    for (const [i, a] of t)
+      a.sort((o, e) => o.isActive !== e.isActive ? o.isActive ? -1 : 1 : e.dateModified.localeCompare(o.dateModified)), t.set(i, a);
+    return t;
   }
-  async _handleDelete(e) {
+  async _handleActivate(t) {
+    try {
+      await _(t), await this._loadConfigs();
+    } catch {
+      this._error = "Failed to activate the evaluator configuration.";
+    }
+  }
+  async _handleDelete(t) {
     if (confirm("Are you sure you want to delete this evaluator configuration?"))
       try {
-        await v(e), this._configs = this._configs.filter((i) => i.id !== e);
+        await g(t), this._configs = this._configs.filter((i) => i.id !== t);
       } catch {
         this._error = "Failed to delete the evaluator configuration.";
       }
   }
-  _handleEdit(e) {
-    this._editId = e, this._view = "form";
+  _handleEdit(t) {
+    this._editId = t, this._view = "form";
   }
   _handleCreate() {
     this._editId = null, this._view = "form";
@@ -76,7 +83,7 @@ let r = class extends p {
       `;
     if (this._loading)
       return l`<div id="content"><uui-loader></uui-loader></div>`;
-    const e = this._groupByDocType();
+    const t = this._groupByDocType();
     return l`
       <div id="content">
         <div class="list-header">
@@ -91,9 +98,11 @@ let r = class extends p {
 
         ${this._error ? l`<uui-tag color="danger">${this._error}</uui-tag>` : c}
 
-        ${e.size === 0 ? l`<p>No evaluator configurations found. Create one to get started.</p>` : Array.from(e.entries()).map(
-      ([i, o]) => l`
-                <uui-box headline=${i}>
+        ${t.size === 0 ? l`<p>No evaluator configurations found. Create one to get started.</p>` : Array.from(t.entries()).map(
+      ([i, a]) => {
+        var o;
+        return l`
+                <uui-box headline=${((o = a[0]) == null ? void 0 : o.documentTypeName) ?? i}>
                   <uui-table>
                     <uui-table-head>
                       <uui-table-head-cell>Name</uui-table-head-cell>
@@ -101,37 +110,44 @@ let r = class extends p {
                       <uui-table-head-cell>Status</uui-table-head-cell>
                       <uui-table-head-cell>Actions</uui-table-head-cell>
                     </uui-table-head>
-                    ${o.map(
-        (t) => l`
+                    ${a.map(
+          (e) => l`
                         <uui-table-row>
                           <uui-table-cell>
-                            <strong>${t.name}</strong>
-                            ${t.description ? l`<br /><small>${t.description}</small>` : c}
+                            <strong>${e.name}</strong>
+                            ${e.description ? l`<br /><small>${e.description}</small>` : c}
                           </uui-table-cell>
-                          <uui-table-cell>${t.profileName ?? t.profileId}</uui-table-cell>
+                          <uui-table-cell>${e.profileName ?? e.profileId}</uui-table-cell>
                           <uui-table-cell>
-                            ${t.isActive ? l`<uui-tag color="positive" look="primary">Active</uui-tag>` : l`<uui-tag look="secondary">Inactive</uui-tag>`}
+                            ${e.isActive ? l`<uui-tag color="positive" look="primary">Active</uui-tag>` : l`<uui-tag look="secondary">Inactive</uui-tag>`}
                           </uui-table-cell>
                           <uui-table-cell>
+                            ${e.isActive ? c : l`<uui-button
+                                  look="secondary"
+                                  label="Activate"
+                                  @click=${() => this._handleActivate(e.id)}>
+                                  Activate
+                                </uui-button>`}
                             <uui-button
                               look="secondary"
                               label="Edit"
-                              @click=${() => this._handleEdit(t.id)}>
+                              @click=${() => this._handleEdit(e.id)}>
                               Edit
                             </uui-button>
                             <uui-button
                               look="danger"
                               label="Delete"
-                              @click=${() => this._handleDelete(t.id)}>
+                              @click=${() => this._handleDelete(e.id)}>
                               Delete
                             </uui-button>
                           </uui-table-cell>
                         </uui-table-row>
                       `
-      )}
+        )}
                   </uui-table>
                 </uui-box>
-              `
+              `;
+      }
     )}
       </div>
     `;
@@ -202,4 +218,4 @@ r = u([
 export {
   r as EvaluatorConfigWorkspaceElement
 };
-//# sourceMappingURL=evaluator-config-workspace.element-BkdTK0ec.js.map
+//# sourceMappingURL=evaluator-config-workspace.element-BLppKR9l.js.map

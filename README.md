@@ -8,7 +8,8 @@ An Umbraco 17 backoffice package that adds an **Evaluate Page** button to the co
 
 - **One-click evaluation** from the document workspace toolbar
 - **Structured report**: per-check pass / warn / fail status with explanations, overall score, and a suggestions summary
-- **Configurable per document type**: create named evaluator configurations with custom prompts in the Umbraco.AI Add-ons section
+- **Evaluation caching**: results are cached per content node — re-opening the modal shows the previous result instantly with a timestamp; a **Re-run Evaluation** button forces a fresh AI call
+- **Configurable per document type**: create named evaluator configurations with custom prompts in the Umbraco.AI Add-ons section; activate, edit, or delete configurations from the list view
 - **Prompt Builder**: guided UI for generating evaluation prompts from document type properties and checklist categories
 - **AI provider agnostic**: works with any profile configured in Umbraco.AI (Anthropic, OpenAI, etc.)
 - **Rich property resolution**: uses Umbraco's Content Delivery API builder to send properly resolved property values — media alt text, block content, rich text as plain text, MNTP references — rather than raw editor format
@@ -59,25 +60,38 @@ Open any published content node of the configured document type. An **Evaluate P
 Editor clicks "Evaluate Page"
         │
         ▼
-Workspace action collects draft property values
+Modal opens → GET /evaluate/cached/{nodeId}
         │
-        ▼
-POST /umbraco/management/api/v1/page-evaluator/evaluate
+        ├─ Cache hit → renders report immediately with "Last evaluated" timestamp
+        │              "Re-run Evaluation" button available to force a fresh call
         │
-        ├─ Fetches the active evaluator config for the document type
-        ├─ Resolves the AI profile and creates a chat client
-        ├─ Resolves published property values via IApiContentBuilder
-        │   (media → metadata, rich text → plain text, blocks → structured JSON)
-        ├─ Overlays simple draft text values for unsaved edits
-        ├─ Builds system prompt (config prompt + optional context + JSON format instructions)
-        └─ Calls the AI model
+        └─ Cache miss (or Re-run) →
                 │
                 ▼
-        Parses JSON response → EvaluationReport
+        Workspace action collects draft property values
                 │
                 ▼
-        Modal renders: score pills · suggestions · attention items · passing items
+        POST /umbraco/management/api/v1/page-evaluator/evaluate
+                │
+                ├─ Fetches the active evaluator config for the document type
+                ├─ Resolves the AI profile and creates a chat client
+                ├─ Resolves published property values via IApiContentBuilder
+                │   (media → metadata, rich text → plain text, blocks → structured JSON)
+                ├─ Overlays simple draft text values for unsaved edits
+                ├─ Builds system prompt (config prompt + optional context + JSON format instructions)
+                └─ Calls the AI model
+                        │
+                        ▼
+                Parses JSON response → EvaluationReport
+                        │
+                        ▼
+                Saved to umbracoAIEvaluationCache (keyed on NodeId)
+                        │
+                        ▼
+                Modal renders: score pills · suggestions · attention items · passing items
 ```
+
+> Cache is automatically cleared for all nodes of a document type whenever its evaluator configuration is created, updated, activated, or deleted.
 
 ---
 
@@ -98,7 +112,7 @@ src/
       prompt-builder/                             # AI prompt generation UI
       workspace-action/                           # "Evaluate Page" toolbar button
   ProWorks.Umbraco.AI.PageEvaluator.Core/         # Domain models and interfaces
-  ProWorks.Umbraco.AI.PageEvaluator.Persistence/  # EF Core DbContext and entities
+  ProWorks.Umbraco.AI.PageEvaluator.Persistence/  # EF Core DbContext, entities, and cache repository
   ProWorks.Umbraco.AI.PageEvaluator.Persistence.Sqlite/    # SQLite migrations
   ProWorks.Umbraco.AI.PageEvaluator.Persistence.SqlServer/ # SQL Server migrations
   ProWorks.Umbraco.AI.PageEvaluator.TestSite/     # Umbraco 17 test site
