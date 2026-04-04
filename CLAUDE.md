@@ -106,7 +106,7 @@ dotnet ef migrations add <Name> \
 - The modal checks `GET /evaluate/cached/{nodeId}` on open; falls through to `POST /evaluate` only when no cache entry exists or when the user clicks **Re-run Evaluation**
 
 ### Package Version Constraints
-- `Microsoft.Extensions.AI.*` must all be pinned to the same version (currently `10.4.1`) — mismatches between `Microsoft.Extensions.AI` and `Abstractions` cause `TypeLoadException: FunctionApprovalRequestContent`
+- `Microsoft.Extensions.AI.*` must all be pinned to the same version (currently `10.4.1`) — mismatches between `Microsoft.Extensions.AI` and `Abstractions` cause `TypeLoadException: FunctionApprovalRequestContent`. The package csproj pins **both** `Microsoft.Extensions.AI` and `Microsoft.Extensions.AI.Abstractions` to `10.4.1` to raise the NuGet floor for consumers (root cause: `Umbraco.AI.Core` only declares `>= 10.2.0` for the main package, allowing 10.3.0 to be resolved alongside 10.4.1 Abstractions)
 - `Umbraco.AI.OpenAI 1.1.3` is **excluded from the TestSite** — its DLL was compiled against a private OpenAI SDK build that has `GetResponsesClient(string modelId)`, a signature that doesn't exist in the public `OpenAI 2.9.1` release (which has `GetResponsesClient()` with no parameter). Re-add when a compatible `Umbraco.AI.OpenAI` version ships. Use Anthropic profiles for all testing.
 - EF Core must be `10.0.2` (required by `Umbraco.Cms.Persistence.EFCore 17.2.2`)
 
