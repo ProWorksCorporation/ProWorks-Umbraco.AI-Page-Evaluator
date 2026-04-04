@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using ProWorks.Umbraco.AI.PageEvaluator.Persistence.Cache;
 using ProWorks.Umbraco.AI.PageEvaluator.Persistence.Evaluators;
+using Umbraco.Cms.Persistence.EFCore;
 
 namespace ProWorks.Umbraco.AI.PageEvaluator.Persistence;
 
@@ -20,6 +21,29 @@ public sealed class UmbracoAIPageEvaluatorDbContext : DbContext
 
     public DbSet<AIEvaluatorConfigEntity> EvaluatorConfigs => Set<AIEvaluatorConfigEntity>();
     public DbSet<EvaluationCacheEntity> EvaluationCache => Set<EvaluationCacheEntity>();
+
+    /// <summary>
+    /// Configures the EFCore options for the correct database provider, pointing migrations
+    /// at the appropriate provider-specific assembly. Called from the composer so consumers
+    /// don't need to configure anything in Program.cs.
+    /// </summary>
+    internal static void ConfigureProvider(
+        DbContextOptionsBuilder options,
+        string? connectionString,
+        string? providerName)
+    {
+        switch (providerName)
+        {
+            case Constants.ProviderNames.SQLServer:
+                options.UseSqlServer(connectionString,
+                    o => o.MigrationsAssembly("ProWorks.Umbraco.AI.PageEvaluator.Persistence.SqlServer"));
+                break;
+            default: // SQLite (Constants.ProviderNames.SQLLite = "Microsoft.Data.Sqlite")
+                options.UseSqlite(connectionString,
+                    o => o.MigrationsAssembly("ProWorks.Umbraco.AI.PageEvaluator.Persistence.Sqlite"));
+                break;
+        }
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

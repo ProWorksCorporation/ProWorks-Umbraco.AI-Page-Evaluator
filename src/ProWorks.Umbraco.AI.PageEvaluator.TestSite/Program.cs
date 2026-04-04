@@ -1,12 +1,9 @@
-using ProWorks.Umbraco.AI.PageEvaluator.Persistence.Sqlite;
-
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 builder.CreateUmbracoBuilder()
     .AddBackOffice()
     .AddWebsite()
     .AddComposers()
-    .AddPageEvaluatorSqlite()
     .Build();
 
 WebApplication app = builder.Build();

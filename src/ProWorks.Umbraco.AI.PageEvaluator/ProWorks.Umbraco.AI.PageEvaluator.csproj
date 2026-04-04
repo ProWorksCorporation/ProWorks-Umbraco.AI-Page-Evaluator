@@ -12,7 +12,7 @@
     <AddRazorSupportForMvc>false</AddRazorSupportForMvc>
     <!-- NuGet packaging -->
     <PackageId>ProWorks.Umbraco.AI.PageEvaluator</PackageId>
-    <Version>1.0.0</Version>
+    <Version>1.0.5</Version>
     <Authors>ProWorks, Jason Prothero</Authors>
     <Company>ProWorks Corporation</Company>
     <PackageTags>umbraco;umbraco-cms;umbraco-ai;ai;page-evaluator;backoffice</PackageTags>
@@ -27,8 +27,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ProWorks.Umbraco.AI.PageEvaluator.Core\ProWorks.Umbraco.AI.PageEvaluator.Core.csproj" />
-    <ProjectReference Include="..\ProWorks.Umbraco.AI.PageEvaluator.Persistence\ProWorks.Umbraco.AI.PageEvaluator.Persistence.csproj" />
+    <!-- PrivateAssets="all" suppresses these from the nuspec dependency list; TargetsForTfmSpecificBuildOutput below bundles their DLLs into lib/ -->
+    <ProjectReference Include="..\ProWorks.Umbraco.AI.PageEvaluator.Core\ProWorks.Umbraco.AI.PageEvaluator.Core.csproj" PrivateAssets="all" />
+    <ProjectReference Include="..\ProWorks.Umbraco.AI.PageEvaluator.Persistence\ProWorks.Umbraco.AI.PageEvaluator.Persistence.csproj" PrivateAssets="all" />
+    <ProjectReference Include="..\ProWorks.Umbraco.AI.PageEvaluator.Persistence.Sqlite\ProWorks.Umbraco.AI.PageEvaluator.Persistence.Sqlite.csproj" PrivateAssets="all" />
+    <ProjectReference Include="..\ProWorks.Umbraco.AI.PageEvaluator.Persistence.SqlServer\ProWorks.Umbraco.AI.PageEvaluator.Persistence.SqlServer.csproj" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>
@@ -47,6 +50,32 @@
     <PackageReference Include="Umbraco.AI.Startup" Version="[1.7.0,2.0.0)" />
     <!-- IChatClient — registered by Umbraco.AI in the DI container -->
     <PackageReference Include="Microsoft.Extensions.AI.Abstractions" Version="10.4.1" />
+    <!-- EF Core providers: bundled DLLs need these at runtime in the consuming app -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.2" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.2" />
   </ItemGroup>
+
+  <!-- TargetsForTfmSpecificBuildOutput is the official NuGet extensibility point for adding extra DLLs to lib/ -->
+  <PropertyGroup>
+    <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);IncludeProjectReferenceAssemblies</TargetsForTfmSpecificBuildOutput>
+  </PropertyGroup>
+
+  <Target Name="IncludeProjectReferenceAssemblies">
+    <ItemGroup>
+      <BuildOutputInPackage Include="$(TargetDir)ProWorks.Umbraco.AI.PageEvaluator.Core.dll">
+        <FinalOutputPath>$(TargetDir)ProWorks.Umbraco.AI.PageEvaluator.Core.dll</FinalOutputPath>
+      </BuildOutputInPackage>
+      <BuildOutputInPackage Include="$(TargetDir)ProWorks.Umbraco.AI.PageEvaluator.Persistence.dll">
+        <FinalOutputPath>$(TargetDir)ProWorks.Umbraco.AI.PageEvaluator.Persistence.dll</FinalOutputPath>
+      </BuildOutputInPackage>
+      <!-- Migration assemblies — ConfigureProvider references these by name at runtime -->
+      <BuildOutputInPackage Include="$(TargetDir)ProWorks.Umbraco.AI.PageEvaluator.Persistence.Sqlite.dll">
+        <FinalOutputPath>$(TargetDir)ProWorks.Umbraco.AI.PageEvaluator.Persistence.Sqlite.dll</FinalOutputPath>
+      </BuildOutputInPackage>
+      <BuildOutputInPackage Include="$(TargetDir)ProWorks.Umbraco.AI.PageEvaluator.Persistence.SqlServer.dll">
+        <FinalOutputPath>$(TargetDir)ProWorks.Umbraco.AI.PageEvaluator.Persistence.SqlServer.dll</FinalOutputPath>
+      </BuildOutputInPackage>
+    </ItemGroup>
+  </Target>
 
 </Project>

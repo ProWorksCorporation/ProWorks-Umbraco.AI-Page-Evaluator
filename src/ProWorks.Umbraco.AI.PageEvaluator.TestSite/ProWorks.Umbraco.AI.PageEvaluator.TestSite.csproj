@@ -26,7 +26,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ProWorks.Umbraco.AI.PageEvaluator\ProWorks.Umbraco.AI.PageEvaluator.csproj" />
+    <!-- Both migration assemblies must be present to match what the NuGet package bundles in lib/net10.0/ -->
     <ProjectReference Include="..\ProWorks.Umbraco.AI.PageEvaluator.Persistence.Sqlite\ProWorks.Umbraco.AI.PageEvaluator.Persistence.Sqlite.csproj" />
+    <ProjectReference Include="..\ProWorks.Umbraco.AI.PageEvaluator.Persistence.SqlServer\ProWorks.Umbraco.AI.PageEvaluator.Persistence.SqlServer.csproj" />
   </ItemGroup>
 
   <ItemGroup>
