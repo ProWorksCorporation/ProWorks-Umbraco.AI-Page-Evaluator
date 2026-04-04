@@ -28,7 +28,17 @@ Adds an **Evaluate Page** workspace action to the Umbraco content editor. Clicki
 - Cached results with timestamp and one-click re-evaluation
 - Workspace action hidden automatically on unconfigured document types
 
+## About ProWorks
+
+[ProWorks Corporation](https://www.proworks.com/umbraco-platinum-partner/) is an **Umbraco Platinum Partner** based in Corvallis, Oregon. We have been building and maintaining Umbraco implementations since the early versions of the platform — certified across Umbraco 7 through 17 LTS — and we carry three Umbraco MVPs on staff. We work with organizations across regulated industries including credit unions, insurers, public agencies, and manufacturers. Our approach is consultative: we will meet you where you are and recommend the right next step, even if that means doing less.
+
+This package evaluates individual pages on demand. If you're interested in understanding how AI systems interpret your organization's content across your **entire website**, ProWorks offers a site-wide **Content Evaluator service** — delivering an AI Perspective Report on your positioning, messaging, and audience signals based on your publicly available content.
+
+Learn more at [proworks.com/ai](https://www.proworks.com/ai) or [contact us](https://www.proworks.com/contact) to discuss your project.
+
 ## Links
 
+- [NuGet package](https://www.nuget.org/packages/ProWorks.Umbraco.AI.PageEvaluator)
 - [Source & full documentation](https://github.com/ProWorksCorporation/ProWorks-Umbraco.AI-Page-Evaluator)
+- [ProWorks AI services](https://www.proworks.com/ai)
 - [ProWorks Corporation](https://www.proworks.com)
