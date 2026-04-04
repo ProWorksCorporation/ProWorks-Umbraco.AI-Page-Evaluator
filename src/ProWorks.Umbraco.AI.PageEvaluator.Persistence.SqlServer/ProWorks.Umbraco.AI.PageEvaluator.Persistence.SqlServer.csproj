@@ -8,6 +8,7 @@
     <RootNamespace>ProWorks.Umbraco.AI.PageEvaluator.Persistence.SqlServer</RootNamespace>
     <AssemblyName>ProWorks.Umbraco.AI.PageEvaluator.Persistence.SqlServer</AssemblyName>
     <Description>SQL Server EFCore migrations for the ProWorks Umbraco AI Page Evaluator package.</Description>
+    <IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>

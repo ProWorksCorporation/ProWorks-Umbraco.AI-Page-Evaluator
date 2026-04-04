@@ -8,6 +8,7 @@
     <RootNamespace>ProWorks.Umbraco.AI.PageEvaluator.Persistence.Sqlite</RootNamespace>
     <AssemblyName>ProWorks.Umbraco.AI.PageEvaluator.Persistence.Sqlite</AssemblyName>
     <Description>SQLite EFCore migrations for the ProWorks Umbraco AI Page Evaluator package.</Description>
+    <IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>

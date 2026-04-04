@@ -8,6 +8,7 @@
     <RootNamespace>ProWorks.Umbraco.AI.PageEvaluator</RootNamespace>
     <AssemblyName>ProWorks.Umbraco.AI.PageEvaluator.Core</AssemblyName>
     <Description>Domain interfaces and models for the ProWorks Umbraco AI Page Evaluator package.</Description>
+    <IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>

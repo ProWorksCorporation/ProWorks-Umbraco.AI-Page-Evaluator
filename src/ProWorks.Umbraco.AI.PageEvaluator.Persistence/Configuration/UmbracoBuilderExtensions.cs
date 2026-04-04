@@ -6,6 +6,7 @@ using ProWorks.Umbraco.AI.PageEvaluator.Persistence.Evaluators;
 using ProWorks.Umbraco.AI.PageEvaluator.Persistence.Notifications;
 using Umbraco.Cms.Core.DependencyInjection;
 using Umbraco.Cms.Core.Notifications;
+using Umbraco.Extensions;
 
 namespace ProWorks.Umbraco.AI.PageEvaluator.Persistence.Configuration;
 
@@ -22,6 +23,12 @@ public static class UmbracoBuilderExtensions
     public static IUmbracoBuilder AddUmbracoAIPageEvaluatorPersistence(
         this IUmbracoBuilder builder)
     {
+        // Register the DbContext with auto-detection of SQLite vs SQL Server from the configured
+        // Umbraco connection string — matches the pattern used by Umbraco.AI packages.
+        builder.Services.AddUmbracoDbContext<UmbracoAIPageEvaluatorDbContext>(
+            (options, connectionString, providerName, _) =>
+                UmbracoAIPageEvaluatorDbContext.ConfigureProvider(options, connectionString, providerName));
+
         // Register repositories as Singleton — IEFCoreScopeProvider handles internal lifetimes.
         builder.Services.AddSingleton<IAIEvaluatorConfigRepository, EFCoreAIEvaluatorConfigRepository>();
         builder.Services.AddSingleton<IEvaluationCacheRepository, EFCoreEvaluationCacheRepository>();
