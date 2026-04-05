@@ -1,8 +1,10 @@
-# ProWorks-Umbraco-AI-Page-Evaluator Development Guidelines
+﻿# ProWorks-Umbraco-AI-Page-Evaluator Development Guidelines
 
-Last updated: 2026-04-02 (rev 4)
+Last updated: 2026-04-04 (rev 4)
 
 ## Active Technologies
+- C# .NET 10, TypeScript 5.x (strict: true) + Umbraco CMS 17.2.2, Umbraco.AI 1.7.0 (Anthropic 1.2.2), EF Core 10.0.2, Microsoft.Extensions.AI 10.4.1, Lit 3.x via @umbraco-cms/backoffice/external/lit (002-code-review-fixes)
+- SQLite (dev), SQL Server (prod) via EF Core; evaluation cache in `umbracoAIEvaluationCache` table (002-code-review-fixes)
 
 - **Client**: TypeScript 5.x `strict: true`, Vite build, Lit web components
 - **Server**: C# .NET 10, Umbraco CMS 17.2.2, EF Core 10.0.2
