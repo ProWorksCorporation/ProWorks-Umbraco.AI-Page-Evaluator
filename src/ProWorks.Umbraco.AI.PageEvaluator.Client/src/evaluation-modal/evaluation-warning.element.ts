@@ -1,11 +1,12 @@
-import { LitElement, html, css, type TemplateResult, customElement, property } from '@umbraco-cms/backoffice/external/lit';
+import { html, css, type TemplateResult, customElement, property } from '@umbraco-cms/backoffice/external/lit';
+import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 
 /**
  * Parse-failure warning banner shown when the AI response could not be structured.
  * Displays the raw AI response and a link to the evaluator configuration.
  */
 @customElement('page-evaluator-warning')
-export class EvaluationWarningElement extends LitElement {
+export class EvaluationWarningElement extends UmbLitElement {
   static override styles = css`
     :host {
       display: block;
@@ -44,10 +45,10 @@ export class EvaluationWarningElement extends LitElement {
       <div class="warning-banner">
         <p>
           <uui-icon name="icon-alert"></uui-icon>
-          The AI response could not be formatted as a structured report. Raw output is shown below.
+          ${this.localize.term('evaluatePage_parseFailedWarning')}
         </p>
         <p>
-          <a href="/umbraco/section/ai/page-evaluator">Refine the evaluator prompt</a>
+          <a href="/umbraco/section/ai/page-evaluator">${this.localize.term('evaluatePage_parseFailedLinkText')}</a>
           to improve structured output.
         </p>
       </div>

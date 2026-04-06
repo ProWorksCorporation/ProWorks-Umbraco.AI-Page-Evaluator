@@ -1,4 +1,5 @@
-import { LitElement, html, css, nothing, type TemplateResult, customElement, property } from '@umbraco-cms/backoffice/external/lit';
+import { html, css, nothing, type TemplateResult, customElement, property } from '@umbraco-cms/backoffice/external/lit';
+import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import type { EvaluationReportResponse, CheckResult, CheckStatus } from '../shared/types.js';
 
 /**
@@ -14,7 +15,7 @@ import type { EvaluationReportResponse, CheckResult, CheckStatus } from '../shar
  * regardless of surrounding font context.
  */
 @customElement('page-evaluator-report')
-export class EvaluationReportElement extends LitElement {
+export class EvaluationReportElement extends UmbLitElement {
   static override styles = css`
     :host {
       display: block;
@@ -154,17 +155,17 @@ export class EvaluationReportElement extends LitElement {
       ${total > 0
         ? html`
             <div class="score-row">
-              <span class="score-total">${total} checks</span>
+              <span class="score-total">${total} ${this.localize.term('evaluatePage_reportChecks')}</span>
               <span class="score-pill score-pill--pass">
-                <uui-icon name="icon-check"></uui-icon>${passCount} passed
+                <uui-icon name="icon-check"></uui-icon>${passCount} ${this.localize.term('evaluatePage_reportPassed')}
               </span>
               ${warnCount > 0 ? html`
                 <span class="score-pill score-pill--warn">
-                  <uui-icon name="icon-alert"></uui-icon>${warnCount} warning${warnCount !== 1 ? 's' : ''}
+                  <uui-icon name="icon-alert"></uui-icon>${warnCount} ${warnCount !== 1 ? this.localize.term('evaluatePage_reportWarnings') : this.localize.term('evaluatePage_reportWarning')}
                 </span>` : nothing}
               ${failCount > 0 ? html`
                 <span class="score-pill score-pill--fail">
-                  <uui-icon name="icon-wrong"></uui-icon>${failCount} failed
+                  <uui-icon name="icon-wrong"></uui-icon>${failCount} ${this.localize.term('evaluatePage_reportFailed')}
                 </span>` : nothing}
             </div>
           `
@@ -172,7 +173,7 @@ export class EvaluationReportElement extends LitElement {
 
       ${suggestions
         ? html`
-            <uui-box headline="Suggestions" class="suggestions-box">
+            <uui-box headline=${this.localize.term('evaluatePage_reportSuggestions')} class="suggestions-box">
               ${this._renderSuggestions(suggestions)}
             </uui-box>
           `
@@ -180,7 +181,7 @@ export class EvaluationReportElement extends LitElement {
 
       ${attentionChecks.length > 0
         ? html`
-            <p class="section-title">Items Needing Attention (${attentionChecks.length})</p>
+            <p class="section-title">${this.localize.term('evaluatePage_reportAttentionItems')} (${attentionChecks.length})</p>
             <ul class="check-list">
               ${attentionChecks.map((c) => this._renderCheck(c))}
             </ul>
@@ -189,7 +190,7 @@ export class EvaluationReportElement extends LitElement {
 
       ${passingChecks.length > 0
         ? html`
-            <p class="section-title">Passing Items (${passingChecks.length})</p>
+            <p class="section-title">${this.localize.term('evaluatePage_reportPassingItems')} (${passingChecks.length})</p>
             <ul class="check-list">
               ${passingChecks.map((c) => this._renderCheck(c))}
             </ul>

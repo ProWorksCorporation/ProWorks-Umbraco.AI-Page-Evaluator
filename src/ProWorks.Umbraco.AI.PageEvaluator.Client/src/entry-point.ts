@@ -29,6 +29,19 @@ const UAI_ADDONS_MENU_ALIAS = 'Uai.Menu.Addons';
  */
 const manifests: UmbExtensionManifest[] = [
   // ---------------------------------------------------------------------------
+  // Localization: English default translations for all package UI strings.
+  // ---------------------------------------------------------------------------
+  {
+    type: 'localization',
+    alias: 'ProWorks.AI.PageEvaluator.Localization.En',
+    name: 'Page Evaluator English Localization',
+    meta: {
+      culture: 'en',
+    },
+    js: () => import('./localization/en.js'),
+  },
+
+  // ---------------------------------------------------------------------------
   // US1 — Content Editor Evaluates a Page
   // ---------------------------------------------------------------------------
 

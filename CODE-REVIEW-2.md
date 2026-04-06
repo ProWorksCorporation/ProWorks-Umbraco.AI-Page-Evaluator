@@ -50,7 +50,9 @@ The file also duplicates logic from both `page-evaluator-action.api.ts` (propert
 
 ## MEDIUM Priority — Best Practice Issues
 
-### 3. `AIChatBuilder`: missing `.WithName()` for audit/telemetry
+### 3. [X] `AIChatBuilder`: missing `.WithName()` for audit/telemetry
+
+[COMPLETE April 6th — implemented alongside #1]
 
 **File:** `src/ProWorks.Umbraco.AI.PageEvaluator/Services/PageEvaluationService.cs` lines 98-104
 
@@ -62,7 +64,9 @@ The builder call uses `.WithAlias("proworks-page-evaluator")` but not `.WithName
 
 ---
 
-### 4. Several Lit components extend `LitElement` instead of `UmbLitElement`
+### 4. [X] Several Lit components extend `LitElement` instead of `UmbLitElement`
+
+[COMPLETE April 5th — switched 3 components to UmbLitElement, created en.ts localization file, registered localization manifest, replaced all hardcoded strings with this.localize.term() calls, deleted unused localization.ts]
 
 **Files:**
 - `src/ProWorks.Umbraco.AI.PageEvaluator.Client/src/evaluation-modal/evaluation-report.element.ts` line 17
