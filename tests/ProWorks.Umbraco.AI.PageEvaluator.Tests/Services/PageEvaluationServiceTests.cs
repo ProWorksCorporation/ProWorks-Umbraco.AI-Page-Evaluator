@@ -23,6 +23,7 @@ public class PageEvaluationServiceTests
 {
     private readonly IAIEvaluatorConfigService _configService = Substitute.For<IAIEvaluatorConfigService>();
     private readonly IAIContextService _contextService = Substitute.For<IAIContextService>();
+    private readonly IAIContextProcessor _contextProcessor = Substitute.For<IAIContextProcessor>();
     private readonly IAIChatService _chatService = Substitute.For<IAIChatService>();
     private readonly IUmbracoContextAccessor _contextAccessor = Substitute.For<IUmbracoContextAccessor>();
     private readonly IApiContentBuilder _contentBuilder = Substitute.For<IApiContentBuilder>();
@@ -35,7 +36,7 @@ public class PageEvaluationServiceTests
         IUmbracoContext? nullCtx = null;
         _contextAccessor.TryGetUmbracoContext(out nullCtx).Returns(false);
 
-        _sut = new PageEvaluationService(_configService, _contextService, _chatService, _contextAccessor, _contentBuilder, _logger);
+        _sut = new PageEvaluationService(_configService, _contextService, _contextProcessor, _chatService, _contextAccessor, _contentBuilder, _logger);
     }
 
     // ---------------------------------------------------------------------------
@@ -220,7 +221,7 @@ public class PageEvaluationServiceTests
     // ---------------------------------------------------------------------------
 
     [Fact]
-    public async Task EvaluateAsync_WhenContextHasAlwaysResources_IncludesResourceContentInSystemPrompt()
+    public async Task EvaluateAsync_WhenContextHasAlwaysResources_UsesContextProcessorToFormatContent()
     {
         const string documentTypeAlias = "blogPost";
         var contextId = Guid.NewGuid();
@@ -228,35 +229,45 @@ public class PageEvaluationServiceTests
         _configService.GetActiveForDocumentTypeAsync(documentTypeAlias, Arg.Any<CancellationToken>())
             .Returns(config);
 
+        var resource = new AIContextResource
+        {
+            ResourceTypeId = "text",
+            Name = "Tone Guidelines",
+            Description = "How to write in our voice",
+            Settings = new { content = "Always use active voice. Be concise." },
+            InjectionMode = AIContextResourceInjectionMode.Always,
+        };
         var context = new AIContext
         {
             Alias = "brand-voice",
             Name = "Corporate Brand Voice",
-            Resources =
-            {
-                new AIContextResource
-                {
-                    ResourceTypeId = "text",
-                    Name = "Tone Guidelines",
-                    Description = "How to write in our voice",
-                    Settings = new { content = "Always use active voice. Be concise." },
-                    InjectionMode = AIContextResourceInjectionMode.Always,
-                },
-            },
+            Resources = { resource },
         };
         _contextService.GetContextAsync(contextId, Arg.Any<CancellationToken>())
             .Returns(context);
+
+        // The processor returns the properly formatted content
+        _contextProcessor.ProcessResourceForLlmAsync(
+                Arg.Is<AIResolvedResource>(r => r.ResourceTypeId == "text" && r.Name == "Tone Guidelines"),
+                Arg.Any<CancellationToken>())
+            .Returns("Always use active voice. Be concise.");
 
         MockChatResponse("""{"score":{"passed":1,"total":1},"checks":[{"checkNumber":1,"status":"Pass","label":"T","explanation":null}],"suggestions":null}""");
 
         await _sut.EvaluateAsync(Guid.NewGuid(), documentTypeAlias, new Dictionary<string, object?>());
 
+        // Verify the processor was called
+        await _contextProcessor.Received(1).ProcessResourceForLlmAsync(
+            Arg.Is<AIResolvedResource>(r => r.ResourceTypeId == "text" && r.Name == "Tone Guidelines"),
+            Arg.Any<CancellationToken>());
+
+        // Verify the formatted content appears in the system prompt
         await _chatService.Received(1).GetChatResponseAsync(
             Arg.Any<Action<AIChatBuilder>>(),
             Arg.Is<IEnumerable<ChatMessage>>(msgs =>
                 msgs.Any(m => m.Role == ChatRole.System && m.Text != null
                     && m.Text.Contains("Tone Guidelines")
-                    && m.Text.Contains("active voice"))),
+                    && m.Text.Contains("Always use active voice. Be concise."))),
             Arg.Any<CancellationToken>());
     }
 

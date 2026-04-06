@@ -4,6 +4,8 @@
 **Reviewed by:** Claude (automated review with 5 parallel agents)
 **Scope:** Umbraco CMS 17 patterns, Umbraco.AI integration, Microsoft.Extensions.AI usage, token/cost efficiency, security
 
+**NOTE: All but #19 were fixed on April 5th, 2026**
+
 ---
 
 ## Critical Issues
