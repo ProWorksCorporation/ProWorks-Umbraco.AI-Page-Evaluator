@@ -1,8 +1,10 @@
-# ProWorks-Umbraco-AI-Page-Evaluator Development Guidelines
+﻿# ProWorks-Umbraco-AI-Page-Evaluator Development Guidelines
 
-Last updated: 2026-04-02 (rev 4)
+Last updated: 2026-04-05 (rev 5)
 
 ## Active Technologies
+- C# .NET 10, TypeScript 5.x (strict: true) + Umbraco CMS 17.2.2, Umbraco.AI 1.7.0 (Anthropic 1.2.2), EF Core 10.0.2, Microsoft.Extensions.AI 10.4.1, Lit 3.x via @umbraco-cms/backoffice/external/lit
+- SQLite (dev), SQL Server (prod) via EF Core; evaluation cache in `umbracoAIEvaluationCache` table
 
 - **Client**: TypeScript 5.x `strict: true`, Vite build, Lit web components
 - **Server**: C# .NET 10, Umbraco CMS 17.2.2, EF Core 10.0.2
@@ -60,8 +62,12 @@ dotnet ef migrations add <Name> \
 ## Key Architecture Notes
 
 ### PageEvaluationService
-- Injects `IAIChatClientFactory` — **never** inject `IChatClient` directly (Umbraco.AI creates clients per-profile)
-- Call `_chatClientFactory.CreateClientAsync(profile, ct)` after resolving the AI profile
+- Injects `IAIChatService` (from `Umbraco.AI.Core.Chat`) — **never** inject `IChatClient` or `IAIChatClientFactory` directly
+- Uses `AIChatBuilder` fluent pattern: `chat.WithAlias("proworks-page-evaluator").WithProfile(profileId).WithChatOptions(options)`
+- ChatOptions: `Temperature = 0f`, `ResponseFormat = ChatResponseFormat.Json`, `Tools = []`, `MaxOutputTokens = 16384`
+- Checks `ChatFinishReason.Length` after response to detect truncation
+- Includes defensive preamble in user message to guard against prompt injection from content
+- Filters properties by `config.PropertyAliases` when set; strips HTML tags and truncates at 2000 chars
 
 ### Backoffice Extensions
 - Menu alias for Umbraco.AI Add-ons section: **`"Uai.Menu.Addons"`** (not `"Umb.Menu.Addons"`)
@@ -102,11 +108,12 @@ dotnet ef migrations add <Name> \
 - `IEvaluationCacheRepository` is registered as Singleton in `UmbracoBuilderExtensions`
 - The API controller is responsible for cache read/write — `PageEvaluationService` has no knowledge of caching
 - Cache is **invalidated automatically** (all rows for the affected `DocumentTypeAlias`) whenever a config is created, updated, activated, or deleted — call `_cacheRepository.DeleteByDocumentTypeAliasAsync(alias, ct)` in any controller action that mutates a config
+- Cache is also **invalidated on content publish** via `ContentPublishedNotificationHandler` — deletes cache entries for each published node
 - `EvaluationReport.WithCachedAt(DateTime)` returns a copy with `CachedAt` set — used by the controller before returning the response so the frontend knows when the result was cached
 - The modal checks `GET /evaluate/cached/{nodeId}` on open; falls through to `POST /evaluate` only when no cache entry exists or when the user clicks **Re-run Evaluation**
 
 ### Package Version Constraints
-- `Microsoft.Extensions.AI.*` must all be pinned to the same version (currently `10.4.1`) — mismatches between `Microsoft.Extensions.AI` and `Abstractions` cause `TypeLoadException: FunctionApprovalRequestContent`
+- `Microsoft.Extensions.AI.*` must all be pinned to the same version (currently `10.4.1`) — mismatches between `Microsoft.Extensions.AI` and `Abstractions` cause `TypeLoadException: FunctionApprovalRequestContent`. The package csproj pins **both** `Microsoft.Extensions.AI` and `Microsoft.Extensions.AI.Abstractions` to `10.4.1` to raise the NuGet floor for consumers (root cause: `Umbraco.AI.Core` only declares `>= 10.2.0` for the main package, allowing 10.3.0 to be resolved alongside 10.4.1 Abstractions)
 - `Umbraco.AI.OpenAI 1.1.3` is **excluded from the TestSite** — its DLL was compiled against a private OpenAI SDK build that has `GetResponsesClient(string modelId)`, a signature that doesn't exist in the public `OpenAI 2.9.1` release (which has `GetResponsesClient()` with no parameter). Re-add when a compatible `Umbraco.AI.OpenAI` version ships. Use Anthropic profiles for all testing.
 - EF Core must be `10.0.2` (required by `Umbraco.Cms.Persistence.EFCore 17.2.2`)
 
@@ -130,4 +137,11 @@ dotnet ef migrations add <Name> \
 - `UmbracoAIComposer` is in `Umbraco.AI.Startup.Configuration` namespace (package: `Umbraco.AI.Startup`)
 - Use `[ComposeAfter(typeof(UmbracoAIComposer))]` on `PageEvaluatorComposer`
 - `IAIProfileService` and `IAIContextService` are registered by the `Umbraco.AI` meta-package (not `Umbraco.AI.Core` alone)
-- `IAIChatClientFactory` is the correct injection point for creating chat clients
+- `IAIChatService` (from `Umbraco.AI.Core.Chat`) is the correct injection point — replaces the older `IAIChatClientFactory`
+- `AIChatBuilder` (from `Umbraco.AI.Core.InlineChat`) — `.WithAlias()`, `.WithProfile(Guid)`, `.WithChatOptions(ChatOptions)`, `.WithContextItems()`. Internal properties not accessible from external assemblies.
+
+### Controller
+- `PageEvaluatorApiController` extends `ControllerBase` (not the obsolete `UmbracoApiController`)
+- Config CRUD endpoints require `[Authorize(Policy = AuthorizationPolicies.SectionAccessSettings)]`
+- Evaluate endpoint has `[EnableRateLimiting("PageEvaluatorEvaluate")]` — consuming app must register the rate limiter policy
+- `GetCurrentUserKey()` uses `HttpContext.User.Identity?.GetUserKey()` (from `Umbraco.Extensions`)

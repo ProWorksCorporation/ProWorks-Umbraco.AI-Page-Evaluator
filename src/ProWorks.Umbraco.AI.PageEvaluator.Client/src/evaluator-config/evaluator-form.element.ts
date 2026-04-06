@@ -8,7 +8,7 @@ import {
 } from '../shared/api-client.js';
 
 const BEARER = [{ scheme: 'bearer', type: 'http' }] as const;
-import type { EvaluatorConfigItem } from '../shared/types.js';
+import type { EvaluatorConfigItem, DocumentTypePropertySummary } from '../shared/types.js';
 import '../prompt-builder/prompt-builder.element.js';
 
 /**
@@ -39,6 +39,10 @@ export class EvaluatorFormElement extends UmbLitElement {
 
   @state() private _saving = false;
   @state() private _promptBuilderOpen = false;
+
+  // Property alias filtering
+  @state() private _propertyAliases: string[] = [];
+  @state() private _availableProperties: DocumentTypePropertySummary[] = [];
 
   // Document type picker state
   @state() private _docTypeDisplayName = '';
@@ -129,6 +133,8 @@ export class EvaluatorFormElement extends UmbLitElement {
     this._profileId = '';
     this._contextId = '';
     this._promptText = '';
+    this._propertyAliases = [];
+    this._availableProperties = [];
     this._errors = {};
     this._promptBuilderOpen = false;
   }
@@ -141,9 +147,11 @@ export class EvaluatorFormElement extends UmbLitElement {
     this._profileId = config.profileId;
     this._contextId = config.contextId ?? '';
     this._promptText = config.promptText;
+    this._propertyAliases = config.propertyAliases ?? [];
     this._errors = {};
-    // Resolve display name for the alias
+    // Resolve display name and load available properties for the alias
     void this._resolveDocTypeName(config.documentTypeAlias);
+    void this._loadAvailableProperties(config.documentTypeAlias);
   }
 
   private async _resolveDocTypeName(alias: string): Promise<void> {
@@ -206,9 +214,35 @@ export class EvaluatorFormElement extends UmbLitElement {
         const detail = result.data as { alias: string; name: string };
         this._documentTypeAlias = detail.alias;
         this._docTypeDisplayName = detail.name;
+        // Load available properties for the newly selected doc type
+        void this._loadAvailableProperties(detail.alias);
       }
     } catch {
       this._errors = { ...this._errors, documentTypeAlias: 'Could not retrieve alias for the selected document type.' };
+    }
+  }
+
+  private async _loadAvailableProperties(alias: string): Promise<void> {
+    this._availableProperties = [];
+    try {
+      const result = await apiClient.get({
+        security: BEARER,
+        url: `/umbraco/management/api/v1/page-evaluator/document-type/${encodeURIComponent(alias)}/properties`,
+      });
+      if (result.response.ok && result.data) {
+        const data = result.data as { properties: DocumentTypePropertySummary[] };
+        this._availableProperties = data.properties ?? [];
+      }
+    } catch {
+      // Non-critical — the checkbox list simply won't appear
+    }
+  }
+
+  private _onPropertyAliasToggle(alias: string, checked: boolean): void {
+    if (checked) {
+      this._propertyAliases = [...this._propertyAliases, alias];
+    } else {
+      this._propertyAliases = this._propertyAliases.filter(a => a !== alias);
     }
   }
 
@@ -235,6 +269,7 @@ export class EvaluatorFormElement extends UmbLitElement {
         profileId: this._profileId,
         contextId: this._contextId || null,
         promptText: this._promptText,
+        propertyAliases: this._propertyAliases.length > 0 ? this._propertyAliases : null,
       };
 
       const saved: EvaluatorConfigItem = this.configId
@@ -343,6 +378,30 @@ export class EvaluatorFormElement extends UmbLitElement {
           </div>
         </umb-property-layout>
       </uui-box>
+
+      ${this._availableProperties.length > 0 ? html`
+        <uui-box headline="Property Filter"
+          style="margin-top: var(--uui-size-layout-1);">
+          <umb-property-layout label="Properties to Evaluate"
+            description="Select which properties to include in the evaluation. If none are selected, all properties will be sent.">
+            <div slot="editor">
+              ${this._availableProperties.map(prop => html`
+                <div style="display: flex; align-items: center; gap: var(--uui-size-space-2); padding: var(--uui-size-space-2) 0;">
+                  <uui-checkbox
+                    label=${prop.label}
+                    ?checked=${this._propertyAliases.includes(prop.alias)}
+                    @change=${(e: Event) => this._onPropertyAliasToggle(prop.alias, (e.target as HTMLInputElement).checked)}>
+                    ${prop.label}
+                    <span style="font-size: 0.8em; color: var(--uui-color-text-alt); margin-left: var(--uui-size-space-2);">
+                      (${prop.alias})
+                    </span>
+                  </uui-checkbox>
+                </div>
+              `)}
+            </div>
+          </umb-property-layout>
+        </uui-box>
+      ` : nothing}
 
       <uui-box headline="Prompt">
         <umb-property-layout label="Evaluation Prompt" mandatory

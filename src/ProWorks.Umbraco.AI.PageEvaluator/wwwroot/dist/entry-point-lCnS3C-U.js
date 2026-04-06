@@ -137,7 +137,7 @@ const C = "Uai.Menu.Addons", r = [
     type: "modal",
     alias: "ProWorks.AI.PageEvaluator.Modal.Evaluation",
     name: "Page Evaluator Evaluation Modal",
-    element: () => import("./evaluation-modal.element-kCXq-xj0.js").then((t) => ({
+    element: () => import("./evaluation-modal.element-B-z1GvzZ.js").then((t) => ({
       element: t.EvaluationModalElement
     }))
   },
@@ -162,7 +162,7 @@ const C = "Uai.Menu.Addons", r = [
     meta: {
       entityType: "evaluator-config"
     },
-    element: () => import("./evaluator-config-workspace.element-BLppKR9l.js").then((t) => ({
+    element: () => import("./evaluator-config-workspace.element-BoAzuy8R.js").then((t) => ({
       element: t.EvaluatorConfigWorkspaceElement
     }))
   },
@@ -181,15 +181,15 @@ const C = "Uai.Menu.Addons", r = [
         match: "ProWorks.AI.PageEvaluator.Workspace"
       }
     ],
-    element: () => import("./evaluator-form.element-D9PCb31F.js").then((t) => ({
+    element: () => import("./evaluator-form.element-DssWJ1_z.js").then((t) => ({
       element: t.EvaluatorFormElement
     }))
   }
 ], _ = (t) => {
   console.log("[ProWorks.AI.PageEvaluator] onInit called — registering", r.length, "extensions"), p.registerMany(r);
-}, M = () => {
-  for (const t of r)
-    p.unregister(t.alias);
+}, M = (t, e) => {
+  for (const i of r)
+    p.unregister(i.alias);
 };
 export {
   h as a,
@@ -204,4 +204,4 @@ export {
   _ as o,
   W as u
 };
-//# sourceMappingURL=entry-point-8sa3rU5d.js.map
+//# sourceMappingURL=entry-point-lCnS3C-U.js.map

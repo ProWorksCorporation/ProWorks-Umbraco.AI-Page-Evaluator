@@ -24,6 +24,7 @@ export interface EvaluatorConfigItem {
   readonly isActive: boolean;
   readonly dateCreated: string; // ISO 8601
   readonly dateModified: string; // ISO 8601
+  readonly propertyAliases: string[] | null;
 }
 
 /** Response body for GET /configurations. */
@@ -40,6 +41,7 @@ export interface CreateEvaluatorConfigRequest {
   readonly contextId?: string | null;
   readonly promptText: string;
   readonly description?: string | null;
+  readonly propertyAliases?: string[] | null;
 }
 
 /** Request body for PUT /configurations/{id}. */
@@ -50,6 +52,7 @@ export interface UpdateEvaluatorConfigRequest {
   readonly contextId?: string | null;
   readonly promptText: string;
   readonly description?: string | null;
+  readonly propertyAliases?: string[] | null;
 }
 
 // ---------------------------------------------------------------------------

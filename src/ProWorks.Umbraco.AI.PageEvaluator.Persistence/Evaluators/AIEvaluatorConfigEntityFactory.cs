@@ -1,3 +1,4 @@
+using System.Text.Json;
 using ProWorks.Umbraco.AI.PageEvaluator.Evaluators;
 
 namespace ProWorks.Umbraco.AI.PageEvaluator.Persistence.Evaluators;
@@ -25,6 +26,7 @@ public static class AIEvaluatorConfigEntityFactory
             CreatedByUserId = entity.CreatedByUserId,
             ModifiedByUserId = entity.ModifiedByUserId,
             Version = entity.Version,
+            PropertyAliases = DeserializePropertyAliases(entity.PropertyAliases),
         };
 
     /// <summary>Maps a domain model to a new EFCore entity (for inserts).</summary>
@@ -44,6 +46,7 @@ public static class AIEvaluatorConfigEntityFactory
             CreatedByUserId = domain.CreatedByUserId,
             ModifiedByUserId = domain.ModifiedByUserId,
             Version = domain.Version,
+            PropertyAliases = SerializePropertyAliases(domain.PropertyAliases),
         };
 
     /// <summary>Applies domain model changes onto an existing tracked EFCore entity (for updates).</summary>
@@ -59,5 +62,16 @@ public static class AIEvaluatorConfigEntityFactory
         entity.DateModified = DateTime.UtcNow;
         entity.ModifiedByUserId = domain.ModifiedByUserId;
         entity.Version = domain.Version + 1;
+        entity.PropertyAliases = SerializePropertyAliases(domain.PropertyAliases);
+    }
+
+    private static string? SerializePropertyAliases(List<string>? aliases)
+        => aliases is { Count: > 0 } ? JsonSerializer.Serialize(aliases) : null;
+
+    private static List<string>? DeserializePropertyAliases(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return null;
+        try { return JsonSerializer.Deserialize<List<string>>(json); }
+        catch (JsonException) { return null; }
     }
 }
