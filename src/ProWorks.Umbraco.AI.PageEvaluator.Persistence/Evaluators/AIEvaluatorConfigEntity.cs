@@ -45,4 +45,10 @@ public sealed class AIEvaluatorConfigEntity
 
     /// <summary>Incremented on every save. Used for optimistic concurrency and audit history.</summary>
     public int Version { get; set; } = 1;
+
+    /// <summary>
+    /// JSON-serialized list of property aliases to include in evaluations.
+    /// Null means all properties are sent.
+    /// </summary>
+    public string? PropertyAliases { get; set; }
 }

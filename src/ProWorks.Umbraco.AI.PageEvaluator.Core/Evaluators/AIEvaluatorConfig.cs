@@ -51,4 +51,11 @@ public sealed class AIEvaluatorConfig
 
     /// <summary>Incremented on every save. Used for optimistic concurrency and audit history.</summary>
     public int Version { get; set; }
+
+    /// <summary>
+    /// Optional list of property aliases to include in evaluations.
+    /// When null or empty, all properties are sent. When set, only the specified properties
+    /// are included in the AI prompt, reducing token usage and avoiding irrelevant data.
+    /// </summary>
+    public List<string>? PropertyAliases { get; set; }
 }

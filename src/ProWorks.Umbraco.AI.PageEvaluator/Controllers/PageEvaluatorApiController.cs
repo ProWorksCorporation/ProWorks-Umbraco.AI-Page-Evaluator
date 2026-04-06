@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.Logging;
 using ProWorks.Umbraco.AI.PageEvaluator.Evaluation;
 using ProWorks.Umbraco.AI.PageEvaluator.Evaluators;
 using ProWorks.Umbraco.AI.PageEvaluator.Services;
@@ -7,7 +9,7 @@ using Umbraco.AI.Core.Contexts;
 using Umbraco.AI.Core.Profiles;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Web.Common.Authorization;
-using Umbraco.Cms.Web.Common.Controllers;
+using Umbraco.Extensions;
 
 namespace ProWorks.Umbraco.AI.PageEvaluator.Controllers;
 
@@ -18,7 +20,7 @@ namespace ProWorks.Umbraco.AI.PageEvaluator.Controllers;
 [ApiController]
 [Authorize(Policy = AuthorizationPolicies.BackOfficeAccess)]
 [Route("umbraco/management/api/v1/page-evaluator")]
-public sealed class PageEvaluatorApiController : UmbracoApiController
+public sealed class PageEvaluatorApiController : ControllerBase
 {
     private readonly IPageEvaluationService _evaluationService;
     private readonly IAIEvaluatorConfigService _configService;
@@ -26,6 +28,7 @@ public sealed class PageEvaluatorApiController : UmbracoApiController
     private readonly IAIContextService _contextService;
     private readonly IContentTypeService _contentTypeService;
     private readonly IEvaluationCacheRepository _cacheRepository;
+    private readonly ILogger<PageEvaluatorApiController> _logger;
 
     public PageEvaluatorApiController(
         IPageEvaluationService evaluationService,
@@ -33,7 +36,8 @@ public sealed class PageEvaluatorApiController : UmbracoApiController
         IAIProfileService profileService,
         IAIContextService contextService,
         IContentTypeService contentTypeService,
-        IEvaluationCacheRepository cacheRepository)
+        IEvaluationCacheRepository cacheRepository,
+        ILogger<PageEvaluatorApiController> logger)
     {
         _evaluationService = evaluationService;
         _configService = configService;
@@ -41,6 +45,7 @@ public sealed class PageEvaluatorApiController : UmbracoApiController
         _contextService = contextService;
         _contentTypeService = contentTypeService;
         _cacheRepository = cacheRepository;
+        _logger = logger;
     }
 
     // ---------------------------------------------------------------------------
@@ -81,6 +86,7 @@ public sealed class PageEvaluatorApiController : UmbracoApiController
     // ---------------------------------------------------------------------------
 
     [HttpPost("configurations")]
+    [Authorize(Policy = AuthorizationPolicies.SectionAccessSettings)]
     public async Task<IActionResult> CreateConfigurationAsync(
         [FromBody] CreateEvaluatorConfigRequest request,
         CancellationToken cancellationToken = default)
@@ -93,12 +99,12 @@ public sealed class PageEvaluatorApiController : UmbracoApiController
             ProfileId = request.ProfileId,
             ContextId = request.ContextId,
             PromptText = request.PromptText,
+            PropertyAliases = request.PropertyAliases,
         };
 
         try
         {
-            // TODO: replace Guid.Empty with the authenticated back-office user's Id.
-            AIEvaluatorConfig created = await _configService.CreateAsync(config, Guid.Empty, cancellationToken);
+            AIEvaluatorConfig created = await _configService.CreateAsync(config, GetCurrentUserKey(), cancellationToken);
             await _cacheRepository.DeleteByDocumentTypeAliasAsync(created.DocumentTypeAlias, cancellationToken);
             EvaluatorConfigResponse response = await ToResponseAsync(created, cancellationToken);
             return CreatedAtAction(nameof(GetConfigurationAsync), new { id = created.Id }, response);
@@ -114,6 +120,7 @@ public sealed class PageEvaluatorApiController : UmbracoApiController
     // ---------------------------------------------------------------------------
 
     [HttpPut("configurations/{id:guid}")]
+    [Authorize(Policy = AuthorizationPolicies.SectionAccessSettings)]
     public async Task<IActionResult> UpdateConfigurationAsync(
         Guid id,
         [FromBody] UpdateEvaluatorConfigRequest request,
@@ -128,12 +135,12 @@ public sealed class PageEvaluatorApiController : UmbracoApiController
             ProfileId = request.ProfileId,
             ContextId = request.ContextId,
             PromptText = request.PromptText,
+            PropertyAliases = request.PropertyAliases,
         };
 
         try
         {
-            // TODO: replace Guid.Empty with the authenticated back-office user's Id.
-            AIEvaluatorConfig updated = await _configService.UpdateAsync(config, Guid.Empty, cancellationToken);
+            AIEvaluatorConfig updated = await _configService.UpdateAsync(config, GetCurrentUserKey(), cancellationToken);
             await _cacheRepository.DeleteByDocumentTypeAliasAsync(updated.DocumentTypeAlias, cancellationToken);
             return Ok(await ToResponseAsync(updated, cancellationToken));
         }
@@ -156,6 +163,7 @@ public sealed class PageEvaluatorApiController : UmbracoApiController
     /// All other configurations for the same document type are deactivated.
     /// </summary>
     [HttpPost("configurations/{id:guid}/activate")]
+    [Authorize(Policy = AuthorizationPolicies.SectionAccessSettings)]
     public async Task<IActionResult> ActivateConfigurationAsync(
         Guid id,
         CancellationToken cancellationToken = default)
@@ -164,7 +172,7 @@ public sealed class PageEvaluatorApiController : UmbracoApiController
         if (existing is null)
             return NotFound(new { title = $"Evaluator configuration '{id}' not found." });
 
-        AIEvaluatorConfig updated = await _configService.UpdateAsync(existing, Guid.Empty, cancellationToken);
+        AIEvaluatorConfig updated = await _configService.UpdateAsync(existing, GetCurrentUserKey(), cancellationToken);
         await _cacheRepository.DeleteByDocumentTypeAliasAsync(updated.DocumentTypeAlias, cancellationToken);
         return Ok(await ToResponseAsync(updated, cancellationToken));
     }
@@ -174,6 +182,7 @@ public sealed class PageEvaluatorApiController : UmbracoApiController
     // ---------------------------------------------------------------------------
 
     [HttpDelete("configurations/{id:guid}")]
+    [Authorize(Policy = AuthorizationPolicies.SectionAccessSettings)]
     public async Task<IActionResult> DeleteConfigurationAsync(
         Guid id,
         CancellationToken cancellationToken = default)
@@ -218,6 +227,7 @@ public sealed class PageEvaluatorApiController : UmbracoApiController
     /// Returns 404 when no active evaluator is configured, or 502 on AI provider failure.
     /// </summary>
     [HttpPost("evaluate")]
+    [EnableRateLimiting("PageEvaluatorEvaluate")]
     public async Task<IActionResult> EvaluateAsync(
         [FromBody] EvaluatePageRequest request,
         CancellationToken cancellationToken = default)
@@ -247,10 +257,18 @@ public sealed class PageEvaluatorApiController : UmbracoApiController
         }
         catch (HttpRequestException ex)
         {
+            _logger.LogError(ex, "[PageEvaluator] AI provider error during evaluation of node {NodeId}.", request.NodeId);
             return StatusCode(502, new
             {
-                title = "AI provider error",
-                detail = ex.Message,
+                title = "The AI provider returned an error. Please try again later.",
+            });
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogError(ex, "[PageEvaluator] Unexpected error during evaluation of node {NodeId}.", request.NodeId);
+            return StatusCode(500, new
+            {
+                title = "An unexpected error occurred during evaluation. Please try again later.",
             });
         }
     }
@@ -320,6 +338,9 @@ public sealed class PageEvaluatorApiController : UmbracoApiController
     // Private helpers
     // ---------------------------------------------------------------------------
 
+    private Guid GetCurrentUserKey()
+        => HttpContext.User.Identity?.GetUserKey() ?? Guid.Empty;
+
     private async Task<EvaluatorConfigResponse> ToResponseAsync(
         AIEvaluatorConfig config,
         CancellationToken cancellationToken)
@@ -355,6 +376,7 @@ public sealed class PageEvaluatorApiController : UmbracoApiController
             IsActive = config.IsActive,
             DateCreated = config.DateCreated,
             DateModified = config.DateModified,
+            PropertyAliases = config.PropertyAliases,
         };
     }
 }
@@ -388,6 +410,7 @@ public sealed class CreateEvaluatorConfigRequest
     public Guid ProfileId { get; set; }
     public Guid? ContextId { get; set; }
     public string PromptText { get; set; } = string.Empty;
+    public List<string>? PropertyAliases { get; set; }
 }
 
 /// <summary>Request body for <c>PUT /configurations/{id}</c>.</summary>
@@ -399,6 +422,7 @@ public sealed class UpdateEvaluatorConfigRequest
     public Guid ProfileId { get; set; }
     public Guid? ContextId { get; set; }
     public string PromptText { get; set; } = string.Empty;
+    public List<string>? PropertyAliases { get; set; }
 }
 
 /// <summary>API response shape for a single EvaluatorConfiguration.</summary>
@@ -417,4 +441,5 @@ public sealed class EvaluatorConfigResponse
     public bool IsActive { get; init; }
     public DateTime DateCreated { get; init; }
     public DateTime DateModified { get; init; }
+    public List<string>? PropertyAliases { get; init; }
 }

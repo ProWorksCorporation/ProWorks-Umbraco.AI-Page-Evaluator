@@ -1,4 +1,10 @@
+using System.Reflection;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.Logging;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 using ProWorks.Umbraco.AI.PageEvaluator.Controllers;
@@ -8,6 +14,7 @@ using ProWorks.Umbraco.AI.PageEvaluator.Services;
 using Umbraco.AI.Core.Contexts;
 using Umbraco.AI.Core.Profiles;
 using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Web.Common.Authorization;
 using Xunit;
 
 namespace ProWorks.Umbraco.AI.PageEvaluator.Tests.Controllers;
@@ -23,11 +30,16 @@ public class PageEvaluatorApiControllerTests
     private readonly IAIContextService _contextService = Substitute.For<IAIContextService>();
     private readonly IContentTypeService _contentTypeService = Substitute.For<IContentTypeService>();
     private readonly IEvaluationCacheRepository _cacheRepository = Substitute.For<IEvaluationCacheRepository>();
+    private readonly ILogger<PageEvaluatorApiController> _logger = Substitute.For<ILogger<PageEvaluatorApiController>>();
     private readonly PageEvaluatorApiController _sut;
 
     public PageEvaluatorApiControllerTests()
     {
-        _sut = new PageEvaluatorApiController(_evaluationService, _configService, _profileService, _contextService, _contentTypeService, _cacheRepository);
+        _sut = new PageEvaluatorApiController(_evaluationService, _configService, _profileService, _contextService, _contentTypeService, _cacheRepository, _logger);
+        _sut.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext(),
+        };
     }
 
     // ---------------------------------------------------------------------------
@@ -432,6 +444,133 @@ public class PageEvaluatorApiControllerTests
     }
 
     // ---------------------------------------------------------------------------
+    // T009: Generic 502 on HttpRequestException (no provider details)
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public async Task EvaluateAsync_WhenHttpRequestException_Returns502WithGenericMessage()
+    {
+        var request = new EvaluatePageRequest
+        {
+            NodeId = Guid.NewGuid(),
+            DocumentTypeAlias = "blogPost",
+            Properties = new(),
+        };
+
+        _evaluationService.EvaluateAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new HttpRequestException("Sensitive provider error: API key invalid for account xyz"));
+
+        IActionResult result = await _sut.EvaluateAsync(request);
+
+        var statusResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(502, statusResult.StatusCode);
+        // The response must NOT contain the sensitive provider error message
+        string json = System.Text.Json.JsonSerializer.Serialize(statusResult.Value);
+        Assert.DoesNotContain("API key invalid", json);
+        Assert.DoesNotContain("xyz", json);
+    }
+
+    // ---------------------------------------------------------------------------
+    // T010: Generic 500 on unexpected Exception
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public async Task EvaluateAsync_WhenUnexpectedException_Returns500WithGenericMessage()
+    {
+        var request = new EvaluatePageRequest
+        {
+            NodeId = Guid.NewGuid(),
+            DocumentTypeAlias = "blogPost",
+            Properties = new(),
+        };
+
+        _evaluationService.EvaluateAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new NullReferenceException("Object reference not set"));
+
+        IActionResult result = await _sut.EvaluateAsync(request);
+
+        var statusResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(500, statusResult.StatusCode);
+        string json = System.Text.Json.JsonSerializer.Serialize(statusResult.Value);
+        Assert.DoesNotContain("Object reference", json);
+    }
+
+    // ---------------------------------------------------------------------------
+    // T011: OperationCanceledException not caught
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public async Task EvaluateAsync_WhenOperationCanceled_PropagatesException()
+    {
+        var request = new EvaluatePageRequest
+        {
+            NodeId = Guid.NewGuid(),
+            DocumentTypeAlias = "blogPost",
+            Properties = new(),
+        };
+
+        _evaluationService.EvaluateAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new OperationCanceledException());
+
+        await Assert.ThrowsAsync<OperationCanceledException>(() => _sut.EvaluateAsync(request));
+    }
+
+    // ---------------------------------------------------------------------------
+    // T012: Config CRUD methods require SectionAccessSettings
+    // ---------------------------------------------------------------------------
+
+    [Theory]
+    [InlineData(nameof(PageEvaluatorApiController.CreateConfigurationAsync))]
+    [InlineData(nameof(PageEvaluatorApiController.UpdateConfigurationAsync))]
+    [InlineData(nameof(PageEvaluatorApiController.DeleteConfigurationAsync))]
+    [InlineData(nameof(PageEvaluatorApiController.ActivateConfigurationAsync))]
+    public void ConfigCrudMethod_HasSectionAccessSettingsAuthorizeAttribute(string methodName)
+    {
+        var method = typeof(PageEvaluatorApiController).GetMethod(methodName);
+        Assert.NotNull(method);
+
+        var authorizeAttrs = method!.GetCustomAttributes(typeof(AuthorizeAttribute), true)
+            .Cast<AuthorizeAttribute>()
+            .ToList();
+
+        Assert.Contains(authorizeAttrs, a => a.Policy == AuthorizationPolicies.SectionAccessSettings);
+    }
+
+    // ---------------------------------------------------------------------------
+    // T014: Create passes authenticated user ID, not Guid.Empty
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public async Task CreateConfigurationAsync_PassesAuthenticatedUserId_NotGuidEmpty()
+    {
+        var userId = Guid.NewGuid();
+        var claims = new ClaimsIdentity(new[] { new Claim("sub", userId.ToString()) }, "test");
+        _sut.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(claims) },
+        };
+
+        var request = new CreateEvaluatorConfigRequest
+        {
+            Name = "Test",
+            DocumentTypeAlias = "blogPost",
+            ProfileId = Guid.NewGuid(),
+            PromptText = "Evaluate.",
+        };
+        var created = BuildConfig("blogPost");
+        _configService.CreateAsync(Arg.Any<AIEvaluatorConfig>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(created);
+
+        await _sut.CreateConfigurationAsync(request);
+
+        // The user ID passed to CreateAsync must be the authenticated user, not Guid.Empty
+        await _configService.Received(1).CreateAsync(
+            Arg.Any<AIEvaluatorConfig>(),
+            Arg.Is<Guid>(g => g == userId),
+            Arg.Any<CancellationToken>());
+    }
+
+    // ---------------------------------------------------------------------------
     // Helpers
     // ---------------------------------------------------------------------------
 
@@ -447,4 +586,40 @@ public class PageEvaluatorApiControllerTests
             DateCreated = DateTime.UtcNow,
             DateModified = DateTime.UtcNow,
         };
+
+    // ---------------------------------------------------------------------------
+    // T050: Controller base class
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public void Controller_DoesNotInheritUmbracoApiController()
+    {
+        var controllerType = typeof(PageEvaluatorApiController);
+        // Check that no ancestor type is named UmbracoApiController (obsolete base class)
+        var baseType = controllerType.BaseType;
+        while (baseType != null)
+        {
+            Assert.NotEqual("UmbracoApiController", baseType.Name);
+            baseType = baseType.BaseType;
+        }
+        // Should inherit from ControllerBase
+        Assert.True(typeof(ControllerBase).IsAssignableFrom(controllerType));
+    }
+
+    // ---------------------------------------------------------------------------
+    // T051: Rate limiting attribute
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public void EvaluateAsync_HasEnableRateLimitingAttribute()
+    {
+        var method = typeof(PageEvaluatorApiController).GetMethod(
+            nameof(PageEvaluatorApiController.EvaluateAsync),
+            BindingFlags.Public | BindingFlags.Instance);
+        Assert.NotNull(method);
+
+        var attr = method!.GetCustomAttribute<EnableRateLimitingAttribute>();
+        Assert.NotNull(attr);
+        Assert.Equal("PageEvaluatorEvaluate", attr!.PolicyName);
+    }
 }

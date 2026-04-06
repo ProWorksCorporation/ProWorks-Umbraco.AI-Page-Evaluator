@@ -85,6 +85,9 @@ namespace ProWorks.Umbraco.AI.PageEvaluator.Persistence.Sqlite.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("PropertyAliases")
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("Version")
                         .HasColumnType("INTEGER");
 

@@ -10,7 +10,7 @@
  */
 
 import { umbExtensionsRegistry } from '@umbraco-cms/backoffice/extension-registry';
-import type { UmbEntryPointOnInit } from '@umbraco-cms/backoffice/extension-api';
+import type { UmbEntryPointOnInit, UmbEntryPointOnUnload } from '@umbraco-cms/backoffice/extension-api';
 import {
   PageEvaluatorActiveConfigCondition,
   PROWORKS_AI_ACTIVE_CONFIG_CONDITION_ALIAS,
@@ -131,7 +131,7 @@ export const onInit: UmbEntryPointOnInit = (_host): void => {
   // app.element before any extension onInit runs — no further setup needed here.
 };
 
-export const onUnload = (): void => {
+export const onUnload: UmbEntryPointOnUnload = (_host, _extensionRegistry): void => {
   for (const manifest of manifests) {
     umbExtensionsRegistry.unregister(manifest.alias);
   }

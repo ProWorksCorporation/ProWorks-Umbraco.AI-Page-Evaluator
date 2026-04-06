@@ -23,17 +23,17 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T001 [P] [US1] Unit test: BuildSystemPromptAsync includes AIContext resource content (not just Name) in tests/ProWorks.Umbraco.AI.PageEvaluator.Tests/
-- [ ] T002 [P] [US1] Unit test: BuildSystemPromptAsync skips resources with InjectionMode.OnDemand in tests/ProWorks.Umbraco.AI.PageEvaluator.Tests/
-- [ ] T003 [P] [US1] Unit test: BuildSystemPromptAsync handles context with no resources gracefully in tests/ProWorks.Umbraco.AI.PageEvaluator.Tests/
-- [ ] T004 [P] [US2] Unit test: EvaluateAsync logs full response at Debug level only (not Information) in tests/ProWorks.Umbraco.AI.PageEvaluator.Tests/
-- [ ] T005 [P] [US2] Unit test: EvaluateAsync logs metadata (nodeId, alias, length, parseFailed) at Information level in tests/ProWorks.Umbraco.AI.PageEvaluator.Tests/
+- [X] T001 [P] [US1] Unit test: BuildSystemPromptAsync includes AIContext resource content (not just Name) in tests/ProWorks.Umbraco.AI.PageEvaluator.Tests/
+- [X] T002 [P] [US1] Unit test: BuildSystemPromptAsync skips resources with InjectionMode.OnDemand in tests/ProWorks.Umbraco.AI.PageEvaluator.Tests/
+- [X] T003 [P] [US1] Unit test: BuildSystemPromptAsync handles context with no resources gracefully in tests/ProWorks.Umbraco.AI.PageEvaluator.Tests/
+- [X] T004 [P] [US2] Unit test: EvaluateAsync logs full response at Debug level only (not Information) in tests/ProWorks.Umbraco.AI.PageEvaluator.Tests/
+- [X] T005 [P] [US2] Unit test: EvaluateAsync logs metadata (nodeId, alias, length, parseFailed) at Information level in tests/ProWorks.Umbraco.AI.PageEvaluator.Tests/
 
 ### Implementation for Phase 1
 
-- [ ] T006 [P] [US1] Fix BuildSystemPromptAsync to iterate AIContext.Resources and include Always-mode resource content in src/ProWorks.Umbraco.AI.PageEvaluator/Services/PageEvaluationService.cs
-- [ ] T007 [P] [US2] Change LogInformation of full AI response to LogDebug; add metadata-only LogInformation in src/ProWorks.Umbraco.AI.PageEvaluator/Services/PageEvaluationService.cs
-- [ ] T008 [US3] Remove BuildServiceProvider guard block (lines 31-48) from src/ProWorks.Umbraco.AI.PageEvaluator/Composers/PageEvaluatorComposer.cs
+- [X] T006 [P] [US1] Fix BuildSystemPromptAsync to iterate AIContext.Resources and include Always-mode resource content in src/ProWorks.Umbraco.AI.PageEvaluator/Services/PageEvaluationService.cs
+- [X] T007 [P] [US2] Change LogInformation of full AI response to LogDebug; add metadata-only LogInformation in src/ProWorks.Umbraco.AI.PageEvaluator/Services/PageEvaluationService.cs
+- [X] T008 [US3] Remove BuildServiceProvider guard block (lines 31-48) from src/ProWorks.Umbraco.AI.PageEvaluator/Composers/PageEvaluatorComposer.cs
 
 **Checkpoint**: Build succeeds with zero ASP0000 warnings. Run evaluation with context → AI response references context content. Information logs show only metadata.
 
@@ -51,19 +51,19 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T009 [P] [US2] Unit test: EvaluateAsync returns generic 502 on HttpRequestException (not provider message) in tests/ProWorks.Umbraco.AI.PageEvaluator.Tests/
-- [ ] T010 [P] [US2] Unit test: EvaluateAsync returns generic 500 on unexpected Exception in tests/ProWorks.Umbraco.AI.PageEvaluator.Tests/
-- [ ] T011 [P] [US2] Unit test: EvaluateAsync does not catch OperationCanceledException in tests/ProWorks.Umbraco.AI.PageEvaluator.Tests/
-- [ ] T012 [P] [US4] Unit test: Configuration CRUD methods have SectionAccessSettings authorize attribute in tests/ProWorks.Umbraco.AI.PageEvaluator.Tests/
-- [ ] T013 [P] [US5] Unit test: BuildUserMessage includes defensive preamble before content data in tests/ProWorks.Umbraco.AI.PageEvaluator.Tests/
-- [ ] T014 [P] [US6] Unit test: CreateConfigurationAsync passes authenticated user ID (not Guid.Empty) in tests/ProWorks.Umbraco.AI.PageEvaluator.Tests/
+- [X] T009 [P] [US2] Unit test: EvaluateAsync returns generic 502 on HttpRequestException (not provider message) in tests/ProWorks.Umbraco.AI.PageEvaluator.Tests/
+- [X] T010 [P] [US2] Unit test: EvaluateAsync returns generic 500 on unexpected Exception in tests/ProWorks.Umbraco.AI.PageEvaluator.Tests/
+- [X] T011 [P] [US2] Unit test: EvaluateAsync does not catch OperationCanceledException in tests/ProWorks.Umbraco.AI.PageEvaluator.Tests/
+- [X] T012 [P] [US4] Unit test: Configuration CRUD methods have SectionAccessSettings authorize attribute in tests/ProWorks.Umbraco.AI.PageEvaluator.Tests/
+- [X] T013 [P] [US5] Unit test: BuildUserMessage includes defensive preamble before content data in tests/ProWorks.Umbraco.AI.PageEvaluator.Tests/
+- [X] T014 [P] [US6] Unit test: CreateConfigurationAsync passes authenticated user ID (not Guid.Empty) in tests/ProWorks.Umbraco.AI.PageEvaluator.Tests/
 
 ### Implementation for Phase 2
 
-- [ ] T015 [P] [US2] Add catch-all exception handler with generic error messages in EvaluateAsync in src/ProWorks.Umbraco.AI.PageEvaluator/Controllers/PageEvaluatorApiController.cs
-- [ ] T016 [P] [US4] Add [Authorize(Policy = AuthorizationPolicies.SectionAccessSettings)] to CreateConfigurationAsync, UpdateConfigurationAsync, DeleteConfigurationAsync, ActivateConfigurationAsync in src/ProWorks.Umbraco.AI.PageEvaluator/Controllers/PageEvaluatorApiController.cs
-- [ ] T017 [P] [US5] Add defensive preamble to BuildUserMessage and remove duplicate JSON schema from user message in src/ProWorks.Umbraco.AI.PageEvaluator/Services/PageEvaluationService.cs
-- [ ] T018 [US6] Add GetCurrentUserId() helper using HttpContext.User.Identity.GetUserKey() and replace Guid.Empty in Create/Update/Activate actions in src/ProWorks.Umbraco.AI.PageEvaluator/Controllers/PageEvaluatorApiController.cs
+- [X] T015 [P] [US2] Add catch-all exception handler with generic error messages in EvaluateAsync in src/ProWorks.Umbraco.AI.PageEvaluator/Controllers/PageEvaluatorApiController.cs
+- [X] T016 [P] [US4] Add [Authorize(Policy = AuthorizationPolicies.SectionAccessSettings)] to CreateConfigurationAsync, UpdateConfigurationAsync, DeleteConfigurationAsync, ActivateConfigurationAsync in src/ProWorks.Umbraco.AI.PageEvaluator/Controllers/PageEvaluatorApiController.cs
+- [X] T017 [P] [US5] Add defensive preamble to BuildUserMessage and remove duplicate JSON schema from user message in src/ProWorks.Umbraco.AI.PageEvaluator/Services/PageEvaluationService.cs
+- [X] T018 [US6] Add GetCurrentUserId() helper using HttpContext.User.Identity.GetUserKey() and replace Guid.Empty in Create/Update/Activate actions in src/ProWorks.Umbraco.AI.PageEvaluator/Controllers/PageEvaluatorApiController.cs
 
 **Checkpoint**: All security fixes in place. Generic error messages on AI failures. Non-admin users blocked from config CRUD. User IDs recorded on config changes.
 
@@ -81,19 +81,19 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T019 [P] [US7] Unit test: EvaluateAsync calls IAIChatService.GetChatResponseAsync with correct builder config (profile, alias, options) in tests/ProWorks.Umbraco.AI.PageEvaluator.Tests/
-- [ ] T020 [P] [US8] Unit test: ChatOptions has Temperature=0, ResponseFormat=Json, Tools=empty in tests/ProWorks.Umbraco.AI.PageEvaluator.Tests/
-- [ ] T021 [P] [US8] Unit test: EvaluateAsync logs warning when FinishReason is Length in tests/ProWorks.Umbraco.AI.PageEvaluator.Tests/
-- [ ] T022 [P] [US8] Unit test: BuildUserMessage does not contain JSON schema (schema only in system message) in tests/ProWorks.Umbraco.AI.PageEvaluator.Tests/
-- [ ] T023 [P] [US8] Unit test: Properties serialized without WriteIndented in tests/ProWorks.Umbraco.AI.PageEvaluator.Tests/
+- [X] T019 [P] [US7] Unit test: EvaluateAsync calls IAIChatService.GetChatResponseAsync with correct builder config (profile, alias, options) in tests/ProWorks.Umbraco.AI.PageEvaluator.Tests/
+- [X] T020 [P] [US8] Unit test: ChatOptions has Temperature=0, ResponseFormat=Json, Tools=empty in tests/ProWorks.Umbraco.AI.PageEvaluator.Tests/
+- [X] T021 [P] [US8] Unit test: EvaluateAsync logs warning when FinishReason is Length in tests/ProWorks.Umbraco.AI.PageEvaluator.Tests/
+- [X] T022 [P] [US8] Unit test: BuildUserMessage does not contain JSON schema (schema only in system message) in tests/ProWorks.Umbraco.AI.PageEvaluator.Tests/
+- [X] T023 [P] [US8] Unit test: Properties serialized without WriteIndented in tests/ProWorks.Umbraco.AI.PageEvaluator.Tests/
 
 ### Implementation for Phase 3
 
-- [ ] T024 [US7] Replace IAIChatClientFactory + IAIProfileService with IAIChatService in PageEvaluationService constructor and EvaluateAsync in src/ProWorks.Umbraco.AI.PageEvaluator/Services/PageEvaluationService.cs
-- [ ] T025 [US7] Update DI registration in PageEvaluatorComposer if needed (remove IAIProfileService if no longer injected directly) in src/ProWorks.Umbraco.AI.PageEvaluator/Composers/PageEvaluatorComposer.cs
-- [ ] T026 [P] [US8] Add FinishReason check after AI response in src/ProWorks.Umbraco.AI.PageEvaluator/Services/PageEvaluationService.cs
-- [ ] T027 [P] [US8] Set Temperature=0f and ResponseFormat=ChatResponseFormat.Json on ChatOptions in src/ProWorks.Umbraco.AI.PageEvaluator/Services/PageEvaluationService.cs
-- [ ] T028 [US8] Remove WriteIndented from JsonSerializer.Serialize in BuildUserMessage in src/ProWorks.Umbraco.AI.PageEvaluator/Services/PageEvaluationService.cs
+- [X] T024 [US7] Replace IAIChatClientFactory + IAIProfileService with IAIChatService in PageEvaluationService constructor and EvaluateAsync in src/ProWorks.Umbraco.AI.PageEvaluator/Services/PageEvaluationService.cs
+- [X] T025 [US7] Update DI registration in PageEvaluatorComposer if needed (remove IAIProfileService if no longer injected directly) in src/ProWorks.Umbraco.AI.PageEvaluator/Composers/PageEvaluatorComposer.cs
+- [X] T026 [P] [US8] Add FinishReason check after AI response in src/ProWorks.Umbraco.AI.PageEvaluator/Services/PageEvaluationService.cs
+- [X] T027 [P] [US8] Set Temperature=0f and ResponseFormat=ChatResponseFormat.Json on ChatOptions in src/ProWorks.Umbraco.AI.PageEvaluator/Services/PageEvaluationService.cs
+- [X] T028 [US8] Remove WriteIndented from JsonSerializer.Serialize in BuildUserMessage in src/ProWorks.Umbraco.AI.PageEvaluator/Services/PageEvaluationService.cs
 
 **Checkpoint**: IAIChatService integration complete. Token-optimized prompts. Deterministic structured output.
 
@@ -111,38 +111,38 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T029 [P] [US9] Unit test: EvaluateAsync filters properties when config.PropertyAliases is set in tests/ProWorks.Umbraco.AI.PageEvaluator.Tests/
-- [ ] T030 [P] [US9] Unit test: EvaluateAsync sends all properties when config.PropertyAliases is null in tests/ProWorks.Umbraco.AI.PageEvaluator.Tests/
-- [ ] T031 [P] [US10] Unit test: ContentPublishedNotificationHandler deletes cache for each published entity in tests/ProWorks.Umbraco.AI.PageEvaluator.Tests/
-- [ ] T032 [P] [US11] Unit test: Content truncation at 2000 chars with [...truncated] marker in tests/ProWorks.Umbraco.AI.PageEvaluator.Tests/
-- [ ] T033 [P] [US11] Unit test: HTML tags stripped from rich text property values in tests/ProWorks.Umbraco.AI.PageEvaluator.Tests/
+- [X] T029 [P] [US9] Unit test: EvaluateAsync filters properties when config.PropertyAliases is set in tests/ProWorks.Umbraco.AI.PageEvaluator.Tests/
+- [X] T030 [P] [US9] Unit test: EvaluateAsync sends all properties when config.PropertyAliases is null in tests/ProWorks.Umbraco.AI.PageEvaluator.Tests/
+- [X] T031 [P] [US10] Unit test: ContentPublishedNotificationHandler deletes cache for each published entity in tests/ProWorks.Umbraco.AI.PageEvaluator.Tests/
+- [X] T032 [P] [US11] Unit test: Content truncation at 2000 chars with [...truncated] marker in tests/ProWorks.Umbraco.AI.PageEvaluator.Tests/
+- [X] T033 [P] [US11] Unit test: HTML tags stripped from rich text property values in tests/ProWorks.Umbraco.AI.PageEvaluator.Tests/
 
 ### Implementation for Phase 4
 
 #### US9: Property Alias Filtering
 
-- [ ] T034 [P] [US9] Add PropertyAliases property (List<string>?) to AIEvaluatorConfig in src/ProWorks.Umbraco.AI.PageEvaluator.Core/Evaluators/AIEvaluatorConfig.cs
-- [ ] T035 [P] [US9] Add PropertyAliases column (string?) to AIEvaluatorConfigEntity in src/ProWorks.Umbraco.AI.PageEvaluator.Persistence/Evaluators/AIEvaluatorConfigEntity.cs
-- [ ] T036 [US9] Add JSON serialization/deserialization for PropertyAliases in AIEvaluatorConfigEntityFactory in src/ProWorks.Umbraco.AI.PageEvaluator.Persistence/Evaluators/AIEvaluatorConfigEntityFactory.cs
-- [ ] T037 [US9] Regenerate SQLite migration (AddPropertyAliases) in src/ProWorks.Umbraco.AI.PageEvaluator.Persistence.Sqlite/
-- [ ] T038 [US9] Regenerate SQL Server migration (AddPropertyAliases) in src/ProWorks.Umbraco.AI.PageEvaluator.Persistence.SqlServer/
-- [ ] T039 [US9] Add PropertyAliases to CreateEvaluatorConfigRequest, UpdateEvaluatorConfigRequest, and EvaluatorConfigResponse DTOs in src/ProWorks.Umbraco.AI.PageEvaluator/Controllers/PageEvaluatorApiController.cs
-- [ ] T040 [US9] Add property filtering logic in EvaluateAsync (filter resolvedProperties by config.PropertyAliases) in src/ProWorks.Umbraco.AI.PageEvaluator/Services/PageEvaluationService.cs
-- [ ] T041 [US9] Add propertyAliases field to TypeScript types (EvaluatorConfigItem, Create/UpdateEvaluatorConfigRequest) in src/ProWorks.Umbraco.AI.PageEvaluator.Client/src/shared/types.ts
-- [ ] T042 [US9] Add property alias checkbox list UI to evaluator form (fetch from GET /document-type/{alias}/properties, render checkboxes, include in save payload) in src/ProWorks.Umbraco.AI.PageEvaluator.Client/src/evaluator-config/evaluator-form.element.ts
-- [ ] T043 [US9] Rebuild client after TypeScript changes: npm run build in src/ProWorks.Umbraco.AI.PageEvaluator.Client/
+- [X] T034 [P] [US9] Add PropertyAliases property (List<string>?) to AIEvaluatorConfig in src/ProWorks.Umbraco.AI.PageEvaluator.Core/Evaluators/AIEvaluatorConfig.cs
+- [X] T035 [P] [US9] Add PropertyAliases column (string?) to AIEvaluatorConfigEntity in src/ProWorks.Umbraco.AI.PageEvaluator.Persistence/Evaluators/AIEvaluatorConfigEntity.cs
+- [X] T036 [US9] Add JSON serialization/deserialization for PropertyAliases in AIEvaluatorConfigEntityFactory in src/ProWorks.Umbraco.AI.PageEvaluator.Persistence/Evaluators/AIEvaluatorConfigEntityFactory.cs
+- [X] T037 [US9] Regenerate SQLite migration (AddPropertyAliases) in src/ProWorks.Umbraco.AI.PageEvaluator.Persistence.Sqlite/
+- [X] T038 [US9] Regenerate SQL Server migration (AddPropertyAliases) in src/ProWorks.Umbraco.AI.PageEvaluator.Persistence.SqlServer/
+- [X] T039 [US9] Add PropertyAliases to CreateEvaluatorConfigRequest, UpdateEvaluatorConfigRequest, and EvaluatorConfigResponse DTOs in src/ProWorks.Umbraco.AI.PageEvaluator/Controllers/PageEvaluatorApiController.cs
+- [X] T040 [US9] Add property filtering logic in EvaluateAsync (filter resolvedProperties by config.PropertyAliases) in src/ProWorks.Umbraco.AI.PageEvaluator/Services/PageEvaluationService.cs
+- [X] T041 [US9] Add propertyAliases field to TypeScript types (EvaluatorConfigItem, Create/UpdateEvaluatorConfigRequest) in src/ProWorks.Umbraco.AI.PageEvaluator.Client/src/shared/types.ts
+- [X] T042 [US9] Add property alias checkbox list UI to evaluator form (fetch from GET /document-type/{alias}/properties, render checkboxes, include in save payload) in src/ProWorks.Umbraco.AI.PageEvaluator.Client/src/evaluator-config/evaluator-form.element.ts
+- [X] T043 [US9] Rebuild client after TypeScript changes: npm run build in src/ProWorks.Umbraco.AI.PageEvaluator.Client/
 
 #### US10: Cache Invalidation on Content Publish
 
-- [ ] T044 [US10] Create ContentPublishedNotificationHandler that deletes cache entries for published nodes in src/ProWorks.Umbraco.AI.PageEvaluator/Notifications/ContentPublishedNotificationHandler.cs
-- [ ] T045 [US10] Add DeleteAsync(Guid nodeKey, CancellationToken) to IEvaluationCacheRepository if not present in src/ProWorks.Umbraco.AI.PageEvaluator.Core/
-- [ ] T046 [US10] Implement DeleteAsync in EFCoreEvaluationCacheRepository if not present in src/ProWorks.Umbraco.AI.PageEvaluator.Persistence/Cache/EFCoreEvaluationCacheRepository.cs
-- [ ] T047 [US10] Register ContentPublishedNotificationHandler in PageEvaluatorComposer in src/ProWorks.Umbraco.AI.PageEvaluator/Composers/PageEvaluatorComposer.cs
+- [X] T044 [US10] Create ContentPublishedNotificationHandler that deletes cache entries for published nodes in src/ProWorks.Umbraco.AI.PageEvaluator/Notifications/ContentPublishedNotificationHandler.cs
+- [X] T045 [US10] Add DeleteAsync(Guid nodeKey, CancellationToken) to IEvaluationCacheRepository if not present in src/ProWorks.Umbraco.AI.PageEvaluator.Core/
+- [X] T046 [US10] Implement DeleteAsync in EFCoreEvaluationCacheRepository if not present in src/ProWorks.Umbraco.AI.PageEvaluator.Persistence/Cache/EFCoreEvaluationCacheRepository.cs
+- [X] T047 [US10] Register ContentPublishedNotificationHandler in PageEvaluatorComposer in src/ProWorks.Umbraco.AI.PageEvaluator/Composers/PageEvaluatorComposer.cs
 
 #### US11: Content Truncation and HTML Stripping
 
-- [ ] T048 [US11] Add TruncateAndClean helper method (strip HTML tags heuristically, truncate at 2000 chars) in src/ProWorks.Umbraco.AI.PageEvaluator/Services/PageEvaluationService.cs
-- [ ] T049 [US11] Apply TruncateAndClean to string property values in BuildUserMessage in src/ProWorks.Umbraco.AI.PageEvaluator/Services/PageEvaluationService.cs
+- [X] T048 [US11] Add TruncateAndClean helper method (strip HTML tags heuristically, truncate at 2000 chars) in src/ProWorks.Umbraco.AI.PageEvaluator/Services/PageEvaluationService.cs
+- [X] T049 [US11] Apply TruncateAndClean to string property values in BuildUserMessage in src/ProWorks.Umbraco.AI.PageEvaluator/Services/PageEvaluationService.cs
 
 **Checkpoint**: Property filtering works end-to-end. Cache invalidated on publish. Large content truncated.
 
@@ -158,17 +158,17 @@
 
 ### Tests for Phase 5
 
-- [ ] T050 [P] [US12] Unit test: PageEvaluatorApiController does not inherit UmbracoApiController (reflection check) in tests/ProWorks.Umbraco.AI.PageEvaluator.Tests/
-- [ ] T051 [P] [US13] Unit test: Rate limiter registered with correct policy name and default window in tests/ProWorks.Umbraco.AI.PageEvaluator.Tests/
+- [X] T050 [P] [US12] Unit test: PageEvaluatorApiController does not inherit UmbracoApiController (reflection check) in tests/ProWorks.Umbraco.AI.PageEvaluator.Tests/
+- [X] T051 [P] [US13] Unit test: Rate limiter registered with correct policy name and default window in tests/ProWorks.Umbraco.AI.PageEvaluator.Tests/
 
 ### Implementation for Phase 5
 
-- [ ] T052 [P] [US12] Change PageEvaluatorApiController base class from UmbracoApiController to ControllerBase in src/ProWorks.Umbraco.AI.PageEvaluator/Controllers/PageEvaluatorApiController.cs
-- [ ] T053 [US13] Add rate limiter registration with configurable window to PageEvaluatorComposer in src/ProWorks.Umbraco.AI.PageEvaluator/Composers/PageEvaluatorComposer.cs
-- [ ] T054 [US13] Add [EnableRateLimiting("PageEvaluatorEvaluate")] to EvaluateAsync in src/ProWorks.Umbraco.AI.PageEvaluator/Controllers/PageEvaluatorApiController.cs
-- [ ] T055 [US13] Add RateLimitSeconds config to test site appsettings in src/ProWorks.Umbraco.AI.PageEvaluator.TestSite/appsettings.json
-- [ ] T056 [US14] Fix onInit and onUnload type signatures to match UmbEntryPointOnInit and UmbEntryPointOnUnload in src/ProWorks.Umbraco.AI.PageEvaluator.Client/src/entry-point.ts
-- [ ] T057 [US14] Rebuild client after TypeScript changes: npm run build in src/ProWorks.Umbraco.AI.PageEvaluator.Client/
+- [X] T052 [P] [US12] Change PageEvaluatorApiController base class from UmbracoApiController to ControllerBase in src/ProWorks.Umbraco.AI.PageEvaluator/Controllers/PageEvaluatorApiController.cs
+- [X] T053 [US13] Add rate limiter registration with configurable window to PageEvaluatorComposer in src/ProWorks.Umbraco.AI.PageEvaluator/Composers/PageEvaluatorComposer.cs
+- [X] T054 [US13] Add [EnableRateLimiting("PageEvaluatorEvaluate")] to EvaluateAsync in src/ProWorks.Umbraco.AI.PageEvaluator/Controllers/PageEvaluatorApiController.cs
+- [X] T055 [US13] Add RateLimitSeconds config to test site appsettings in src/ProWorks.Umbraco.AI.PageEvaluator.TestSite/appsettings.json
+- [X] T056 [US14] Fix onInit and onUnload type signatures to match UmbEntryPointOnInit and UmbEntryPointOnUnload in src/ProWorks.Umbraco.AI.PageEvaluator.Client/src/entry-point.ts
+- [X] T057 [US14] Rebuild client after TypeScript changes: npm run build in src/ProWorks.Umbraco.AI.PageEvaluator.Client/
 
 **Checkpoint**: All cleanup items addressed. Build clean. Rate limiting functional.
 
@@ -180,11 +180,11 @@
 
 **Purpose**: Final validation, build verification, CLAUDE.md updates
 
-- [ ] T058 Run full dotnet build for test site and verify zero warnings in src/ProWorks.Umbraco.AI.PageEvaluator.TestSite/
-- [ ] T059 Run dotnet test and verify all tests pass in tests/ProWorks.Umbraco.AI.PageEvaluator.Tests/
-- [ ] T060 Run npm run build and verify clean TypeScript build in src/ProWorks.Umbraco.AI.PageEvaluator.Client/
-- [ ] T061 Update CLAUDE.md to reflect IAIChatService replacing IAIChatClientFactory in CLAUDE.md
-- [ ] T062 Run quickstart.md validation steps for all phases in specs/002-code-review-fixes/quickstart.md
+- [X] T058 Run full dotnet build for test site and verify zero warnings in src/ProWorks.Umbraco.AI.PageEvaluator.TestSite/
+- [X] T059 Run dotnet test and verify all tests pass in tests/ProWorks.Umbraco.AI.PageEvaluator.Tests/
+- [X] T060 Run npm run build and verify clean TypeScript build in src/ProWorks.Umbraco.AI.PageEvaluator.Client/
+- [X] T061 Update CLAUDE.md to reflect IAIChatService replacing IAIChatClientFactory in CLAUDE.md
+- [X] T062 Run quickstart.md validation steps for all phases in specs/002-code-review-fixes/quickstart.md
 
 ---
 

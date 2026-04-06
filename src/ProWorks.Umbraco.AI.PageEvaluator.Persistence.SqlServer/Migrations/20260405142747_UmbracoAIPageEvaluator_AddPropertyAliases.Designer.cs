@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using ProWorks.Umbraco.AI.PageEvaluator.Persistence;
 
@@ -11,9 +12,11 @@ using ProWorks.Umbraco.AI.PageEvaluator.Persistence;
 namespace ProWorks.Umbraco.AI.PageEvaluator.Persistence.SqlServer.Migrations
 {
     [DbContext(typeof(UmbracoAIPageEvaluatorDbContext))]
-    partial class UmbracoAIPageEvaluatorDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260405142747_UmbracoAIPageEvaluator_AddPropertyAliases")]
+    partial class UmbracoAIPageEvaluator_AddPropertyAliases
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
