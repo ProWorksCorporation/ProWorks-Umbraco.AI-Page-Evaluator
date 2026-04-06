@@ -34,7 +34,9 @@ if (data is not null)
 
 ---
 
-### 2. Dead element file: `page-evaluator-action.element.ts`
+### 2. [X] Dead element file: `page-evaluator-action.element.ts`
+
+[COMPLETE April 6th]
 
 **File:** `src/ProWorks.Umbraco.AI.PageEvaluator.Client/src/workspace-action/page-evaluator-action.element.ts`
 
