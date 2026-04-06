@@ -419,7 +419,7 @@ public class PageEvaluatorApiControllerTests
     // ---------------------------------------------------------------------------
 
     [Fact]
-    public async Task DeleteConfigurationAsync_WhenExists_Returns200AndInvalidatesCache()
+    public async Task DeleteConfigurationAsync_WhenExists_Returns204AndInvalidatesCache()
     {
         var id = Guid.NewGuid();
         var config = BuildConfig("blogPost");
@@ -427,7 +427,7 @@ public class PageEvaluatorApiControllerTests
 
         IActionResult result = await _sut.DeleteConfigurationAsync(id);
 
-        Assert.IsType<OkObjectResult>(result);
+        Assert.IsType<NoContentResult>(result);
         await _cacheRepository.Received(1).DeleteByDocumentTypeAliasAsync(
             "blogPost", Arg.Any<CancellationToken>());
     }

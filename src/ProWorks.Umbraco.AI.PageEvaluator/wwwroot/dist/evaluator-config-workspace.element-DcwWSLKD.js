@@ -1,11 +1,12 @@
-import { html as l, nothing as c, css as h, state as s, customElement as f } from "@umbraco-cms/backoffice/external/lit";
+import { html as l, nothing as c, css as h, state as n, customElement as f } from "@umbraco-cms/backoffice/external/lit";
 import { UmbLitElement as v } from "@umbraco-cms/backoffice/lit-element";
-import { a as p, b as _, d as g } from "./entry-point-es-RentM.js";
-import "./evaluator-form.element-HhyvGohw.js";
-var b = Object.defineProperty, m = Object.getOwnPropertyDescriptor, u = (t, i, a, o) => {
-  for (var e = o > 1 ? void 0 : o ? m(i, a) : i, n = t.length - 1, d; n >= 0; n--)
-    (d = t[n]) && (e = (o ? d(i, a, e) : d(e)) || e);
-  return o && e && b(i, a, e), e;
+import { umbConfirmModal as p } from "@umbraco-cms/backoffice/modal";
+import { a as _, b as g, d as b } from "./entry-point-DqhWLY8H.js";
+import "./evaluator-form.element-9z18gLBU.js";
+var m = Object.defineProperty, y = Object.getOwnPropertyDescriptor, u = (t, i, a, o) => {
+  for (var e = o > 1 ? void 0 : o ? y(i, a) : i, s = t.length - 1, d; s >= 0; s--)
+    (d = t[s]) && (e = (o ? d(i, a, e) : d(e)) || e);
+  return o && e && m(i, a, e), e;
 };
 let r = class extends v {
   constructor() {
@@ -17,7 +18,7 @@ let r = class extends v {
   async _loadConfigs() {
     this._loading = !0, this._error = null;
     try {
-      const t = await p();
+      const t = await _();
       this._configs = [...t.items];
     } catch {
       this._error = "Failed to load evaluator configurations.";
@@ -37,18 +38,27 @@ let r = class extends v {
   }
   async _handleActivate(t) {
     try {
-      await _(t), await this._loadConfigs();
+      await g(t), await this._loadConfigs();
     } catch {
       this._error = "Failed to activate the evaluator configuration.";
     }
   }
   async _handleDelete(t) {
-    if (confirm("Are you sure you want to delete this evaluator configuration?"))
-      try {
-        await g(t), this._configs = this._configs.filter((i) => i.id !== t);
-      } catch {
-        this._error = "Failed to delete the evaluator configuration.";
-      }
+    try {
+      await p(this, {
+        headline: "Delete Configuration",
+        content: "Are you sure you want to delete this evaluator configuration?",
+        color: "danger",
+        confirmLabel: "Delete"
+      });
+    } catch {
+      return;
+    }
+    try {
+      await b(t), this._configs = this._configs.filter((i) => i.id !== t);
+    } catch {
+      this._error = "Failed to delete the evaluator configuration.";
+    }
   }
   _handleEdit(t) {
     this._editId = t, this._view = "form";
@@ -198,19 +208,19 @@ r.styles = h`
     }
   `;
 u([
-  s()
+  n()
 ], r.prototype, "_configs", 2);
 u([
-  s()
+  n()
 ], r.prototype, "_loading", 2);
 u([
-  s()
+  n()
 ], r.prototype, "_error", 2);
 u([
-  s()
+  n()
 ], r.prototype, "_view", 2);
 u([
-  s()
+  n()
 ], r.prototype, "_editId", 2);
 r = u([
   f("evaluator-config-workspace")
@@ -218,4 +228,4 @@ r = u([
 export {
   r as EvaluatorConfigWorkspaceElement
 };
-//# sourceMappingURL=evaluator-config-workspace.element-BM_Hey65.js.map
+//# sourceMappingURL=evaluator-config-workspace.element-DcwWSLKD.js.map

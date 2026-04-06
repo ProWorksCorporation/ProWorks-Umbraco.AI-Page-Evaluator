@@ -79,7 +79,9 @@ The builder call uses `.WithAlias("proworks-page-evaluator")` but not `.WithName
 
 ---
 
-### 5. `confirm()` used for delete instead of `UMB_CONFIRM_MODAL`
+### 5. [X] `confirm()` used for delete instead of `UMB_CONFIRM_MODAL`
+
+[COMPLETE April 6th — replaced native confirm() with umbConfirmModal() from @umbraco-cms/backoffice/modal]
 
 **File:** `src/ProWorks.Umbraco.AI.PageEvaluator.Client/src/evaluator-config/evaluator-config-workspace.element.ts` line 112
 
@@ -95,7 +97,9 @@ const result = await modalManager.open(this, UMB_CONFIRM_MODAL, {
 
 ---
 
-### 6. DELETE endpoint returns 200 instead of 204 No Content
+### 6. [X] DELETE endpoint returns 200 instead of 204 No Content
+
+[COMPLETE April 6th — changed Ok(message) to NoContent(), updated test assertion]
 
 **File:** `src/ProWorks.Umbraco.AI.PageEvaluator/Controllers/PageEvaluatorApiController.cs` line 196
 

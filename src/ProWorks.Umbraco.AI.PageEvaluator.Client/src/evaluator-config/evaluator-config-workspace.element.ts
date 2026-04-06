@@ -1,5 +1,6 @@
 import { customElement, state, html, css, nothing, type TemplateResult } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
+import { umbConfirmModal } from '@umbraco-cms/backoffice/modal';
 import { getConfigurations, activateConfiguration, deleteConfiguration } from '../shared/api-client.js';
 import type { EvaluatorConfigItem, EvaluatorConfigListResponse } from '../shared/types.js';
 import './evaluator-form.element.js';
@@ -109,7 +110,17 @@ export class EvaluatorConfigWorkspaceElement extends UmbLitElement {
   }
 
   private async _handleDelete(id: string): Promise<void> {
-    if (!confirm('Are you sure you want to delete this evaluator configuration?')) return;
+    try {
+      await umbConfirmModal(this, {
+        headline: 'Delete Configuration',
+        content: 'Are you sure you want to delete this evaluator configuration?',
+        color: 'danger',
+        confirmLabel: 'Delete',
+      });
+    } catch {
+      // User cancelled the modal
+      return;
+    }
     try {
       await deleteConfiguration(id);
       this._configs = this._configs.filter((c) => c.id !== id);

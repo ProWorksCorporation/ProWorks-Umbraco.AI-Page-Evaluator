@@ -193,7 +193,7 @@ public sealed class PageEvaluatorApiController : ControllerBase
 
         await _configService.DeleteAsync(id, cancellationToken);
         await _cacheRepository.DeleteByDocumentTypeAliasAsync(existing.DocumentTypeAlias, cancellationToken);
-        return Ok(new { message = "Deleted" });
+        return NoContent();
     }
 
     // ---------------------------------------------------------------------------
