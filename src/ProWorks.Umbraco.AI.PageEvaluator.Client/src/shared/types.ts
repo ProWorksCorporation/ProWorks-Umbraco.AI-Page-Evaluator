@@ -25,6 +25,7 @@ export interface EvaluatorConfigItem {
   readonly dateCreated: string; // ISO 8601
   readonly dateModified: string; // ISO 8601
   readonly propertyAliases: string[] | null;
+  readonly version: number;
 }
 
 /** Response body for GET /configurations. */
@@ -53,6 +54,7 @@ export interface UpdateEvaluatorConfigRequest {
   readonly promptText: string;
   readonly description?: string | null;
   readonly propertyAliases?: string[] | null;
+  readonly version: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -95,17 +97,6 @@ export interface EvaluatePageRequest {
   readonly nodeId: string;
   readonly documentTypeAlias: string;
   readonly properties: Record<string, unknown>;
-}
-
-// ---------------------------------------------------------------------------
-// Error response
-// ---------------------------------------------------------------------------
-
-/** Standard error response shape (all endpoints). */
-export interface ApiErrorResponse {
-  readonly title: string;
-  readonly detail?: string;
-  readonly errors?: Record<string, readonly string[]>;
 }
 
 // ---------------------------------------------------------------------------

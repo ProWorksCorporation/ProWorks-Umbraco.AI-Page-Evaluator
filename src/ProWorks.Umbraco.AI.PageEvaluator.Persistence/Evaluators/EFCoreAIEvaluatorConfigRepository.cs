@@ -95,6 +95,9 @@ public sealed class EFCoreAIEvaluatorConfigRepository : IAIEvaluatorConfigReposi
             }
             else
             {
+                // Set the original Version to the client-supplied value so EF Core's
+                // concurrency check (WHERE Version = @original) detects conflicts.
+                db.Entry(existing).Property(e => e.Version).OriginalValue = config.Version;
                 AIEvaluatorConfigEntityFactory.ApplyToEntity(config, existing);
                 existing.IsActive = true;
             }

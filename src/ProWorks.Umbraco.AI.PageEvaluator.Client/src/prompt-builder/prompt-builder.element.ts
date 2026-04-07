@@ -1,7 +1,8 @@
-import { customElement, property, state, html, nothing, LitElement, type TemplateResult } from '@umbraco-cms/backoffice/external/lit';
+import { customElement, property, state, html, nothing, type TemplateResult } from '@umbraco-cms/backoffice/external/lit';
+import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { CHECKLIST_CATEGORIES } from './checklist-categories.js';
 import type { DocumentTypePropertySummary } from '../shared/types.js';
-import { apiClient } from '../shared/api-client.js';
+import { apiClient, BEARER } from '../shared/api-client.js';
 
 // ---------------------------------------------------------------------------
 // Umbraco Management API helper (exported for MSW integration tests — T054)
@@ -19,8 +20,6 @@ interface UmbracoDocTypeResponse {
   readonly name: string;
   readonly properties: readonly UmbracoDocTypeProperty[];
 }
-
-const BEARER = [{ scheme: 'bearer', type: 'http' }] as const;
 
 /**
  * Fetches document type properties from the Umbraco Management API.
@@ -65,7 +64,7 @@ export async function fetchDocTypeProperties(
  * the admin clicks "Use This Prompt".
  */
 @customElement('page-evaluator-prompt-builder')
-export class PromptBuilderElement extends LitElement {
+export class PromptBuilderElement extends UmbLitElement {
   @property({ attribute: 'document-type-alias' }) documentTypeAlias = '';
 
   @state() _properties: DocumentTypePropertySummary[] = [];
@@ -83,9 +82,6 @@ export class PromptBuilderElement extends LitElement {
       this._toggleCategory(id, selected);
     });
     this.addEventListener('use-prompt', () => this.usePrompt());
-    if (this.documentTypeAlias) {
-      void this._loadProperties();
-    }
   }
 
   override updated(changed: Map<string, unknown>): void {
@@ -100,7 +96,7 @@ export class PromptBuilderElement extends LitElement {
     try {
       this._properties = await fetchDocTypeProperties(this.documentTypeAlias);
     } catch {
-      this._error = 'Could not load document type properties.';
+      this._error = this.localize.term('promptBuilder_loadError');
     } finally {
       this._loading = false;
     }
@@ -171,7 +167,7 @@ export class PromptBuilderElement extends LitElement {
         <!-- Property aliases grouped by tab/group -->
         ${groups.size > 0
           ? html`
-              <uui-box headline="Document Type Properties">
+              <uui-box headline=${this.localize.term('promptBuilder_propertiesLabel')}>
                 ${Array.from(groups.entries()).map(
                   ([groupName, props]) => html`
                     <h3 style="margin: 0.5rem 0 0.25rem;">${groupName}</h3>
@@ -191,7 +187,7 @@ export class PromptBuilderElement extends LitElement {
           : nothing}
 
         <!-- Category checkboxes -->
-        <uui-box headline="Checklist Categories">
+        <uui-box headline=${this.localize.term('promptBuilder_categoriesLabel')}>
           <div style="display: flex; flex-direction: column; gap: var(--uui-size-space-3); padding: var(--uui-size-space-3) 0;">
             ${CHECKLIST_CATEGORIES.map(
               (cat) => html`
@@ -208,10 +204,10 @@ export class PromptBuilderElement extends LitElement {
 
         <!-- Site context -->
         <uui-form-layout-item>
-          <uui-label for="site-context">Site Context (optional)</uui-label>
+          <uui-label for="site-context">${this.localize.term('promptBuilder_siteContextLabel')}</uui-label>
           <uui-textarea
             id="site-context"
-            label="Site context"
+            label=${this.localize.term('promptBuilder_siteContextLabel')}
             placeholder="Describe the site purpose, audience, or brand guidelines…"
             .value=${this._siteContext}
             @input=${(e: InputEvent) => {
@@ -224,23 +220,23 @@ export class PromptBuilderElement extends LitElement {
         <div style="display: flex; gap: 0.5rem;">
           <uui-button
             look="secondary"
-            label="Generate Prompt Draft"
+            label=${this.localize.term('promptBuilder_generateButton')}
             @click=${() => this.generateDraft()}>
-            Generate Prompt Draft
+            ${this.localize.term('promptBuilder_generateButton')}
           </uui-button>
         </div>
 
         <!-- Draft preview -->
         ${this._draft
           ? html`
-              <uui-box headline="Generated Draft">
+              <uui-box headline=${this.localize.term('promptBuilder_generatedDraftLabel')}>
                 <pre data-draft style="white-space: pre-wrap;">${this._draft}</pre>
                 <uui-button
                   slot="header-actions"
                   look="primary"
-                  label="Use This Prompt"
+                  label=${this.localize.term('promptBuilder_usePromptButton')}
                   @click=${() => this.usePrompt()}>
-                  Use This Prompt
+                  ${this.localize.term('promptBuilder_usePromptButton')}
                 </uui-button>
               </uui-box>
             `

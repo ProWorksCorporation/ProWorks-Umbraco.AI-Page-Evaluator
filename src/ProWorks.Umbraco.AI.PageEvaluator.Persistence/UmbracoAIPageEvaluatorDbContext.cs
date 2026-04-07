@@ -53,6 +53,9 @@ public sealed class UmbracoAIPageEvaluatorDbContext : DbContext
         {
             entity.HasKey(e => e.Id);
 
+            // Optimistic concurrency: EF Core adds WHERE Version = @old to UPDATE statements.
+            entity.Property(e => e.Version).IsConcurrencyToken();
+
             // Composite index used by the active-config lookup and list queries.
             entity.HasIndex(e => new { e.DocumentTypeAlias, e.IsActive })
                 .HasDatabaseName("IX_umbracoAIEvaluatorConfig_DocumentTypeAlias_IsActive");

@@ -9,6 +9,7 @@ using Umbraco.AI.Core.InlineChat;
 using Umbraco.Cms.Core.DeliveryApi;
 using Umbraco.Cms.Core.Models.PublishedContent;
 using Umbraco.Cms.Core.Web;
+using System.Text.RegularExpressions;
 
 namespace ProWorks.Umbraco.AI.PageEvaluator.Services;
 
@@ -18,10 +19,11 @@ namespace ProWorks.Umbraco.AI.PageEvaluator.Services;
 /// instructions and property data, calls <see cref="IAIChatService"/>, and returns a
 /// structured <see cref="EvaluationReport"/>.
 /// </summary>
-public sealed class PageEvaluationService : IPageEvaluationService
+public sealed partial class PageEvaluationService : IPageEvaluationService
 {
     private readonly IAIEvaluatorConfigService _configService;
     private readonly IAIContextService _contextService;
+    private readonly IAIContextProcessor _contextProcessor;
     private readonly IAIChatService _chatService;
     private readonly IUmbracoContextAccessor _umbracoContextAccessor;
     private readonly IApiContentBuilder _contentBuilder;
@@ -30,6 +32,7 @@ public sealed class PageEvaluationService : IPageEvaluationService
     public PageEvaluationService(
         IAIEvaluatorConfigService configService,
         IAIContextService contextService,
+        IAIContextProcessor contextProcessor,
         IAIChatService chatService,
         IUmbracoContextAccessor umbracoContextAccessor,
         IApiContentBuilder contentBuilder,
@@ -37,6 +40,7 @@ public sealed class PageEvaluationService : IPageEvaluationService
     {
         _configService = configService;
         _contextService = contextService;
+        _contextProcessor = contextProcessor;
         _chatService = chatService;
         _umbracoContextAccessor = umbracoContextAccessor;
         _contentBuilder = contentBuilder;
@@ -98,6 +102,8 @@ public sealed class PageEvaluationService : IPageEvaluationService
         ChatResponse response = await _chatService.GetChatResponseAsync(
             chat => chat
                 .WithAlias("proworks-page-evaluator")
+                .WithName("ProWorks Page Evaluator")
+                .WithDescription("Evaluates page content against configured criteria")
                 .WithProfile(config.ProfileId)
                 .WithChatOptions(chatOptions),
             messages,
@@ -235,6 +241,9 @@ public sealed class PageEvaluationService : IPageEvaluationService
         return text;
     }
 
+    [GeneratedRegex("<[^>]+>")]
+    private static partial Regex HtmlTagRegex();
+
     /// <summary>
     /// Heuristic HTML tag stripping. If the string contains HTML-like angle-bracket patterns,
     /// removes them. Otherwise returns the string unchanged.
@@ -244,7 +253,8 @@ public sealed class PageEvaluationService : IPageEvaluationService
         if (!input.Contains('<'))
             return input;
 
-        return System.Text.RegularExpressions.Regex.Replace(input, "<[^>]+>", string.Empty).Trim();
+        return HtmlTagRegex().Replace(input, string.Empty).Trim();
+
     }
 
     // ---------------------------------------------------------------------------
@@ -278,20 +288,26 @@ public sealed class PageEvaluationService : IPageEvaluationService
                     sb.AppendLine($"--- Context: {context.Name} ---");
                     foreach (var resource in alwaysResources)
                     {
+                        var resolved = new AIResolvedResource
+                        {
+                            Id = resource.Id,
+                            ResourceTypeId = resource.ResourceTypeId,
+                            Name = resource.Name,
+                            Description = resource.Description,
+                            Settings = resource.Settings,
+                            InjectionMode = resource.InjectionMode,
+                            Source = nameof(PageEvaluationService),
+                            ContextName = context.Name,
+                        };
+
+                        string formatted = await _contextProcessor
+                            .ProcessResourceForLlmAsync(resolved, cancellationToken);
+
                         sb.AppendLine($"### {resource.Name}");
                         if (!string.IsNullOrWhiteSpace(resource.Description))
                             sb.AppendLine(resource.Description);
-                        if (resource.Settings is not null)
-                        {
-                            try
-                            {
-                                sb.AppendLine(JsonSerializer.Serialize(resource.Settings));
-                            }
-                            catch (JsonException)
-                            {
-                                sb.AppendLine(resource.Settings.ToString());
-                            }
-                        }
+                        if (!string.IsNullOrWhiteSpace(formatted))
+                            sb.AppendLine(formatted);
                     }
                 }
             }

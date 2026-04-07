@@ -123,3 +123,15 @@ refs/
 
 # Auto Claude data directory
 .auto-claude/
+
+# Code review notes
+CODE-REVIEW*.md
+CODE_REVIEW*.md
+
+# Playwright MCP
+.playwright-mcp/
+
+# Internal development artifacts
+ExamplePrompts/
+screenshots/
+specs/

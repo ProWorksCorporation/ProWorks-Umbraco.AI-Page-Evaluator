@@ -185,6 +185,40 @@ public class AIEvaluatorConfigServiceTests
     }
 
     [Fact]
+    public async Task UpdateAsync_PreservesClientSuppliedVersion()
+    {
+        var id = Guid.NewGuid();
+        var profileId = Guid.NewGuid();
+        var existing = ExistingConfig(id: id, profileId: profileId);
+        existing.Version = 2;
+        _repository.GetByIdAsync(id, Arg.Any<CancellationToken>()).Returns(existing);
+        MockProfileExists(profileId);
+
+        var updated = NewConfig(id: id, profileId: profileId);
+        updated.Version = 5;
+        var result = await _sut.UpdateAsync(updated, Guid.NewGuid());
+
+        Assert.Equal(5, result.Version);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_FallsBackToExistingVersion_WhenVersionIsZero()
+    {
+        var id = Guid.NewGuid();
+        var profileId = Guid.NewGuid();
+        var existing = ExistingConfig(id: id, profileId: profileId);
+        existing.Version = 3;
+        _repository.GetByIdAsync(id, Arg.Any<CancellationToken>()).Returns(existing);
+        MockProfileExists(profileId);
+
+        var updated = NewConfig(id: id, profileId: profileId);
+        updated.Version = 0; // client didn't supply version
+        var result = await _sut.UpdateAsync(updated, Guid.NewGuid());
+
+        Assert.Equal(3, result.Version);
+    }
+
+    [Fact]
     public async Task UpdateAsync_ThrowsInvalidOperationException_WhenConfigNotFound()
     {
         _repository.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
