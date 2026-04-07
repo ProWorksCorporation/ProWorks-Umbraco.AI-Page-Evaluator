@@ -1,14 +1,14 @@
-import { html as l, nothing as d, css as h, state as n, customElement as f } from "@umbraco-cms/backoffice/external/lit";
-import { UmbLitElement as m } from "@umbraco-cms/backoffice/lit-element";
-import { umbConfirmModal as _ } from "@umbraco-cms/backoffice/modal";
-import { a as v, b as g, d as b } from "./entry-point-INCDL3NC.js";
-import "./evaluator-form.element-CmE5hYcr.js";
-var p = Object.defineProperty, C = Object.getOwnPropertyDescriptor, u = (t, i, a, o) => {
-  for (var e = o > 1 ? void 0 : o ? C(i, a) : i, s = t.length - 1, c; s >= 0; s--)
-    (c = t[s]) && (e = (o ? c(i, a, e) : c(e)) || e);
-  return o && e && p(i, a, e), e;
+import { html as l, nothing as d, css as h, state as n, customElement as m } from "@umbraco-cms/backoffice/external/lit";
+import { UmbLitElement as v } from "@umbraco-cms/backoffice/lit-element";
+import { umbConfirmModal as p } from "@umbraco-cms/backoffice/modal";
+import { a as f, b as g, d as _ } from "./entry-point-B5MfU_kU.js";
+import "./evaluator-form.element-D2bKswxk.js";
+var b = Object.defineProperty, y = Object.getOwnPropertyDescriptor, u = (t, i, o, a) => {
+  for (var e = a > 1 ? void 0 : a ? y(i, o) : i, s = t.length - 1, c; s >= 0; s--)
+    (c = t[s]) && (e = (a ? c(i, o, e) : c(e)) || e);
+  return a && e && b(i, o, e), e;
 };
-let r = class extends m {
+let r = class extends v {
   constructor() {
     super(...arguments), this._configs = [], this._loading = !1, this._error = null, this._view = "list", this._editId = null;
   }
@@ -18,7 +18,7 @@ let r = class extends m {
   async _loadConfigs() {
     this._loading = !0, this._error = null;
     try {
-      const t = await v();
+      const t = await f();
       this._configs = [...t.items];
     } catch {
       this._error = this.localize.term("evaluatorConfig_loadError");
@@ -29,11 +29,11 @@ let r = class extends m {
   _groupByDocType() {
     const t = /* @__PURE__ */ new Map();
     for (const i of this._configs) {
-      const a = t.get(i.documentTypeAlias) ?? [];
-      a.push(i), t.set(i.documentTypeAlias, a);
+      const o = t.get(i.documentTypeAlias) ?? [];
+      o.push(i), t.set(i.documentTypeAlias, o);
     }
-    for (const [i, a] of t)
-      a.sort((o, e) => o.isActive !== e.isActive ? o.isActive ? -1 : 1 : e.dateModified.localeCompare(o.dateModified)), t.set(i, a);
+    for (const [i, o] of t)
+      o.sort((a, e) => a.isActive !== e.isActive ? a.isActive ? -1 : 1 : e.dateModified.localeCompare(a.dateModified)), t.set(i, o);
     return t;
   }
   async _handleActivate(t) {
@@ -45,7 +45,7 @@ let r = class extends m {
   }
   async _handleDelete(t) {
     try {
-      await _(this, {
+      await p(this, {
         headline: this.localize.term("evaluatorConfig_deleteConfirmHeadline"),
         content: this.localize.term("evaluatorConfig_deleteConfirmContent"),
         color: "danger",
@@ -55,7 +55,7 @@ let r = class extends m {
       return;
     }
     try {
-      await b(t), this._configs = this._configs.filter((i) => i.id !== t);
+      await _(t), this._configs = this._configs.filter((i) => i.id !== t);
     } catch {
       this._error = this.localize.term("evaluatorConfig_deleteError");
     }
@@ -96,6 +96,16 @@ let r = class extends m {
     const t = this._groupByDocType();
     return l`
       <div id="content">
+        <div class="promo-notice">
+          <img class="promo-logo" src="/App_Plugins/ProWorks.AI.PageEvaluator/proworks-logo.png" alt="ProWorks" />
+          <div class="promo-notice-content">
+            <h4>${this.localize.term("promoNotice_headline")}</h4>
+            <p>${this.localize.term("promoNotice_body")}</p>
+            <a href="https://www.proworks.com/ai" target="_blank" rel="noopener">
+              ${this.localize.term("promoNotice_linkText")} &rarr;
+            </a>
+          </div>
+        </div>
         <div class="list-header">
           <h2>${this.localize.term("evaluatorConfig_listHeadline")}</h2>
           <uui-button
@@ -109,10 +119,10 @@ let r = class extends m {
         ${this._error ? l`<uui-tag color="danger">${this._error}</uui-tag>` : d}
 
         ${t.size === 0 ? l`<p>${this.localize.term("evaluatorConfig_emptyState")}</p>` : Array.from(t.entries()).map(
-      ([i, a]) => {
-        var o;
+      ([i, o]) => {
+        var a;
         return l`
-                <uui-box headline=${((o = a[0]) == null ? void 0 : o.documentTypeName) ?? i}>
+                <uui-box headline=${((a = o[0]) == null ? void 0 : a.documentTypeName) ?? i}>
                   <uui-table>
                     <uui-table-head>
                       <uui-table-head-cell>${this.localize.term("evaluatorConfig_tableHeaderName")}</uui-table-head-cell>
@@ -120,7 +130,7 @@ let r = class extends m {
                       <uui-table-head-cell>${this.localize.term("evaluatorConfig_tableHeaderStatus")}</uui-table-head-cell>
                       <uui-table-head-cell>${this.localize.term("evaluatorConfig_tableHeaderActions")}</uui-table-head-cell>
                     </uui-table-head>
-                    ${a.map(
+                    ${o.map(
           (e) => l`
                         <uui-table-row>
                           <uui-table-cell>
@@ -159,6 +169,7 @@ let r = class extends m {
               `;
       }
     )}
+
       </div>
     `;
   }
@@ -206,6 +217,49 @@ r.styles = h`
       margin: 0;
       font-size: var(--uui-type-h3-size, 1.25rem);
     }
+
+    .promo-notice {
+      margin-bottom: var(--uui-size-layout-1);
+      border: 1px solid var(--uui-color-border);
+      border-radius: var(--uui-border-radius);
+      padding: var(--uui-size-layout-1);
+      background: var(--uui-color-surface);
+      display: flex;
+      align-items: flex-start;
+      gap: var(--uui-size-space-4);
+    }
+
+    .promo-notice img.promo-logo {
+      flex-shrink: 0;
+      width: 32px;
+      height: 32px;
+      object-fit: contain;
+      margin-top: 2px;
+    }
+
+    .promo-notice-content h4 {
+      margin: 0 0 var(--uui-size-space-2) 0;
+      font-size: var(--uui-type-default-size, 0.95rem);
+      font-weight: 600;
+    }
+
+    .promo-notice-content p {
+      margin: 0 0 var(--uui-size-space-3) 0;
+      font-size: var(--uui-type-small-size, 0.85rem);
+      color: var(--uui-color-text-alt);
+      line-height: 1.5;
+    }
+
+    .promo-notice-content a {
+      font-size: var(--uui-type-small-size, 0.85rem);
+      color: var(--uui-color-interactive);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .promo-notice-content a:hover {
+      text-decoration: underline;
+    }
   `;
 u([
   n()
@@ -223,9 +277,9 @@ u([
   n()
 ], r.prototype, "_editId", 2);
 r = u([
-  f("evaluator-config-workspace")
+  m("evaluator-config-workspace")
 ], r);
 export {
   r as EvaluatorConfigWorkspaceElement
 };
-//# sourceMappingURL=evaluator-config-workspace.element-B7YluVPb.js.map
+//# sourceMappingURL=evaluator-config-workspace.element-DhpyRw2Z.js.map

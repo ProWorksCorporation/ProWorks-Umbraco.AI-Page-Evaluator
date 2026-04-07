@@ -8,7 +8,7 @@ Developer-facing documentation for the ProWorks Umbraco AI Page Evaluator. For i
 
 ```
 src/
-  ProWorks.Umbraco.AI.PageEvaluator/              # RCL — API controller, services, composer
+  ProWorks.Umbraco.AI.PageEvaluator/              # RCL: API controller, services, composer
     Controllers/PageEvaluatorApiController.cs      # Management API endpoints
     Services/PageEvaluationService.cs             # AI orchestration + property resolution
     Composers/PageEvaluatorComposer.cs            # DI registrations
@@ -123,6 +123,49 @@ dotnet ef migrations add <Name> \
 
 ---
 
+## How It Works
+
+```
+Editor clicks "Evaluate Page"
+        │
+        ▼
+Modal opens → GET /evaluate/cached/{nodeId}
+        │
+        ├─ Cache hit → renders report immediately with "Last evaluated" timestamp
+        │              "Re-run Evaluation" button available to force a fresh call
+        │
+        └─ Cache miss (or Re-run) →
+                │
+                ▼
+        Workspace action collects draft property values
+                │
+                ▼
+        POST /umbraco/management/api/v1/page-evaluator/evaluate
+                │
+                ├─ Fetches the active evaluator config for the document type
+                ├─ Resolves published property values via IApiContentBuilder
+                │   (media → metadata, rich text → plain text, blocks → structured JSON)
+                ├─ Filters to selected properties only (if PropertyAliases configured)
+                ├─ Strips HTML tags and truncates long values (2000 char limit)
+                ├─ Overlays simple draft text values for unsaved edits
+                ├─ Builds system prompt (config prompt + optional context + JSON format instructions)
+                ├─ Adds defensive preamble to guard against prompt injection from content
+                └─ Calls the AI model via IAIChatService (Temperature=0, JSON format)
+                        │
+                        ▼
+                Parses JSON response → EvaluationReport
+                        │
+                        ▼
+                Saved to umbracoAIEvaluationCache (keyed on NodeId)
+                        │
+                        ▼
+                Modal renders: score pills · suggestions · attention items · passing items
+```
+
+> Cache is automatically cleared for all nodes of a document type whenever its evaluator configuration is created, updated, activated, or deleted. Cache entries for individual nodes are also cleared when content is published.
+
+---
+
 ## Architecture Notes
 
 ### Property resolution
@@ -137,7 +180,7 @@ Property values are resolved via Umbraco's `IApiContentBuilder` (the same servic
 
 If the node has not been published, raw draft values are used as a fallback.
 
-**Property filtering**: Evaluator configurations can optionally specify a list of property aliases to include. When set, only those properties are sent to the AI — useful for large document types where only certain fields are relevant to evaluation.
+**Property filtering**: Evaluator configurations can optionally specify a list of property aliases to include. When set, only those properties are sent to the AI. This is useful for large document types where only certain fields are relevant to evaluation.
 
 **Content cleaning**: All string property values have HTML tags stripped and are truncated to 2,000 characters (with a `[...truncated]` marker) before serialization. This reduces token usage without losing meaningful content.
 
@@ -159,7 +202,7 @@ The response parser tries JSON first, then a Markdown numbered-list fallback, th
 
 ### Umbraco.AI integration
 
-- `IAIChatService` (from `Umbraco.AI.Core.Chat`) orchestrates AI calls via the `AIChatBuilder` fluent pattern — never inject `IChatClient` or `IAIChatClientFactory` directly
+- `IAIChatService` (from `Umbraco.AI.Core.Chat`) orchestrates AI calls via the `AIChatBuilder` fluent pattern. Never inject `IChatClient` or `IAIChatClientFactory` directly
 - Context resources with `InjectionMode.Always` are injected into the system prompt
 - `ChatOptions`: `Temperature = 0` for deterministic output, `ResponseFormat = Json` for structured responses, `Tools = []` to disable function calling
 - Uses `[ComposeAfter(typeof(UmbracoAIComposer))]` to ensure correct DI registration order

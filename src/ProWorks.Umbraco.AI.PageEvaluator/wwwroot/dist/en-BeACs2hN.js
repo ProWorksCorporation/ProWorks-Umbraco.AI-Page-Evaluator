@@ -86,6 +86,11 @@ const e = {
     cancelButton: "Cancel",
     validationRequired: "This field is required."
   },
+  promoNotice: {
+    headline: "From ProWorks: See How AI Views Your Entire Site",
+    body: "This package evaluates pages one at a time. The ProWorks AI Perspective Report analyzes your entire website at once, revealing how AI systems interpret your organization's positioning, messaging, and value propositions across every page.",
+    linkText: "Get your free AI Perspective Report"
+  },
   promptBuilder: {
     openButton: "Open Prompt Builder",
     title: "Prompt Builder",
@@ -101,4 +106,4 @@ const e = {
 export {
   e as default
 };
-//# sourceMappingURL=en-D6Ec2U7p.js.map
+//# sourceMappingURL=en-BeACs2hN.js.map
