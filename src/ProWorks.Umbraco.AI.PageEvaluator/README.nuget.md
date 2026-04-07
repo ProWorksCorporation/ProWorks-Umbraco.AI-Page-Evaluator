@@ -4,7 +4,7 @@ AI-powered page evaluation for the Umbraco 17 back-office using the [Umbraco.AI]
 
 ## What it does
 
-Adds an **Evaluate Page** workspace action to the Umbraco content editor. Clicking it sends the current page's content to a configured AI model and returns a structured quality report — scored checks, warnings, and actionable suggestions — directly inside the back-office.
+Adds an **Evaluate Page** workspace action to the Umbraco content editor. Clicking it sends the current page's content to a configured AI model and returns a structured quality report directly inside the back-office, including scored checks, warnings, and actionable suggestions.
 
 ## Requirements
 
@@ -17,9 +17,9 @@ Adds an **Evaluate Page** workspace action to the Umbraco content editor. Clicki
 ## Quick Start
 
 1. Install this package
-2. Run your Umbraco site — migrations apply automatically on startup
+2. Run your Umbraco site (migrations apply automatically on startup)
 3. Go to **Settings → Umbraco.AI Add-ons → Page Evaluator** and create an evaluator configuration
-4. Open any content node of that document type — the **Evaluate Page** button appears in the toolbar
+4. Open any content node of that document type and the **Evaluate Page** button appears in the toolbar
 
 ## Key Features
 
@@ -30,9 +30,9 @@ Adds an **Evaluate Page** workspace action to the Umbraco content editor. Clicki
 
 ## About ProWorks
 
-[ProWorks Corporation](https://www.proworks.com/umbraco-platinum-partner/) is an **Umbraco Platinum Partner** based in Corvallis, Oregon. We have been building and maintaining Umbraco implementations since the early versions of the platform — certified across Umbraco 7 through 17 LTS — and we carry three Umbraco MVPs on staff. We work with organizations across regulated industries including credit unions, insurers, public agencies, and manufacturers. Our approach is consultative: we will meet you where you are and recommend the right next step, even if that means doing less.
+[ProWorks Corporation](https://www.proworks.com/umbraco-platinum-partner/) is an **Umbraco Platinum Partner** based in the USA. We have been building and maintaining Umbraco implementations since the early versions of the platform, certified across Umbraco 7 through 17 LTS, and we have three Umbraco MVPs on staff. We work with organizations across many industries including credit unions, insurers, public agencies, travel, higher education, and manufacturers. Our approach is consultative: we will meet you where you are and recommend the right next step, even if that means doing less.
 
-This package evaluates individual pages on demand. If you're interested in understanding how AI systems interpret your organization's content across your **entire website**, ProWorks offers a site-wide **Content Evaluator service** — delivering an AI Perspective Report on your positioning, messaging, and audience signals based on your publicly available content.
+This package evaluates individual pages on demand. If you're interested in understanding how AI systems interpret your organization's content across your **entire website**, ProWorks offers a site-wide **Content Evaluator service** that delivers an AI Perspective Report on your positioning, messaging, and audience signals based on your publicly available content.
 
 Learn more at [proworks.com/ai](https://www.proworks.com/ai) or [contact us](https://www.proworks.com/contact) to discuss your project.
 
