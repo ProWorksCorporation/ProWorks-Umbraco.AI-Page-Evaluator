@@ -1,6 +1,6 @@
 import { property as g, state as a, customElement as f, html as r, nothing as n, css as b } from "@umbraco-cms/backoffice/external/lit";
 import { UmbLitElement as v } from "@umbraco-cms/backoffice/lit-element";
-import { c as m, B as _, f as x, u as $, h as T } from "./entry-point-C8pn_fmF.js";
+import { c as m, B as _, f as x, u as $, h as T } from "./entry-point-INCDL3NC.js";
 const y = [
   {
     id: "required-fields",
@@ -62,7 +62,7 @@ let u = class extends v {
     super.connectedCallback(), this.addEventListener("category-toggle", (e) => {
       const { id: t, selected: i } = e.detail;
       this._toggleCategory(t, i);
-    }), this.addEventListener("use-prompt", () => this.usePrompt()), this.documentTypeAlias && this._loadProperties();
+    }), this.addEventListener("use-prompt", () => this.usePrompt());
   }
   updated(e) {
     e.has("documentTypeAlias") && this.documentTypeAlias && this._loadProperties();
@@ -653,4 +653,4 @@ s = l([
 export {
   s as EvaluatorFormElement
 };
-//# sourceMappingURL=evaluator-form.element-BF6xIowD.js.map
+//# sourceMappingURL=evaluator-form.element-CmE5hYcr.js.map

@@ -82,9 +82,6 @@ export class PromptBuilderElement extends UmbLitElement {
       this._toggleCategory(id, selected);
     });
     this.addEventListener('use-prompt', () => this.usePrompt());
-    if (this.documentTypeAlias) {
-      void this._loadProperties();
-    }
   }
 
   override updated(changed: Map<string, unknown>): void {

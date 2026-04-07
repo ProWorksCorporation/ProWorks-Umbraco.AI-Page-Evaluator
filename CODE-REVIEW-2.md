@@ -150,7 +150,7 @@ private static string StripHtmlTags(string input)
 
 ---
 
-### 9. `BEARER` security constant duplicated in 3 files
+### 9. [X] `BEARER` security constant duplicated in 3 files
 
 **Files:**
 - `src/ProWorks.Umbraco.AI.PageEvaluator.Client/src/shared/api-client.ts` line 34
@@ -163,7 +163,7 @@ The `BEARER` security descriptor `[{ scheme: 'bearer', type: 'http' }]` is defin
 
 ---
 
-### 10. Double API call on `PromptBuilderElement` mount
+### 10. [X] Double API call on `PromptBuilderElement` mount
 
 **File:** `src/ProWorks.Umbraco.AI.PageEvaluator.Client/src/prompt-builder/prompt-builder.element.ts` lines 78-95
 
@@ -187,7 +187,7 @@ Defines `LOCALIZATION_KEYS` and `DEFAULT_STRINGS` that are never imported. All u
 
 ## LOW Priority — Polish
 
-### 12. `ActivateConfigurationAsync` relies on implicit `IsActive = true` side effect
+### 12. [X] `ActivateConfigurationAsync` relies on implicit `IsActive = true` side effect
 
 **File:** `src/ProWorks.Umbraco.AI.PageEvaluator/Controllers/PageEvaluatorApiController.cs` lines 170-178
 
@@ -197,7 +197,7 @@ Passes the existing config to `UpdateAsync` without explicitly setting `IsActive
 
 ---
 
-### 13. Request DTOs lack `[Required]` annotations
+### 13. [SKIP] Request DTOs lack `[Required]` annotations
 
 **File:** `src/ProWorks.Umbraco.AI.PageEvaluator/Controllers/PageEvaluatorApiController.cs` lines 388-426
 
@@ -205,7 +205,7 @@ Passes the existing config to `UpdateAsync` without explicitly setting `IsActive
 
 ---
 
-### 14. N+1 async calls in `GetConfigurationsAsync`
+### 14. [SKIP] N+1 async calls in `GetConfigurationsAsync`
 
 **File:** `src/ProWorks.Umbraco.AI.PageEvaluator/Controllers/PageEvaluatorApiController.cs` lines 60-64
 
@@ -218,7 +218,7 @@ Each iteration triggers sequential `GetProfileAsync`/`GetContextAsync` calls. Co
 
 ---
 
-### 15. `checkResult` in `api-client.ts` reads response body twice
+### 15. [X] `checkResult` in `api-client.ts` reads response body twice
 
 **File:** `src/ProWorks.Umbraco.AI.PageEvaluator.Client/src/shared/api-client.ts` lines 36-42
 
@@ -234,7 +234,7 @@ if (!result.response.ok) {
 
 ---
 
-### 16. `EvaluationReport` is a `class` while sibling types are `record`
+### 16. [SKIP] `EvaluationReport` is a `class` while sibling types are `record`
 
 **File:** `src/ProWorks.Umbraco.AI.PageEvaluator.Core/Evaluation/EvaluationReport.cs`
 
@@ -242,7 +242,7 @@ if (!result.response.ok) {
 
 ---
 
-### 17. `ApiErrorResponse` type defined but never used
+### 17. [X] `ApiErrorResponse` type defined but never used
 
 **File:** `src/ProWorks.Umbraco.AI.PageEvaluator.Client/src/shared/types.ts` lines 104-109
 

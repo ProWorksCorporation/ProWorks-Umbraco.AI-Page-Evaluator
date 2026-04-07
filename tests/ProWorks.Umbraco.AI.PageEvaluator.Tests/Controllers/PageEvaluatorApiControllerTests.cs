@@ -450,6 +450,24 @@ public class PageEvaluatorApiControllerTests
     }
 
     [Fact]
+    public async Task ActivateConfigurationAsync_ExplicitlySetsIsActiveTrue()
+    {
+        var id = Guid.NewGuid();
+        var config = BuildConfig("blogPost");
+        config.IsActive = false; // simulate an inactive config
+        _configService.GetByIdAsync(id, Arg.Any<CancellationToken>()).Returns(config);
+        _configService.UpdateAsync(Arg.Any<AIEvaluatorConfig>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(config);
+
+        await _sut.ActivateConfigurationAsync(id);
+
+        await _configService.Received(1).UpdateAsync(
+            Arg.Is<AIEvaluatorConfig>(c => c.IsActive),
+            Arg.Any<Guid>(),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task ActivateConfigurationAsync_WhenNotFound_Returns404()
     {
         var id = Guid.NewGuid();

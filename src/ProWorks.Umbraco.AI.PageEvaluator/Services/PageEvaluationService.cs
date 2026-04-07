@@ -253,7 +253,6 @@ public sealed partial class PageEvaluationService : IPageEvaluationService
         if (!input.Contains('<'))
             return input;
 
-        //return System.Text.RegularExpressions.Regex.Replace(input, "<[^>]+>", string.Empty).Trim();
         return HtmlTagRegex().Replace(input, string.Empty).Trim();
 
     }

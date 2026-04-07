@@ -100,17 +100,6 @@ export interface EvaluatePageRequest {
 }
 
 // ---------------------------------------------------------------------------
-// Error response
-// ---------------------------------------------------------------------------
-
-/** Standard error response shape (all endpoints). */
-export interface ApiErrorResponse {
-  readonly title: string;
-  readonly detail?: string;
-  readonly errors?: Record<string, readonly string[]>;
-}
-
-// ---------------------------------------------------------------------------
 // Prompt Builder (front-end only — never sent to server)
 // ---------------------------------------------------------------------------
 

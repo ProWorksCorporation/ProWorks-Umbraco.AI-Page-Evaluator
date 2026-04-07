@@ -89,10 +89,13 @@ for its document type; all prior configurations for that alias are deactivated.
 Updates an existing EvaluatorConfiguration. Saving makes this record the active one
 for its document type.
 
-**Request body**: Same shape as POST (all fields required).
+**Request body**: Same shape as POST (all fields required), plus `version` (int) for
+optimistic concurrency. The `version` value must match the version last read by the
+client; if another user has saved in the meantime the server returns 409.
 
 **Response 200**: Updated configuration object.
 **Response 404**: Not found.
+**Response 409**: Concurrency conflict — the configuration was modified by another user since the client last read it.
 **Response 422**: Validation errors.
 
 ---
@@ -102,7 +105,7 @@ for its document type.
 Deletes an EvaluatorConfiguration. If the deleted record was the active one, the next
 most recently updated configuration for the same document type (if any) becomes active.
 
-**Response 200**: `{ "message": "Deleted" }`
+**Response 204**: No content.
 **Response 404**: Not found.
 
 ---

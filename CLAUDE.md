@@ -82,15 +82,23 @@ dotnet ef migrations add <Name> \
 
 ### Lit Imports
 - **Never** import from bare `lit` or `lit/decorators.js` — Umbraco 17's browser import map has no entry for these specifiers, causing a runtime `Failed to resolve module specifier` error
-- Always import Lit primitives from **`@umbraco-cms/backoffice/external/lit`**: e.g. `import { html, css, LitElement, customElement, state } from '@umbraco-cms/backoffice/external/lit'`
+- Always import Lit primitives from **`@umbraco-cms/backoffice/external/lit`**: e.g. `import { html, css, customElement, state } from '@umbraco-cms/backoffice/external/lit'`
 - The Vite external list does **not** need `/^lit/` or `/^@lit\//` entries — Lit is covered by the existing `/^@umbraco-cms\//` rule
+
+### UmbLitElement & Localization
+- All package components must extend **`UmbLitElement`** (from `@umbraco-cms/backoffice/lit-element`), not `LitElement` — this provides `this.localize.term('section_key')` via `UmbLocalizationController`
+- Modal elements extend `UmbModalBaseElement` which already extends `UmbLitElement` — no base class change needed
+- Localization file: `src/.../Client/src/localization/en.ts` — default-exports a **nested** object `{ section: { key: 'value' } }`. Umbraco's `UmbLocalizationRegistry` joins section + underscore + key, so `{ evaluatePage: { actionLabel: 'Evaluate Page' } }` resolves as `this.localize.term('evaluatePage_actionLabel')`
+- **Never** use flat key format (`evaluatePage_actionLabel: 'value'`) in the localization file — the registry expects the nested structure
+- The localization manifest (`type: 'localization'`) is registered in `entry-point.ts` with `meta: { culture: 'en' }` and `js: () => import('./localization/en.js')`
+- All user-facing strings must go through localization — no hardcoded English strings in component templates
 
 ### Management API Client
 - `@umbraco-cms/backoffice/external/backend-api` does **NOT** export `createClient` — it only exports `client` (the singleton) plus generated service classes. **Do not** attempt to import `createClient` from this path.
 - Use **`umbHttpClient`** from `@umbraco-cms/backoffice/http-client` (re-exported as `apiClient` from `shared/api-client.ts`)
 - `umbHttpClient` is the same `client` singleton; Umbraco's `app.element` configures it with `auth: () => authContext.getLatestToken()` before any extension `onInit` runs — **no `setConfig` call is needed** in our entry-point
 - `entry-point.ts` `onInit` only needs to call `umbExtensionsRegistry.registerMany(manifests)` — no auth context consumption required
-- All API call functions must include `security: [{ scheme: 'bearer', type: 'http' }]` so the client attaches the Bearer token on each request
+- Use `BEARER` exported from `shared/api-client.ts` for the `security` option on all API calls — do not redefine it locally
 - The Umbraco.AI packages use a different approach: their own generated SDK (bundled in their own chunks) that includes its own `createClient`. We cannot replicate that without a generated SDK of our own.
 
 ### RCL / Static Web Assets
@@ -102,6 +110,7 @@ dotnet ef migrations add <Name> \
 - Do **not** use `HasColumnType("nvarchar(max)")` in `OnModelCreating` — it breaks SQLite migrations. Leave unlimited strings without a column type and let each provider use its default (`TEXT` for SQLite, `nvarchar(max)` for SQL Server)
 - A design-time factory exists at `UmbracoAIPageEvaluatorDbContextFactory.cs` in the Sqlite project
 - Migration handler is `RunPageEvaluatorMigrationNotificationHandler` — fires on `UmbracoApplicationStartedNotification`
+- `Version` column on `EvaluatorConfigs` is configured as `.IsConcurrencyToken()` — EF Core adds `WHERE Version = @original` to UPDATE statements. The repository must set `db.Entry(existing).Property(e => e.Version).OriginalValue` to the client-supplied version before saving; the controller catches `DbUpdateConcurrencyException` and returns 409 Conflict
 
 ### Evaluation Cache
 - Cached results are stored in `umbracoAIEvaluationCache` — one row per content node (keyed on `NodeId`)

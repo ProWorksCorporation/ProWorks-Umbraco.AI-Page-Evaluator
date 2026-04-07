@@ -178,6 +178,7 @@ public sealed class PageEvaluatorApiController : ControllerBase
         if (existing is null)
             return NotFound(new { title = $"Evaluator configuration '{id}' not found." });
 
+        existing.IsActive = true;
         AIEvaluatorConfig updated = await _configService.UpdateAsync(existing, GetCurrentUserKey(), cancellationToken);
         await _cacheRepository.DeleteByDocumentTypeAliasAsync(updated.DocumentTypeAlias, cancellationToken);
         return Ok(await ToResponseAsync(updated, cancellationToken));
