@@ -77,7 +77,7 @@ export class EvaluatorConfigWorkspaceElement extends UmbLitElement {
       const response: EvaluatorConfigListResponse = await getConfigurations();
       this._configs = [...response.items];
     } catch {
-      this._error = 'Failed to load evaluator configurations.';
+      this._error = this.localize.term('evaluatorConfig_loadError');
     } finally {
       this._loading = false;
     }
@@ -105,17 +105,17 @@ export class EvaluatorConfigWorkspaceElement extends UmbLitElement {
       await activateConfiguration(id);
       await this._loadConfigs();
     } catch {
-      this._error = 'Failed to activate the evaluator configuration.';
+      this._error = this.localize.term('evaluatorConfig_activateError');
     }
   }
 
   private async _handleDelete(id: string): Promise<void> {
     try {
       await umbConfirmModal(this, {
-        headline: 'Delete Configuration',
-        content: 'Are you sure you want to delete this evaluator configuration?',
+        headline: this.localize.term('evaluatorConfig_deleteConfirmHeadline'),
+        content: this.localize.term('evaluatorConfig_deleteConfirmContent'),
         color: 'danger',
-        confirmLabel: 'Delete',
+        confirmLabel: this.localize.term('evaluatorConfig_deleteButton'),
       });
     } catch {
       // User cancelled the modal
@@ -125,7 +125,7 @@ export class EvaluatorConfigWorkspaceElement extends UmbLitElement {
       await deleteConfiguration(id);
       this._configs = this._configs.filter((c) => c.id !== id);
     } catch {
-      this._error = 'Failed to delete the evaluator configuration.';
+      this._error = this.localize.term('evaluatorConfig_deleteError');
     }
   }
 
@@ -155,12 +155,12 @@ export class EvaluatorConfigWorkspaceElement extends UmbLitElement {
       return html`
         <div id="content">
           <div class="form-header">
-            <h3>${this._editId ? 'Edit Configuration' : 'Create Configuration'}</h3>
+            <h3>${this._editId ? this.localize.term('evaluatorConfig_editHeadline') : this.localize.term('evaluatorConfig_createHeadline')}</h3>
             <uui-button
               look="secondary"
-              label="Back to list"
+              label=${this.localize.term('evaluatorConfig_backLabel')}
               @click=${() => this._handleBack()}>
-              &larr; Back
+              &larr; ${this.localize.term('evaluatorConfig_backButton')}
             </uui-button>
           </div>
           <evaluator-form
@@ -180,28 +180,28 @@ export class EvaluatorConfigWorkspaceElement extends UmbLitElement {
     return html`
       <div id="content">
         <div class="list-header">
-          <h2>Page Evaluator Configurations</h2>
+          <h2>${this.localize.term('evaluatorConfig_listHeadline')}</h2>
           <uui-button
             look="primary"
-            label="Create New"
+            label=${this.localize.term('evaluatorConfig_createButton')}
             @click=${() => this._handleCreate()}>
-            Create New
+            ${this.localize.term('evaluatorConfig_createButton')}
           </uui-button>
         </div>
 
         ${this._error ? html`<uui-tag color="danger">${this._error}</uui-tag>` : nothing}
 
         ${groups.size === 0
-          ? html`<p>No evaluator configurations found. Create one to get started.</p>`
+          ? html`<p>${this.localize.term('evaluatorConfig_emptyState')}</p>`
           : Array.from(groups.entries()).map(
               ([alias, items]) => html`
                 <uui-box headline=${items[0]?.documentTypeName ?? alias}>
                   <uui-table>
                     <uui-table-head>
-                      <uui-table-head-cell>Name</uui-table-head-cell>
-                      <uui-table-head-cell>Profile</uui-table-head-cell>
-                      <uui-table-head-cell>Status</uui-table-head-cell>
-                      <uui-table-head-cell>Actions</uui-table-head-cell>
+                      <uui-table-head-cell>${this.localize.term('evaluatorConfig_tableHeaderName')}</uui-table-head-cell>
+                      <uui-table-head-cell>${this.localize.term('evaluatorConfig_tableHeaderProfile')}</uui-table-head-cell>
+                      <uui-table-head-cell>${this.localize.term('evaluatorConfig_tableHeaderStatus')}</uui-table-head-cell>
+                      <uui-table-head-cell>${this.localize.term('evaluatorConfig_tableHeaderActions')}</uui-table-head-cell>
                     </uui-table-head>
                     ${items.map(
                       (config) => html`
@@ -215,29 +215,29 @@ export class EvaluatorConfigWorkspaceElement extends UmbLitElement {
                           <uui-table-cell>${config.profileName ?? config.profileId}</uui-table-cell>
                           <uui-table-cell>
                             ${config.isActive
-                              ? html`<uui-tag color="positive" look="primary">Active</uui-tag>`
-                              : html`<uui-tag look="secondary">Inactive</uui-tag>`}
+                              ? html`<uui-tag color="positive" look="primary">${this.localize.term('evaluatorConfig_activeLabel')}</uui-tag>`
+                              : html`<uui-tag look="secondary">${this.localize.term('evaluatorConfig_inactiveLabel')}</uui-tag>`}
                           </uui-table-cell>
                           <uui-table-cell>
                             ${!config.isActive
                               ? html`<uui-button
                                   look="secondary"
-                                  label="Activate"
+                                  label=${this.localize.term('evaluatorConfig_activateButton')}
                                   @click=${() => this._handleActivate(config.id)}>
-                                  Activate
+                                  ${this.localize.term('evaluatorConfig_activateButton')}
                                 </uui-button>`
                               : nothing}
                             <uui-button
                               look="secondary"
-                              label="Edit"
+                              label=${this.localize.term('evaluatorConfig_editButton')}
                               @click=${() => this._handleEdit(config.id)}>
-                              Edit
+                              ${this.localize.term('evaluatorConfig_editButton')}
                             </uui-button>
                             <uui-button
                               look="danger"
-                              label="Delete"
+                              label=${this.localize.term('evaluatorConfig_deleteButton')}
                               @click=${() => this._handleDelete(config.id)}>
-                              Delete
+                              ${this.localize.term('evaluatorConfig_deleteButton')}
                             </uui-button>
                           </uui-table-cell>
                         </uui-table-row>

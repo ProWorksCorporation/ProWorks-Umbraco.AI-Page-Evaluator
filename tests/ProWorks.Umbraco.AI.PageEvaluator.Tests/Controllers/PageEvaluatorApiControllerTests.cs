@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
@@ -362,6 +363,51 @@ public class PageEvaluatorApiControllerTests
         IActionResult result = await _sut.UpdateConfigurationAsync(id, request);
 
         Assert.IsType<NotFoundObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task UpdateConfigurationAsync_WhenConcurrencyConflict_Returns409()
+    {
+        var id = Guid.NewGuid();
+        var request = new UpdateEvaluatorConfigRequest
+        {
+            Name = "Updated Evaluator",
+            DocumentTypeAlias = "blogPost",
+            ProfileId = Guid.NewGuid(),
+            PromptText = "New prompt.",
+            Version = 1,
+        };
+        _configService.UpdateAsync(Arg.Any<AIEvaluatorConfig>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new DbUpdateConcurrencyException("Concurrency conflict."));
+
+        IActionResult result = await _sut.UpdateConfigurationAsync(id, request);
+
+        var conflict = Assert.IsType<ConflictObjectResult>(result);
+        Assert.NotNull(conflict.Value);
+    }
+
+    [Fact]
+    public async Task UpdateConfigurationAsync_PassesVersionFromRequest()
+    {
+        var id = Guid.NewGuid();
+        var request = new UpdateEvaluatorConfigRequest
+        {
+            Name = "Updated Evaluator",
+            DocumentTypeAlias = "blogPost",
+            ProfileId = Guid.NewGuid(),
+            PromptText = "New prompt.",
+            Version = 3,
+        };
+        var updated = BuildConfig("blogPost");
+        _configService.UpdateAsync(Arg.Any<AIEvaluatorConfig>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(updated);
+
+        await _sut.UpdateConfigurationAsync(id, request);
+
+        await _configService.Received(1).UpdateAsync(
+            Arg.Is<AIEvaluatorConfig>(c => c.Version == 3),
+            Arg.Any<Guid>(),
+            Arg.Any<CancellationToken>());
     }
 
     [Fact]

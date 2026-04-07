@@ -2,12 +2,11 @@ import { customElement, state, property, html, css, nothing, type PropertyValues
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import {
   apiClient,
+  BEARER,
   createConfiguration,
   getConfiguration,
   updateConfiguration,
 } from '../shared/api-client.js';
-
-const BEARER = [{ scheme: 'bearer', type: 'http' }] as const;
 import type { EvaluatorConfigItem, DocumentTypePropertySummary } from '../shared/types.js';
 import '../prompt-builder/prompt-builder.element.js';
 
@@ -33,6 +32,7 @@ export class EvaluatorFormElement extends UmbLitElement {
   @state() _profileId = '';
   @state() _contextId = '';
   @state() _promptText = '';
+  @state() private _version = 0;
 
   // Validation errors keyed by field name
   @state() _errors: Record<string, string> = {};
@@ -133,6 +133,7 @@ export class EvaluatorFormElement extends UmbLitElement {
     this._profileId = '';
     this._contextId = '';
     this._promptText = '';
+    this._version = 0;
     this._propertyAliases = [];
     this._availableProperties = [];
     this._errors = {};
@@ -147,6 +148,7 @@ export class EvaluatorFormElement extends UmbLitElement {
     this._profileId = config.profileId;
     this._contextId = config.contextId ?? '';
     this._promptText = config.promptText;
+    this._version = config.version;
     this._propertyAliases = config.propertyAliases ?? [];
     this._errors = {};
     // Resolve display name and load available properties for the alias
@@ -218,7 +220,7 @@ export class EvaluatorFormElement extends UmbLitElement {
         void this._loadAvailableProperties(detail.alias);
       }
     } catch {
-      this._errors = { ...this._errors, documentTypeAlias: 'Could not retrieve alias for the selected document type.' };
+      this._errors = { ...this._errors, documentTypeAlias: this.localize.term('evaluatorConfig_documentTypeAliasError') };
     }
   }
 
@@ -253,28 +255,35 @@ export class EvaluatorFormElement extends UmbLitElement {
     this._errors = {};
 
     // Client-side validation
-    if (!this._name.trim()) this._errors['name'] = 'Name is required.';
-    if (!this._documentTypeAlias.trim()) this._errors['documentTypeAlias'] = 'Document type is required.';
-    if (!this._profileId.trim()) this._errors['profileId'] = 'AI Profile is required.';
-    if (!this._promptText.trim()) this._errors['promptText'] = 'Prompt text is required.';
+    if (!this._name.trim()) this._errors['name'] = this.localize.term('evaluatorConfig_nameRequired');
+    if (!this._documentTypeAlias.trim()) this._errors['documentTypeAlias'] = this.localize.term('evaluatorConfig_documentTypeRequired');
+    if (!this._profileId.trim()) this._errors['profileId'] = this.localize.term('evaluatorConfig_profileRequired');
+    if (!this._promptText.trim()) this._errors['promptText'] = this.localize.term('evaluatorConfig_promptRequired');
 
     if (Object.keys(this._errors).length > 0) return;
 
     this._saving = true;
     try {
-      const payload = {
-        name: this._name,
-        description: this._description || null,
-        documentTypeAlias: this._documentTypeAlias,
-        profileId: this._profileId,
-        contextId: this._contextId || null,
-        promptText: this._promptText,
-        propertyAliases: this._propertyAliases.length > 0 ? this._propertyAliases : null,
-      };
-
       const saved: EvaluatorConfigItem = this.configId
-        ? await updateConfiguration(this.configId, payload)
-        : await createConfiguration(payload);
+        ? await updateConfiguration(this.configId, {
+            name: this._name,
+            description: this._description || null,
+            documentTypeAlias: this._documentTypeAlias,
+            profileId: this._profileId,
+            contextId: this._contextId || null,
+            promptText: this._promptText,
+            propertyAliases: this._propertyAliases.length > 0 ? this._propertyAliases : null,
+            version: this._version,
+          })
+        : await createConfiguration({
+            name: this._name,
+            description: this._description || null,
+            documentTypeAlias: this._documentTypeAlias,
+            profileId: this._profileId,
+            contextId: this._contextId || null,
+            promptText: this._promptText,
+            propertyAliases: this._propertyAliases.length > 0 ? this._propertyAliases : null,
+          });
 
       this.dispatchEvent(
         new CustomEvent('evaluator-saved', {
@@ -298,11 +307,11 @@ export class EvaluatorFormElement extends UmbLitElement {
         ? html`<uui-box><uui-tag color="danger">${this._errors['_form']}</uui-tag></uui-box>`
         : nothing}
 
-      <uui-box headline="General">
-        <umb-property-layout label="Name" mandatory>
+      <uui-box headline=${this.localize.term('evaluatorConfig_generalSection')}>
+        <umb-property-layout label=${this.localize.term('evaluatorConfig_nameLabel')} mandatory>
           <div slot="editor">
             <uui-input
-              label="Name"
+              label=${this.localize.term('evaluatorConfig_nameLabel')}
               .value=${this._name}
               ?invalid=${!!this._errors['name']}
               @input=${(e: InputEvent) => { this._name = (e.target as HTMLInputElement).value; }}>
@@ -311,23 +320,23 @@ export class EvaluatorFormElement extends UmbLitElement {
           </div>
         </umb-property-layout>
 
-        <umb-property-layout label="Description" description="Optional summary shown in the configuration list.">
+        <umb-property-layout label=${this.localize.term('evaluatorConfig_descriptionLabel')} description=${this.localize.term('evaluatorConfig_descriptionHelp')}>
           <div slot="editor">
             <uui-textarea
-              label="Description"
+              label=${this.localize.term('evaluatorConfig_descriptionLabel')}
               .value=${this._description}
               @input=${(e: InputEvent) => { this._description = (e.target as HTMLTextAreaElement).value; }}>
             </uui-textarea>
           </div>
         </umb-property-layout>
 
-        <umb-property-layout label="Document Type" mandatory
-          description="The document type this evaluator configuration applies to.">
+        <umb-property-layout label=${this.localize.term('evaluatorConfig_documentTypeLabel')} mandatory
+          description=${this.localize.term('evaluatorConfig_documentTypeHelp')}>
           <div slot="editor">
             <div class="doc-type-picker">
               <uui-input
-                label="Document type"
-                placeholder="Search by name…"
+                label=${this.localize.term('evaluatorConfig_documentTypeLabel')}
+                placeholder=${this.localize.term('evaluatorConfig_documentTypePlaceholder')}
                 .value=${this._docTypeDisplayName}
                 ?invalid=${!!this._errors['documentTypeAlias']}
                 @input=${(e: InputEvent) => this._onDocTypeInput(e)}
@@ -336,7 +345,7 @@ export class EvaluatorFormElement extends UmbLitElement {
               </uui-input>
               ${this._documentTypeAlias ? html`
                 <div style="font-size:0.8em; color:var(--uui-color-text-alt); margin-top:4px;">
-                  Alias: <code>${this._documentTypeAlias}</code>
+                  ${this.localize.term('evaluatorConfig_documentTypeAliasPrefix')} <code>${this._documentTypeAlias}</code>
                 </div>
               ` : nothing}
               ${this._docTypeShowSuggestions ? html`
@@ -355,9 +364,9 @@ export class EvaluatorFormElement extends UmbLitElement {
         </umb-property-layout>
       </uui-box>
 
-      <uui-box headline="AI Settings">
-        <umb-property-layout label="AI Profile" mandatory
-          description="The Umbraco.AI chat profile used when evaluating pages.">
+      <uui-box headline=${this.localize.term('evaluatorConfig_aiSettingsSection')}>
+        <umb-property-layout label=${this.localize.term('evaluatorConfig_profileLabel')} mandatory
+          description=${this.localize.term('evaluatorConfig_profileHelp')}>
           <div slot="editor">
             <uai-profile-picker
               capability="Chat"
@@ -368,8 +377,8 @@ export class EvaluatorFormElement extends UmbLitElement {
           </div>
         </umb-property-layout>
 
-        <umb-property-layout label="AI Context"
-          description="Optional Umbraco.AI context to inject alongside the prompt.">
+        <umb-property-layout label=${this.localize.term('evaluatorConfig_contextLabel')}
+          description=${this.localize.term('evaluatorConfig_contextHelp')}>
           <div slot="editor">
             <uai-context-picker
               .value=${this._contextId}
@@ -380,10 +389,10 @@ export class EvaluatorFormElement extends UmbLitElement {
       </uui-box>
 
       ${this._availableProperties.length > 0 ? html`
-        <uui-box headline="Property Filter"
+        <uui-box headline=${this.localize.term('evaluatorConfig_propertyFilterSection')}
           style="margin-top: var(--uui-size-layout-1);">
-          <umb-property-layout label="Properties to Evaluate"
-            description="Select which properties to include in the evaluation. If none are selected, all properties will be sent.">
+          <umb-property-layout label=${this.localize.term('evaluatorConfig_propertiesLabel')}
+            description=${this.localize.term('evaluatorConfig_propertiesHelp')}>
             <div slot="editor">
               ${this._availableProperties.map(prop => html`
                 <div style="display: flex; align-items: center; gap: var(--uui-size-space-2); padding: var(--uui-size-space-2) 0;">
@@ -403,18 +412,18 @@ export class EvaluatorFormElement extends UmbLitElement {
         </uui-box>
       ` : nothing}
 
-      <uui-box headline="Prompt">
-        <umb-property-layout label="Evaluation Prompt" mandatory
-          description="The prompt sent to the AI to evaluate page content.">
+      <uui-box headline=${this.localize.term('evaluatorConfig_promptSection')}>
+        <umb-property-layout label=${this.localize.term('evaluatorConfig_promptLabel')} mandatory
+          description=${this.localize.term('evaluatorConfig_promptHelp')}>
           <div slot="editor">
             ${this._documentTypeAlias ? html`
               <uui-button
                 look="secondary"
-                label="Open Prompt Builder"
+                label=${this.localize.term('promptBuilder_openButton')}
                 style="margin-bottom: var(--uui-size-space-3);"
                 aria-expanded=${this._promptBuilderOpen ? 'true' : 'false'}
                 @click=${() => { this._promptBuilderOpen = !this._promptBuilderOpen; }}>
-                Open Prompt Builder
+                ${this.localize.term('promptBuilder_openButton')}
               </uui-button>
             ` : nothing}
             ${this._promptBuilderOpen && this._documentTypeAlias
@@ -430,7 +439,7 @@ export class EvaluatorFormElement extends UmbLitElement {
                 `
               : nothing}
             <uui-textarea
-              label="Evaluation prompt"
+              label=${this.localize.term('evaluatorConfig_promptLabel')}
               .value=${this._promptText}
               rows="8"
               ?invalid=${!!this._errors['promptText']}
@@ -444,7 +453,7 @@ export class EvaluatorFormElement extends UmbLitElement {
       ${Object.keys(this._errors).length > 0 ? html`
         <uui-box style="margin-top: var(--uui-size-layout-1); --uui-box-default-padding: var(--uui-size-space-4);">
           <uui-tag color="danger" style="display:block; margin-bottom: var(--uui-size-space-2);">
-            Please fix the following before saving:
+            ${this.localize.term('evaluatorConfig_validationBanner')}
           </uui-tag>
           <ul style="margin:0; padding-left: 1.25rem;">
             ${Object.entries(this._errors).map(([, msg]) => html`<li>${msg}</li>`)}
@@ -456,10 +465,10 @@ export class EvaluatorFormElement extends UmbLitElement {
         <uui-button
           look="primary"
           color="positive"
-          label="Save"
+          label=${this.localize.term('evaluatorConfig_saveButton')}
           ?disabled=${this._saving}
           @click=${() => void this.submit()}>
-          ${this._saving ? 'Saving…' : 'Save'}
+          ${this._saving ? this.localize.term('evaluatorConfig_savingButton') : this.localize.term('evaluatorConfig_saveButton')}
         </uui-button>
       </div>
     `;

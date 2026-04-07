@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using ProWorks.Umbraco.AI.PageEvaluator.Evaluation;
 using ProWorks.Umbraco.AI.PageEvaluator.Evaluators;
@@ -136,6 +137,7 @@ public sealed class PageEvaluatorApiController : ControllerBase
             ContextId = request.ContextId,
             PromptText = request.PromptText,
             PropertyAliases = request.PropertyAliases,
+            Version = request.Version,
         };
 
         try
@@ -143,6 +145,10 @@ public sealed class PageEvaluatorApiController : ControllerBase
             AIEvaluatorConfig updated = await _configService.UpdateAsync(config, GetCurrentUserKey(), cancellationToken);
             await _cacheRepository.DeleteByDocumentTypeAliasAsync(updated.DocumentTypeAlias, cancellationToken);
             return Ok(await ToResponseAsync(updated, cancellationToken));
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return Conflict(new { title = "This configuration was modified by another user. Please reload and try again." });
         }
         catch (InvalidOperationException ex)
         {
@@ -377,6 +383,7 @@ public sealed class PageEvaluatorApiController : ControllerBase
             DateCreated = config.DateCreated,
             DateModified = config.DateModified,
             PropertyAliases = config.PropertyAliases,
+            Version = config.Version,
         };
     }
 }
@@ -423,6 +430,13 @@ public sealed class UpdateEvaluatorConfigRequest
     public Guid? ContextId { get; set; }
     public string PromptText { get; set; } = string.Empty;
     public List<string>? PropertyAliases { get; set; }
+
+    /// <summary>
+    /// The version of the config the client last read.
+    /// Used for optimistic concurrency — the server rejects the update if
+    /// the stored version no longer matches.
+    /// </summary>
+    public int Version { get; set; }
 }
 
 /// <summary>API response shape for a single EvaluatorConfiguration.</summary>
@@ -442,4 +456,5 @@ public sealed class EvaluatorConfigResponse
     public DateTime DateCreated { get; init; }
     public DateTime DateModified { get; init; }
     public List<string>? PropertyAliases { get; init; }
+    public int Version { get; init; }
 }

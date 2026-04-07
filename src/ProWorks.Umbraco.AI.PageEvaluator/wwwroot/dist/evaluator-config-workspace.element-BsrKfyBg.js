@@ -1,14 +1,14 @@
-import { html as l, nothing as c, css as h, state as n, customElement as f } from "@umbraco-cms/backoffice/external/lit";
-import { UmbLitElement as v } from "@umbraco-cms/backoffice/lit-element";
-import { umbConfirmModal as p } from "@umbraco-cms/backoffice/modal";
-import { a as _, b as g, d as b } from "./entry-point-DqhWLY8H.js";
-import "./evaluator-form.element-9z18gLBU.js";
-var m = Object.defineProperty, y = Object.getOwnPropertyDescriptor, u = (t, i, a, o) => {
-  for (var e = o > 1 ? void 0 : o ? y(i, a) : i, s = t.length - 1, d; s >= 0; s--)
-    (d = t[s]) && (e = (o ? d(i, a, e) : d(e)) || e);
-  return o && e && m(i, a, e), e;
+import { html as l, nothing as d, css as h, state as n, customElement as f } from "@umbraco-cms/backoffice/external/lit";
+import { UmbLitElement as m } from "@umbraco-cms/backoffice/lit-element";
+import { umbConfirmModal as _ } from "@umbraco-cms/backoffice/modal";
+import { a as v, b as g, d as b } from "./entry-point-C8pn_fmF.js";
+import "./evaluator-form.element-BF6xIowD.js";
+var p = Object.defineProperty, C = Object.getOwnPropertyDescriptor, u = (t, i, a, o) => {
+  for (var e = o > 1 ? void 0 : o ? C(i, a) : i, s = t.length - 1, c; s >= 0; s--)
+    (c = t[s]) && (e = (o ? c(i, a, e) : c(e)) || e);
+  return o && e && p(i, a, e), e;
 };
-let r = class extends v {
+let r = class extends m {
   constructor() {
     super(...arguments), this._configs = [], this._loading = !1, this._error = null, this._view = "list", this._editId = null;
   }
@@ -18,10 +18,10 @@ let r = class extends v {
   async _loadConfigs() {
     this._loading = !0, this._error = null;
     try {
-      const t = await _();
+      const t = await v();
       this._configs = [...t.items];
     } catch {
-      this._error = "Failed to load evaluator configurations.";
+      this._error = this.localize.term("evaluatorConfig_loadError");
     } finally {
       this._loading = !1;
     }
@@ -40,16 +40,16 @@ let r = class extends v {
     try {
       await g(t), await this._loadConfigs();
     } catch {
-      this._error = "Failed to activate the evaluator configuration.";
+      this._error = this.localize.term("evaluatorConfig_activateError");
     }
   }
   async _handleDelete(t) {
     try {
-      await p(this, {
-        headline: "Delete Configuration",
-        content: "Are you sure you want to delete this evaluator configuration?",
+      await _(this, {
+        headline: this.localize.term("evaluatorConfig_deleteConfirmHeadline"),
+        content: this.localize.term("evaluatorConfig_deleteConfirmContent"),
         color: "danger",
-        confirmLabel: "Delete"
+        confirmLabel: this.localize.term("evaluatorConfig_deleteButton")
       });
     } catch {
       return;
@@ -57,7 +57,7 @@ let r = class extends v {
     try {
       await b(t), this._configs = this._configs.filter((i) => i.id !== t);
     } catch {
-      this._error = "Failed to delete the evaluator configuration.";
+      this._error = this.localize.term("evaluatorConfig_deleteError");
     }
   }
   _handleEdit(t) {
@@ -77,12 +77,12 @@ let r = class extends v {
       return l`
         <div id="content">
           <div class="form-header">
-            <h3>${this._editId ? "Edit Configuration" : "Create Configuration"}</h3>
+            <h3>${this._editId ? this.localize.term("evaluatorConfig_editHeadline") : this.localize.term("evaluatorConfig_createHeadline")}</h3>
             <uui-button
               look="secondary"
-              label="Back to list"
+              label=${this.localize.term("evaluatorConfig_backLabel")}
               @click=${() => this._handleBack()}>
-              &larr; Back
+              &larr; ${this.localize.term("evaluatorConfig_backButton")}
             </uui-button>
           </div>
           <evaluator-form
@@ -97,58 +97,58 @@ let r = class extends v {
     return l`
       <div id="content">
         <div class="list-header">
-          <h2>Page Evaluator Configurations</h2>
+          <h2>${this.localize.term("evaluatorConfig_listHeadline")}</h2>
           <uui-button
             look="primary"
-            label="Create New"
+            label=${this.localize.term("evaluatorConfig_createButton")}
             @click=${() => this._handleCreate()}>
-            Create New
+            ${this.localize.term("evaluatorConfig_createButton")}
           </uui-button>
         </div>
 
-        ${this._error ? l`<uui-tag color="danger">${this._error}</uui-tag>` : c}
+        ${this._error ? l`<uui-tag color="danger">${this._error}</uui-tag>` : d}
 
-        ${t.size === 0 ? l`<p>No evaluator configurations found. Create one to get started.</p>` : Array.from(t.entries()).map(
+        ${t.size === 0 ? l`<p>${this.localize.term("evaluatorConfig_emptyState")}</p>` : Array.from(t.entries()).map(
       ([i, a]) => {
         var o;
         return l`
                 <uui-box headline=${((o = a[0]) == null ? void 0 : o.documentTypeName) ?? i}>
                   <uui-table>
                     <uui-table-head>
-                      <uui-table-head-cell>Name</uui-table-head-cell>
-                      <uui-table-head-cell>Profile</uui-table-head-cell>
-                      <uui-table-head-cell>Status</uui-table-head-cell>
-                      <uui-table-head-cell>Actions</uui-table-head-cell>
+                      <uui-table-head-cell>${this.localize.term("evaluatorConfig_tableHeaderName")}</uui-table-head-cell>
+                      <uui-table-head-cell>${this.localize.term("evaluatorConfig_tableHeaderProfile")}</uui-table-head-cell>
+                      <uui-table-head-cell>${this.localize.term("evaluatorConfig_tableHeaderStatus")}</uui-table-head-cell>
+                      <uui-table-head-cell>${this.localize.term("evaluatorConfig_tableHeaderActions")}</uui-table-head-cell>
                     </uui-table-head>
                     ${a.map(
           (e) => l`
                         <uui-table-row>
                           <uui-table-cell>
                             <strong>${e.name}</strong>
-                            ${e.description ? l`<br /><small>${e.description}</small>` : c}
+                            ${e.description ? l`<br /><small>${e.description}</small>` : d}
                           </uui-table-cell>
                           <uui-table-cell>${e.profileName ?? e.profileId}</uui-table-cell>
                           <uui-table-cell>
-                            ${e.isActive ? l`<uui-tag color="positive" look="primary">Active</uui-tag>` : l`<uui-tag look="secondary">Inactive</uui-tag>`}
+                            ${e.isActive ? l`<uui-tag color="positive" look="primary">${this.localize.term("evaluatorConfig_activeLabel")}</uui-tag>` : l`<uui-tag look="secondary">${this.localize.term("evaluatorConfig_inactiveLabel")}</uui-tag>`}
                           </uui-table-cell>
                           <uui-table-cell>
-                            ${e.isActive ? c : l`<uui-button
+                            ${e.isActive ? d : l`<uui-button
                                   look="secondary"
-                                  label="Activate"
+                                  label=${this.localize.term("evaluatorConfig_activateButton")}
                                   @click=${() => this._handleActivate(e.id)}>
-                                  Activate
+                                  ${this.localize.term("evaluatorConfig_activateButton")}
                                 </uui-button>`}
                             <uui-button
                               look="secondary"
-                              label="Edit"
+                              label=${this.localize.term("evaluatorConfig_editButton")}
                               @click=${() => this._handleEdit(e.id)}>
-                              Edit
+                              ${this.localize.term("evaluatorConfig_editButton")}
                             </uui-button>
                             <uui-button
                               look="danger"
-                              label="Delete"
+                              label=${this.localize.term("evaluatorConfig_deleteButton")}
                               @click=${() => this._handleDelete(e.id)}>
-                              Delete
+                              ${this.localize.term("evaluatorConfig_deleteButton")}
                             </uui-button>
                           </uui-table-cell>
                         </uui-table-row>
@@ -228,4 +228,4 @@ r = u([
 export {
   r as EvaluatorConfigWorkspaceElement
 };
-//# sourceMappingURL=evaluator-config-workspace.element-DcwWSLKD.js.map
+//# sourceMappingURL=evaluator-config-workspace.element-BsrKfyBg.js.map

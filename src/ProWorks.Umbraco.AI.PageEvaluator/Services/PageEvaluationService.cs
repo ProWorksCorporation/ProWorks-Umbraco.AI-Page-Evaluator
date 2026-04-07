@@ -9,6 +9,7 @@ using Umbraco.AI.Core.InlineChat;
 using Umbraco.Cms.Core.DeliveryApi;
 using Umbraco.Cms.Core.Models.PublishedContent;
 using Umbraco.Cms.Core.Web;
+using System.Text.RegularExpressions;
 
 namespace ProWorks.Umbraco.AI.PageEvaluator.Services;
 
@@ -18,7 +19,7 @@ namespace ProWorks.Umbraco.AI.PageEvaluator.Services;
 /// instructions and property data, calls <see cref="IAIChatService"/>, and returns a
 /// structured <see cref="EvaluationReport"/>.
 /// </summary>
-public sealed class PageEvaluationService : IPageEvaluationService
+public sealed partial class PageEvaluationService : IPageEvaluationService
 {
     private readonly IAIEvaluatorConfigService _configService;
     private readonly IAIContextService _contextService;
@@ -240,6 +241,9 @@ public sealed class PageEvaluationService : IPageEvaluationService
         return text;
     }
 
+    [GeneratedRegex("<[^>]+>")]
+    private static partial Regex HtmlTagRegex();
+
     /// <summary>
     /// Heuristic HTML tag stripping. If the string contains HTML-like angle-bracket patterns,
     /// removes them. Otherwise returns the string unchanged.
@@ -249,7 +253,9 @@ public sealed class PageEvaluationService : IPageEvaluationService
         if (!input.Contains('<'))
             return input;
 
-        return System.Text.RegularExpressions.Regex.Replace(input, "<[^>]+>", string.Empty).Trim();
+        //return System.Text.RegularExpressions.Regex.Replace(input, "<[^>]+>", string.Empty).Trim();
+        return HtmlTagRegex().Replace(input, string.Empty).Trim();
+
     }
 
     // ---------------------------------------------------------------------------

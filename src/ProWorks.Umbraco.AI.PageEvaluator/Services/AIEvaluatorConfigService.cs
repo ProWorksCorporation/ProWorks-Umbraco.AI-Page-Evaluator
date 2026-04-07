@@ -77,6 +77,10 @@ public sealed class AIEvaluatorConfigService : IAIEvaluatorConfigService
         config.DateModified = DateTime.UtcNow;
         config.ModifiedByUserId = modifiedByUserId;
         config.IsActive = true;
+        // Preserve the client-supplied Version for optimistic concurrency.
+        // If Version was not supplied (0), use the existing version to avoid false conflicts.
+        if (config.Version == 0)
+            config.Version = existing.Version;
 
         await _repository.SaveAsync(config, cancellationToken);
         return config;

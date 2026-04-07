@@ -8,11 +8,12 @@ import './evaluation-warning.element.js';
 
 type ModalState = 'idle' | 'loading' | 'success' | 'parse-failed' | 'error';
 
-const PROGRESS_MESSAGES: Readonly<Record<string, string>> = {
-  sending: 'Sending page data\u2026',
-  waiting: 'Waiting for AI response\u2026',
-  rendering: 'Rendering report\u2026',
-};
+/** Localization keys for each progress phase, resolved via this.localize.term(). */
+const PROGRESS_KEYS = {
+  sending: 'evaluatePage_progressSendingData',
+  waiting: 'evaluatePage_progressWaitingForAI',
+  rendering: 'evaluatePage_progressRendering',
+} as const;
 
 /**
  * Slide-in modal element for the page evaluation flow.
@@ -51,9 +52,8 @@ export class EvaluationModalElement extends UmbModalBaseElement<EvaluationModalD
   `;
 
   @state() private _modalState: ModalState = 'idle';
-  @state() private _progressMessage = '';
+  @state() private _progressKey = '';
   @state() private _report: EvaluationReportResponse | null = null;
-  @state() private _errorMessage = '';
 
   override connectedCallback(): void {
     super.connectedCallback();
@@ -84,21 +84,19 @@ export class EvaluationModalElement extends UmbModalBaseElement<EvaluationModalD
 
     try {
       this._modalState = 'loading';
-      this._progressMessage = PROGRESS_MESSAGES['sending'] ?? '';
+      this._progressKey = PROGRESS_KEYS.sending;
       await this._tick();
 
-      this._progressMessage = PROGRESS_MESSAGES['waiting'] ?? '';
+      this._progressKey = PROGRESS_KEYS.waiting;
       const report = await evaluatePage(data);
 
-      this._progressMessage = PROGRESS_MESSAGES['rendering'] ?? '';
+      this._progressKey = PROGRESS_KEYS.rendering;
       await this._tick();
 
       this._report = report;
       this._modalState = report.parseFailed ? 'parse-failed' : 'success';
     } catch {
       this._modalState = 'error';
-      this._errorMessage =
-        'The evaluation could not be completed. The AI provider returned an error.';
     }
   }
 
@@ -129,23 +127,23 @@ export class EvaluationModalElement extends UmbModalBaseElement<EvaluationModalD
 
   override render(): TemplateResult {
     return html`
-      <umb-body-layout headline="Page Evaluation">
+      <umb-body-layout headline=${this.localize.term('evaluatePage_modalHeadline')}>
         ${this._renderBody()}
         <div slot="actions">
           ${this._modalState === 'success' || this._modalState === 'parse-failed'
             ? html`
                 <uui-button
                   look="secondary"
-                  label="Re-run Evaluation"
+                  label=${this.localize.term('evaluatePage_rerunButton')}
                   @click=${() => this._rerun()}>
-                  Re-run Evaluation
+                  ${this.localize.term('evaluatePage_rerunButton')}
                 </uui-button>
               `
             : nothing}
           <uui-button
-            label="Close"
+            label=${this.localize.term('evaluatePage_closeButton')}
             @click=${() => this._close()}>
-            Close
+            ${this.localize.term('evaluatePage_closeButton')}
           </uui-button>
         </div>
       </umb-body-layout>
@@ -161,7 +159,7 @@ export class EvaluationModalElement extends UmbModalBaseElement<EvaluationModalD
         return html`
           <div class="progress-container">
             <uui-loader></uui-loader>
-            <p aria-live="polite" aria-atomic="true">${this._progressMessage}</p>
+            <p aria-live="polite" aria-atomic="true">${this.localize.term(this._progressKey)}</p>
           </div>
         `;
 
@@ -182,13 +180,13 @@ export class EvaluationModalElement extends UmbModalBaseElement<EvaluationModalD
       case 'error':
         return html`
           <div class="error-container" role="alert">
-            <p>${this._errorMessage}</p>
+            <p>${this.localize.term('evaluatePage_aiErrorMessage')}</p>
             <uui-button
               look="primary"
               color="warning"
-              label="Retry"
+              label=${this.localize.term('evaluatePage_retryButton')}
               @click="${() => this._rerun()}">
-              Retry
+              ${this.localize.term('evaluatePage_retryButton')}
             </uui-button>
           </div>
         `;
@@ -200,7 +198,7 @@ export class EvaluationModalElement extends UmbModalBaseElement<EvaluationModalD
     if (!cachedAt) return nothing;
     return html`
       <div class="cache-bar">
-        <span>Last evaluated: ${this._formatCachedAt(cachedAt)}</span>
+        <span>${this.localize.term('evaluatePage_lastEvaluated')} ${this._formatCachedAt(cachedAt)}</span>
       </div>
     `;
   }

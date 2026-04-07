@@ -1,61 +1,113 @@
 export default {
-  // Workspace action
-  evaluatePage_actionLabel: 'Evaluate Page',
+  evaluatePage: {
+    // Workspace action
+    actionLabel: 'Evaluate Page',
 
-  // Modal: progress
-  evaluatePage_progressSendingData: 'Sending page data\u2026',
-  evaluatePage_progressWaitingForAI: 'Waiting for AI response\u2026',
-  evaluatePage_progressRendering: 'Rendering report\u2026',
+    // Modal: chrome
+    modalHeadline: 'Page Evaluation',
+    rerunButton: 'Re-run Evaluation',
+    closeButton: 'Close',
+    lastEvaluated: 'Last evaluated:',
 
-  // Modal: report sections
-  evaluatePage_reportScore: 'Score',
-  evaluatePage_reportChecks: 'checks',
-  evaluatePage_reportPassed: 'passed',
-  evaluatePage_reportWarning: 'warning',
-  evaluatePage_reportWarnings: 'warnings',
-  evaluatePage_reportFailed: 'failed',
-  evaluatePage_reportPassingItems: 'Passing Items',
-  evaluatePage_reportAttentionItems: 'Items Needing Attention',
-  evaluatePage_reportSuggestions: 'Suggestions',
+    // Modal: progress
+    progressSendingData: 'Sending page data\u2026',
+    progressWaitingForAI: 'Waiting for AI response\u2026',
+    progressRendering: 'Rendering report\u2026',
 
-  // Modal: parse failure warning
-  evaluatePage_parseFailedWarning:
-    'The AI response could not be formatted as a structured report. Raw output is shown below.',
-  evaluatePage_parseFailedLinkText: 'Refine the evaluator prompt',
+    // Modal: report sections
+    reportScore: 'Score',
+    reportChecks: 'checks',
+    reportPassed: 'passed',
+    reportWarning: 'warning',
+    reportWarnings: 'warnings',
+    reportFailed: 'failed',
+    reportPassingItems: 'Passing Items',
+    reportAttentionItems: 'Items Needing Attention',
+    reportSuggestions: 'Suggestions',
 
-  // Modal: AI error
-  evaluatePage_aiErrorMessage:
-    'The evaluation could not be completed. The AI provider returned an error.',
-  evaluatePage_retryButton: 'Retry',
+    // Modal: parse failure warning
+    parseFailedWarning:
+      'The AI response could not be formatted as a structured report. Raw output is shown below.',
+    parseFailedLinkText: 'Refine the evaluator prompt',
 
-  // Config section: list
-  evaluatorConfig_sectionLabel: 'Page Evaluator',
-  evaluatorConfig_createButton: 'Create Evaluator',
-  evaluatorConfig_activeLabel: 'Active',
-  evaluatorConfig_inactiveLabel: 'Inactive',
-  evaluatorConfig_editButton: 'Edit',
-  evaluatorConfig_deleteButton: 'Delete',
-  evaluatorConfig_emptyState: 'No evaluator configurations yet. Create one to get started.',
+    // Modal: AI error
+    aiErrorMessage:
+      'The evaluation could not be completed. The AI provider returned an error.',
+    retryButton: 'Retry',
+  },
 
-  // Config section: form
-  evaluatorConfig_nameLabel: 'Name',
-  evaluatorConfig_descriptionLabel: 'Description',
-  evaluatorConfig_documentTypeLabel: 'Document Type',
-  evaluatorConfig_profileLabel: 'AI Profile',
-  evaluatorConfig_contextLabel: 'AI Context (optional)',
-  evaluatorConfig_promptLabel: 'Evaluation Prompt',
-  evaluatorConfig_saveButton: 'Save',
-  evaluatorConfig_cancelButton: 'Cancel',
-  evaluatorConfig_validationRequired: 'This field is required.',
+  evaluatorConfig: {
+    // Workspace: list
+    sectionLabel: 'Page Evaluator',
+    listHeadline: 'Page Evaluator Configurations',
+    createButton: 'Create New',
+    activeLabel: 'Active',
+    inactiveLabel: 'Inactive',
+    activateButton: 'Activate',
+    editButton: 'Edit',
+    deleteButton: 'Delete',
+    emptyState: 'No evaluator configurations found. Create one to get started.',
+    loadError: 'Failed to load evaluator configurations.',
+    activateError: 'Failed to activate the evaluator configuration.',
+    deleteError: 'Failed to delete the evaluator configuration.',
+    tableHeaderName: 'Name',
+    tableHeaderProfile: 'Profile',
+    tableHeaderStatus: 'Status',
+    tableHeaderActions: 'Actions',
 
-  // Prompt Builder
-  promptBuilder_openButton: 'Open Prompt Builder',
-  promptBuilder_title: 'Prompt Builder',
-  promptBuilder_categoriesLabel: 'Checklist Categories',
-  promptBuilder_siteContextLabel: 'Site Context (optional)',
-  promptBuilder_generateButton: 'Generate Prompt Draft',
-  promptBuilder_usePromptButton: 'Use This Prompt',
-  promptBuilder_propertiesLabel: 'Document Type Properties',
-  promptBuilder_generatedDraftLabel: 'Generated Draft',
-  promptBuilder_loadError: 'Could not load document type properties.',
+    // Workspace: form chrome
+    editHeadline: 'Edit Configuration',
+    createHeadline: 'Create Configuration',
+    backButton: 'Back',
+    backLabel: 'Back to list',
+
+    // Workspace: confirm delete
+    deleteConfirmHeadline: 'Delete Configuration',
+    deleteConfirmContent: 'Are you sure you want to delete this evaluator configuration?',
+
+    // Form: sections
+    generalSection: 'General',
+    aiSettingsSection: 'AI Settings',
+    propertyFilterSection: 'Property Filter',
+    promptSection: 'Prompt',
+
+    // Form: fields
+    nameLabel: 'Name',
+    nameRequired: 'Name is required.',
+    descriptionLabel: 'Description',
+    descriptionHelp: 'Optional summary shown in the configuration list.',
+    documentTypeLabel: 'Document Type',
+    documentTypeHelp: 'The document type this evaluator configuration applies to.',
+    documentTypeRequired: 'Document type is required.',
+    documentTypePlaceholder: 'Search by name\u2026',
+    documentTypeAliasPrefix: 'Alias:',
+    documentTypeAliasError: 'Could not retrieve alias for the selected document type.',
+    profileLabel: 'AI Profile',
+    profileHelp: 'The Umbraco.AI chat profile used when evaluating pages.',
+    profileRequired: 'AI Profile is required.',
+    contextLabel: 'AI Context',
+    contextHelp: 'Optional Umbraco.AI context to inject alongside the prompt.',
+    propertiesLabel: 'Properties to Evaluate',
+    propertiesHelp: 'Select which properties to include in the evaluation. If none are selected, all properties will be sent.',
+    promptLabel: 'Evaluation Prompt',
+    promptHelp: 'The prompt sent to the AI to evaluate page content.',
+    promptRequired: 'Prompt text is required.',
+    validationBanner: 'Please fix the following before saving:',
+    saveButton: 'Save',
+    savingButton: 'Saving\u2026',
+    cancelButton: 'Cancel',
+    validationRequired: 'This field is required.',
+  },
+
+  promptBuilder: {
+    openButton: 'Open Prompt Builder',
+    title: 'Prompt Builder',
+    categoriesLabel: 'Checklist Categories',
+    siteContextLabel: 'Site Context (optional)',
+    generateButton: 'Generate Prompt Draft',
+    usePromptButton: 'Use This Prompt',
+    propertiesLabel: 'Document Type Properties',
+    generatedDraftLabel: 'Generated Draft',
+    loadError: 'Could not load document type properties.',
+  },
 };

@@ -2,7 +2,7 @@ import { customElement, property, state, html, nothing, type TemplateResult } fr
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { CHECKLIST_CATEGORIES } from './checklist-categories.js';
 import type { DocumentTypePropertySummary } from '../shared/types.js';
-import { apiClient } from '../shared/api-client.js';
+import { apiClient, BEARER } from '../shared/api-client.js';
 
 // ---------------------------------------------------------------------------
 // Umbraco Management API helper (exported for MSW integration tests — T054)
@@ -20,8 +20,6 @@ interface UmbracoDocTypeResponse {
   readonly name: string;
   readonly properties: readonly UmbracoDocTypeProperty[];
 }
-
-const BEARER = [{ scheme: 'bearer', type: 'http' }] as const;
 
 /**
  * Fetches document type properties from the Umbraco Management API.

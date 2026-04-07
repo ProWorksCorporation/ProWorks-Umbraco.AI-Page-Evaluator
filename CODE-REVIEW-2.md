@@ -113,7 +113,7 @@ REST convention and Umbraco Management API pattern is `NoContent()` for successf
 
 ---
 
-### 7. Version field claims concurrency but has no EF Core concurrency token
+### 7. [X] Version field claims concurrency but has no EF Core concurrency token
 
 **Files:**
 - `src/ProWorks.Umbraco.AI.PageEvaluator.Core/Evaluators/AIEvaluatorConfig.cs` line 53
@@ -125,7 +125,7 @@ The `Version` property is documented as "Used for optimistic concurrency and aud
 
 ---
 
-### 8. Regex compiled on every call in `StripHtmlTags`
+### 8. [X] Regex compiled on every call in `StripHtmlTags`
 
 **File:** `src/ProWorks.Umbraco.AI.PageEvaluator/Services/PageEvaluationService.cs` line 247
 
@@ -173,7 +173,9 @@ The `BEARER` security descriptor `[{ scheme: 'bearer', type: 'http' }]` is defin
 
 ---
 
-### 11. Localization module defined but unused
+### 11. [X] Localization module defined but unused
+
+[COMPLETE April 6th — replaced localization.ts with en.ts, registered localization manifest, all 6 components now use this.localize.term() for all user-facing strings]
 
 **File:** `src/ProWorks.Umbraco.AI.PageEvaluator.Client/src/shared/localization.ts`
 
