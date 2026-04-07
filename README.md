@@ -60,9 +60,25 @@ Go to **Settings → AI Add-ons → Page Evaluator**.
 6. Optionally attach a **Context** resource from Umbraco.AI
 7. Save and set the configuration to **Active**
 
+![Create an evaluator configuration](images/Create-Evaluator.png)
+
+The **Prompt Builder** lists the document type's properties and checklist categories, then generates a ready-to-use evaluation prompt:
+
+![Prompt Builder](images/Prompt-Builder.png)
+
 ### 4. Evaluate a page
 
-Open any published content node of the configured document type. An **Evaluate Page** button appears in the workspace toolbar. Click it — the modal runs the evaluation and displays the report.
+Open any published content node of the configured document type. An **Evaluate Page** button appears in the workspace toolbar. Click it to run the evaluation.
+
+![Evaluate Page button in the content editor toolbar](images/Evaluate-Page-Button.png)
+
+The modal displays a structured report with scored checks, suggestions, and items needing attention:
+
+![Evaluation report for a home page](images/Evaluation-of-Home-Page.png)
+
+Scroll down for detailed explanations of each check and actionable recommendations:
+
+![Items needing attention with schema and SEO recommendations](images/Items-Needing-Attention-SchemaRecs.png)
 
 ---
 
@@ -116,6 +132,8 @@ See [README-DEV.md](README-DEV.md) for project structure, build instructions, ar
 ---
 
 ## About ProWorks
+
+<a href="https://www.proworks.com"><img src="images/ProWorksLogo-Vertical.png" alt="ProWorks" width="120" /></a>
 
 [ProWorks Corporation](https://www.proworks.com/umbraco-platinum-partner/) is an **Umbraco Platinum Partner** based in Corvallis, Oregon. We have been building and maintaining Umbraco implementations since the early versions of the platform — certified across Umbraco 7 through 17 LTS — and we carry three Umbraco MVPs on staff. Platinum status at ProWorks reflects sustained delivery quality, deep platform expertise, and ongoing community involvement through open-source packages, conference talks, and ecosystem advisory boards. This package is one example of that work.
 

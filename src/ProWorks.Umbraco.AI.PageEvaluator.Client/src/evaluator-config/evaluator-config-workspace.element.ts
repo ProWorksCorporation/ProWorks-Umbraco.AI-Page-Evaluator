@@ -57,6 +57,49 @@ export class EvaluatorConfigWorkspaceElement extends UmbLitElement {
       margin: 0;
       font-size: var(--uui-type-h3-size, 1.25rem);
     }
+
+    .promo-notice {
+      margin-bottom: var(--uui-size-layout-1);
+      border: 1px solid var(--uui-color-border);
+      border-radius: var(--uui-border-radius);
+      padding: var(--uui-size-layout-1);
+      background: var(--uui-color-surface);
+      display: flex;
+      align-items: flex-start;
+      gap: var(--uui-size-space-4);
+    }
+
+    .promo-notice img.promo-logo {
+      flex-shrink: 0;
+      width: 32px;
+      height: 32px;
+      object-fit: contain;
+      margin-top: 2px;
+    }
+
+    .promo-notice-content h4 {
+      margin: 0 0 var(--uui-size-space-2) 0;
+      font-size: var(--uui-type-default-size, 0.95rem);
+      font-weight: 600;
+    }
+
+    .promo-notice-content p {
+      margin: 0 0 var(--uui-size-space-3) 0;
+      font-size: var(--uui-type-small-size, 0.85rem);
+      color: var(--uui-color-text-alt);
+      line-height: 1.5;
+    }
+
+    .promo-notice-content a {
+      font-size: var(--uui-type-small-size, 0.85rem);
+      color: var(--uui-color-interactive);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .promo-notice-content a:hover {
+      text-decoration: underline;
+    }
   `;
 
   @state() _configs: EvaluatorConfigItem[] = [];
@@ -179,6 +222,16 @@ export class EvaluatorConfigWorkspaceElement extends UmbLitElement {
 
     return html`
       <div id="content">
+        <div class="promo-notice">
+          <img class="promo-logo" src="/App_Plugins/ProWorks.AI.PageEvaluator/proworks-logo.png" alt="ProWorks" />
+          <div class="promo-notice-content">
+            <h4>${this.localize.term('promoNotice_headline')}</h4>
+            <p>${this.localize.term('promoNotice_body')}</p>
+            <a href="https://www.proworks.com/ai" target="_blank" rel="noopener">
+              ${this.localize.term('promoNotice_linkText')} &rarr;
+            </a>
+          </div>
+        </div>
         <div class="list-header">
           <h2>${this.localize.term('evaluatorConfig_listHeadline')}</h2>
           <uui-button
@@ -247,6 +300,7 @@ export class EvaluatorConfigWorkspaceElement extends UmbLitElement {
                 </uui-box>
               `,
             )}
+
       </div>
     `;
   }
