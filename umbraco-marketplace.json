@@ -1,0 +1,46 @@
+{
+  "$schema": "https://marketplace.umbraco.com/umbraco-marketplace-schema.json",
+  "AlternateCategory": "Editor Tools",
+  "AuthorDetails": {
+    "Name": "ProWorks Corporation",
+    "Description": "ProWorks Corporation is an Umbraco Platinum Partner based in the USA. We have been building and maintaining Umbraco implementations since the early versions of the platform, certified across Umbraco 7 through 17, and we have three Umbraco MVPs on staff. We work with organizations across many industries including credit unions, insurers, public agencies, travel, higher education, and manufacturers. Our approach is consultative: we will meet you where you are and recommend the right next step, even if that means doing less.",
+    "Url": "https://www.proworks.com/",
+    "ImageUrl": "https://github.com/ProWorksCorporation.png",
+    "Contributors": [],
+    "SyncContributorsFromRepository": false
+  },
+  "Category": "Artificial Intelligence",
+  "Description": "An Umbraco 17 backoffice package that adds an Evaluate Page button to the content editor toolbar. When clicked, it sends the current page's content to an AI model and returns a structured quality report directly inside the backoffice, including scored checks, warnings, and actionable suggestions.",
+  "DiscussionForumUrl": "https://github.com/ProWorksCorporation/ProWorks-Umbraco.AI-Page-Evaluator/issues",
+  "DocumentationUrl": "https://github.com/ProWorksCorporation/ProWorks-Umbraco.AI-Page-Evaluator",
+  "LicenseTypes": ["Free"],
+  "IssueTrackerUrl": "https://github.com/ProWorksCorporation/ProWorks-Umbraco.AI-Page-Evaluator/issues",
+  "IsSubPackageOf": "",
+  "PackageType": "Package",
+  "Title": "ProWorks Umbraco.AI Page Evaluator",
+  "LookingForContributors": true,
+  "LookingForMaintainer": false,
+  "PackagesByAuthor": [],
+  "RelatedPackages": [],
+  "Screenshots": [
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/ProWorksCorporation/ProWorks-Umbraco.AI-Page-Evaluator/refs/heads/main/images/Evaluate-Page-Button.png",
+      "Caption": "Page Evaluation Button in the Umbraco Backoffice"
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/ProWorksCorporation/ProWorks-Umbraco.AI-Page-Evaluator/refs/heads/main/images/Evaluation-of-Home-Page.png",
+      "Caption": "Evaluation Summary"
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/ProWorksCorporation/ProWorks-Umbraco.AI-Page-Evaluator/refs/heads/main/images/Items-Needing-Attention-SchemaRecs.png",
+      "Caption": "Evaluation Detail with Items Needing Attention"
+    }
+  ],
+  "Tags": [
+    "backoffice",
+    "ai",
+    "umbraco.ai",
+    "editorial experience"
+  ],
+  "VideoUrl": ""
+}

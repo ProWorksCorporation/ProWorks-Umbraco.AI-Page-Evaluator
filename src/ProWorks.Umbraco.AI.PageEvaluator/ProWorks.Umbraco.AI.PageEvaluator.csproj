@@ -12,16 +12,16 @@
     <AddRazorSupportForMvc>false</AddRazorSupportForMvc>
     <!-- NuGet packaging -->
     <PackageId>ProWorks.Umbraco.AI.PageEvaluator</PackageId>
-    <Version>1.0.9</Version>
+    <Version>1.0.10</Version>
     <Authors>ProWorks, Jason Prothero</Authors>
     <Company>ProWorks Corporation</Company>
-    <PackageTags>umbraco;umbraco-cms;umbraco-ai;ai;page-evaluator;backoffice</PackageTags>
+    <PackageTags>umbraco;umbraco-marketplace;umbraco-cms;umbraco-ai;ai;page-evaluator;backoffice</PackageTags>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Copyright>Copyright (c) 2026 ProWorks Corporation</Copyright>
+    <Copyright>Copyright (c) $([System.DateTime]::UtcNow.ToString(`yyyy`)) ProWorks Corporation</Copyright>
     <PackageReadmeFile>README.nuget.md</PackageReadmeFile>
     <PackageProjectUrl>https://github.com/ProWorksCorporation/ProWorks-Umbraco.AI-Page-Evaluator</PackageProjectUrl>
-    <PackageReleaseNotes>Initial release: AI-powered page evaluation for the Umbraco 17 Umbraco.ai framework with configurable per-document-type prompts, structured scoring, evaluation caching, and back-office workspace action.</PackageReleaseNotes>
+    <PackageReleaseNotes>AI-powered page evaluation for the Umbraco 17 Umbraco.ai framework with configurable per-document-type prompts, structured scoring, evaluation caching, and back-office workspace action.</PackageReleaseNotes>
     <RepositoryUrl>https://github.com/ProWorksCorporation/ProWorks-Umbraco.AI-Page-Evaluator</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
   </PropertyGroup>
