@@ -7,21 +7,22 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Umbraco.AI.Agent" Version="1.6.0" />
-    <PackageReference Include="Umbraco.AI.Agent.Copilot" Version="1.0.0-alpha5" />
-    <PackageReference Include="Umbraco.AI.Anthropic" Version="1.2.2" />
-    <!-- Umbraco.AI.OpenAI 1.1.3 omitted: its DLL was compiled against a private OpenAI SDK build
-         with GetResponsesClient(string) which doesn't exist in the public OpenAI 2.9.1 release.
-         Re-add when a compatible version is published. Use Anthropic profiles for testing. -->
-    <PackageReference Include="Umbraco.AI.Prompt" Version="1.6.0" />
+    <PackageReference Include="Umbraco.AI.Agent" Version="1.7.0" />
+    <PackageReference Include="Umbraco.AI.Agent.Copilot" Version="1.0.0-alpha6" />
+    <PackageReference Include="Umbraco.AI.Anthropic" Version="1.3.0" />
+    <PackageReference Include="Umbraco.AI.OpenAI" Version="1.2.0" />
+    <PackageReference Include="Umbraco.AI.Prompt" Version="1.7.0" />
     <PackageReference Include="Umbraco.Cms" Version="17.2.2" />
     <PackageReference Include="Umbraco.Cms.DevelopmentMode.Backoffice" Version="17.2.2" />
-    <PackageReference Include="Umbraco.AI" Version="1.7.0" />
+    <PackageReference Include="Umbraco.AI" Version="1.8.0" />
     <PackageReference Include="uSync" Version="17.0.4" />
-    <!-- Pin Microsoft.Extensions.AI packages to align with the resolved Abstractions 10.4.1 -->
-    <PackageReference Include="Microsoft.Extensions.AI" Version="10.4.1" />
-    <PackageReference Include="Microsoft.Extensions.AI.Abstractions" Version="10.4.1" />
-    <PackageReference Include="Microsoft.Extensions.AI.OpenAI" Version="10.4.1" />
+    <!-- Pin Microsoft.Extensions.AI packages to 10.3.0 to match Umbraco.AI 1.8 compatibility.
+         M.E.AI.OpenAI also at 10.3.0 to keep OpenAI SDK 2.8.0 (Umbraco.AI.OpenAI 1.2.0 calls
+         GetResponsesClient(string) which was removed in OpenAI 2.9.1 pulled by M.E.AI.OpenAI 10.4.1).
+         Do NOT upgrade to 10.4.1 — it breaks McpServerToolCallContent.set_Arguments at runtime. -->
+    <PackageReference Include="Microsoft.Extensions.AI" Version="10.3.0" />
+    <PackageReference Include="Microsoft.Extensions.AI.Abstractions" Version="10.3.0" />
+    <PackageReference Include="Microsoft.Extensions.AI.OpenAI" Version="10.3.0" />
   </ItemGroup>
 
   <ItemGroup>

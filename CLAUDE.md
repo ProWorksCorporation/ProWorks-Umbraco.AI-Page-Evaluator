@@ -1,14 +1,14 @@
 ﻿# ProWorks-Umbraco-AI-Page-Evaluator Development Guidelines
 
-Last updated: 2026-04-05 (rev 5)
+Last updated: 2026-04-08 (rev 6)
 
 ## Active Technologies
-- C# .NET 10, TypeScript 5.x (strict: true) + Umbraco CMS 17.2.2, Umbraco.AI 1.7.0 (Anthropic 1.2.2), EF Core 10.0.2, Microsoft.Extensions.AI 10.4.1, Lit 3.x via @umbraco-cms/backoffice/external/lit
+- C# .NET 10, TypeScript 5.x (strict: true) + Umbraco CMS 17.2.2, Umbraco.AI 1.8.0 (Anthropic 1.3.0, OpenAI 1.2.0), EF Core 10.0.2, Microsoft.Extensions.AI 10.3.0, Lit 3.x via @umbraco-cms/backoffice/external/lit
 - SQLite (dev), SQL Server (prod) via EF Core; evaluation cache in `umbracoAIEvaluationCache` table
 
 - **Client**: TypeScript 5.x `strict: true`, Vite build, Lit web components
 - **Server**: C# .NET 10, Umbraco CMS 17.2.2, EF Core 10.0.2
-- **AI**: Umbraco.AI 1.7.0 ecosystem (Anthropic 1.2.2, OpenAI 1.1.3, Prompt 1.6.0, Agent 1.6.0, Agent.Copilot 1.0.0-alpha5)
+- **AI**: Umbraco.AI 1.8.0 ecosystem (Anthropic 1.3.0, OpenAI 1.2.0, Prompt 1.7.0, Agent 1.7.0, Agent.Copilot 1.0.0-alpha6)
 - **Database**: SQLite (dev), SQL Server (prod) via separate EF Core migration projects
 - **Content sync**: uSync 17.0.4
 
@@ -122,8 +122,10 @@ dotnet ef migrations add <Name> \
 - The modal checks `GET /evaluate/cached/{nodeId}` on open; falls through to `POST /evaluate` only when no cache entry exists or when the user clicks **Re-run Evaluation**
 
 ### Package Version Constraints
-- `Microsoft.Extensions.AI.*` must all be pinned to the same version (currently `10.4.1`) — mismatches between `Microsoft.Extensions.AI` and `Abstractions` cause `TypeLoadException: FunctionApprovalRequestContent`. The package csproj pins **both** `Microsoft.Extensions.AI` and `Microsoft.Extensions.AI.Abstractions` to `10.4.1` to raise the NuGet floor for consumers (root cause: `Umbraco.AI.Core` only declares `>= 10.2.0` for the main package, allowing 10.3.0 to be resolved alongside 10.4.1 Abstractions)
-- `Umbraco.AI.OpenAI 1.1.3` is **excluded from the TestSite** — its DLL was compiled against a private OpenAI SDK build that has `GetResponsesClient(string modelId)`, a signature that doesn't exist in the public `OpenAI 2.9.1` release (which has `GetResponsesClient()` with no parameter). Re-add when a compatible `Umbraco.AI.OpenAI` version ships. Use Anthropic profiles for all testing.
+- **All** `Microsoft.Extensions.AI*` packages must be pinned to `10.3.0` — this is the version compatible with Umbraco.AI 1.8.0's compile-time dependencies. Do NOT use `10.4.1`: it introduces two breaking changes:
+  1. `McpServerToolCallContent.set_Arguments` changed signature → `MissingMethodException` in `Umbraco.AI.Anthropic 1.3.0`
+  2. `OpenAI SDK 2.9.1` (pulled by `M.E.AI.OpenAI 10.4.1`) removed `GetResponsesClient(string)` → `MissingMethodException` in `Umbraco.AI.OpenAI 1.2.0`
+- `Microsoft.Extensions.AI` and `Microsoft.Extensions.AI.Abstractions` must always be the same version — mismatches cause `TypeLoadException: FunctionApprovalRequestContent`
 - EF Core must be `10.0.2` (required by `Umbraco.Cms.Persistence.EFCore 17.2.2`)
 
 ## TestSite
