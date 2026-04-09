@@ -12,7 +12,7 @@
     <AddRazorSupportForMvc>false</AddRazorSupportForMvc>
     <!-- NuGet packaging -->
     <PackageId>ProWorks.Umbraco.AI.PageEvaluator</PackageId>
-    <Version>1.0.8</Version>
+    <Version>1.0.9</Version>
     <Authors>ProWorks, Jason Prothero</Authors>
     <Company>ProWorks Corporation</Company>
     <PackageTags>umbraco;umbraco-cms;umbraco-ai;ai;page-evaluator;backoffice</PackageTags>
@@ -45,14 +45,15 @@
   <ItemGroup>
     <!-- Umbraco.AI.Core provides IAIProfileService and IAIContextService -->
     <!-- Verify version against installed Umbraco.AI package before building -->
-    <PackageReference Include="Umbraco.AI.Core" Version="[1.7.0,2.0.0)" />
+    <PackageReference Include="Umbraco.AI.Core" Version="[1.8.0,2.0.0)" />
     <!-- Umbraco.AI.Startup provides UmbracoAIComposer (required for [ComposeAfter]) -->
-    <PackageReference Include="Umbraco.AI.Startup" Version="[1.7.0,2.0.0)" />
-    <!-- Pin both Microsoft.Extensions.AI packages to 10.4.1 to prevent TypeLoadException
-         for FunctionApprovalRequestContent when consumer resolves a mismatched version pair.
-         Umbraco.AI.Core only floors the main package at 10.2.0; our floor raises it to 10.4.1. -->
-    <PackageReference Include="Microsoft.Extensions.AI" Version="10.4.1" />
-    <PackageReference Include="Microsoft.Extensions.AI.Abstractions" Version="10.4.1" />
+    <PackageReference Include="Umbraco.AI.Startup" Version="[1.8.0,2.0.0)" />
+    <!-- Pin Microsoft.Extensions.AI packages to 10.3.0 — the minimum that satisfies all transitive
+         deps (Microsoft.Agents.AI 1.0.0-rc3 and M.E.AI.OpenAI 10.3.0 both require >= 10.3.0).
+         Do NOT use 10.4.1: it changes McpServerToolCallContent.Arguments setter signature,
+         breaking Umbraco.AI.Anthropic 1.3.0 at runtime. Both packages must be the same version. -->
+    <PackageReference Include="Microsoft.Extensions.AI" Version="10.3.0" />
+    <PackageReference Include="Microsoft.Extensions.AI.Abstractions" Version="10.3.0" />
     <!-- EF Core providers: bundled DLLs need these at runtime in the consuming app -->
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.2" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.2" />

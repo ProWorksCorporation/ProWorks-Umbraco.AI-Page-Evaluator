@@ -25,7 +25,7 @@ An Umbraco 17 backoffice package that adds an **Evaluate Page** button to the co
 | Dependency | Version |
 |---|---|
 | Umbraco CMS | 17.2.x |
-| Umbraco.AI | 1.7.x |
+| Umbraco.AI | 1.8.x |
 | .NET | 10 |
 
 ---
