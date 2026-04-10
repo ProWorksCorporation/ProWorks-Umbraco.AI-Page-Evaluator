@@ -318,9 +318,9 @@ public sealed class PageEvaluatorApiController : ControllerBase
         if (contentType is null)
             return NotFound(new { title = $"Document type '{alias}' not found." });
 
-        var properties = contentType.PropertyTypes.Select(p =>
+        var properties = contentType.CompositionPropertyTypes.Select(p =>
         {
-            string groupName = contentType.PropertyGroups
+            string groupName = contentType.CompositionPropertyGroups
                 .FirstOrDefault(g => g.PropertyTypes?.Any(pt => pt.Alias == p.Alias) == true)
                 ?.Name ?? "General";
 

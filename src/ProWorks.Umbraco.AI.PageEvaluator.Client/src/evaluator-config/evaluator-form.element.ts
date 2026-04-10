@@ -430,6 +430,7 @@ export class EvaluatorFormElement extends UmbLitElement {
               ? html`
                   <page-evaluator-prompt-builder
                     document-type-alias=${this._documentTypeAlias}
+                    .selectedPropertyAliases=${this._propertyAliases}
                     style="display: block; margin-bottom: var(--uui-size-space-3);"
                     @prompt-selected=${(e: CustomEvent<{ prompt: string }>) => {
                       this._promptText = e.detail.prompt;

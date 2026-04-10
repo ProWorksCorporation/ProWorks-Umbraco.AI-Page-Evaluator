@@ -90,15 +90,8 @@ export class EvaluatorConfigWorkspaceElement extends UmbLitElement {
       line-height: 1.5;
     }
 
-    .promo-notice-content a {
-      font-size: var(--uui-type-small-size, 0.85rem);
-      color: var(--uui-color-interactive);
-      text-decoration: none;
-      font-weight: 600;
-    }
-
-    .promo-notice-content a:hover {
-      text-decoration: underline;
+    .promo-notice-content uui-button {
+      margin-top: var(--uui-size-space-2);
     }
   `;
 
@@ -227,9 +220,15 @@ export class EvaluatorConfigWorkspaceElement extends UmbLitElement {
           <div class="promo-notice-content">
             <h4>${this.localize.term('promoNotice_headline')}</h4>
             <p>${this.localize.term('promoNotice_body')}</p>
-            <a href="https://www.proworks.com/ai" target="_blank" rel="noopener">
+            <p>${this.localize.term('promoNotice_body2')}</p>
+            <uui-button
+              look="primary"
+              label=${this.localize.term('promoNotice_linkText')}
+              href="https://www.proworks.com/ai"
+              target="_blank"
+              rel="noopener">
               ${this.localize.term('promoNotice_linkText')} &rarr;
-            </a>
+            </uui-button>
           </div>
         </div>
         <div class="list-header">

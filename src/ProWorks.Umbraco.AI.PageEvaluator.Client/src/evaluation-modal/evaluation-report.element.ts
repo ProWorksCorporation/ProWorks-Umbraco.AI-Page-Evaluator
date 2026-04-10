@@ -205,9 +205,9 @@ export class EvaluationReportElement extends UmbLitElement {
       return html`<p style="margin:0; font-size: var(--uui-type-small-size, 0.875rem); line-height: 1.5;">${renderInlineMarkdown(items[0])}</p>`;
     }
     return html`
-      <ul class="suggestions-list">
+      <ol class="suggestions-list">
         ${items.map((item) => html`<li>${renderInlineMarkdown(item)}</li>`)}
-      </ul>
+      </ol>
     `;
   }
 
@@ -243,15 +243,30 @@ function iconForStatus(status: CheckStatus): string {
 
 /**
  * Splits the AI suggestions string into individual items.
- * Recognises numbered lists ("1. text", "2. text") and returns one string per item.
+ * Recognises numbered lists in multiple formats:
+ *   - "1. text", "2. text"       (markdown numbered list)
+ *   - "(1) text", "(2) text"     (parenthesised numbers)
+ *   - inline "(1) … (2) …"      (single paragraph with numbered items)
  * Falls back to the full text as a single item if no numbered list is detected.
  */
 function parseSuggestionItems(text: string): string[] {
+  // Try line-based numbered lists first: "1. text" or "(1) text"
   const lines = text.split('\n').map((l) => l.trim()).filter(Boolean);
-  const numbered = lines.filter((l) => /^\d+\.\s+/.test(l));
-  if (numbered.length > 1) {
-    return numbered.map((l) => l.replace(/^\d+\.\s+/, '').trim());
+  const numberedDot = lines.filter((l) => /^\d+\.\s+/.test(l));
+  if (numberedDot.length > 1) {
+    return numberedDot.map((l) => l.replace(/^\d+\.\s+/, '').trim());
   }
+  const numberedParen = lines.filter((l) => /^\(\d+\)\s+/.test(l));
+  if (numberedParen.length > 1) {
+    return numberedParen.map((l) => l.replace(/^\(\d+\)\s+/, '').trim());
+  }
+
+  // Try inline "(1) … (2) …" within a single block of text
+  const inlineItems = text.split(/\(\d+\)\s*/).map((s) => s.trim()).filter(Boolean);
+  if (inlineItems.length > 1) {
+    return inlineItems;
+  }
+
   return [text.trim()];
 }
 
