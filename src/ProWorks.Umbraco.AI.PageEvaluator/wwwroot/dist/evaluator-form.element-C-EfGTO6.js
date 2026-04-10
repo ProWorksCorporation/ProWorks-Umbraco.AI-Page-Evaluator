@@ -1,7 +1,7 @@
 import { property as g, state as a, customElement as f, html as r, nothing as n, css as b } from "@umbraco-cms/backoffice/external/lit";
 import { UmbLitElement as v } from "@umbraco-cms/backoffice/lit-element";
-import { c as m, B as _, f as x, u as $, h as T } from "./entry-point-B5MfU_kU.js";
-const y = [
+import { c as m, B as y, f as x, u as $, h as T } from "./entry-point-BOZKX-6v.js";
+const _ = [
   {
     id: "required-fields",
     label: "Required Fields",
@@ -40,7 +40,7 @@ var C = Object.defineProperty, A = Object.getOwnPropertyDescriptor, c = (e, t, i
 };
 async function z(e) {
   const t = await m.get({
-    security: _,
+    security: y,
     url: `/umbraco/management/api/v1/page-evaluator/document-type/${encodeURIComponent(e)}/properties`
   });
   if (!t.response.ok) {
@@ -56,7 +56,7 @@ async function z(e) {
 }
 let u = class extends v {
   constructor() {
-    super(...arguments), this.documentTypeAlias = "", this._properties = [], this._selectedCategories = /* @__PURE__ */ new Set(), this._siteContext = "", this._draft = "", this._loading = !1, this._error = null;
+    super(...arguments), this.documentTypeAlias = "", this.selectedPropertyAliases = [], this._properties = [], this._selectedCategories = new Set(_.map((e) => e.id)), this._siteContext = "", this._draft = "", this._loading = !1, this._error = null;
   }
   connectedCallback() {
     super.connectedCallback(), this.addEventListener("category-toggle", (e) => {
@@ -83,18 +83,18 @@ let u = class extends v {
   }
   /** Assembles the prompt draft from selected categories, properties, and site context. */
   generateDraft() {
-    const e = this._properties.map((i) => i.alias).join(", "), t = y.filter((i) => this._selectedCategories.has(i.id)).map(
-      (i) => i.promptFragment.replace("{{propertyAliases}}", e).replace("{{siteContext}}", this._siteContext)
+    const t = (this.selectedPropertyAliases.length > 0 ? this._properties.filter((o) => this.selectedPropertyAliases.includes(o.alias)) : this._properties).map((o) => o.alias).join(", "), i = _.filter((o) => this._selectedCategories.has(o.id)).map(
+      (o) => o.promptFragment.replace("{{propertyAliases}}", t).replace("{{siteContext}}", this._siteContext)
     );
-    if (t.length === 0) {
+    if (i.length === 0) {
       this._draft = `Evaluate the following page.
 
-Properties: ${e}
+Properties: ${t}
 
 Site context: ${this._siteContext}`.trim();
       return;
     }
-    this._draft = t.join(`
+    this._draft = i.join(`
 
 `);
   }
@@ -146,8 +146,11 @@ Site context: ${this._siteContext}`.trim();
 
         <!-- Category checkboxes -->
         <uui-box headline=${this.localize.term("promptBuilder_categoriesLabel")}>
+          <p style="margin: 0 0 var(--uui-size-space-3) 0; font-size: var(--uui-type-small-size, 0.85rem); color: var(--uui-color-text-alt);">
+            ${this.localize.term("promptBuilder_categoriesHelpText")}
+          </p>
           <div style="display: flex; flex-direction: column; gap: var(--uui-size-space-3); padding: var(--uui-size-space-3) 0;">
-            ${y.map(
+            ${_.map(
       (t) => r`
                 <uui-checkbox
                   label=${t.label}
@@ -205,6 +208,9 @@ c([
   g({ attribute: "document-type-alias" })
 ], u.prototype, "documentTypeAlias", 2);
 c([
+  g({ type: Array, attribute: !1 })
+], u.prototype, "selectedPropertyAliases", 2);
+c([
   a()
 ], u.prototype, "_properties", 2);
 c([
@@ -247,7 +253,7 @@ let s = class extends v {
   async _resolveDocTypeName(e) {
     try {
       const t = await m.get({
-        security: _,
+        security: y,
         url: `/umbraco/management/api/v1/page-evaluator/document-type/${encodeURIComponent(e)}/properties`
       });
       if (t.response.ok && t.data) {
@@ -270,7 +276,7 @@ let s = class extends v {
   async _searchDocTypes(e) {
     try {
       const t = await m.get({
-        security: _,
+        security: y,
         url: "/umbraco/management/api/v1/item/document-type/search",
         query: { query: e, isElement: !1, skip: 0, take: 20 }
       });
@@ -285,7 +291,7 @@ let s = class extends v {
     this._docTypeShowSuggestions = !1, this._docTypeSuggestions = [], this._docTypeDisplayName = t;
     try {
       const i = await m.get({
-        security: _,
+        security: y,
         url: `/umbraco/management/api/v1/document-type/${encodeURIComponent(e)}`
       });
       if (i.response.ok && i.data) {
@@ -300,7 +306,7 @@ let s = class extends v {
     this._availableProperties = [];
     try {
       const t = await m.get({
-        security: _,
+        security: y,
         url: `/umbraco/management/api/v1/page-evaluator/document-type/${encodeURIComponent(e)}/properties`
       });
       if (t.response.ok && t.data) {
@@ -494,6 +500,7 @@ let s = class extends v {
             ${this._promptBuilderOpen && this._documentTypeAlias ? r`
                   <page-evaluator-prompt-builder
                     document-type-alias=${this._documentTypeAlias}
+                    .selectedPropertyAliases=${this._propertyAliases}
                     style="display: block; margin-bottom: var(--uui-size-space-3);"
                     @prompt-selected=${(e) => {
       this._promptText = e.detail.prompt, this._promptBuilderOpen = !1;
@@ -653,4 +660,4 @@ s = l([
 export {
   s as EvaluatorFormElement
 };
-//# sourceMappingURL=evaluator-form.element-D2bKswxk.js.map
+//# sourceMappingURL=evaluator-form.element-C-EfGTO6.js.map

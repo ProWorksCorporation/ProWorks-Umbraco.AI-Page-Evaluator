@@ -66,9 +66,10 @@ export async function fetchDocTypeProperties(
 @customElement('page-evaluator-prompt-builder')
 export class PromptBuilderElement extends UmbLitElement {
   @property({ attribute: 'document-type-alias' }) documentTypeAlias = '';
+  @property({ type: Array, attribute: false }) selectedPropertyAliases: string[] = [];
 
   @state() _properties: DocumentTypePropertySummary[] = [];
-  @state() _selectedCategories: Set<string> = new Set();
+  @state() _selectedCategories: Set<string> = new Set(CHECKLIST_CATEGORIES.map((c) => c.id));
   @state() _siteContext = '';
   @state() _draft = '';
   @state() private _loading = false;
@@ -114,7 +115,10 @@ export class PromptBuilderElement extends UmbLitElement {
 
   /** Assembles the prompt draft from selected categories, properties, and site context. */
   generateDraft(): void {
-    const aliasLine = this._properties.map((p) => p.alias).join(', ');
+    const effectiveProps = this.selectedPropertyAliases.length > 0
+      ? this._properties.filter((p) => this.selectedPropertyAliases.includes(p.alias))
+      : this._properties;
+    const aliasLine = effectiveProps.map((p) => p.alias).join(', ');
 
     const fragments = CHECKLIST_CATEGORIES
       .filter((c) => this._selectedCategories.has(c.id))
@@ -188,6 +192,9 @@ export class PromptBuilderElement extends UmbLitElement {
 
         <!-- Category checkboxes -->
         <uui-box headline=${this.localize.term('promptBuilder_categoriesLabel')}>
+          <p style="margin: 0 0 var(--uui-size-space-3) 0; font-size: var(--uui-type-small-size, 0.85rem); color: var(--uui-color-text-alt);">
+            ${this.localize.term('promptBuilder_categoriesHelpText')}
+          </p>
           <div style="display: flex; flex-direction: column; gap: var(--uui-size-space-3); padding: var(--uui-size-space-3) 0;">
             ${CHECKLIST_CATEGORIES.map(
               (cat) => html`

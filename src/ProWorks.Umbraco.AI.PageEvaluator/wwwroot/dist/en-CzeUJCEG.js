@@ -87,14 +87,16 @@ const e = {
     validationRequired: "This field is required."
   },
   promoNotice: {
-    headline: "From ProWorks: See How AI Views Your Entire Site",
-    body: "This package evaluates pages one at a time. The ProWorks AI Perspective Report analyzes your entire website at once, revealing how AI systems interpret your organization's positioning, messaging, and value propositions across every page.",
-    linkText: "Get your free AI Perspective Report"
+    headline: "See How AI Interprets Your Brand and Messaging",
+    body: "Get a free AI-driven analysis of your website that reveals how your positioning, messaging, and value are interpreted across your site.",
+    body2: "Want to go deeper? Our full evaluation reviews every page individually, identifying specific issues and opportunities with actionable recommendations.",
+    linkText: "Get Your Free AI Brand Analysis"
   },
   promptBuilder: {
     openButton: "Open Prompt Builder",
     title: "Prompt Builder",
     categoriesLabel: "Checklist Categories",
+    categoriesHelpText: "Select the categories to include in the generated prompt. Each category adds evaluation criteria the AI will check against your page content.",
     siteContextLabel: "Site Context (optional)",
     generateButton: "Generate Prompt Draft",
     usePromptButton: "Use This Prompt",
@@ -106,4 +108,4 @@ const e = {
 export {
   e as default
 };
-//# sourceMappingURL=en-BeACs2hN.js.map
+//# sourceMappingURL=en-CzeUJCEG.js.map

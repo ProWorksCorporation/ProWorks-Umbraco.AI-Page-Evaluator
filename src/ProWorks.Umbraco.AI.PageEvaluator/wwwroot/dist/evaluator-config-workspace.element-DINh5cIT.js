@@ -1,14 +1,14 @@
 import { html as l, nothing as d, css as h, state as n, customElement as m } from "@umbraco-cms/backoffice/external/lit";
-import { UmbLitElement as v } from "@umbraco-cms/backoffice/lit-element";
-import { umbConfirmModal as p } from "@umbraco-cms/backoffice/modal";
-import { a as f, b as g, d as _ } from "./entry-point-B5MfU_kU.js";
-import "./evaluator-form.element-D2bKswxk.js";
+import { UmbLitElement as p } from "@umbraco-cms/backoffice/lit-element";
+import { umbConfirmModal as v } from "@umbraco-cms/backoffice/modal";
+import { a as f, b as g, d as _ } from "./entry-point-BOZKX-6v.js";
+import "./evaluator-form.element-C-EfGTO6.js";
 var b = Object.defineProperty, y = Object.getOwnPropertyDescriptor, u = (t, i, o, a) => {
   for (var e = a > 1 ? void 0 : a ? y(i, o) : i, s = t.length - 1, c; s >= 0; s--)
     (c = t[s]) && (e = (a ? c(i, o, e) : c(e)) || e);
   return a && e && b(i, o, e), e;
 };
-let r = class extends v {
+let r = class extends p {
   constructor() {
     super(...arguments), this._configs = [], this._loading = !1, this._error = null, this._view = "list", this._editId = null;
   }
@@ -45,7 +45,7 @@ let r = class extends v {
   }
   async _handleDelete(t) {
     try {
-      await p(this, {
+      await v(this, {
         headline: this.localize.term("evaluatorConfig_deleteConfirmHeadline"),
         content: this.localize.term("evaluatorConfig_deleteConfirmContent"),
         color: "danger",
@@ -101,9 +101,15 @@ let r = class extends v {
           <div class="promo-notice-content">
             <h4>${this.localize.term("promoNotice_headline")}</h4>
             <p>${this.localize.term("promoNotice_body")}</p>
-            <a href="https://www.proworks.com/ai" target="_blank" rel="noopener">
+            <p>${this.localize.term("promoNotice_body2")}</p>
+            <uui-button
+              look="primary"
+              label=${this.localize.term("promoNotice_linkText")}
+              href="https://www.proworks.com/ai"
+              target="_blank"
+              rel="noopener">
               ${this.localize.term("promoNotice_linkText")} &rarr;
-            </a>
+            </uui-button>
           </div>
         </div>
         <div class="list-header">
@@ -250,15 +256,8 @@ r.styles = h`
       line-height: 1.5;
     }
 
-    .promo-notice-content a {
-      font-size: var(--uui-type-small-size, 0.85rem);
-      color: var(--uui-color-interactive);
-      text-decoration: none;
-      font-weight: 600;
-    }
-
-    .promo-notice-content a:hover {
-      text-decoration: underline;
+    .promo-notice-content uui-button {
+      margin-top: var(--uui-size-space-2);
     }
   `;
 u([
@@ -282,4 +281,4 @@ r = u([
 export {
   r as EvaluatorConfigWorkspaceElement
 };
-//# sourceMappingURL=evaluator-config-workspace.element-DhpyRw2Z.js.map
+//# sourceMappingURL=evaluator-config-workspace.element-DINh5cIT.js.map
