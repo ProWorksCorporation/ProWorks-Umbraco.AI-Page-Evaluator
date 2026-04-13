@@ -72,6 +72,67 @@ export class EvaluatorFormElement extends UmbLitElement {
       width: 100%;
     }
 
+    .property-reference {
+      margin-top: var(--uui-size-space-4);
+      padding: var(--uui-size-space-3) var(--uui-size-space-4);
+      border: 1px solid var(--uui-color-border);
+      border-radius: var(--uui-border-radius);
+      background: rgba(0, 0, 0, 0.025);
+    }
+
+    .property-reference__heading {
+      font-weight: 600;
+      margin-bottom: var(--uui-size-space-1);
+    }
+
+    .property-reference__help {
+      font-size: var(--uui-type-small-size, 0.85rem);
+      color: var(--uui-color-text-alt);
+      margin-bottom: var(--uui-size-space-3);
+    }
+
+    .property-reference__group {
+      font-size: 0.9rem;
+      margin: var(--uui-size-space-3) 0 var(--uui-size-space-1);
+    }
+
+    .property-reference__list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    .property-reference__item {
+      padding: 2px 0;
+      font-size: 0.9rem;
+    }
+
+    .property-reference__item code {
+      background: var(--uui-color-surface);
+      padding: 1px 4px;
+      border-radius: 3px;
+    }
+
+    .property-reference__item--excluded {
+      opacity: 0.4;
+    }
+
+    .property-reference__item--excluded code {
+      text-decoration: line-through;
+    }
+
+    .prompt-final-heading {
+      margin: 0 0 var(--uui-size-space-1) 0;
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    .prompt-final-help {
+      margin: 0 0 var(--uui-size-space-2) 0;
+      font-size: var(--uui-type-small-size, 0.85rem);
+      color: var(--uui-color-text-alt);
+    }
+
     .doc-type-suggestions {
       position: absolute;
       top: 100%;
@@ -234,6 +295,9 @@ export class EvaluatorFormElement extends UmbLitElement {
       if (result.response.ok && result.data) {
         const data = result.data as { properties: DocumentTypePropertySummary[] };
         this._availableProperties = data.properties ?? [];
+        if (this._propertyAliases.length === 0 && this._availableProperties.length > 0) {
+          this._propertyAliases = this._availableProperties.map(p => p.alias);
+        }
       }
     } catch {
       // Non-critical — the checkbox list simply won't appear
@@ -299,6 +363,41 @@ export class EvaluatorFormElement extends UmbLitElement {
     } finally {
       this._saving = false;
     }
+  }
+
+  private _renderPropertyReference(): TemplateResult | typeof nothing {
+    if (this._availableProperties.length === 0) return nothing;
+    const groups = new Map<string, DocumentTypePropertySummary[]>();
+    for (const p of this._availableProperties) {
+      const list = groups.get(p.groupName) ?? [];
+      list.push(p);
+      groups.set(p.groupName, list);
+    }
+    const selected = new Set(this._propertyAliases);
+    return html`
+      <div class="property-reference">
+        <div class="property-reference__heading">
+          ${this.localize.term('evaluatorConfig_propertyReferenceHeading')}
+        </div>
+        <div class="property-reference__help">
+          ${this.localize.term('evaluatorConfig_propertyReferenceHelp')}
+        </div>
+        ${Array.from(groups.entries()).map(([groupName, props]) => html`
+          <h4 class="property-reference__group">${groupName}</h4>
+          <ul class="property-reference__list">
+            ${props.map(p => {
+              const excluded = !selected.has(p.alias);
+              return html`
+                <li class="property-reference__item ${excluded ? 'property-reference__item--excluded' : ''}"
+                    title=${excluded ? this.localize.term('evaluatorConfig_propertyExcludedTooltip') : ''}>
+                  <code>${p.alias}</code> — ${p.label}
+                </li>
+              `;
+            })}
+          </ul>
+        `)}
+      </div>
+    `;
   }
 
   override render(): TemplateResult {
@@ -419,11 +518,11 @@ export class EvaluatorFormElement extends UmbLitElement {
             ${this._documentTypeAlias ? html`
               <uui-button
                 look="secondary"
-                label=${this.localize.term('promptBuilder_openButton')}
+                label=${this._promptBuilderOpen ? this.localize.term('promptBuilder_closeButton') : this.localize.term('promptBuilder_openButton')}
                 style="margin-bottom: var(--uui-size-space-3);"
                 aria-expanded=${this._promptBuilderOpen ? 'true' : 'false'}
                 @click=${() => { this._promptBuilderOpen = !this._promptBuilderOpen; }}>
-                ${this.localize.term('promptBuilder_openButton')}
+                ${this._promptBuilderOpen ? this.localize.term('promptBuilder_closeButton') : this.localize.term('promptBuilder_openButton')}
               </uui-button>
             ` : nothing}
             ${this._promptBuilderOpen && this._documentTypeAlias
@@ -439,6 +538,12 @@ export class EvaluatorFormElement extends UmbLitElement {
                   </page-evaluator-prompt-builder>
                 `
               : nothing}
+            <h4 class="prompt-final-heading">
+              ${this.localize.term('evaluatorConfig_promptFinalHeading')}
+            </h4>
+            <p class="prompt-final-help">
+              ${this.localize.term('evaluatorConfig_promptFinalHelp')}
+            </p>
             <uui-textarea
               label=${this.localize.term('evaluatorConfig_promptLabel')}
               .value=${this._promptText}
@@ -447,6 +552,7 @@ export class EvaluatorFormElement extends UmbLitElement {
               @input=${(e: InputEvent) => { this._promptText = (e.target as HTMLTextAreaElement).value; }}>
             </uui-textarea>
             ${this._errors['promptText'] ? html`<uui-form-validation-message>${this._errors['promptText']}</uui-form-validation-message>` : nothing}
+            ${this._renderPropertyReference()}
           </div>
         </umb-property-layout>
       </uui-box>
