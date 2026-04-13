@@ -148,47 +148,13 @@ export class PromptBuilderElement extends UmbLitElement {
     );
   }
 
-  private _groupProperties(): Map<string, DocumentTypePropertySummary[]> {
-    const groups = new Map<string, DocumentTypePropertySummary[]>();
-    for (const prop of this._properties) {
-      const list = groups.get(prop.groupName) ?? [];
-      list.push(prop);
-      groups.set(prop.groupName, list);
-    }
-    return groups;
-  }
-
   override render(): TemplateResult | typeof nothing {
     if (this._loading) return html`<uui-loader></uui-loader>`;
-
-    const groups = this._groupProperties();
 
     return html`
       <div style="display: flex; flex-direction: column; gap: 1rem;">
 
         ${this._error ? html`<uui-tag color="danger">${this._error}</uui-tag>` : nothing}
-
-        <!-- Property aliases grouped by tab/group -->
-        ${groups.size > 0
-          ? html`
-              <uui-box headline=${this.localize.term('promptBuilder_propertiesLabel')}>
-                ${Array.from(groups.entries()).map(
-                  ([groupName, props]) => html`
-                    <h3 style="margin: 0.5rem 0 0.25rem;">${groupName}</h3>
-                    <ul>
-                      ${props.map(
-                        (p) => html`
-                          <li data-property-alias=${p.alias}>
-                            <code>${p.alias}</code> — ${p.label}
-                          </li>
-                        `,
-                      )}
-                    </ul>
-                  `,
-                )}
-              </uui-box>
-            `
-          : nothing}
 
         <!-- Category checkboxes -->
         <uui-box headline=${this.localize.term('promptBuilder_categoriesLabel')}>

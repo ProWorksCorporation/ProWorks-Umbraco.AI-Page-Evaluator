@@ -56,8 +56,8 @@ export default {
     tableHeaderActions: 'Actions',
 
     // Workspace: form chrome
-    editHeadline: 'Edit Configuration',
-    createHeadline: 'Create Configuration',
+    editHeadline: 'Edit Evaluator',
+    createHeadline: 'Create Evaluator',
     backButton: 'Back',
     backLabel: 'Back to list',
 
@@ -88,7 +88,12 @@ export default {
     contextLabel: 'AI Context',
     contextHelp: 'Optional Umbraco.AI context to inject alongside the prompt.',
     propertiesLabel: 'Properties to Evaluate',
-    propertiesHelp: 'Select which properties to include in the evaluation. If none are selected, all properties will be sent.',
+    propertiesHelp: 'All properties are included by default. Uncheck any you want to exclude from the evaluation.',
+    propertyReferenceHeading: 'Document Type Properties',
+    propertyReferenceHelp: 'Reference for composing your prompt. Excluded properties (struck through) will not be sent to the AI.',
+    propertyExcludedTooltip: 'Excluded from evaluation',
+    promptFinalHeading: 'Final Prompt',
+    promptFinalHelp: 'This is the prompt that will be sent to the AI when the evaluator runs.',
     promptLabel: 'Evaluation Prompt',
     promptHelp: 'The prompt sent to the AI to evaluate page content.',
     promptRequired: 'Prompt text is required.',
@@ -108,6 +113,7 @@ export default {
 
   promptBuilder: {
     openButton: 'Open Prompt Builder',
+    closeButton: 'Close Prompt Builder',
     title: 'Prompt Builder',
     categoriesLabel: 'Checklist Categories',
     categoriesHelpText: 'Select the categories to include in the generated prompt. Each category adds evaluation criteria the AI will check against your page content.',

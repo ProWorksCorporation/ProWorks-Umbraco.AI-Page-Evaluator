@@ -108,7 +108,7 @@ public sealed class PageEvaluatorApiController : ControllerBase
             AIEvaluatorConfig created = await _configService.CreateAsync(config, GetCurrentUserKey(), cancellationToken);
             await _cacheRepository.DeleteByDocumentTypeAliasAsync(created.DocumentTypeAlias, cancellationToken);
             EvaluatorConfigResponse response = await ToResponseAsync(created, cancellationToken);
-            return CreatedAtAction(nameof(GetConfigurationAsync), new { id = created.Id }, response);
+            return CreatedAtAction("GetConfiguration", new { id = created.Id }, response);
         }
         catch (ArgumentException ex)
         {

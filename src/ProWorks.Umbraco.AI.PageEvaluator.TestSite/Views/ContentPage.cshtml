@@ -75,6 +75,73 @@
 </article>
 
 <!-- =========================================================
+     CHILD PAGES (listing)
+     ========================================================= -->
+@{
+    var childPages = Model.Children
+        .Where(c => c.IsPublished()
+                    && (c.ContentType.Alias == ContentPage.ModelTypeAlias
+                        || c.ContentType.Alias == BlogPost.ModelTypeAlias))
+        .OrderByDescending(c => c.Value<DateTime?>("publishDate") ?? c.CreateDate)
+        .ToList();
+}
+@if (childPages.Any())
+{
+    <section class="border-t border-slate-100 py-12 bg-slate-50">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-2xl font-bold text-slate-800 mb-8">Latest Posts</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                @foreach (var child in childPages)
+                {
+                    var cImage   = child.Value<IPublishedContent>("headerImage");
+                    var cTitle   = child.Value<string>("pageTitle").NullOrWhiteSpaceAsNull() ?? child.Name;
+                    var cSummary = child.Value<string>("summary");
+                    var cAuthor  = child.Value<string>("author");
+                    var cDate    = child.Value<DateTime?>("publishDate") ?? child.CreateDate;
+
+                    <a href="@child.Url()"
+                       class="group flex flex-col rounded-xl overflow-hidden border border-slate-100 hover:shadow-lg transition-shadow bg-white">
+                        @if (cImage != null)
+                        {
+                            <div class="aspect-video overflow-hidden">
+                                <img src="@cImage.Url()"
+                                     alt="@cTitle"
+                                     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="aspect-video bg-indigo-50 flex items-center justify-center">
+                                <svg class="w-10 h-10 text-indigo-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                            </div>
+                        }
+                        <div class="p-5 flex flex-col flex-1">
+                            <div class="flex items-center gap-2 text-xs text-slate-400 mb-2">
+                                @if (!string.IsNullOrWhiteSpace(cAuthor))
+                                {
+                                    <span>@cAuthor</span>
+                                    <span>·</span>
+                                }
+                                <time datetime="@cDate.ToString("yyyy-MM-dd")">@cDate.ToString("MMM d, yyyy")</time>
+                            </div>
+                            <h3 class="font-semibold text-slate-800 text-lg group-hover:text-indigo-600 transition-colors leading-snug mb-2">
+                                @cTitle
+                            </h3>
+                            @if (!string.IsNullOrWhiteSpace(cSummary))
+                            {
+                                <p class="text-slate-500 text-sm line-clamp-3">@cSummary</p>
+                            }
+                        </div>
+                    </a>
+                }
+            </div>
+        </div>
+    </section>
+}
+
+<!-- =========================================================
      RELATED PAGES
      ========================================================= -->
 @if (relatedPages != null && relatedPages.Any())
