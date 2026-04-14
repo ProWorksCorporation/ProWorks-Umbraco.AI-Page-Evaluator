@@ -25,6 +25,7 @@ export interface EvaluatorConfigItem {
   readonly dateCreated: string; // ISO 8601
   readonly dateModified: string; // ISO 8601
   readonly propertyAliases: string[] | null;
+  readonly scoringEnabled: boolean;
   readonly version: number;
 }
 
@@ -43,6 +44,7 @@ export interface CreateEvaluatorConfigRequest {
   readonly promptText: string;
   readonly description?: string | null;
   readonly propertyAliases?: string[] | null;
+  readonly scoringEnabled: boolean;
 }
 
 /** Request body for PUT /configurations/{id}. */
@@ -54,6 +56,7 @@ export interface UpdateEvaluatorConfigRequest {
   readonly promptText: string;
   readonly description?: string | null;
   readonly propertyAliases?: string[] | null;
+  readonly scoringEnabled: boolean;
   readonly version: number;
 }
 
@@ -78,10 +81,19 @@ export interface EvaluationScore {
   readonly displayText: string;
 }
 
+/** A single dimensional axis score returned when scoringEnabled is true on the evaluator config. */
+export interface AxisScore {
+  readonly name: string;
+  readonly score: number;
+  readonly feedback: string | null;
+}
+
 /**
  * Response body for POST /evaluate and GET /evaluate/cached/{nodeId}.
  * When parseFailed is true, score is null and checks is empty; rawResponse contains the AI output.
  * cachedAt is the UTC ISO-8601 timestamp when the result was saved; always populated on success.
+ * overallScore and axisScores are populated only when the active config has scoringEnabled = true
+ * and the AI returned valid values; they are null otherwise.
  */
 export interface EvaluationReportResponse {
   readonly parseFailed: boolean;
@@ -90,6 +102,8 @@ export interface EvaluationReportResponse {
   readonly suggestions: string | null;
   readonly rawResponse: string | null;
   readonly cachedAt: string | null;
+  readonly overallScore: number | null;
+  readonly axisScores: readonly AxisScore[] | null;
 }
 
 /** Request body for POST /evaluate. */

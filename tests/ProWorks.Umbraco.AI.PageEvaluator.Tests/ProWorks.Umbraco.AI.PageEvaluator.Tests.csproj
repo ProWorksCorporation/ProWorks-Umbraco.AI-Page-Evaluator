@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\ProWorks.Umbraco.AI.PageEvaluator.Core\ProWorks.Umbraco.AI.PageEvaluator.Core.csproj" />
+    <ProjectReference Include="..\..\src\ProWorks.Umbraco.AI.PageEvaluator.Persistence\ProWorks.Umbraco.AI.PageEvaluator.Persistence.csproj" />
     <ProjectReference Include="..\..\src\ProWorks.Umbraco.AI.PageEvaluator\ProWorks.Umbraco.AI.PageEvaluator.csproj" />
   </ItemGroup>
 

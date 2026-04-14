@@ -1,79 +1,112 @@
-import { css as v, property as z, customElement as f, nothing as c, html as s, state as _ } from "@umbraco-cms/backoffice/external/lit";
-import { UmbModalBaseElement as y } from "@umbraco-cms/backoffice/modal";
-import { g as P, e as k } from "./entry-point-lNsUu5eJ.js";
-import { UmbLitElement as $ } from "@umbraco-cms/backoffice/lit-element";
-var C = Object.defineProperty, S = Object.getOwnPropertyDescriptor, x = (e, a, o, i) => {
-  for (var t = i > 1 ? void 0 : i ? S(a, o) : a, r = e.length - 1, n; r >= 0; r--)
-    (n = e[r]) && (t = (i ? n(a, o, t) : n(t)) || t);
-  return i && t && C(a, o, t), t;
+import { css as f, property as w, customElement as _, nothing as l, html as t, state as b } from "@umbraco-cms/backoffice/external/lit";
+import { UmbModalBaseElement as C } from "@umbraco-cms/backoffice/modal";
+import { g as S, e as E } from "./entry-point-BaPza1wV.js";
+import { UmbLitElement as y } from "@umbraco-cms/backoffice/lit-element";
+var F = Object.defineProperty, B = Object.getOwnPropertyDescriptor, P = (e, a, s, o) => {
+  for (var r = o > 1 ? void 0 : o ? B(a, s) : a, i = e.length - 1, n; i >= 0; i--)
+    (n = e[i]) && (r = (o ? n(a, s, r) : n(r)) || r);
+  return o && r && F(a, s, r), r;
 };
-let p = class extends $ {
+let p = class extends y {
   render() {
-    if (!this.report) return c;
-    const { checks: e, suggestions: a } = this.report, o = e.filter((l) => l.status === "Pass").length, i = e.filter((l) => l.status === "Warn").length, t = e.filter((l) => l.status === "Fail").length, r = e.length, n = e.filter((l) => l.status === "Fail" || l.status === "Warn"), h = e.filter((l) => l.status === "Pass");
-    return s`
-      ${r > 0 ? s`
-            <div class="score-row">
-              <span class="score-total">${r} ${this.localize.term("evaluatePage_reportChecks")}</span>
-              <span class="score-pill score-pill--pass">
-                <uui-icon name="icon-check"></uui-icon>${o} ${this.localize.term("evaluatePage_reportPassed")}
-              </span>
-              ${i > 0 ? s`
-                <span class="score-pill score-pill--warn">
-                  <uui-icon name="icon-alert"></uui-icon>${i} ${i !== 1 ? this.localize.term("evaluatePage_reportWarnings") : this.localize.term("evaluatePage_reportWarning")}
-                </span>` : c}
-              ${t > 0 ? s`
-                <span class="score-pill score-pill--fail">
-                  <uui-icon name="icon-wrong"></uui-icon>${t} ${this.localize.term("evaluatePage_reportFailed")}
-                </span>` : c}
-            </div>
-          ` : c}
+    if (!this.report) return l;
+    const { checks: e, suggestions: a, overallScore: s, axisScores: o } = this.report, r = s !== null || o !== null && o.length > 0, i = e.filter((u) => u.status === "Pass").length, n = e.filter((u) => u.status === "Warn").length, x = e.filter((u) => u.status === "Fail").length, z = e.length, m = e.filter((u) => u.status === "Fail" || u.status === "Warn"), v = e.filter((u) => u.status === "Pass");
+    return t`
+      ${r ? this._renderScoring(s, o) : l}
 
-      ${a ? s`
+      ${z > 0 ? t`
+            <div class="score-row">
+              <span class="score-total">${z} ${this.localize.term("evaluatePage_reportChecks")}</span>
+              <span class="score-pill score-pill--pass">
+                <uui-icon name="icon-check"></uui-icon>${i} ${this.localize.term("evaluatePage_reportPassed")}
+              </span>
+              ${n > 0 ? t`
+                <span class="score-pill score-pill--warn">
+                  <uui-icon name="icon-alert"></uui-icon>${n} ${n !== 1 ? this.localize.term("evaluatePage_reportWarnings") : this.localize.term("evaluatePage_reportWarning")}
+                </span>` : l}
+              ${x > 0 ? t`
+                <span class="score-pill score-pill--fail">
+                  <uui-icon name="icon-wrong"></uui-icon>${x} ${this.localize.term("evaluatePage_reportFailed")}
+                </span>` : l}
+            </div>
+          ` : l}
+
+      ${a ? t`
             <uui-box headline=${this.localize.term("evaluatePage_reportSuggestions")} class="suggestions-box">
               ${this._renderSuggestions(a)}
             </uui-box>
-          ` : c}
+          ` : l}
 
-      ${n.length > 0 ? s`
-            <p class="section-title">${this.localize.term("evaluatePage_reportAttentionItems")} (${n.length})</p>
+      ${m.length > 0 ? t`
+            <p class="section-title">${this.localize.term("evaluatePage_reportAttentionItems")} (${m.length})</p>
             <ul class="check-list">
-              ${n.map((l) => this._renderCheck(l))}
+              ${m.map((u) => this._renderCheck(u))}
             </ul>
-          ` : c}
+          ` : l}
 
-      ${h.length > 0 ? s`
-            <p class="section-title">${this.localize.term("evaluatePage_reportPassingItems")} (${h.length})</p>
+      ${v.length > 0 ? t`
+            <p class="section-title">${this.localize.term("evaluatePage_reportPassingItems")} (${v.length})</p>
             <ul class="check-list">
-              ${h.map((l) => this._renderCheck(l))}
+              ${v.map((u) => this._renderCheck(u))}
             </ul>
-          ` : c}
+          ` : l}
     `;
   }
   _renderSuggestions(e) {
-    const a = B(e);
-    return a.length === 1 ? s`<p style="margin:0; font-size: var(--uui-type-small-size, 0.875rem); line-height: 1.5;">${b(a[0])}</p>` : s`
+    const a = D(e);
+    return a.length === 1 ? t`<p style="margin:0; font-size: var(--uui-type-small-size, 0.875rem); line-height: 1.5;">${$(a[0] ?? "")}</p>` : t`
       <ol class="suggestions-list">
-        ${a.map((o) => s`<li>${b(o)}</li>`)}
+        ${a.map((s) => t`<li>${$(s)}</li>`)}
       </ol>
     `;
   }
+  _renderScoring(e, a) {
+    return t`
+      ${e !== null ? t`
+            <div class="overall-score-row">
+              <span class="overall-score-label">${this.localize.term("evaluatePage_overallScore")}</span>
+              <uui-tag color=${A(e)} look="primary">
+                ${e.toFixed(1)} / 5
+              </uui-tag>
+            </div>
+          ` : l}
+      ${a && a.length > 0 ? t`
+            <div class="axis-scores-section">
+              <p class="section-title">${this.localize.term("evaluatePage_axisScores")}</p>
+              <ul class="axis-list">
+                ${a.map((s) => this._renderAxis(s))}
+              </ul>
+            </div>
+          ` : l}
+    `;
+  }
+  _renderAxis(e) {
+    return t`
+      <li class="axis-item">
+        <uui-tag color=${R(e.score)} look="primary">${e.score} / 5</uui-tag>
+        <div class="axis-body">
+          <div class="axis-name">${O(e.name)}</div>
+          ${e.feedback ? t`<div class="axis-feedback">${e.feedback}</div>` : l}
+        </div>
+      </li>
+    `;
+  }
   _renderCheck(e) {
-    return s`
+    return t`
       <li class="check-item">
         <uui-icon
           class="check-icon"
           data-status="${e.status}"
-          name="${E(e.status)}"></uui-icon>
+          name="${j(e.status)}"></uui-icon>
         <div class="check-body">
           <div class="check-label">${e.label}</div>
-          ${e.explanation ? s`<div class="check-explanation">${e.explanation}</div>` : c}
+          ${e.explanation ? t`<div class="check-explanation">${e.explanation}</div>` : l}
         </div>
       </li>
     `;
   }
 };
-p.styles = v`
+p.styles = f`
     :host {
       display: block;
       padding: var(--uui-size-space-4, 16px);
@@ -192,14 +225,75 @@ p.styles = v`
       margin-top: var(--uui-size-space-1, 4px);
       line-height: 1.4;
     }
+
+    .overall-score-row {
+      display: flex;
+      align-items: center;
+      gap: var(--uui-size-space-3, 12px);
+      margin-bottom: var(--uui-size-space-4, 16px);
+      flex-wrap: wrap;
+    }
+
+    .overall-score-label {
+      font-size: var(--uui-type-h5-size, 1rem);
+      font-weight: 600;
+      color: var(--uui-color-text, #333);
+    }
+
+    .axis-scores-section {
+      margin-bottom: var(--uui-size-space-5, 20px);
+    }
+
+    .axis-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    .axis-item {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--uui-size-space-3, 12px);
+      padding: var(--uui-size-space-2, 8px) 0;
+      border-bottom: 1px solid var(--uui-color-divider, #e0e0e0);
+    }
+
+    .axis-item:last-child {
+      border-bottom: none;
+    }
+
+    .axis-body {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .axis-name {
+      font-weight: 500;
+    }
+
+    .axis-feedback {
+      color: var(--uui-color-text-alt, #666);
+      font-size: var(--uui-type-small-size, 0.875rem);
+      margin-top: var(--uui-size-space-1, 4px);
+      line-height: 1.4;
+    }
   `;
-x([
-  z({ attribute: !1 })
+P([
+  w({ attribute: !1 })
 ], p.prototype, "report", 2);
-p = x([
-  f("page-evaluator-report")
+p = P([
+  _("page-evaluator-report")
 ], p);
-function E(e) {
+function O(e) {
+  return e.replace(/_/g, " ").replace(/\b\w/g, (a) => a.toUpperCase());
+}
+function A(e) {
+  return e >= 4 ? "positive" : e >= 2.5 ? "warning" : "danger";
+}
+function R(e) {
+  return e >= 4 ? "positive" : e >= 3 ? "warning" : "danger";
+}
+function j(e) {
   switch (e) {
     case "Pass":
       return "icon-check";
@@ -209,32 +303,32 @@ function E(e) {
       return "icon-alert";
   }
 }
-function B(e) {
+function D(e) {
   const a = e.split(`
-`).map((r) => r.trim()).filter(Boolean), o = a.filter((r) => /^\d+\.\s+/.test(r));
+`).map((i) => i.trim()).filter(Boolean), s = a.filter((i) => /^\d+\.\s+/.test(i));
+  if (s.length > 1)
+    return s.map((i) => i.replace(/^\d+\.\s+/, "").trim());
+  const o = a.filter((i) => /^\(\d+\)\s+/.test(i));
   if (o.length > 1)
-    return o.map((r) => r.replace(/^\d+\.\s+/, "").trim());
-  const i = a.filter((r) => /^\(\d+\)\s+/.test(r));
-  if (i.length > 1)
-    return i.map((r) => r.replace(/^\(\d+\)\s+/, "").trim());
-  const t = e.split(/\(\d+\)\s*/).map((r) => r.trim()).filter(Boolean);
-  return t.length > 1 ? t : [e.trim()];
+    return o.map((i) => i.replace(/^\(\d+\)\s+/, "").trim());
+  const r = e.split(/\(\d+\)\s*/).map((i) => i.trim()).filter(Boolean);
+  return r.length > 1 ? r : [e.trim()];
 }
-function b(e) {
+function $(e) {
   const a = e.split(/\*\*([^*]+)\*\*/g);
-  return s`${a.map((o, i) => i % 2 === 1 ? s`<strong>${o}</strong>` : o)}`;
+  return t`${a.map((s, o) => o % 2 === 1 ? t`<strong>${s}</strong>` : s)}`;
 }
-var F = Object.defineProperty, O = Object.getOwnPropertyDescriptor, w = (e, a, o, i) => {
-  for (var t = i > 1 ? void 0 : i ? O(a, o) : a, r = e.length - 1, n; r >= 0; r--)
-    (n = e[r]) && (t = (i ? n(a, o, t) : n(t)) || t);
-  return i && t && F(a, o, t), t;
+var W = Object.defineProperty, I = Object.getOwnPropertyDescriptor, k = (e, a, s, o) => {
+  for (var r = o > 1 ? void 0 : o ? I(a, s) : a, i = e.length - 1, n; i >= 0; i--)
+    (n = e[i]) && (r = (o ? n(a, s, r) : n(r)) || r);
+  return o && r && W(a, s, r), r;
 };
-let d = class extends $ {
+let d = class extends y {
   constructor() {
     super(...arguments), this.rawResponse = null;
   }
   render() {
-    return s`
+    return t`
       <div class="warning-banner">
         <p>
           <uui-icon name="icon-alert"></uui-icon>
@@ -245,11 +339,11 @@ let d = class extends $ {
           to improve structured output.
         </p>
       </div>
-      ${this.rawResponse ? s`<pre class="raw-response">${this.rawResponse}</pre>` : ""}
+      ${this.rawResponse ? t`<pre class="raw-response">${this.rawResponse}</pre>` : ""}
     `;
   }
 };
-d.styles = v`
+d.styles = f`
     :host {
       display: block;
     }
@@ -277,23 +371,23 @@ d.styles = v`
       font-size: var(--uui-type-small-size, 0.875rem);
     }
   `;
-w([
-  z({ type: String })
+k([
+  w({ type: String })
 ], d.prototype, "rawResponse", 2);
-d = w([
-  f("page-evaluator-warning")
+d = k([
+  _("page-evaluator-warning")
 ], d);
-var R = Object.defineProperty, j = Object.getOwnPropertyDescriptor, g = (e, a, o, i) => {
-  for (var t = i > 1 ? void 0 : i ? j(a, o) : a, r = e.length - 1, n; r >= 0; r--)
-    (n = e[r]) && (t = (i ? n(a, o, t) : n(t)) || t);
-  return i && t && R(a, o, t), t;
+var K = Object.defineProperty, L = Object.getOwnPropertyDescriptor, g = (e, a, s, o) => {
+  for (var r = o > 1 ? void 0 : o ? L(a, s) : a, i = e.length - 1, n; i >= 0; i--)
+    (n = e[i]) && (r = (o ? n(a, s, r) : n(r)) || r);
+  return o && r && K(a, s, r), r;
 };
-const m = {
+const h = {
   sending: "evaluatePage_progressSendingData",
   waiting: "evaluatePage_progressWaitingForAI",
   rendering: "evaluatePage_progressRendering"
 };
-let u = class extends y {
+let c = class extends C {
   constructor() {
     super(...arguments), this._modalState = "idle", this._progressKey = "", this._report = null;
   }
@@ -304,7 +398,7 @@ let u = class extends y {
     const e = this.data;
     if (e) {
       try {
-        const a = await P(e.nodeId);
+        const a = await S(e.nodeId);
         if (a) {
           this._report = a, this._modalState = a.parseFailed ? "parse-failed" : "success";
           return;
@@ -318,9 +412,9 @@ let u = class extends y {
     const e = this.data;
     if (e)
       try {
-        this._modalState = "loading", this._progressKey = m.sending, await this._tick(), this._progressKey = m.waiting;
-        const a = await k(e);
-        this._progressKey = m.rendering, await this._tick(), this._report = a, this._modalState = a.parseFailed ? "parse-failed" : "success";
+        this._modalState = "loading", this._progressKey = h.sending, await this._tick(), this._progressKey = h.waiting;
+        const a = await E(e);
+        this._progressKey = h.rendering, await this._tick(), this._report = a, this._modalState = a.parseFailed ? "parse-failed" : "success";
       } catch {
         this._modalState = "error";
       }
@@ -347,18 +441,18 @@ let u = class extends y {
     }
   }
   render() {
-    return s`
+    return t`
       <umb-body-layout headline=${this.localize.term("evaluatePage_modalHeadline")}>
         ${this._renderBody()}
         <div slot="actions">
-          ${this._modalState === "success" || this._modalState === "parse-failed" ? s`
+          ${this._modalState === "success" || this._modalState === "parse-failed" ? t`
                 <uui-button
                   look="secondary"
                   label=${this.localize.term("evaluatePage_rerunButton")}
                   @click=${() => this._rerun()}>
                   ${this.localize.term("evaluatePage_rerunButton")}
                 </uui-button>
-              ` : c}
+              ` : l}
           <uui-button
             label=${this.localize.term("evaluatePage_closeButton")}
             @click=${() => this._close()}>
@@ -372,28 +466,28 @@ let u = class extends y {
     var e;
     switch (this._modalState) {
       case "idle":
-        return c;
+        return l;
       case "loading":
-        return s`
+        return t`
           <div class="progress-container">
             <uui-loader></uui-loader>
             <p aria-live="polite" aria-atomic="true">${this.localize.term(this._progressKey)}</p>
           </div>
         `;
       case "success":
-        return s`
+        return t`
           ${this._renderCacheBar()}
           <page-evaluator-report
             .report="${this._report}"></page-evaluator-report>
         `;
       case "parse-failed":
-        return s`
+        return t`
           ${this._renderCacheBar()}
           <page-evaluator-warning
             .rawResponse="${((e = this._report) == null ? void 0 : e.rawResponse) ?? null}"></page-evaluator-warning>
         `;
       case "error":
-        return s`
+        return t`
           <div class="error-container" role="alert">
             <p>${this.localize.term("evaluatePage_aiErrorMessage")}</p>
             <uui-button
@@ -410,14 +504,14 @@ let u = class extends y {
   _renderCacheBar() {
     var a;
     const e = (a = this._report) == null ? void 0 : a.cachedAt;
-    return e ? s`
+    return e ? t`
       <div class="cache-bar">
         <span>${this.localize.term("evaluatePage_lastEvaluated")} ${this._formatCachedAt(e)}</span>
       </div>
-    ` : c;
+    ` : l;
   }
 };
-u.styles = v`
+c.styles = f`
     .progress-container {
       display: flex;
       flex-direction: column;
@@ -446,18 +540,18 @@ u.styles = v`
     }
   `;
 g([
-  _()
-], u.prototype, "_modalState", 2);
+  b()
+], c.prototype, "_modalState", 2);
 g([
-  _()
-], u.prototype, "_progressKey", 2);
+  b()
+], c.prototype, "_progressKey", 2);
 g([
-  _()
-], u.prototype, "_report", 2);
-u = g([
-  f("page-evaluator-modal")
-], u);
+  b()
+], c.prototype, "_report", 2);
+c = g([
+  _("page-evaluator-modal")
+], c);
 export {
-  u as EvaluationModalElement
+  c as EvaluationModalElement
 };
-//# sourceMappingURL=evaluation-modal.element-lUenJXrk.js.map
+//# sourceMappingURL=evaluation-modal.element-Btjlwmvk.js.map

@@ -26,7 +26,10 @@ const e = {
     parseFailedLinkText: "Refine the evaluator prompt",
     // Modal: AI error
     aiErrorMessage: "The evaluation could not be completed. The AI provider returned an error.",
-    retryButton: "Retry"
+    retryButton: "Retry",
+    // Modal: dimensional scoring
+    overallScore: "Overall Score",
+    axisScores: "Score Breakdown"
   },
   evaluatorConfig: {
     // Workspace: list
@@ -89,7 +92,10 @@ const e = {
     saveButton: "Save",
     savingButton: "Saving…",
     cancelButton: "Cancel",
-    validationRequired: "This field is required."
+    validationRequired: "This field is required.",
+    // Form: dimensional scoring
+    scoringLabel: "Enable Scoring",
+    scoringHelp: "Ask the AI to rate the page on a 1-5 scale across the dimensions named in your prompt."
   },
   promoNotice: {
     headline: "See How AI Interprets Your Brand and Messaging",
@@ -114,4 +120,4 @@ const e = {
 export {
   e as default
 };
-//# sourceMappingURL=en-BBAB3RCF.js.map
+//# sourceMappingURL=en-CCBFGXaV.js.map

@@ -27,6 +27,7 @@ public static class AIEvaluatorConfigEntityFactory
             ModifiedByUserId = entity.ModifiedByUserId,
             Version = entity.Version,
             PropertyAliases = DeserializePropertyAliases(entity.PropertyAliases),
+            ScoringEnabled = entity.ScoringEnabled,
         };
 
     /// <summary>Maps a domain model to a new EFCore entity (for inserts).</summary>
@@ -47,6 +48,7 @@ public static class AIEvaluatorConfigEntityFactory
             ModifiedByUserId = domain.ModifiedByUserId,
             Version = domain.Version,
             PropertyAliases = SerializePropertyAliases(domain.PropertyAliases),
+            ScoringEnabled = domain.ScoringEnabled,
         };
 
     /// <summary>Applies domain model changes onto an existing tracked EFCore entity (for updates).</summary>
@@ -63,6 +65,7 @@ public static class AIEvaluatorConfigEntityFactory
         entity.ModifiedByUserId = domain.ModifiedByUserId;
         entity.Version = domain.Version + 1;
         entity.PropertyAliases = SerializePropertyAliases(domain.PropertyAliases);
+        entity.ScoringEnabled = domain.ScoringEnabled;
     }
 
     private static string? SerializePropertyAliases(List<string>? aliases)

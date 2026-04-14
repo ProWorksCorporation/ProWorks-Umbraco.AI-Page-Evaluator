@@ -51,4 +51,10 @@ public sealed class AIEvaluatorConfigEntity
     /// Null means all properties are sent.
     /// </summary>
     public string? PropertyAliases { get; set; }
+
+    /// <summary>
+    /// Whether this evaluator asks the AI for dimensional scoring (overall + axis scores).
+    /// Default false; pre-existing rows are backfilled with false by the migration default.
+    /// </summary>
+    public bool ScoringEnabled { get; set; }
 }
