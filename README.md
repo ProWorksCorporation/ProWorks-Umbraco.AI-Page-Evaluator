@@ -80,6 +80,10 @@ Scroll down for detailed explanations of each check and actionable recommendatio
 
 ![Items needing attention with schema and SEO recommendations](images/Items-Needing-Attention-SchemaRecs.png)
 
+When dimensional scoring is enabled, the report also shows an overall score and a per-dimension breakdown with color-coded ratings:
+
+![Dimensional scoring report showing overall score and axis breakdown](images/Dimensional-Scoring-Report.png)
+
 ---
 
 ## Contributing
