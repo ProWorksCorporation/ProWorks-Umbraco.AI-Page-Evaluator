@@ -652,6 +652,128 @@ public class PageEvaluatorApiControllerTests
         };
 
     // ---------------------------------------------------------------------------
+    // ScoringEnabled: CRUD + cache invalidation + response round-trip (T015)
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public async Task CreateConfiguration_AcceptsScoringEnabledTrue_AndPersistsIt()
+    {
+        AIEvaluatorConfig? captured = null;
+        _configService.CreateAsync(Arg.Do<AIEvaluatorConfig>(c => captured = c), Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(ci => ci.Arg<AIEvaluatorConfig>());
+
+        var request = new CreateEvaluatorConfigRequest
+        {
+            Name = "Scored",
+            DocumentTypeAlias = "blogPost",
+            ProfileId = Guid.NewGuid(),
+            PromptText = "Evaluate.",
+            ScoringEnabled = true,
+        };
+
+        await _sut.CreateConfigurationAsync(request);
+
+        Assert.NotNull(captured);
+        Assert.True(captured!.ScoringEnabled);
+    }
+
+    [Fact]
+    public async Task UpdateConfiguration_TogglingScoringEnabled_Returns200_AndInvalidatesCache()
+    {
+        var id = Guid.NewGuid();
+        var existing = BuildConfig("blogPost");
+        existing.Id = id;
+        existing.ScoringEnabled = true;
+
+        _configService.UpdateAsync(Arg.Any<AIEvaluatorConfig>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(existing);
+
+        var request = new UpdateEvaluatorConfigRequest
+        {
+            Name = existing.Name,
+            DocumentTypeAlias = existing.DocumentTypeAlias,
+            ProfileId = existing.ProfileId,
+            PromptText = existing.PromptText,
+            ScoringEnabled = true,
+            Version = existing.Version,
+        };
+
+        var result = await _sut.UpdateConfigurationAsync(id, request);
+
+        Assert.IsType<OkObjectResult>(result);
+        await _cacheRepository.Received(1).DeleteByDocumentTypeAliasAsync("blogPost", Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task UpdateConfiguration_WithStaleVersion_Returns409_EvenWhenOnlyScoringEnabledChanged()
+    {
+        var id = Guid.NewGuid();
+        _configService.UpdateAsync(Arg.Any<AIEvaluatorConfig>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new DbUpdateConcurrencyException());
+
+        var request = new UpdateEvaluatorConfigRequest
+        {
+            Name = "Blog",
+            DocumentTypeAlias = "blogPost",
+            ProfileId = Guid.NewGuid(),
+            PromptText = "Evaluate.",
+            ScoringEnabled = true,
+            Version = 1,
+        };
+
+        var result = await _sut.UpdateConfigurationAsync(id, request);
+
+        Assert.IsType<ConflictObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task EvaluatorConfigResponse_RoundTripsScoringEnabled()
+    {
+        var config = BuildConfig("blogPost");
+        config.ScoringEnabled = true;
+        _configService.CreateAsync(Arg.Any<AIEvaluatorConfig>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(config);
+
+        var request = new CreateEvaluatorConfigRequest
+        {
+            Name = config.Name,
+            DocumentTypeAlias = config.DocumentTypeAlias,
+            ProfileId = config.ProfileId,
+            PromptText = config.PromptText,
+            ScoringEnabled = true,
+        };
+
+        var result = await _sut.CreateConfigurationAsync(request);
+
+        var created = Assert.IsType<CreatedAtActionResult>(result);
+        var response = Assert.IsType<EvaluatorConfigResponse>(created.Value);
+        Assert.True(response.ScoringEnabled);
+    }
+
+    [Fact]
+    public async Task CreateConfiguration_WithScoringEnabled_AndPromptLacksDimensions_Returns2xx_WithNoValidationError()
+    {
+        // FR-015: no validation warning or block when scoring is on but prompt names no dimensions
+        var config = BuildConfig("blogPost");
+        config.ScoringEnabled = true;
+        _configService.CreateAsync(Arg.Any<AIEvaluatorConfig>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(config);
+
+        var request = new CreateEvaluatorConfigRequest
+        {
+            Name = "Scored",
+            DocumentTypeAlias = "blogPost",
+            ProfileId = Guid.NewGuid(),
+            PromptText = "Evaluate this page generically with no dimensions mentioned.",
+            ScoringEnabled = true,
+        };
+
+        var result = await _sut.CreateConfigurationAsync(request);
+
+        Assert.IsType<CreatedAtActionResult>(result);
+    }
+
+    // ---------------------------------------------------------------------------
     // T050: Controller base class
     // ---------------------------------------------------------------------------
 

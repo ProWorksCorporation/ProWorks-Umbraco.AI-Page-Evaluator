@@ -101,6 +101,7 @@ public sealed class PageEvaluatorApiController : ControllerBase
             ContextId = request.ContextId,
             PromptText = request.PromptText,
             PropertyAliases = request.PropertyAliases,
+            ScoringEnabled = request.ScoringEnabled,
         };
 
         try
@@ -137,6 +138,7 @@ public sealed class PageEvaluatorApiController : ControllerBase
             ContextId = request.ContextId,
             PromptText = request.PromptText,
             PropertyAliases = request.PropertyAliases,
+            ScoringEnabled = request.ScoringEnabled,
             Version = request.Version,
         };
 
@@ -384,6 +386,7 @@ public sealed class PageEvaluatorApiController : ControllerBase
             DateCreated = config.DateCreated,
             DateModified = config.DateModified,
             PropertyAliases = config.PropertyAliases,
+            ScoringEnabled = config.ScoringEnabled,
             Version = config.Version,
         };
     }
@@ -419,6 +422,7 @@ public sealed class CreateEvaluatorConfigRequest
     public Guid? ContextId { get; set; }
     public string PromptText { get; set; } = string.Empty;
     public List<string>? PropertyAliases { get; set; }
+    public bool ScoringEnabled { get; set; }
 }
 
 /// <summary>Request body for <c>PUT /configurations/{id}</c>.</summary>
@@ -431,6 +435,7 @@ public sealed class UpdateEvaluatorConfigRequest
     public Guid? ContextId { get; set; }
     public string PromptText { get; set; } = string.Empty;
     public List<string>? PropertyAliases { get; set; }
+    public bool ScoringEnabled { get; set; }
 
     /// <summary>
     /// The version of the config the client last read.
@@ -457,5 +462,6 @@ public sealed class EvaluatorConfigResponse
     public DateTime DateCreated { get; init; }
     public DateTime DateModified { get; init; }
     public List<string>? PropertyAliases { get; init; }
+    public bool ScoringEnabled { get; init; }
     public int Version { get; init; }
 }

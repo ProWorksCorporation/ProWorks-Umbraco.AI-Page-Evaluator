@@ -35,9 +35,34 @@ public sealed class EvaluationReport
     /// </summary>
     public DateTime? CachedAt { get; init; }
 
+    /// <summary>
+    /// Overall page score (1-5, decimal allowed) when the config has scoring enabled and the AI
+    /// returned a valid value. Null when scoring is disabled, the AI omitted the field, or the
+    /// value was outside [1.0, 5.0].
+    /// </summary>
+    public double? OverallScore { get; init; }
+
+    /// <summary>
+    /// Per-dimension axis scores when the config has scoring enabled and the AI returned a
+    /// valid array. Null when scoring is disabled or the AI omitted the field.
+    /// </summary>
+    public IReadOnlyList<AxisScore>? AxisScores { get; init; }
+
     /// <summary>Creates a successfully parsed report.</summary>
-    public static EvaluationReport Parsed(EvaluationScore score, IReadOnlyList<CheckResult> checks, string? suggestions) =>
-        new() { Score = score, Checks = checks, Suggestions = suggestions };
+    public static EvaluationReport Parsed(
+        EvaluationScore score,
+        IReadOnlyList<CheckResult> checks,
+        string? suggestions,
+        double? overallScore = null,
+        IReadOnlyList<AxisScore>? axisScores = null) =>
+        new()
+        {
+            Score = score,
+            Checks = checks,
+            Suggestions = suggestions,
+            OverallScore = overallScore,
+            AxisScores = axisScores,
+        };
 
     /// <summary>Creates a parse-failure report containing only the raw response text.</summary>
     public static EvaluationReport Failed(string rawResponse) =>
@@ -52,5 +77,7 @@ public sealed class EvaluationReport
         Suggestions = Suggestions,
         RawResponse = RawResponse,
         CachedAt = cachedAt,
+        OverallScore = OverallScore,
+        AxisScores = AxisScores,
     };
 }

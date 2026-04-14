@@ -34,6 +34,10 @@ export default {
     aiErrorMessage:
       'The evaluation could not be completed. The AI provider returned an error.',
     retryButton: 'Retry',
+
+    // Modal: dimensional scoring
+    overallScore: 'Overall Score',
+    axisScores: 'Score Breakdown',
   },
 
   evaluatorConfig: {
@@ -102,6 +106,10 @@ export default {
     savingButton: 'Saving\u2026',
     cancelButton: 'Cancel',
     validationRequired: 'This field is required.',
+
+    // Form: dimensional scoring
+    scoringLabel: 'Enable Scoring',
+    scoringHelp: 'Ask the AI to rate the page on a 1-5 scale across the dimensions named in your prompt.',
   },
 
   promoNotice: {

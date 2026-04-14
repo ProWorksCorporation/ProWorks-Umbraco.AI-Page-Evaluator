@@ -67,6 +67,7 @@ export async function fetchDocTypeProperties(
 export class PromptBuilderElement extends UmbLitElement {
   @property({ attribute: 'document-type-alias' }) documentTypeAlias = '';
   @property({ type: Array, attribute: false }) selectedPropertyAliases: string[] = [];
+  @property({ type: Boolean }) scoringEnabled = false;
 
   @state() _properties: DocumentTypePropertySummary[] = [];
   @state() _selectedCategories: Set<string> = new Set(CHECKLIST_CATEGORIES.map((c) => c.id));
@@ -88,6 +89,9 @@ export class PromptBuilderElement extends UmbLitElement {
   override updated(changed: Map<string, unknown>): void {
     if (changed.has('documentTypeAlias') && this.documentTypeAlias) {
       void this._loadProperties();
+    }
+    if (changed.has('scoringEnabled') && this._draft) {
+      this.generateDraft();
     }
   }
 
@@ -128,13 +132,17 @@ export class PromptBuilderElement extends UmbLitElement {
           .replace('{{siteContext}}', this._siteContext),
       );
 
+    const scoringSnippet = this.scoringEnabled
+      ? '\n\nRate the page on a scale of 1-5 for each evaluation dimension listed above.\nProvide an overall_score (1-5) and individual axis_scores with brief feedback for each.'
+      : '';
+
     if (fragments.length === 0) {
       this._draft =
-        `Evaluate the following page.\n\nProperties: ${aliasLine}\n\nSite context: ${this._siteContext}`.trim();
+        (`Evaluate the following page.\n\nProperties: ${aliasLine}\n\nSite context: ${this._siteContext}` + scoringSnippet).trim();
       return;
     }
 
-    this._draft = fragments.join('\n\n');
+    this._draft = fragments.join('\n\n') + scoringSnippet;
   }
 
   /** Fires `prompt-selected` with the current draft. */

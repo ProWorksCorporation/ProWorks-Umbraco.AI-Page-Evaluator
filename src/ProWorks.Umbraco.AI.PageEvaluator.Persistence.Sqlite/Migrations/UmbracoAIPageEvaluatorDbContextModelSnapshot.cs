@@ -88,7 +88,11 @@ namespace ProWorks.Umbraco.AI.PageEvaluator.Persistence.Sqlite.Migrations
                     b.Property<string>("PropertyAliases")
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("ScoringEnabled")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("Version")
+                        .IsConcurrencyToken()
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");

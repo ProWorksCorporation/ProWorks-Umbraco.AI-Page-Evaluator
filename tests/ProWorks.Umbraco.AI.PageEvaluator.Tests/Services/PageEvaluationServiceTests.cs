@@ -734,7 +734,8 @@ public class PageEvaluationServiceTests
     private static AIEvaluatorConfig BuildConfig(
         string documentTypeAlias,
         string promptText = "Evaluate this page thoroughly.",
-        Guid? contextId = null)
+        Guid? contextId = null,
+        bool scoringEnabled = false)
         => new()
         {
             Id = Guid.NewGuid(),
@@ -746,5 +747,251 @@ public class PageEvaluationServiceTests
             IsActive = true,
             DateCreated = DateTime.UtcNow,
             DateModified = DateTime.UtcNow,
+            ScoringEnabled = scoringEnabled,
         };
+
+    // ---------------------------------------------------------------------------
+    // T028: Regression — pre-feature JSON deserializes with null score fields
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public async Task EvaluateAsync_WhenResponseHasNoScoringFields_BothScoreFieldsAreNull()
+    {
+        const string documentTypeAlias = "blogPost";
+        // Config has scoring enabled, but the AI response pre-dates the feature (no scoring fields).
+        _configService.GetActiveForDocumentTypeAsync(documentTypeAlias, Arg.Any<CancellationToken>())
+            .Returns(BuildConfig(documentTypeAlias, scoringEnabled: true));
+
+        // Legacy payload: no overall_score or axis_scores keys at all.
+        MockChatResponse("""
+            {
+              "score": { "passed": 2, "total": 3 },
+              "checks": [
+                { "checkNumber": 1, "status": "Pass", "label": "Title", "explanation": null },
+                { "checkNumber": 2, "status": "Pass", "label": "Summary", "explanation": null },
+                { "checkNumber": 3, "status": "Fail", "label": "Image", "explanation": "Missing." }
+              ],
+              "suggestions": null
+            }
+            """);
+
+        var report = await _sut.EvaluateAsync(Guid.NewGuid(), documentTypeAlias, new Dictionary<string, object?>());
+
+        Assert.False(report.ParseFailed);
+        Assert.Null(report.OverallScore);
+        Assert.Null(report.AxisScores);
+        Assert.Equal(3, report.Checks.Count);
+        Assert.Equal(2, report.Score!.Passed);
+    }
+
+    // ---------------------------------------------------------------------------
+    // T022: Prompt branch behavior for ScoringEnabled
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public async Task EvaluateAsync_WhenScoringEnabledTrue_SystemPromptContainsScoringFields()
+    {
+        const string documentTypeAlias = "blogPost";
+        _configService.GetActiveForDocumentTypeAsync(documentTypeAlias, Arg.Any<CancellationToken>())
+            .Returns(BuildConfig(documentTypeAlias, scoringEnabled: true));
+
+        IEnumerable<ChatMessage>? capturedMessages = null;
+        _chatService.GetChatResponseAsync(
+                Arg.Any<Action<AIChatBuilder>>(),
+                Arg.Do<IEnumerable<ChatMessage>>(msgs => capturedMessages = msgs.ToList()),
+                Arg.Any<CancellationToken>())
+            .Returns(new ChatResponse(new ChatMessage(ChatRole.Assistant,
+                """{"score":{"passed":1,"total":1},"checks":[{"checkNumber":1,"status":"Pass","label":"T","explanation":null}],"suggestions":null}""")));
+
+        await _sut.EvaluateAsync(Guid.NewGuid(), documentTypeAlias, new Dictionary<string, object?>());
+
+        Assert.NotNull(capturedMessages);
+        var systemMsg = capturedMessages!.First(m => m.Role == ChatRole.System);
+        Assert.Contains("overall_score", systemMsg.Text!);
+        Assert.Contains("axis_scores", systemMsg.Text!);
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_WhenScoringEnabledFalse_SystemPromptOmitsScoringFields()
+    {
+        const string documentTypeAlias = "blogPost";
+        _configService.GetActiveForDocumentTypeAsync(documentTypeAlias, Arg.Any<CancellationToken>())
+            .Returns(BuildConfig(documentTypeAlias, scoringEnabled: false));
+
+        IEnumerable<ChatMessage>? capturedMessages = null;
+        _chatService.GetChatResponseAsync(
+                Arg.Any<Action<AIChatBuilder>>(),
+                Arg.Do<IEnumerable<ChatMessage>>(msgs => capturedMessages = msgs.ToList()),
+                Arg.Any<CancellationToken>())
+            .Returns(new ChatResponse(new ChatMessage(ChatRole.Assistant,
+                """{"score":{"passed":1,"total":1},"checks":[{"checkNumber":1,"status":"Pass","label":"T","explanation":null}],"suggestions":null}""")));
+
+        await _sut.EvaluateAsync(Guid.NewGuid(), documentTypeAlias, new Dictionary<string, object?>());
+
+        Assert.NotNull(capturedMessages);
+        var systemMsg = capturedMessages!.First(m => m.Role == ChatRole.System);
+        Assert.DoesNotContain("overall_score", systemMsg.Text!);
+        Assert.DoesNotContain("axis_scores", systemMsg.Text!);
+    }
+
+    // ---------------------------------------------------------------------------
+    // T023: TryParseJson scoring extraction
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public async Task EvaluateAsync_WhenResponseHasFullScoring_PopulatesOverallAndAxisScores()
+    {
+        const string documentTypeAlias = "blogPost";
+        _configService.GetActiveForDocumentTypeAsync(documentTypeAlias, Arg.Any<CancellationToken>())
+            .Returns(BuildConfig(documentTypeAlias, scoringEnabled: true));
+
+        MockChatResponse("""
+            {
+              "score": { "passed": 1, "total": 1 },
+              "checks": [{ "checkNumber": 1, "status": "Pass", "label": "T", "explanation": null }],
+              "suggestions": null,
+              "overall_score": 4.2,
+              "axis_scores": [
+                { "name": "Clarity", "score": 5, "feedback": "Crystal clear." },
+                { "name": "Tone", "score": 3, "feedback": null }
+              ]
+            }
+            """);
+
+        var report = await _sut.EvaluateAsync(Guid.NewGuid(), documentTypeAlias, new Dictionary<string, object?>());
+
+        Assert.False(report.ParseFailed);
+        Assert.Equal(4.2, report.OverallScore);
+        Assert.NotNull(report.AxisScores);
+        Assert.Equal(2, report.AxisScores!.Count);
+        Assert.Equal("Clarity", report.AxisScores[0].Name);
+        Assert.Equal(5, report.AxisScores[0].Score);
+        Assert.Equal("Crystal clear.", report.AxisScores[0].Feedback);
+        Assert.Equal("Tone", report.AxisScores[1].Name);
+        Assert.Equal(3, report.AxisScores[1].Score);
+        Assert.Null(report.AxisScores[1].Feedback);
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_WhenResponseOmitsScoringFields_LeavesThemNull()
+    {
+        const string documentTypeAlias = "blogPost";
+        _configService.GetActiveForDocumentTypeAsync(documentTypeAlias, Arg.Any<CancellationToken>())
+            .Returns(BuildConfig(documentTypeAlias, scoringEnabled: true));
+
+        MockChatResponse("""{"score":{"passed":1,"total":1},"checks":[{"checkNumber":1,"status":"Pass","label":"T","explanation":null}],"suggestions":null}""");
+
+        var report = await _sut.EvaluateAsync(Guid.NewGuid(), documentTypeAlias, new Dictionary<string, object?>());
+
+        Assert.False(report.ParseFailed);
+        Assert.Null(report.OverallScore);
+        Assert.Null(report.AxisScores);
+        Assert.Single(report.Checks);
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_WhenOverallScoreOutOfRange_DropsOverallButKeepsAxis()
+    {
+        const string documentTypeAlias = "blogPost";
+        _configService.GetActiveForDocumentTypeAsync(documentTypeAlias, Arg.Any<CancellationToken>())
+            .Returns(BuildConfig(documentTypeAlias, scoringEnabled: true));
+
+        MockChatResponse("""
+            {
+              "score": { "passed": 1, "total": 1 },
+              "checks": [{ "checkNumber": 1, "status": "Pass", "label": "T", "explanation": null }],
+              "suggestions": null,
+              "overall_score": 6.5,
+              "axis_scores": [
+                { "name": "Clarity", "score": 4, "feedback": null }
+              ]
+            }
+            """);
+
+        var report = await _sut.EvaluateAsync(Guid.NewGuid(), documentTypeAlias, new Dictionary<string, object?>());
+
+        Assert.False(report.ParseFailed);
+        Assert.Null(report.OverallScore);
+        Assert.NotNull(report.AxisScores);
+        Assert.Single(report.AxisScores!);
+        Assert.Equal("Clarity", report.AxisScores![0].Name);
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_WhenAxisScoreOutOfRange_DropsThatElementPreservesOthers()
+    {
+        const string documentTypeAlias = "blogPost";
+        _configService.GetActiveForDocumentTypeAsync(documentTypeAlias, Arg.Any<CancellationToken>())
+            .Returns(BuildConfig(documentTypeAlias, scoringEnabled: true));
+
+        MockChatResponse("""
+            {
+              "score": { "passed": 1, "total": 1 },
+              "checks": [{ "checkNumber": 1, "status": "Pass", "label": "T", "explanation": null }],
+              "suggestions": null,
+              "overall_score": 3.0,
+              "axis_scores": [
+                { "name": "Clarity", "score": 5, "feedback": null },
+                { "name": "Tone", "score": 7, "feedback": null },
+                { "name": "Voice", "score": 2, "feedback": null }
+              ]
+            }
+            """);
+
+        var report = await _sut.EvaluateAsync(Guid.NewGuid(), documentTypeAlias, new Dictionary<string, object?>());
+
+        Assert.False(report.ParseFailed);
+        Assert.Equal(3.0, report.OverallScore);
+        Assert.NotNull(report.AxisScores);
+        Assert.Equal(2, report.AxisScores!.Count);
+        Assert.Equal("Clarity", report.AxisScores[0].Name);
+        Assert.Equal("Voice", report.AxisScores[1].Name);
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_WhenAxisScoreIsNonInteger_DropsThatElement()
+    {
+        const string documentTypeAlias = "blogPost";
+        _configService.GetActiveForDocumentTypeAsync(documentTypeAlias, Arg.Any<CancellationToken>())
+            .Returns(BuildConfig(documentTypeAlias, scoringEnabled: true));
+
+        MockChatResponse("""
+            {
+              "score": { "passed": 1, "total": 1 },
+              "checks": [{ "checkNumber": 1, "status": "Pass", "label": "T", "explanation": null }],
+              "suggestions": null,
+              "overall_score": 3.0,
+              "axis_scores": [
+                { "name": "Clarity", "score": 3.5, "feedback": null },
+                { "name": "Tone", "score": 4, "feedback": null }
+              ]
+            }
+            """);
+
+        var report = await _sut.EvaluateAsync(Guid.NewGuid(), documentTypeAlias, new Dictionary<string, object?>());
+
+        Assert.False(report.ParseFailed);
+        Assert.NotNull(report.AxisScores);
+        Assert.Single(report.AxisScores!);
+        Assert.Equal("Tone", report.AxisScores![0].Name);
+        Assert.Equal(4, report.AxisScores[0].Score);
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_WhenResponseIsMalformedJson_FallsBackToRawWithNullScoring()
+    {
+        const string documentTypeAlias = "blogPost";
+        _configService.GetActiveForDocumentTypeAsync(documentTypeAlias, Arg.Any<CancellationToken>())
+            .Returns(BuildConfig(documentTypeAlias, scoringEnabled: true));
+
+        // Truncated JSON — neither JSON parse nor markdown parse will succeed
+        MockChatResponse("""{"score":{"passed":1,"total":1},"checks":[{"checkNu""");
+
+        var report = await _sut.EvaluateAsync(Guid.NewGuid(), documentTypeAlias, new Dictionary<string, object?>());
+
+        Assert.True(report.ParseFailed);
+        Assert.Null(report.OverallScore);
+        Assert.Null(report.AxisScores);
+        Assert.NotNull(report.RawResponse);
+    }
 }

@@ -317,15 +317,34 @@ public sealed partial class PageEvaluationService : IPageEvaluationService
         sb.AppendLine();
         sb.AppendLine("--- REQUIRED OUTPUT FORMAT ---");
         sb.AppendLine("You MUST respond with ONLY a valid JSON object. Do not include any text, explanation, or markdown outside the JSON object.");
-        sb.AppendLine("""
-            {
-              "score": { "passed": <number>, "total": <number> },
-              "checks": [
-                { "checkNumber": 1, "status": "Pass|Fail|Warn", "label": "<label>", "explanation": "<explanation or null>" }
-              ],
-              "suggestions": "<overall suggestions or null>"
-            }
-            """);
+        if (config.ScoringEnabled)
+        {
+            sb.AppendLine("""
+                {
+                  "score": { "passed": <number>, "total": <number> },
+                  "checks": [
+                    { "checkNumber": 1, "status": "Pass|Fail|Warn", "label": "<label>", "explanation": "<explanation or null>" }
+                  ],
+                  "suggestions": "<overall suggestions or null>",
+                  "overall_score": <number 1-5, decimal allowed>,
+                  "axis_scores": [
+                    { "name": "<dimension name>", "score": <integer 1-5>, "feedback": "<brief feedback or null>" }
+                  ]
+                }
+                """);
+        }
+        else
+        {
+            sb.AppendLine("""
+                {
+                  "score": { "passed": <number>, "total": <number> },
+                  "checks": [
+                    { "checkNumber": 1, "status": "Pass|Fail|Warn", "label": "<label>", "explanation": "<explanation or null>" }
+                  ],
+                  "suggestions": "<overall suggestions or null>"
+                }
+                """);
+        }
 
         return sb.ToString().TrimEnd();
     }
@@ -405,6 +424,43 @@ public sealed partial class PageEvaluationService : IPageEvaluationService
             if (root.TryGetProperty("suggestions", out JsonElement sugg) && sugg.ValueKind != JsonValueKind.Null)
                 suggestions = sugg.GetString();
 
+            // Parse overall_score — nullable double in [1.0, 5.0]; out-of-range or non-numeric becomes null.
+            double? overallScore = null;
+            if (root.TryGetProperty("overall_score", out JsonElement osEl)
+                && osEl.ValueKind == JsonValueKind.Number
+                && osEl.TryGetDouble(out double os)
+                && os >= 1.0 && os <= 5.0)
+            {
+                overallScore = os;
+            }
+
+            // Parse axis_scores — drop elements with non-integer score or score outside [1, 5]; preserve order.
+            List<AxisScore>? axisScores = null;
+            if (root.TryGetProperty("axis_scores", out JsonElement axesEl)
+                && axesEl.ValueKind == JsonValueKind.Array)
+            {
+                axisScores = [];
+                foreach (JsonElement axisEl in axesEl.EnumerateArray())
+                {
+                    if (!axisEl.TryGetProperty("name", out JsonElement nameEl)
+                        || nameEl.ValueKind != JsonValueKind.String)
+                        continue;
+
+                    if (!axisEl.TryGetProperty("score", out JsonElement scoreValEl)
+                        || scoreValEl.ValueKind != JsonValueKind.Number
+                        || !scoreValEl.TryGetInt32(out int axisScoreValue)
+                        || axisScoreValue < 1 || axisScoreValue > 5)
+                        continue;
+
+                    string? feedback = axisEl.TryGetProperty("feedback", out JsonElement fbEl)
+                        && fbEl.ValueKind == JsonValueKind.String
+                        ? fbEl.GetString()
+                        : null;
+
+                    axisScores.Add(new AxisScore(nameEl.GetString() ?? "", axisScoreValue, feedback));
+                }
+            }
+
             if (score is null && checks.Count == 0)
                 return null;
 
@@ -412,7 +468,7 @@ public sealed partial class PageEvaluationService : IPageEvaluationService
             int totalCount = score?.Total ?? checks.Count;
             EvaluationScore finalScore = new(passCount, totalCount);
 
-            return EvaluationReport.Parsed(finalScore, checks, suggestions);
+            return EvaluationReport.Parsed(finalScore, checks, suggestions, overallScore, axisScores);
         }
         catch (JsonException)
         {

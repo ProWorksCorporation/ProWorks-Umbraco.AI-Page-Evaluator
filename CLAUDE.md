@@ -1,10 +1,12 @@
 ﻿# ProWorks-Umbraco-AI-Page-Evaluator Development Guidelines
 
-Last updated: 2026-04-08 (rev 6)
+Last updated: 2026-04-13 (rev 6)
 
 ## Active Technologies
 - C# .NET 10, TypeScript 5.x (strict: true) + Umbraco CMS 17.2.2, Umbraco.AI 1.8.0 (Anthropic 1.3.0, OpenAI 1.2.0), EF Core 10.0.2, Microsoft.Extensions.AI 10.3.0, Lit 3.x via @umbraco-cms/backoffice/external/lit
 - SQLite (dev), SQL Server (prod) via EF Core; evaluation cache in `umbracoAIEvaluationCache` table
+- C# .NET 10 (server) + TypeScript 5.x `strict: true, noUncheckedIndexedAccess: true` (client) + Umbraco CMS 17.2.2; Umbraco.AI 1.8.0 (Anthropic 1.3.0, OpenAI 1.2.0); EF Core 10.0.2; Microsoft.Extensions.AI 10.3.0 (pinned); Lit 3.x via `@umbraco-cms/backoffice/external/lit`; UUI components (`uui-toggle`, `uui-badge`) (feature/scoring)
+- SQLite (dev) / SQL Server (prod) via separate EF Core migration projects. New column `ScoringEnabled bit NOT NULL DEFAULT 0` on `umbracoAIEvaluatorConfig`. Cache table (`umbracoAIEvaluationCache`) unchanged structurally; existing rows remain valid. (feature/scoring)
 
 - **Client**: TypeScript 5.x `strict: true`, Vite build, Lit web components
 - **Server**: C# .NET 10, Umbraco CMS 17.2.2, EF Core 10.0.2

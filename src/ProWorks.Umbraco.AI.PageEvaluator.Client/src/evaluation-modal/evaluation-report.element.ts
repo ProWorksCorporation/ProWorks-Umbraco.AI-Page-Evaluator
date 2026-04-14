@@ -1,6 +1,8 @@
 import { html, css, nothing, type TemplateResult, customElement, property } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
-import type { EvaluationReportResponse, CheckResult, CheckStatus } from '../shared/types.js';
+import type { EvaluationReportResponse, CheckResult, CheckStatus, AxisScore } from '../shared/types.js';
+
+type TagColor = 'positive' | 'warning' | 'danger';
 
 /**
  * Renders a structured AI evaluation report.
@@ -135,6 +137,58 @@ export class EvaluationReportElement extends UmbLitElement {
       margin-top: var(--uui-size-space-1, 4px);
       line-height: 1.4;
     }
+
+    .overall-score-row {
+      display: flex;
+      align-items: center;
+      gap: var(--uui-size-space-3, 12px);
+      margin-bottom: var(--uui-size-space-4, 16px);
+      flex-wrap: wrap;
+    }
+
+    .overall-score-label {
+      font-size: var(--uui-type-h5-size, 1rem);
+      font-weight: 600;
+      color: var(--uui-color-text, #333);
+    }
+
+    .axis-scores-section {
+      margin-bottom: var(--uui-size-space-5, 20px);
+    }
+
+    .axis-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    .axis-item {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--uui-size-space-3, 12px);
+      padding: var(--uui-size-space-2, 8px) 0;
+      border-bottom: 1px solid var(--uui-color-divider, #e0e0e0);
+    }
+
+    .axis-item:last-child {
+      border-bottom: none;
+    }
+
+    .axis-body {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .axis-name {
+      font-weight: 500;
+    }
+
+    .axis-feedback {
+      color: var(--uui-color-text-alt, #666);
+      font-size: var(--uui-type-small-size, 0.875rem);
+      margin-top: var(--uui-size-space-1, 4px);
+      line-height: 1.4;
+    }
   `;
 
   @property({ attribute: false })
@@ -143,7 +197,8 @@ export class EvaluationReportElement extends UmbLitElement {
   override render(): TemplateResult | typeof nothing {
     if (!this.report) return nothing;
 
-    const { checks, suggestions } = this.report;
+    const { checks, suggestions, overallScore, axisScores } = this.report;
+    const hasScoring = overallScore !== null || (axisScores !== null && axisScores.length > 0);
     const passCount = checks.filter((c) => c.status === 'Pass').length;
     const warnCount = checks.filter((c) => c.status === 'Warn').length;
     const failCount = checks.filter((c) => c.status === 'Fail').length;
@@ -152,6 +207,8 @@ export class EvaluationReportElement extends UmbLitElement {
     const passingChecks = checks.filter((c) => c.status === 'Pass');
 
     return html`
+      ${hasScoring ? this._renderScoring(overallScore, axisScores) : nothing}
+
       ${total > 0
         ? html`
             <div class="score-row">
@@ -202,12 +259,54 @@ export class EvaluationReportElement extends UmbLitElement {
   private _renderSuggestions(text: string): TemplateResult {
     const items = parseSuggestionItems(text);
     if (items.length === 1) {
-      return html`<p style="margin:0; font-size: var(--uui-type-small-size, 0.875rem); line-height: 1.5;">${renderInlineMarkdown(items[0])}</p>`;
+      return html`<p style="margin:0; font-size: var(--uui-type-small-size, 0.875rem); line-height: 1.5;">${renderInlineMarkdown(items[0] ?? '')}</p>`;
     }
     return html`
       <ol class="suggestions-list">
         ${items.map((item) => html`<li>${renderInlineMarkdown(item)}</li>`)}
       </ol>
+    `;
+  }
+
+  private _renderScoring(
+    overallScore: number | null,
+    axisScores: readonly AxisScore[] | null,
+  ): TemplateResult {
+    return html`
+      ${overallScore !== null
+        ? html`
+            <div class="overall-score-row">
+              <span class="overall-score-label">${this.localize.term('evaluatePage_overallScore')}</span>
+              <uui-tag color=${badgeColorForOverall(overallScore)} look="primary">
+                ${overallScore.toFixed(1)} / 5
+              </uui-tag>
+            </div>
+          `
+        : nothing}
+      ${axisScores && axisScores.length > 0
+        ? html`
+            <div class="axis-scores-section">
+              <p class="section-title">${this.localize.term('evaluatePage_axisScores')}</p>
+              <ul class="axis-list">
+                ${axisScores.map((a) => this._renderAxis(a))}
+              </ul>
+            </div>
+          `
+        : nothing}
+    `;
+  }
+
+  private _renderAxis(axis: AxisScore): TemplateResult {
+    return html`
+      <li class="axis-item">
+        <uui-tag color=${badgeColorForAxis(axis.score)} look="primary">${axis.score} / 5</uui-tag>
+        <div class="axis-body">
+          <div class="axis-name">${toTitleCase(axis.name)}</div>
+          ${axis.feedback
+            ? html`<div class="axis-feedback">${axis.feedback}</div>`
+            : nothing}
+        </div>
+      </li>
     `;
   }
 
@@ -232,6 +331,22 @@ export class EvaluationReportElement extends UmbLitElement {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+function toTitleCase(name: string): string {
+  return name.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function badgeColorForOverall(score: number): TagColor {
+  if (score >= 4.0) return 'positive';
+  if (score >= 2.5) return 'warning';
+  return 'danger';
+}
+
+function badgeColorForAxis(score: number): TagColor {
+  if (score >= 4) return 'positive';
+  if (score >= 3) return 'warning';
+  return 'danger';
+}
 
 function iconForStatus(status: CheckStatus): string {
   switch (status) {
