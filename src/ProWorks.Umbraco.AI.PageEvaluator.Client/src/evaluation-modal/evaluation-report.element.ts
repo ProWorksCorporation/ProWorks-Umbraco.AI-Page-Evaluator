@@ -365,7 +365,7 @@ function iconForStatus(status: CheckStatus): string {
  * Falls back to the full text as a single item if no numbered list is detected.
  */
 function parseSuggestionItems(text: string): string[] {
-  // Try line-based numbered lists first: "1. text" or "(1) text"
+  // Try line-based numbered lists: "1. text", "(1) text", or "1) text"
   const lines = text.split('\n').map((l) => l.trim()).filter(Boolean);
   const numberedDot = lines.filter((l) => /^\d+\.\s+/.test(l));
   if (numberedDot.length > 1) {
@@ -375,11 +375,19 @@ function parseSuggestionItems(text: string): string[] {
   if (numberedParen.length > 1) {
     return numberedParen.map((l) => l.replace(/^\(\d+\)\s+/, '').trim());
   }
+  const numberedTrailingParen = lines.filter((l) => /^\d+\)\s+/.test(l));
+  if (numberedTrailingParen.length > 1) {
+    return numberedTrailingParen.map((l) => l.replace(/^\d+\)\s+/, '').trim());
+  }
 
-  // Try inline "(1) … (2) …" within a single block of text
-  const inlineItems = text.split(/\(\d+\)\s*/).map((s) => s.trim()).filter(Boolean);
-  if (inlineItems.length > 1) {
-    return inlineItems;
+  // Try inline numbered items within a single paragraph: "(1) … (2) …" or "1) … 2) …"
+  const inlineParenItems = text.split(/\(\d+\)\s*/).map((s) => s.trim()).filter(Boolean);
+  if (inlineParenItems.length > 1) {
+    return inlineParenItems;
+  }
+  const inlineTrailingParenItems = text.split(/\d+\)\s+/).map((s) => s.trim()).filter(Boolean);
+  if (inlineTrailingParenItems.length > 1) {
+    return inlineTrailingParenItems;
   }
 
   return [text.trim()];
