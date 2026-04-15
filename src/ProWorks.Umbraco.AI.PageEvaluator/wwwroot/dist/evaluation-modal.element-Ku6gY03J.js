@@ -1,62 +1,62 @@
-import { css as f, property as w, customElement as _, nothing as l, html as t, state as b } from "@umbraco-cms/backoffice/external/lit";
+import { css as _, property as w, customElement as b, nothing as u, html as t, state as x } from "@umbraco-cms/backoffice/external/lit";
 import { UmbModalBaseElement as C } from "@umbraco-cms/backoffice/modal";
-import { g as S, e as E } from "./entry-point-BaPza1wV.js";
+import { g as S, e as E } from "./entry-point-CoMBzRIV.js";
 import { UmbLitElement as y } from "@umbraco-cms/backoffice/lit-element";
-var F = Object.defineProperty, B = Object.getOwnPropertyDescriptor, P = (e, a, s, o) => {
-  for (var r = o > 1 ? void 0 : o ? B(a, s) : a, i = e.length - 1, n; i >= 0; i--)
-    (n = e[i]) && (r = (o ? n(a, s, r) : n(r)) || r);
-  return o && r && F(a, s, r), r;
+var F = Object.defineProperty, B = Object.getOwnPropertyDescriptor, P = (e, a, i, s) => {
+  for (var r = s > 1 ? void 0 : s ? B(a, i) : a, l = e.length - 1, n; l >= 0; l--)
+    (n = e[l]) && (r = (s ? n(a, i, r) : n(r)) || r);
+  return s && r && F(a, i, r), r;
 };
-let p = class extends y {
+let d = class extends y {
   render() {
-    if (!this.report) return l;
-    const { checks: e, suggestions: a, overallScore: s, axisScores: o } = this.report, r = s !== null || o !== null && o.length > 0, i = e.filter((u) => u.status === "Pass").length, n = e.filter((u) => u.status === "Warn").length, x = e.filter((u) => u.status === "Fail").length, z = e.length, m = e.filter((u) => u.status === "Fail" || u.status === "Warn"), v = e.filter((u) => u.status === "Pass");
+    if (!this.report) return u;
+    const { checks: e, suggestions: a, overallScore: i, axisScores: s } = this.report, r = i !== null || s !== null && s.length > 0, l = e.filter((c) => c.status === "Pass").length, n = e.filter((c) => c.status === "Warn").length, o = e.filter((c) => c.status === "Fail").length, z = e.length, h = e.filter((c) => c.status === "Fail" || c.status === "Warn"), v = e.filter((c) => c.status === "Pass");
     return t`
-      ${r ? this._renderScoring(s, o) : l}
+      ${r ? this._renderScoring(i, s) : u}
 
       ${z > 0 ? t`
             <div class="score-row">
               <span class="score-total">${z} ${this.localize.term("evaluatePage_reportChecks")}</span>
               <span class="score-pill score-pill--pass">
-                <uui-icon name="icon-check"></uui-icon>${i} ${this.localize.term("evaluatePage_reportPassed")}
+                <uui-icon name="icon-check"></uui-icon>${l} ${this.localize.term("evaluatePage_reportPassed")}
               </span>
               ${n > 0 ? t`
                 <span class="score-pill score-pill--warn">
                   <uui-icon name="icon-alert"></uui-icon>${n} ${n !== 1 ? this.localize.term("evaluatePage_reportWarnings") : this.localize.term("evaluatePage_reportWarning")}
-                </span>` : l}
-              ${x > 0 ? t`
+                </span>` : u}
+              ${o > 0 ? t`
                 <span class="score-pill score-pill--fail">
-                  <uui-icon name="icon-wrong"></uui-icon>${x} ${this.localize.term("evaluatePage_reportFailed")}
-                </span>` : l}
+                  <uui-icon name="icon-wrong"></uui-icon>${o} ${this.localize.term("evaluatePage_reportFailed")}
+                </span>` : u}
             </div>
-          ` : l}
+          ` : u}
 
       ${a ? t`
             <uui-box headline=${this.localize.term("evaluatePage_reportSuggestions")} class="suggestions-box">
               ${this._renderSuggestions(a)}
             </uui-box>
-          ` : l}
+          ` : u}
 
-      ${m.length > 0 ? t`
-            <p class="section-title">${this.localize.term("evaluatePage_reportAttentionItems")} (${m.length})</p>
+      ${h.length > 0 ? t`
+            <p class="section-title">${this.localize.term("evaluatePage_reportAttentionItems")} (${h.length})</p>
             <ul class="check-list">
-              ${m.map((u) => this._renderCheck(u))}
+              ${h.map((c) => this._renderCheck(c))}
             </ul>
-          ` : l}
+          ` : u}
 
       ${v.length > 0 ? t`
             <p class="section-title">${this.localize.term("evaluatePage_reportPassingItems")} (${v.length})</p>
             <ul class="check-list">
-              ${v.map((u) => this._renderCheck(u))}
+              ${v.map((c) => this._renderCheck(c))}
             </ul>
-          ` : l}
+          ` : u}
     `;
   }
   _renderSuggestions(e) {
     const a = D(e);
     return a.length === 1 ? t`<p style="margin:0; font-size: var(--uui-type-small-size, 0.875rem); line-height: 1.5;">${$(a[0] ?? "")}</p>` : t`
       <ol class="suggestions-list">
-        ${a.map((s) => t`<li>${$(s)}</li>`)}
+        ${a.map((i) => t`<li>${$(i)}</li>`)}
       </ol>
     `;
   }
@@ -69,15 +69,15 @@ let p = class extends y {
                 ${e.toFixed(1)} / 5
               </uui-tag>
             </div>
-          ` : l}
+          ` : u}
       ${a && a.length > 0 ? t`
             <div class="axis-scores-section">
               <p class="section-title">${this.localize.term("evaluatePage_axisScores")}</p>
               <ul class="axis-list">
-                ${a.map((s) => this._renderAxis(s))}
+                ${a.map((i) => this._renderAxis(i))}
               </ul>
             </div>
-          ` : l}
+          ` : u}
     `;
   }
   _renderAxis(e) {
@@ -86,7 +86,7 @@ let p = class extends y {
         <uui-tag color=${R(e.score)} look="primary">${e.score} / 5</uui-tag>
         <div class="axis-body">
           <div class="axis-name">${O(e.name)}</div>
-          ${e.feedback ? t`<div class="axis-feedback">${e.feedback}</div>` : l}
+          ${e.feedback ? t`<div class="axis-feedback">${e.feedback}</div>` : u}
         </div>
       </li>
     `;
@@ -100,13 +100,13 @@ let p = class extends y {
           name="${j(e.status)}"></uui-icon>
         <div class="check-body">
           <div class="check-label">${e.label}</div>
-          ${e.explanation ? t`<div class="check-explanation">${e.explanation}</div>` : l}
+          ${e.explanation ? t`<div class="check-explanation">${e.explanation}</div>` : u}
         </div>
       </li>
     `;
   }
 };
-p.styles = f`
+d.styles = _`
     :host {
       display: block;
       padding: var(--uui-size-space-4, 16px);
@@ -280,10 +280,10 @@ p.styles = f`
   `;
 P([
   w({ attribute: !1 })
-], p.prototype, "report", 2);
-p = P([
-  _("page-evaluator-report")
-], p);
+], d.prototype, "report", 2);
+d = P([
+  b("page-evaluator-report")
+], d);
 function O(e) {
   return e.replace(/_/g, " ").replace(/\b\w/g, (a) => a.toUpperCase());
 }
@@ -305,25 +305,31 @@ function j(e) {
 }
 function D(e) {
   const a = e.split(`
-`).map((i) => i.trim()).filter(Boolean), s = a.filter((i) => /^\d+\.\s+/.test(i));
+`).map((o) => o.trim()).filter(Boolean), i = a.filter((o) => /^\d+\.\s+/.test(o));
+  if (i.length > 1)
+    return i.map((o) => o.replace(/^\d+\.\s+/, "").trim());
+  const s = a.filter((o) => /^\(\d+\)\s+/.test(o));
   if (s.length > 1)
-    return s.map((i) => i.replace(/^\d+\.\s+/, "").trim());
-  const o = a.filter((i) => /^\(\d+\)\s+/.test(i));
-  if (o.length > 1)
-    return o.map((i) => i.replace(/^\(\d+\)\s+/, "").trim());
-  const r = e.split(/\(\d+\)\s*/).map((i) => i.trim()).filter(Boolean);
-  return r.length > 1 ? r : [e.trim()];
+    return s.map((o) => o.replace(/^\(\d+\)\s+/, "").trim());
+  const r = a.filter((o) => /^\d+\)\s+/.test(o));
+  if (r.length > 1)
+    return r.map((o) => o.replace(/^\d+\)\s+/, "").trim());
+  const l = e.split(/\(\d+\)\s*/).map((o) => o.trim()).filter(Boolean);
+  if (l.length > 1)
+    return l;
+  const n = e.split(/\d+\)\s+/).map((o) => o.trim()).filter(Boolean);
+  return n.length > 1 ? n : [e.trim()];
 }
 function $(e) {
   const a = e.split(/\*\*([^*]+)\*\*/g);
-  return t`${a.map((s, o) => o % 2 === 1 ? t`<strong>${s}</strong>` : s)}`;
+  return t`${a.map((i, s) => s % 2 === 1 ? t`<strong>${i}</strong>` : i)}`;
 }
-var W = Object.defineProperty, I = Object.getOwnPropertyDescriptor, k = (e, a, s, o) => {
-  for (var r = o > 1 ? void 0 : o ? I(a, s) : a, i = e.length - 1, n; i >= 0; i--)
-    (n = e[i]) && (r = (o ? n(a, s, r) : n(r)) || r);
-  return o && r && W(a, s, r), r;
+var W = Object.defineProperty, I = Object.getOwnPropertyDescriptor, k = (e, a, i, s) => {
+  for (var r = s > 1 ? void 0 : s ? I(a, i) : a, l = e.length - 1, n; l >= 0; l--)
+    (n = e[l]) && (r = (s ? n(a, i, r) : n(r)) || r);
+  return s && r && W(a, i, r), r;
 };
-let d = class extends y {
+let g = class extends y {
   constructor() {
     super(...arguments), this.rawResponse = null;
   }
@@ -343,7 +349,7 @@ let d = class extends y {
     `;
   }
 };
-d.styles = f`
+g.styles = _`
     :host {
       display: block;
     }
@@ -373,21 +379,21 @@ d.styles = f`
   `;
 k([
   w({ type: String })
-], d.prototype, "rawResponse", 2);
-d = k([
-  _("page-evaluator-warning")
-], d);
-var K = Object.defineProperty, L = Object.getOwnPropertyDescriptor, g = (e, a, s, o) => {
-  for (var r = o > 1 ? void 0 : o ? L(a, s) : a, i = e.length - 1, n; i >= 0; i--)
-    (n = e[i]) && (r = (o ? n(a, s, r) : n(r)) || r);
-  return o && r && K(a, s, r), r;
+], g.prototype, "rawResponse", 2);
+g = k([
+  b("page-evaluator-warning")
+], g);
+var K = Object.defineProperty, L = Object.getOwnPropertyDescriptor, m = (e, a, i, s) => {
+  for (var r = s > 1 ? void 0 : s ? L(a, i) : a, l = e.length - 1, n; l >= 0; l--)
+    (n = e[l]) && (r = (s ? n(a, i, r) : n(r)) || r);
+  return s && r && K(a, i, r), r;
 };
-const h = {
+const f = {
   sending: "evaluatePage_progressSendingData",
   waiting: "evaluatePage_progressWaitingForAI",
   rendering: "evaluatePage_progressRendering"
 };
-let c = class extends C {
+let p = class extends C {
   constructor() {
     super(...arguments), this._modalState = "idle", this._progressKey = "", this._report = null;
   }
@@ -412,9 +418,9 @@ let c = class extends C {
     const e = this.data;
     if (e)
       try {
-        this._modalState = "loading", this._progressKey = h.sending, await this._tick(), this._progressKey = h.waiting;
+        this._modalState = "loading", this._progressKey = f.sending, await this._tick(), this._progressKey = f.waiting;
         const a = await E(e);
-        this._progressKey = h.rendering, await this._tick(), this._report = a, this._modalState = a.parseFailed ? "parse-failed" : "success";
+        this._progressKey = f.rendering, await this._tick(), this._report = a, this._modalState = a.parseFailed ? "parse-failed" : "success";
       } catch {
         this._modalState = "error";
       }
@@ -452,7 +458,7 @@ let c = class extends C {
                   @click=${() => this._rerun()}>
                   ${this.localize.term("evaluatePage_rerunButton")}
                 </uui-button>
-              ` : l}
+              ` : u}
           <uui-button
             label=${this.localize.term("evaluatePage_closeButton")}
             @click=${() => this._close()}>
@@ -466,7 +472,7 @@ let c = class extends C {
     var e;
     switch (this._modalState) {
       case "idle":
-        return l;
+        return u;
       case "loading":
         return t`
           <div class="progress-container">
@@ -508,10 +514,10 @@ let c = class extends C {
       <div class="cache-bar">
         <span>${this.localize.term("evaluatePage_lastEvaluated")} ${this._formatCachedAt(e)}</span>
       </div>
-    ` : l;
+    ` : u;
   }
 };
-c.styles = f`
+p.styles = _`
     .progress-container {
       display: flex;
       flex-direction: column;
@@ -539,19 +545,19 @@ c.styles = f`
       border-radius: var(--uui-border-radius, 4px);
     }
   `;
-g([
-  b()
-], c.prototype, "_modalState", 2);
-g([
-  b()
-], c.prototype, "_progressKey", 2);
-g([
-  b()
-], c.prototype, "_report", 2);
-c = g([
-  _("page-evaluator-modal")
-], c);
+m([
+  x()
+], p.prototype, "_modalState", 2);
+m([
+  x()
+], p.prototype, "_progressKey", 2);
+m([
+  x()
+], p.prototype, "_report", 2);
+p = m([
+  b("page-evaluator-modal")
+], p);
 export {
-  c as EvaluationModalElement
+  p as EvaluationModalElement
 };
-//# sourceMappingURL=evaluation-modal.element-Btjlwmvk.js.map
+//# sourceMappingURL=evaluation-modal.element-Ku6gY03J.js.map
