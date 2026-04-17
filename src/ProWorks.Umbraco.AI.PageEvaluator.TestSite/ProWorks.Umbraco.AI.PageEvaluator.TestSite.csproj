@@ -7,15 +7,16 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Umbraco.AI.Agent" Version="1.7.0" />
+    <PackageReference Include="Umbraco.AI.Agent" Version="1.8.0" />
     <PackageReference Include="Umbraco.AI.Agent.Copilot" Version="1.0.0-alpha6" />
     <PackageReference Include="Umbraco.AI.Anthropic" Version="1.3.0" />
     <PackageReference Include="Umbraco.AI.OpenAI" Version="1.2.0" />
-    <PackageReference Include="Umbraco.AI.Prompt" Version="1.7.0" />
-    <PackageReference Include="Umbraco.Cms" Version="17.2.2" />
-    <PackageReference Include="Umbraco.Cms.DevelopmentMode.Backoffice" Version="17.2.2" />
-    <PackageReference Include="Umbraco.AI" Version="1.8.0" />
-    <PackageReference Include="uSync" Version="17.0.4" />
+    <PackageReference Include="Umbraco.AI.Prompt" Version="1.8.0" />
+    <PackageReference Include="Umbraco.AI.Startup" Version="1.9.0" />
+    <PackageReference Include="Umbraco.Cms" Version="17.3.4" />
+    <PackageReference Include="Umbraco.Cms.DevelopmentMode.Backoffice" Version="17.3.4" />
+    <PackageReference Include="Umbraco.AI" Version="1.9.0" />
+    <PackageReference Include="uSync" Version="17.3.0" />
     <!-- Pin Microsoft.Extensions.AI packages to 10.3.0 to match Umbraco.AI 1.8 compatibility.
          M.E.AI.OpenAI also at 10.3.0 to keep OpenAI SDK 2.8.0 (Umbraco.AI.OpenAI 1.2.0 calls
          GetResponsesClient(string) which was removed in OpenAI 2.9.1 pulled by M.E.AI.OpenAI 10.4.1).
@@ -34,7 +35,7 @@
 
   <ItemGroup>
     <!-- Required by dotnet-ef when this project is used as the startup project for migrations -->
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.2">
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.4">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>

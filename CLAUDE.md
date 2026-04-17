@@ -128,7 +128,7 @@ dotnet ef migrations add <Name> \
   1. `McpServerToolCallContent.set_Arguments` changed signature → `MissingMethodException` in `Umbraco.AI.Anthropic 1.3.0`
   2. `OpenAI SDK 2.9.1` (pulled by `M.E.AI.OpenAI 10.4.1`) removed `GetResponsesClient(string)` → `MissingMethodException` in `Umbraco.AI.OpenAI 1.2.0`
 - `Microsoft.Extensions.AI` and `Microsoft.Extensions.AI.Abstractions` must always be the same version — mismatches cause `TypeLoadException: FunctionApprovalRequestContent`
-- EF Core must be `10.0.2` (required by `Umbraco.Cms.Persistence.EFCore 17.2.2`)
+- EF Core must be `10.0.4` (required by `Umbraco.Cms.Persistence.EFCore 17.3.4`)
 
 ## TestSite
 
