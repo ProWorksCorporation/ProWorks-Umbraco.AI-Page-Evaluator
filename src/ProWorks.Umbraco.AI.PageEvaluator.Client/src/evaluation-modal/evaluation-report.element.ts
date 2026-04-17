@@ -261,9 +261,14 @@ export class EvaluationReportElement extends UmbLitElement {
     if (items.length === 1) {
       return html`<p style="margin:0; font-size: var(--uui-type-small-size, 0.875rem); line-height: 1.5;">${renderInlineMarkdown(items[0] ?? '')}</p>`;
     }
+    // If the first item ends with ":" it's a label/intro, not an action item.
+    const first = items[0] ?? '';
+    const hasPreamble = first.endsWith(':') && first.length < 80;
+    const listItems = hasPreamble ? items.slice(1) : items;
     return html`
+      ${hasPreamble ? html`<p style="margin:0 0 var(--uui-size-space-2, 8px); font-size: var(--uui-type-small-size, 0.875rem); line-height: 1.5;">${renderInlineMarkdown(first)}</p>` : nothing}
       <ol class="suggestions-list">
-        ${items.map((item) => html`<li>${renderInlineMarkdown(item)}</li>`)}
+        ${listItems.map((item) => html`<li>${renderInlineMarkdown(item)}</li>`)}
       </ol>
     `;
   }

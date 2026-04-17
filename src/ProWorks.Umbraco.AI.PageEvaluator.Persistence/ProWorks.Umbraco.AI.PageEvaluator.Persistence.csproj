@@ -16,13 +16,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.2" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.4" />
     <!-- Both providers needed here for ConfigureProvider auto-detection in the composer -->
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.2" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.2" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.4" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.4" />
     <!-- Umbraco's EFCore scope provider (IEFCoreScopeProvider<TDbContext>) -->
     <!-- Verify version against target Umbraco installation before building -->
-    <PackageReference Include="Umbraco.Cms.Persistence.EFCore" Version="[17.2.2,18.0.0)" />
+    <PackageReference Include="Umbraco.Cms.Persistence.EFCore" Version="[17.3.4,18.0.0)" />
   </ItemGroup>
 
 </Project>
