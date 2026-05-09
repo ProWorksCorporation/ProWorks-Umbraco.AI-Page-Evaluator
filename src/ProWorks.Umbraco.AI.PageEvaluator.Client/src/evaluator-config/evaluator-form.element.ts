@@ -39,6 +39,7 @@ export class EvaluatorFormElement extends UmbLitElement {
   @state() _errors: Record<string, string> = {};
 
   @state() private _saving = false;
+  @state() private _loadError: string | null = null;
   @state() private _promptBuilderOpen = false;
 
   // Property alias filtering
@@ -204,20 +205,24 @@ export class EvaluatorFormElement extends UmbLitElement {
   }
 
   private async _loadConfig(id: string): Promise<void> {
-    const config: EvaluatorConfigItem = await getConfiguration(id);
-    this._name = config.name;
-    this._description = config.description ?? '';
-    this._documentTypeAlias = config.documentTypeAlias;
-    this._profileId = config.profileId;
-    this._contextId = config.contextId ?? '';
-    this._promptText = config.promptText;
-    this._scoringEnabled = config.scoringEnabled;
-    this._version = config.version;
-    this._propertyAliases = config.propertyAliases ?? [];
-    this._errors = {};
-    // Resolve display name and load available properties for the alias
-    void this._resolveDocTypeName(config.documentTypeAlias);
-    void this._loadAvailableProperties(config.documentTypeAlias);
+    this._loadError = null;
+    try {
+      const config: EvaluatorConfigItem = await getConfiguration(id);
+      this._name = config.name;
+      this._description = config.description ?? '';
+      this._documentTypeAlias = config.documentTypeAlias;
+      this._profileId = config.profileId;
+      this._contextId = config.contextId ?? '';
+      this._promptText = config.promptText;
+      this._scoringEnabled = config.scoringEnabled;
+      this._version = config.version;
+      this._propertyAliases = config.propertyAliases ?? [];
+      this._errors = {};
+      void this._resolveDocTypeName(config.documentTypeAlias);
+      void this._loadAvailableProperties(config.documentTypeAlias);
+    } catch {
+      this._loadError = this.localize.term('evaluatorConfig_loadError');
+    }
   }
 
   private async _resolveDocTypeName(alias: string): Promise<void> {
@@ -407,6 +412,9 @@ export class EvaluatorFormElement extends UmbLitElement {
 
   override render(): TemplateResult {
     return html`
+      ${this._loadError
+        ? html`<uui-tag color="danger" style="margin-bottom: 1rem;">${this._loadError}</uui-tag>`
+        : nothing}
       ${this._errors['_form']
         ? html`<uui-box><uui-tag color="danger">${this._errors['_form']}</uui-tag></uui-box>`
         : nothing}

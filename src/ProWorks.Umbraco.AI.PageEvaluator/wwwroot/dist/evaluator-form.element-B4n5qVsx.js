@@ -1,6 +1,6 @@
 import { property as _, state as s, customElement as f, html as a, nothing as n, css as b } from "@umbraco-cms/backoffice/external/lit";
 import { UmbLitElement as v } from "@umbraco-cms/backoffice/lit-element";
-import { c as m, B as g, f as x, u as $, h as T } from "./entry-point-ThFoLJY5.js";
+import { c as m, B as g, f as x, u as $, h as T } from "./entry-point-CcjVIYG_.js";
 const y = [
   {
     id: "required-fields",
@@ -210,14 +210,14 @@ d([
 u = d([
   f("page-evaluator-prompt-builder")
 ], u);
-var w = Object.defineProperty, S = Object.getOwnPropertyDescriptor, p = (e, t, i, r) => {
-  for (var o = r > 1 ? void 0 : r ? S(t, i) : t, c = e.length - 1, h; c >= 0; c--)
+var w = Object.defineProperty, E = Object.getOwnPropertyDescriptor, p = (e, t, i, r) => {
+  for (var o = r > 1 ? void 0 : r ? E(t, i) : t, c = e.length - 1, h; c >= 0; c--)
     (h = e[c]) && (o = (r ? h(t, i, o) : h(o)) || o);
   return r && o && w(t, i, o), o;
 };
 let l = class extends v {
   constructor() {
-    super(...arguments), this.configId = null, this._name = "", this._description = "", this._documentTypeAlias = "", this._profileId = "", this._contextId = "", this._promptText = "", this._scoringEnabled = !1, this._version = 0, this._errors = {}, this._saving = !1, this._promptBuilderOpen = !1, this._propertyAliases = [], this._availableProperties = [], this._docTypeDisplayName = "", this._docTypeSuggestions = [], this._docTypeShowSuggestions = !1, this._docTypeSearchTimer = null;
+    super(...arguments), this.configId = null, this._name = "", this._description = "", this._documentTypeAlias = "", this._profileId = "", this._contextId = "", this._promptText = "", this._scoringEnabled = !1, this._version = 0, this._errors = {}, this._saving = !1, this._loadError = null, this._promptBuilderOpen = !1, this._propertyAliases = [], this._availableProperties = [], this._docTypeDisplayName = "", this._docTypeSuggestions = [], this._docTypeShowSuggestions = !1, this._docTypeSearchTimer = null;
   }
   updated(e) {
     super.updated(e), e.has("configId") && (this.configId ? this._loadConfig(this.configId) : this._resetFields());
@@ -226,8 +226,13 @@ let l = class extends v {
     this._name = "", this._description = "", this._documentTypeAlias = "", this._docTypeDisplayName = "", this._docTypeSuggestions = [], this._docTypeShowSuggestions = !1, this._profileId = "", this._contextId = "", this._promptText = "", this._scoringEnabled = !1, this._version = 0, this._propertyAliases = [], this._availableProperties = [], this._errors = {}, this._promptBuilderOpen = !1;
   }
   async _loadConfig(e) {
-    const t = await x(e);
-    this._name = t.name, this._description = t.description ?? "", this._documentTypeAlias = t.documentTypeAlias, this._profileId = t.profileId, this._contextId = t.contextId ?? "", this._promptText = t.promptText, this._scoringEnabled = t.scoringEnabled, this._version = t.version, this._propertyAliases = t.propertyAliases ?? [], this._errors = {}, this._resolveDocTypeName(t.documentTypeAlias), this._loadAvailableProperties(t.documentTypeAlias);
+    this._loadError = null;
+    try {
+      const t = await x(e);
+      this._name = t.name, this._description = t.description ?? "", this._documentTypeAlias = t.documentTypeAlias, this._profileId = t.profileId, this._contextId = t.contextId ?? "", this._promptText = t.promptText, this._scoringEnabled = t.scoringEnabled, this._version = t.version, this._propertyAliases = t.propertyAliases ?? [], this._errors = {}, this._resolveDocTypeName(t.documentTypeAlias), this._loadAvailableProperties(t.documentTypeAlias);
+    } catch {
+      this._loadError = this.localize.term("evaluatorConfig_loadError");
+    }
   }
   async _resolveDocTypeName(e) {
     try {
@@ -374,6 +379,7 @@ let l = class extends v {
   }
   render() {
     return a`
+      ${this._loadError ? a`<uui-tag color="danger" style="margin-bottom: 1rem;">${this._loadError}</uui-tag>` : n}
       ${this._errors._form ? a`<uui-box><uui-tag color="danger">${this._errors._form}</uui-tag></uui-box>` : n}
 
       <uui-box headline=${this.localize.term("evaluatorConfig_generalSection")}>
@@ -738,6 +744,9 @@ p([
 ], l.prototype, "_saving", 2);
 p([
   s()
+], l.prototype, "_loadError", 2);
+p([
+  s()
 ], l.prototype, "_promptBuilderOpen", 2);
 p([
   s()
@@ -760,4 +769,4 @@ l = p([
 export {
   l as EvaluatorFormElement
 };
-//# sourceMappingURL=evaluator-form.element-DPgXWPpb.js.map
+//# sourceMappingURL=evaluator-form.element-B4n5qVsx.js.map
