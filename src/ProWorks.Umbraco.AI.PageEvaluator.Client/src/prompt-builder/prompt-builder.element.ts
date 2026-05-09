@@ -76,14 +76,23 @@ export class PromptBuilderElement extends UmbLitElement {
   @state() private _loading = false;
   @state() private _error: string | null = null;
 
+  private readonly _onCategoryToggle = (e: Event): void => {
+    const { id, selected } = (e as CustomEvent<{ id: string; selected: boolean }>).detail;
+    this._toggleCategory(id, selected);
+  };
+
+  private readonly _onUsePrompt = (): void => this.usePrompt();
+
   override connectedCallback(): void {
     super.connectedCallback();
-    // Allow tests to trigger category toggles and use-prompt via custom events
-    this.addEventListener('category-toggle', (e: Event) => {
-      const { id, selected } = (e as CustomEvent<{ id: string; selected: boolean }>).detail;
-      this._toggleCategory(id, selected);
-    });
-    this.addEventListener('use-prompt', () => this.usePrompt());
+    this.addEventListener('category-toggle', this._onCategoryToggle);
+    this.addEventListener('use-prompt', this._onUsePrompt);
+  }
+
+  override disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this.removeEventListener('category-toggle', this._onCategoryToggle);
+    this.removeEventListener('use-prompt', this._onUsePrompt);
   }
 
   override updated(changed: Map<string, unknown>): void {
