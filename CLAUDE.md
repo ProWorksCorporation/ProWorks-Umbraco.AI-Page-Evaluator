@@ -156,5 +156,12 @@ dotnet ef migrations add <Name> \
 ### Controller
 - `PageEvaluatorApiController` extends `ControllerBase` (not the obsolete `UmbracoApiController`)
 - Config CRUD endpoints require `[Authorize(Policy = AuthorizationPolicies.SectionAccessSettings)]`
-- Evaluate endpoint has `[EnableRateLimiting("PageEvaluatorEvaluate")]` — consuming app must register the rate limiter policy
+- Evaluate endpoint has `[EnableRateLimiting("PageEvaluatorEvaluate")]` and `[RequestSizeLimit(1 * 1024 * 1024)]`
+- `GET /evaluate/cached/{nodeId}` and `POST /evaluate` both verify content node existence (`IContentService.GetById(Guid)`) and Browse permission (`IAuthorizationService.AuthorizeAsync` with `ContentPermissionResource.WithKeys(ActionBrowse.ActionLetter, nodeId)` + `AuthorizationPolicies.ContentPermissionByResource`) — returns 404 if node not found, 403 if unauthorized
+- `POST /evaluate` uses the canonical `DocumentTypeAlias` from the content node (`content.ContentType.Alias`), not the client-supplied value
 - `GetCurrentUserKey()` uses `HttpContext.User.Identity?.GetUserKey()` (from `Umbraco.Extensions`)
+
+### Rate Limiter Registration
+- `PageEvaluatorComposer` registers the `"PageEvaluatorEvaluate"` fixed-window rate limiter policy (10 requests per user per minute) via `builder.Services.AddRateLimiter`
+- Registering the policy requires two usings: `using Microsoft.AspNetCore.Builder;` (for `AddRateLimiter`) AND `using Microsoft.AspNetCore.RateLimiting;` (for `AddFixedWindowLimiter`) — neither alone is sufficient
+- **Consuming apps must call `app.UseRateLimiter()` BEFORE `app.UseUmbraco()`** in their middleware pipeline; without it `[EnableRateLimiting]` is silently a no-op

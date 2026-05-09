@@ -228,7 +228,8 @@ public sealed class PageEvaluatorApiController : ControllerBase
 
     /// <summary>
     /// Returns the cached evaluation report for a content node, if one exists.
-    /// Returns 404 when no cached result is available — the client should then call POST /evaluate.
+    /// Returns 404 when the content node does not exist or no cached result is available.
+    /// Returns 403 when the requesting user lacks Browse permission on the content node.
     /// </summary>
     [HttpGet("evaluate/cached/{nodeId:guid}")]
     public async Task<IActionResult> GetCachedEvaluationAsync(
@@ -263,7 +264,9 @@ public sealed class PageEvaluatorApiController : ControllerBase
     /// Triggers a fresh AI evaluation for a content page.
     /// Saves the result to the evaluation cache (keyed on NodeId) and returns the report
     /// with <c>cachedAt</c> set to the current UTC time.
-    /// Returns 404 when no active evaluator is configured, or 502 on AI provider failure.
+    /// Returns 404 when the content node does not exist or no active evaluator is configured.
+    /// Returns 403 when the requesting user lacks Browse permission on the content node.
+    /// Returns 502 on AI provider failure.
     /// </summary>
     [HttpPost("evaluate")]
     [EnableRateLimiting("PageEvaluatorEvaluate")]

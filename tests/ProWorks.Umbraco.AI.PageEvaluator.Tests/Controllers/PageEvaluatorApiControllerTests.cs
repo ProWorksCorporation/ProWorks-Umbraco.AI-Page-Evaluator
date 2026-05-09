@@ -949,4 +949,16 @@ public class PageEvaluatorApiControllerTests
         Assert.NotNull(attr);
         Assert.Equal("PageEvaluatorEvaluate", attr!.PolicyName);
     }
+
+    [Fact]
+    public void EvaluateAsync_HasRequestSizeLimitAttribute()
+    {
+        var method = typeof(PageEvaluatorApiController).GetMethod(
+            nameof(PageEvaluatorApiController.EvaluateAsync),
+            BindingFlags.Public | BindingFlags.Instance);
+        Assert.NotNull(method);
+
+        var attr = method!.GetCustomAttribute<RequestSizeLimitAttribute>();
+        Assert.NotNull(attr);
+    }
 }
