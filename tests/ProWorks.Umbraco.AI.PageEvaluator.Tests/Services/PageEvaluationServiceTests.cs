@@ -112,6 +112,58 @@ public class PageEvaluationServiceTests
         Assert.Equal(2, report.Checks.Count);
     }
 
+    [Fact]
+    public async Task EvaluateAsync_WhenJsonStatusIsLowercase_ParsesCorrectly()
+    {
+        const string documentTypeAlias = "blogPost";
+        _configService.GetActiveForDocumentTypeAsync(documentTypeAlias, Arg.Any<CancellationToken>())
+            .Returns(BuildConfig(documentTypeAlias));
+
+        var jsonResponse = """
+            {
+              "score": { "passed": 1, "total": 3 },
+              "checks": [
+                { "checkNumber": 1, "status": "fail", "label": "Title", "explanation": null },
+                { "checkNumber": 2, "status": "warn", "label": "Meta", "explanation": null },
+                { "checkNumber": 3, "status": "pass", "label": "Image", "explanation": null }
+              ],
+              "suggestions": null
+            }
+            """;
+        MockChatResponse(jsonResponse);
+
+        EvaluationReport report = await _sut.EvaluateAsync(Guid.NewGuid(), documentTypeAlias, new Dictionary<string, object?>());
+
+        Assert.Equal(CheckStatus.Fail, report.Checks[0].Status);
+        Assert.Equal(CheckStatus.Warn, report.Checks[1].Status);
+        Assert.Equal(CheckStatus.Pass, report.Checks[2].Status);
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_WhenJsonStatusIsUppercase_ParsesCorrectly()
+    {
+        const string documentTypeAlias = "blogPost";
+        _configService.GetActiveForDocumentTypeAsync(documentTypeAlias, Arg.Any<CancellationToken>())
+            .Returns(BuildConfig(documentTypeAlias));
+
+        var jsonResponse = """
+            {
+              "score": { "passed": 0, "total": 2 },
+              "checks": [
+                { "checkNumber": 1, "status": "FAIL", "label": "Title", "explanation": null },
+                { "checkNumber": 2, "status": "WARNING", "label": "Meta", "explanation": null }
+              ],
+              "suggestions": null
+            }
+            """;
+        MockChatResponse(jsonResponse);
+
+        EvaluationReport report = await _sut.EvaluateAsync(Guid.NewGuid(), documentTypeAlias, new Dictionary<string, object?>());
+
+        Assert.Equal(CheckStatus.Fail, report.Checks[0].Status);
+        Assert.Equal(CheckStatus.Warn, report.Checks[1].Status);
+    }
+
     // ---------------------------------------------------------------------------
     // Markdown parse fallback
     // ---------------------------------------------------------------------------

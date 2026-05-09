@@ -373,6 +373,14 @@ public sealed partial class PageEvaluationService : IPageEvaluationService
     // Response parsing: JSON → Markdown → raw fallback
     // ---------------------------------------------------------------------------
 
+    private static CheckStatus ParseCheckStatus(string status) =>
+        status.ToUpperInvariant() switch
+        {
+            "FAIL" => CheckStatus.Fail,
+            "WARN" or "WARNING" => CheckStatus.Warn,
+            _ => CheckStatus.Pass,
+        };
+
     private static EvaluationReport? TryParseJson(string text)
     {
         // Extract JSON from the response — handles preamble text before a code fence.
@@ -410,12 +418,7 @@ public sealed partial class PageEvaluationService : IPageEvaluationService
                     ? e.GetString()
                     : null;
 
-                CheckStatus status = statusStr switch
-                {
-                    "Fail" => CheckStatus.Fail,
-                    "Warn" => CheckStatus.Warn,
-                    _ => CheckStatus.Pass,
-                };
+                CheckStatus status = ParseCheckStatus(statusStr);
 
                 checks.Add(new CheckResult(checkNumber, status, label, explanation));
             }
@@ -561,12 +564,7 @@ public sealed partial class PageEvaluationService : IPageEvaluationService
             if (parts.Length < 2)
                 continue;
 
-            CheckStatus status = parts[0].ToUpperInvariant() switch
-            {
-                "FAIL" => CheckStatus.Fail,
-                "WARN" or "WARNING" => CheckStatus.Warn,
-                _ => CheckStatus.Pass,
-            };
+            CheckStatus status = ParseCheckStatus(parts[0]);
 
             string label = parts[1];
             string? explanation = parts.Length >= 3 ? parts[2] : null;
