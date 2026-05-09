@@ -237,6 +237,7 @@ public sealed class PageEvaluatorApiController : ControllerBase
     /// </summary>
     [HttpPost("evaluate")]
     [EnableRateLimiting("PageEvaluatorEvaluate")]
+    [RequestSizeLimit(1 * 1024 * 1024)] // 1 MB cap on the evaluation request body
     public async Task<IActionResult> EvaluateAsync(
         [FromBody] EvaluatePageRequest request,
         CancellationToken cancellationToken = default)
