@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
@@ -8,6 +9,9 @@ using ProWorks.Umbraco.AI.PageEvaluator.Evaluators;
 using ProWorks.Umbraco.AI.PageEvaluator.Services;
 using Umbraco.AI.Core.Contexts;
 using Umbraco.AI.Core.Profiles;
+using Umbraco.Cms.Core.Actions;
+using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Core.Security.Authorization;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Web.Common.Authorization;
 using Umbraco.Extensions;
@@ -30,6 +34,8 @@ public sealed class PageEvaluatorApiController : ControllerBase
     private readonly IContentTypeService _contentTypeService;
     private readonly IEvaluationCacheRepository _cacheRepository;
     private readonly ILogger<PageEvaluatorApiController> _logger;
+    private readonly IContentService _contentService;
+    private readonly IAuthorizationService _authorizationService;
 
     public PageEvaluatorApiController(
         IPageEvaluationService evaluationService,
@@ -38,7 +44,9 @@ public sealed class PageEvaluatorApiController : ControllerBase
         IAIContextService contextService,
         IContentTypeService contentTypeService,
         IEvaluationCacheRepository cacheRepository,
-        ILogger<PageEvaluatorApiController> logger)
+        ILogger<PageEvaluatorApiController> logger,
+        IContentService contentService,
+        IAuthorizationService authorizationService)
     {
         _evaluationService = evaluationService;
         _configService = configService;
@@ -47,6 +55,8 @@ public sealed class PageEvaluatorApiController : ControllerBase
         _contentTypeService = contentTypeService;
         _cacheRepository = cacheRepository;
         _logger = logger;
+        _contentService = contentService;
+        _authorizationService = authorizationService;
     }
 
     // ---------------------------------------------------------------------------
@@ -225,6 +235,19 @@ public sealed class PageEvaluatorApiController : ControllerBase
         Guid nodeId,
         CancellationToken cancellationToken = default)
     {
+        // Verify the content node exists and the requesting user has Browse access.
+        IContent? content = _contentService.GetById(nodeId);
+        if (content is null)
+            return NotFound(new { title = $"Content node '{nodeId}' not found." });
+
+        AuthorizationResult authResult = await _authorizationService.AuthorizeAsync(
+            User,
+            ContentPermissionResource.WithKeys(ActionBrowse.ActionLetter, nodeId),
+            AuthorizationPolicies.ContentPermissionByResource);
+        if (!authResult.Succeeded)
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new { title = "You do not have permission to view the cached evaluation for this content node." });
+
         EvaluationCacheEntry? entry = await _cacheRepository.GetAsync(nodeId, cancellationToken);
         if (entry is null)
             return NotFound(new { title = $"No cached evaluation for node '{nodeId}'." });
@@ -249,11 +272,27 @@ public sealed class PageEvaluatorApiController : ControllerBase
         [FromBody] EvaluatePageRequest request,
         CancellationToken cancellationToken = default)
     {
+        // Verify the content node exists and the requesting user has Browse access.
+        IContent? content = _contentService.GetById(request.NodeId);
+        if (content is null)
+            return NotFound(new { title = $"Content node '{request.NodeId}' not found." });
+
+        AuthorizationResult authResult = await _authorizationService.AuthorizeAsync(
+            User,
+            ContentPermissionResource.WithKeys(ActionBrowse.ActionLetter, request.NodeId),
+            AuthorizationPolicies.ContentPermissionByResource);
+        if (!authResult.Succeeded)
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new { title = "You do not have permission to evaluate this content node." });
+
+        // Use the canonical alias from the content node, not the client-supplied value.
+        string documentTypeAlias = content.ContentType.Alias;
+
         try
         {
             EvaluationReport report = await _evaluationService.EvaluateAsync(
                 request.NodeId,
-                request.DocumentTypeAlias,
+                documentTypeAlias,
                 request.Properties,
                 cancellationToken);
 
@@ -261,7 +300,7 @@ public sealed class PageEvaluatorApiController : ControllerBase
             await _cacheRepository.SaveAsync(new EvaluationCacheEntry
             {
                 NodeId = request.NodeId,
-                DocumentTypeAlias = request.DocumentTypeAlias,
+                DocumentTypeAlias = documentTypeAlias,
                 Report = report,
                 CachedAt = cachedAt,
             }, cancellationToken);

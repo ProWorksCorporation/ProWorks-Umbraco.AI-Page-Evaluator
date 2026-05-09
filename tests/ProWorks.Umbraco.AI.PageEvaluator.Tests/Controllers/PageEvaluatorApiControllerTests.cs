@@ -14,6 +14,7 @@ using ProWorks.Umbraco.AI.PageEvaluator.Evaluators;
 using ProWorks.Umbraco.AI.PageEvaluator.Services;
 using Umbraco.AI.Core.Contexts;
 using Umbraco.AI.Core.Profiles;
+using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Web.Common.Authorization;
 using Xunit;
@@ -32,11 +33,24 @@ public class PageEvaluatorApiControllerTests
     private readonly IContentTypeService _contentTypeService = Substitute.For<IContentTypeService>();
     private readonly IEvaluationCacheRepository _cacheRepository = Substitute.For<IEvaluationCacheRepository>();
     private readonly ILogger<PageEvaluatorApiController> _logger = Substitute.For<ILogger<PageEvaluatorApiController>>();
+    private readonly IContentService _contentService = Substitute.For<IContentService>();
+    private readonly IAuthorizationService _authorizationService = Substitute.For<IAuthorizationService>();
     private readonly PageEvaluatorApiController _sut;
 
     public PageEvaluatorApiControllerTests()
     {
-        _sut = new PageEvaluatorApiController(_evaluationService, _configService, _profileService, _contextService, _contentTypeService, _cacheRepository, _logger);
+        // Default: any node exists and any user is authorized (so existing tests are unaffected).
+        var defaultContent = Substitute.For<IContent>();
+        defaultContent.ContentType.Alias.Returns("blogPost");
+        _contentService.GetById(Arg.Any<Guid>()).Returns(defaultContent);
+        _authorizationService
+            .AuthorizeAsync(Arg.Any<ClaimsPrincipal>(), Arg.Any<object?>(), Arg.Any<string>())
+            .Returns(AuthorizationResult.Success());
+
+        _sut = new PageEvaluatorApiController(
+            _evaluationService, _configService, _profileService, _contextService,
+            _contentTypeService, _cacheRepository, _logger,
+            _contentService, _authorizationService);
         _sut.ControllerContext = new ControllerContext
         {
             HttpContext = new DefaultHttpContext(),
@@ -156,6 +170,108 @@ public class PageEvaluatorApiControllerTests
 
         var statusResult = Assert.IsType<ObjectResult>(result);
         Assert.Equal(502, statusResult.StatusCode);
+    }
+
+    // ---------------------------------------------------------------------------
+    // POST /evaluate — authorization
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public async Task EvaluateAsync_WhenContentNodeNotFound_Returns404()
+    {
+        var request = new EvaluatePageRequest
+        {
+            NodeId = Guid.NewGuid(),
+            DocumentTypeAlias = "blogPost",
+            Properties = new(),
+        };
+
+        _contentService.GetById(request.NodeId).Returns((IContent?)null);
+
+        IActionResult result = await _sut.EvaluateAsync(request);
+
+        Assert.IsType<NotFoundObjectResult>(result);
+        await _evaluationService.DidNotReceive()
+            .EvaluateAsync(Arg.Any<Guid>(), Arg.Any<string>(),
+                Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_WhenUserLacksPermission_Returns403()
+    {
+        var nodeId = Guid.NewGuid();
+        var content = Substitute.For<IContent>();
+        content.ContentType.Alias.Returns("blogPost");
+        _contentService.GetById(nodeId).Returns(content);
+
+        _authorizationService
+            .AuthorizeAsync(Arg.Any<ClaimsPrincipal>(), Arg.Any<object?>(), Arg.Any<string>())
+            .Returns(AuthorizationResult.Failed());
+
+        var request = new EvaluatePageRequest { NodeId = nodeId, DocumentTypeAlias = "blogPost", Properties = new() };
+        IActionResult result = await _sut.EvaluateAsync(request);
+
+        var statusResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(403, statusResult.StatusCode);
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_UsesCanonicalDocTypeAliasFromContentNode_NotClientSupplied()
+    {
+        var nodeId = Guid.NewGuid();
+        var content = Substitute.For<IContent>();
+        content.ContentType.Alias.Returns("blogPost"); // canonical alias
+        _contentService.GetById(nodeId).Returns(content);
+
+        _evaluationService
+            .EvaluateAsync(nodeId, "blogPost", Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<CancellationToken>())
+            .Returns(EvaluationReport.Parsed(new EvaluationScore(1, 1), [], null));
+
+        var request = new EvaluatePageRequest
+        {
+            NodeId = nodeId,
+            DocumentTypeAlias = "wrongAlias", // client sends wrong alias
+            Properties = new(),
+        };
+        IActionResult result = await _sut.EvaluateAsync(request);
+
+        await _evaluationService.Received(1)
+            .EvaluateAsync(nodeId, "blogPost", Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<CancellationToken>());
+        Assert.IsType<OkObjectResult>(result);
+    }
+
+    // ---------------------------------------------------------------------------
+    // GET /evaluate/cached/{nodeId} — authorization
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public async Task GetCachedEvaluationAsync_WhenContentNodeNotFound_Returns404()
+    {
+        var nodeId = Guid.NewGuid();
+        _contentService.GetById(nodeId).Returns((IContent?)null);
+
+        IActionResult result = await _sut.GetCachedEvaluationAsync(nodeId);
+
+        Assert.IsType<NotFoundObjectResult>(result);
+        await _cacheRepository.DidNotReceive().GetAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task GetCachedEvaluationAsync_WhenUserLacksPermission_Returns403()
+    {
+        var nodeId = Guid.NewGuid();
+        var content = Substitute.For<IContent>();
+        content.ContentType.Alias.Returns("blogPost");
+        _contentService.GetById(nodeId).Returns(content);
+
+        _authorizationService
+            .AuthorizeAsync(Arg.Any<ClaimsPrincipal>(), Arg.Any<object?>(), Arg.Any<string>())
+            .Returns(AuthorizationResult.Failed());
+
+        IActionResult result = await _sut.GetCachedEvaluationAsync(nodeId);
+
+        var statusResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(403, statusResult.StatusCode);
     }
 
     // ---------------------------------------------------------------------------
