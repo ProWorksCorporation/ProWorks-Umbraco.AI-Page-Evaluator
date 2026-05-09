@@ -185,7 +185,7 @@ public class AIEvaluatorConfigServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_PreservesClientSuppliedVersion()
+    public async Task UpdateAsync_ReturnsCommittedVersion_WhenClientSuppliesVersion()
     {
         var id = Guid.NewGuid();
         var profileId = Guid.NewGuid();
@@ -198,11 +198,12 @@ public class AIEvaluatorConfigServiceTests
         updated.Version = 5;
         var result = await _sut.UpdateAsync(updated, Guid.NewGuid());
 
-        Assert.Equal(5, result.Version);
+        // Returned version is input+1 (what was committed to the DB by ApplyToEntity).
+        Assert.Equal(6, result.Version);
     }
 
     [Fact]
-    public async Task UpdateAsync_FallsBackToExistingVersion_WhenVersionIsZero()
+    public async Task UpdateAsync_FallsBackToExistingVersionPlusOne_WhenVersionIsZero()
     {
         var id = Guid.NewGuid();
         var profileId = Guid.NewGuid();
@@ -215,7 +216,8 @@ public class AIEvaluatorConfigServiceTests
         updated.Version = 0; // client didn't supply version
         var result = await _sut.UpdateAsync(updated, Guid.NewGuid());
 
-        Assert.Equal(3, result.Version);
+        // Fallback uses existing.Version (3) as concurrency token; committed is 3+1=4.
+        Assert.Equal(4, result.Version);
     }
 
     [Fact]
@@ -227,6 +229,28 @@ public class AIEvaluatorConfigServiceTests
         var config = NewConfig(id: Guid.NewGuid());
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => _sut.UpdateAsync(config, Guid.NewGuid()));
+    }
+
+    // -------------------------------------------------------------------------
+    // Issue 4: UpdateAsync returns the committed version (input Version + 1)
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task UpdateAsync_ReturnsVersionIncrementedByOne()
+    {
+        var profileId = Guid.NewGuid();
+        MockProfileExists(profileId);
+        var configId = Guid.NewGuid();
+        var config = NewConfig(profileId: profileId);
+        config.Id = configId;
+        config.Version = 3;
+
+        _repository.GetByIdAsync(configId, Arg.Any<CancellationToken>())
+            .Returns(NewConfig(profileId: profileId));
+
+        var result = await _sut.UpdateAsync(config, Guid.NewGuid());
+
+        Assert.Equal(4, result.Version); // committed Version is input+1
     }
 
     // -------------------------------------------------------------------------

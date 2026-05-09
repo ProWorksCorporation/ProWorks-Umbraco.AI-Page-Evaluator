@@ -86,6 +86,7 @@ public sealed class AIEvaluatorConfigService : IAIEvaluatorConfigService
             config.Version = existing.Version;
 
         await _repository.SaveAsync(config, cancellationToken);
+        config.Version += 1; // Reflect what ApplyToEntity committed to the DB (domain.Version + 1).
         return config;
     }
 
