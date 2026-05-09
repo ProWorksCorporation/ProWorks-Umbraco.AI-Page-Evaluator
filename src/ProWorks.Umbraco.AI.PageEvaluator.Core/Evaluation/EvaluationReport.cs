@@ -2,10 +2,10 @@ namespace ProWorks.Umbraco.AI.PageEvaluator.Evaluation;
 
 /// <summary>
 /// The structured result of a single AI evaluation run.
-/// Transient — never persisted. Returned by <see cref="IPageEvaluationService"/> and
-/// serialised as the response body of <c>POST /page-evaluator/evaluate</c>.
+/// Serialised as the response body of <c>POST /page-evaluator/evaluate</c>.
+/// Results are cached in <c>umbracoAIEvaluationCache</c>.
 /// </summary>
-public sealed class EvaluationReport
+public sealed record EvaluationReport
 {
     /// <summary>
     /// True when the AI response could not be parsed into structured form.
@@ -69,15 +69,5 @@ public sealed class EvaluationReport
         new() { ParseFailed = true, RawResponse = rawResponse };
 
     /// <summary>Returns a copy of this report with the specified <see cref="CachedAt"/> timestamp.</summary>
-    public EvaluationReport WithCachedAt(DateTime cachedAt) => new()
-    {
-        ParseFailed = ParseFailed,
-        Score = Score,
-        Checks = Checks,
-        Suggestions = Suggestions,
-        RawResponse = RawResponse,
-        CachedAt = cachedAt,
-        OverallScore = OverallScore,
-        AxisScores = AxisScores,
-    };
+    public EvaluationReport WithCachedAt(DateTime cachedAt) => this with { CachedAt = cachedAt };
 }
