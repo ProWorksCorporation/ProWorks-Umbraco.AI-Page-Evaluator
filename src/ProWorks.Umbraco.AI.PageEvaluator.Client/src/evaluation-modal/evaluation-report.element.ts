@@ -263,7 +263,7 @@ export class EvaluationReportElement extends UmbLitElement {
     }
     // If the first item ends with ":" it's a label/intro, not an action item.
     const first = items[0] ?? '';
-    const hasPreamble = first.endsWith(':') && first.length < 80;
+    const hasPreamble = first.endsWith(':');
     const listItems = hasPreamble ? items.slice(1) : items;
     return html`
       ${hasPreamble ? html`<p style="margin:0 0 var(--uui-size-space-2, 8px); font-size: var(--uui-type-small-size, 0.875rem); line-height: 1.5;">${renderInlineMarkdown(first)}</p>` : nothing}
