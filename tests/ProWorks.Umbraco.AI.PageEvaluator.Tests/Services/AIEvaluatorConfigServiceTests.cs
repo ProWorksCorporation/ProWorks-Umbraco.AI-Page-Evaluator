@@ -230,6 +230,37 @@ public class AIEvaluatorConfigServiceTests
     }
 
     // -------------------------------------------------------------------------
+    // Issue 10: PromptText max length validation
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task CreateAsync_WhenPromptTextExceedsMaxLength_ThrowsArgumentException()
+    {
+        var profileId = Guid.NewGuid();
+        MockProfileExists(profileId);
+        var config = NewConfig(profileId: profileId);
+        config.PromptText = new string('x', 32_769); // one char over the 32 KB limit
+
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            _sut.CreateAsync(config, Guid.NewGuid()));
+    }
+
+    [Fact]
+    public async Task UpdateAsync_WhenPromptTextExceedsMaxLength_ThrowsArgumentException()
+    {
+        var profileId = Guid.NewGuid();
+        MockProfileExists(profileId);
+        var existingId = Guid.NewGuid();
+        var config = NewConfig(id: existingId, profileId: profileId);
+        config.PromptText = new string('x', 32_769);
+        _repository.GetByIdAsync(existingId, Arg.Any<CancellationToken>())
+            .Returns(NewConfig(profileId: profileId));
+
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            _sut.UpdateAsync(config, Guid.NewGuid()));
+    }
+
+    // -------------------------------------------------------------------------
     // DeleteAsync
     // -------------------------------------------------------------------------
 

@@ -11,6 +11,9 @@ namespace ProWorks.Umbraco.AI.PageEvaluator.Services;
 /// </summary>
 public sealed class AIEvaluatorConfigService : IAIEvaluatorConfigService
 {
+    // 32,768 characters ≈ 32 KB — prevents oversized prompts from bloating AI requests.
+    private const int MaxPromptTextLength = 32_768;
+
     private readonly IAIEvaluatorConfigRepository _repository;
     private readonly IAIProfileService _profileService;
     private readonly IAIContextService _contextService;
@@ -106,6 +109,10 @@ public sealed class AIEvaluatorConfigService : IAIEvaluatorConfigService
 
         if (string.IsNullOrWhiteSpace(config.PromptText))
             throw new ArgumentException("Prompt text is required.", nameof(config));
+
+        if (config.PromptText.Length > MaxPromptTextLength)
+            throw new ArgumentException(
+                $"Prompt text must not exceed {MaxPromptTextLength:N0} characters.", nameof(config));
     }
 
     private async Task ValidateProfileAsync(Guid profileId, CancellationToken cancellationToken)
