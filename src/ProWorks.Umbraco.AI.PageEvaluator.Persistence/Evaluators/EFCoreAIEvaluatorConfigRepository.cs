@@ -197,6 +197,8 @@ public sealed class EFCoreAIEvaluatorConfigRepository : IAIEvaluatorConfigReposi
 
             return null;
         });
+
+        scope.Complete();
     }
 
     public async Task<bool> AliasExistsAsync(string documentTypeAlias, CancellationToken cancellationToken = default)

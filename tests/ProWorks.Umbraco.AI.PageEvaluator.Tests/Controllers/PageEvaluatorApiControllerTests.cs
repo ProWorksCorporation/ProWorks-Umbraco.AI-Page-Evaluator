@@ -628,6 +628,22 @@ public class PageEvaluatorApiControllerTests
         Assert.Equal(409, conflict.StatusCode);
     }
 
+    [Fact]
+    public async Task ActivateConfigurationAsync_WhenConfigDeletedBetweenActivateAndRefetch_Returns404()
+    {
+        var id = Guid.NewGuid();
+        var config = BuildConfig("blogPost");
+        // First GetByIdAsync (pre-check) returns the config
+        // Second GetByIdAsync (post-activate re-fetch) returns null
+        _configService.GetByIdAsync(id, Arg.Any<CancellationToken>())
+            .Returns(config, (AIEvaluatorConfig?)null);
+        _configService.SetActiveAsync(id, Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+
+        IActionResult result = await _sut.ActivateConfigurationAsync(id);
+
+        Assert.IsType<NotFoundObjectResult>(result);
+    }
+
     // ---------------------------------------------------------------------------
     // DELETE /configurations/{id}  (T048 RED)
     // ---------------------------------------------------------------------------
