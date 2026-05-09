@@ -29,6 +29,7 @@ export default {
     parseFailedWarning:
       'The AI response could not be formatted as a structured report. Raw output is shown below.',
     parseFailedLinkText: 'Refine the evaluator prompt',
+    parseFailedSuffix: 'to improve structured output.',
 
     // Modal: AI error
     aiErrorMessage:
