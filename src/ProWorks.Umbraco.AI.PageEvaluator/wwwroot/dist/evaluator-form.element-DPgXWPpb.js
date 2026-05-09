@@ -1,6 +1,6 @@
-import { property as g, state as s, customElement as f, html as a, nothing as n, css as b } from "@umbraco-cms/backoffice/external/lit";
+import { property as _, state as s, customElement as f, html as a, nothing as n, css as b } from "@umbraco-cms/backoffice/external/lit";
 import { UmbLitElement as v } from "@umbraco-cms/backoffice/lit-element";
-import { c as m, B as _, f as x, u as $, h as T } from "./entry-point-rFvFzWUR.js";
+import { c as m, B as g, f as x, u as $, h as T } from "./entry-point-ThFoLJY5.js";
 const y = [
   {
     id: "required-fields",
@@ -33,14 +33,14 @@ const y = [
     promptFragment: "Evaluate the calls to action on this page. Review the following properties: {{propertyAliases}}. Check for clear, actionable CTAs, appropriate placement, and alignment with the page goal. Site context: {{siteContext}}"
   }
 ];
-var z = Object.defineProperty, C = Object.getOwnPropertyDescriptor, d = (e, t, i, r) => {
-  for (var o = r > 1 ? void 0 : r ? C(t, i) : t, c = e.length - 1, h; c >= 0; c--)
+var C = Object.defineProperty, z = Object.getOwnPropertyDescriptor, d = (e, t, i, r) => {
+  for (var o = r > 1 ? void 0 : r ? z(t, i) : t, c = e.length - 1, h; c >= 0; c--)
     (h = e[c]) && (o = (r ? h(t, i, o) : h(o)) || o);
-  return r && o && z(t, i, o), o;
+  return r && o && C(t, i, o), o;
 };
 async function A(e) {
   const t = await m.get({
-    security: _,
+    security: g,
     url: `/umbraco/management/api/v1/page-evaluator/document-type/${encodeURIComponent(e)}/properties`
   });
   if (!t.response.ok) {
@@ -56,13 +56,16 @@ async function A(e) {
 }
 let u = class extends v {
   constructor() {
-    super(...arguments), this.documentTypeAlias = "", this.selectedPropertyAliases = [], this.scoringEnabled = !1, this._properties = [], this._selectedCategories = new Set(y.map((e) => e.id)), this._siteContext = "", this._draft = "", this._loading = !1, this._error = null;
-  }
-  connectedCallback() {
-    super.connectedCallback(), this.addEventListener("category-toggle", (e) => {
+    super(...arguments), this.documentTypeAlias = "", this.selectedPropertyAliases = [], this.scoringEnabled = !1, this._properties = [], this._selectedCategories = new Set(y.map((e) => e.id)), this._siteContext = "", this._draft = "", this._loading = !1, this._error = null, this._onCategoryToggle = (e) => {
       const { id: t, selected: i } = e.detail;
       this._toggleCategory(t, i);
-    }), this.addEventListener("use-prompt", () => this.usePrompt());
+    }, this._onUsePrompt = () => this.usePrompt();
+  }
+  connectedCallback() {
+    super.connectedCallback(), this.addEventListener("category-toggle", this._onCategoryToggle), this.addEventListener("use-prompt", this._onUsePrompt);
+  }
+  disconnectedCallback() {
+    super.disconnectedCallback(), this.removeEventListener("category-toggle", this._onCategoryToggle), this.removeEventListener("use-prompt", this._onUsePrompt);
   }
   updated(e) {
     e.has("documentTypeAlias") && this.documentTypeAlias && this._loadProperties(), e.has("scoringEnabled") && this._draft && this.generateDraft();
@@ -178,13 +181,13 @@ Site context: ${this._siteContext}` + r).trim();
   }
 };
 d([
-  g({ attribute: "document-type-alias" })
+  _({ attribute: "document-type-alias" })
 ], u.prototype, "documentTypeAlias", 2);
 d([
-  g({ type: Array, attribute: !1 })
+  _({ type: Array, attribute: !1 })
 ], u.prototype, "selectedPropertyAliases", 2);
 d([
-  g({ type: Boolean })
+  _({ type: Boolean })
 ], u.prototype, "scoringEnabled", 2);
 d([
   s()
@@ -229,7 +232,7 @@ let l = class extends v {
   async _resolveDocTypeName(e) {
     try {
       const t = await m.get({
-        security: _,
+        security: g,
         url: `/umbraco/management/api/v1/page-evaluator/document-type/${encodeURIComponent(e)}/properties`
       });
       if (t.response.ok && t.data) {
@@ -252,7 +255,7 @@ let l = class extends v {
   async _searchDocTypes(e) {
     try {
       const t = await m.get({
-        security: _,
+        security: g,
         url: "/umbraco/management/api/v1/item/document-type/search",
         query: { query: e, isElement: !1, skip: 0, take: 20 }
       });
@@ -267,12 +270,12 @@ let l = class extends v {
     this._docTypeShowSuggestions = !1, this._docTypeSuggestions = [], this._docTypeDisplayName = t;
     try {
       const i = await m.get({
-        security: _,
+        security: g,
         url: `/umbraco/management/api/v1/document-type/${encodeURIComponent(e)}`
       });
       if (i.response.ok && i.data) {
         const r = i.data;
-        this._documentTypeAlias = r.alias, this._docTypeDisplayName = r.name, this._loadAvailableProperties(r.alias);
+        this._documentTypeAlias = r.alias, this._docTypeDisplayName = r.name, this._propertyAliases = [], this._loadAvailableProperties(r.alias);
       }
     } catch {
       this._errors = { ...this._errors, documentTypeAlias: this.localize.term("evaluatorConfig_documentTypeAliasError") };
@@ -282,7 +285,7 @@ let l = class extends v {
     this._availableProperties = [];
     try {
       const t = await m.get({
-        security: _,
+        security: g,
         url: `/umbraco/management/api/v1/page-evaluator/document-type/${encodeURIComponent(e)}/properties`
       });
       if (t.response.ok && t.data) {
@@ -701,7 +704,7 @@ l.styles = b`
     }
   `;
 p([
-  g({ type: String, attribute: "config-id" })
+  _({ type: String, attribute: "config-id" })
 ], l.prototype, "configId", 2);
 p([
   s()
@@ -757,4 +760,4 @@ l = p([
 export {
   l as EvaluatorFormElement
 };
-//# sourceMappingURL=evaluator-form.element-D993mZtF.js.map
+//# sourceMappingURL=evaluator-form.element-DPgXWPpb.js.map

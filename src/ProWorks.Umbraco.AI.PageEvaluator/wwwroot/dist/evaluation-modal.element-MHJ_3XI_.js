@@ -1,6 +1,6 @@
 import { css as b, property as y, customElement as x, nothing as c, html as t, state as z } from "@umbraco-cms/backoffice/external/lit";
 import { UmbModalBaseElement as C } from "@umbraco-cms/backoffice/modal";
-import { g as S, e as E } from "./entry-point-CCwOsNtW.js";
+import { g as S, e as E } from "./entry-point-ThFoLJY5.js";
 import { UmbLitElement as w } from "@umbraco-cms/backoffice/lit-element";
 var F = Object.defineProperty, B = Object.getOwnPropertyDescriptor, P = (e, a, s, i) => {
   for (var r = i > 1 ? void 0 : i ? B(a, s) : a, n = e.length - 1, l; n >= 0; n--)
@@ -422,10 +422,13 @@ let p = class extends C {
     const e = this.data;
     if (e)
       try {
-        this._modalState = "loading", this._progressKey = _.sending, await this._tick(), this._progressKey = _.waiting;
+        if (!this.isConnected || (this._modalState = "loading", this._progressKey = _.sending, await this._tick(), !this.isConnected)) return;
+        this._progressKey = _.waiting;
         const a = await E(e);
-        this._progressKey = _.rendering, await this._tick(), this._report = a, this._modalState = a.parseFailed ? "parse-failed" : "success";
+        if (!this.isConnected || (this._progressKey = _.rendering, await this._tick(), !this.isConnected)) return;
+        this._report = a, this._modalState = a.parseFailed ? "parse-failed" : "success";
       } catch {
+        if (!this.isConnected) return;
         this._modalState = "error";
       }
   }
@@ -564,4 +567,4 @@ p = m([
 export {
   p as EvaluationModalElement
 };
-//# sourceMappingURL=evaluation-modal.element-D08qW-70.js.map
+//# sourceMappingURL=evaluation-modal.element-MHJ_3XI_.js.map

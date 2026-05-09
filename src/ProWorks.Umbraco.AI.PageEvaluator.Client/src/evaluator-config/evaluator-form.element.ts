@@ -280,7 +280,7 @@ export class EvaluatorFormElement extends UmbLitElement {
         const detail = result.data as { alias: string; name: string };
         this._documentTypeAlias = detail.alias;
         this._docTypeDisplayName = detail.name;
-        // Load available properties for the newly selected doc type
+        this._propertyAliases = [];
         void this._loadAvailableProperties(detail.alias);
       }
     } catch {
