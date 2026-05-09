@@ -83,19 +83,24 @@ export class EvaluationModalElement extends UmbModalBaseElement<EvaluationModalD
     if (!data) return;
 
     try {
+      if (!this.isConnected) return;
       this._modalState = 'loading';
       this._progressKey = PROGRESS_KEYS.sending;
       await this._tick();
 
+      if (!this.isConnected) return;
       this._progressKey = PROGRESS_KEYS.waiting;
       const report = await evaluatePage(data);
 
+      if (!this.isConnected) return;
       this._progressKey = PROGRESS_KEYS.rendering;
       await this._tick();
 
+      if (!this.isConnected) return;
       this._report = report;
       this._modalState = report.parseFailed ? 'parse-failed' : 'success';
     } catch {
+      if (!this.isConnected) return;
       this._modalState = 'error';
     }
   }
