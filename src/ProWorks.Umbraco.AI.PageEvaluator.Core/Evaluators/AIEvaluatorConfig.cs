@@ -60,8 +60,8 @@ public sealed class AIEvaluatorConfig
     public List<string>? PropertyAliases { get; set; }
 
     /// <summary>
-    /// When true, the evaluator asks the AI for an overall_score (1-5, decimal allowed)
-    /// and integer axis_scores per dimension named in the prompt. Default false preserves
+    /// When true, the evaluator asks the AI for an overallScore (1-5, decimal allowed)
+    /// and integer axisScores per dimension named in the prompt. Default false preserves
     /// existing behavior for pre-existing configurations.
     /// </summary>
     public bool ScoringEnabled { get; set; }
