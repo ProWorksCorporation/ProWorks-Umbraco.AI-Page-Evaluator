@@ -1,6 +1,6 @@
 import { property as _, state as s, customElement as f, html as a, nothing as n, css as b } from "@umbraco-cms/backoffice/external/lit";
 import { UmbLitElement as v } from "@umbraco-cms/backoffice/lit-element";
-import { c as m, B as g, f as x, u as $, h as T } from "./entry-point-CcjVIYG_.js";
+import { c as m, B as g, f as x, u as $, h as T } from "./entry-point-CgVcqeqs.js";
 const y = [
   {
     id: "required-fields",
@@ -91,7 +91,7 @@ let u = class extends v {
     ), r = this.scoringEnabled ? `
 
 Rate the page on a scale of 1-5 for each evaluation dimension listed above.
-Provide an overall_score (1-5) and individual axis_scores with brief feedback for each.` : "";
+Provide an overallScore (1-5) and individual axisScores with brief feedback for each.` : "";
     if (i.length === 0) {
       this._draft = (`Evaluate the following page.
 
@@ -210,10 +210,10 @@ d([
 u = d([
   f("page-evaluator-prompt-builder")
 ], u);
-var w = Object.defineProperty, E = Object.getOwnPropertyDescriptor, p = (e, t, i, r) => {
+var S = Object.defineProperty, E = Object.getOwnPropertyDescriptor, p = (e, t, i, r) => {
   for (var o = r > 1 ? void 0 : r ? E(t, i) : t, c = e.length - 1, h; c >= 0; c--)
     (h = e[c]) && (o = (r ? h(t, i, o) : h(o)) || o);
-  return r && o && w(t, i, o), o;
+  return r && o && S(t, i, o), o;
 };
 let l = class extends v {
   constructor() {
@@ -223,7 +223,7 @@ let l = class extends v {
     super.updated(e), e.has("configId") && (this.configId ? this._loadConfig(this.configId) : this._resetFields());
   }
   _resetFields() {
-    this._name = "", this._description = "", this._documentTypeAlias = "", this._docTypeDisplayName = "", this._docTypeSuggestions = [], this._docTypeShowSuggestions = !1, this._profileId = "", this._contextId = "", this._promptText = "", this._scoringEnabled = !1, this._version = 0, this._propertyAliases = [], this._availableProperties = [], this._errors = {}, this._promptBuilderOpen = !1;
+    this._loadError = null, this._name = "", this._description = "", this._documentTypeAlias = "", this._docTypeDisplayName = "", this._docTypeSuggestions = [], this._docTypeShowSuggestions = !1, this._profileId = "", this._contextId = "", this._promptText = "", this._scoringEnabled = !1, this._version = 0, this._propertyAliases = [], this._availableProperties = [], this._errors = {}, this._promptBuilderOpen = !1;
   }
   async _loadConfig(e) {
     this._loadError = null;
@@ -769,4 +769,4 @@ l = p([
 export {
   l as EvaluatorFormElement
 };
-//# sourceMappingURL=evaluator-form.element-B4n5qVsx.js.map
+//# sourceMappingURL=evaluator-form.element-DQW9-CHy.js.map

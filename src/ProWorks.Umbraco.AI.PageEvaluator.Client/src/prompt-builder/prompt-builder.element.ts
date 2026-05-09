@@ -142,7 +142,7 @@ export class PromptBuilderElement extends UmbLitElement {
       );
 
     const scoringSnippet = this.scoringEnabled
-      ? '\n\nRate the page on a scale of 1-5 for each evaluation dimension listed above.\nProvide an overall_score (1-5) and individual axis_scores with brief feedback for each.'
+      ? '\n\nRate the page on a scale of 1-5 for each evaluation dimension listed above.\nProvide an overallScore (1-5) and individual axisScores with brief feedback for each.'
       : '';
 
     if (fragments.length === 0) {

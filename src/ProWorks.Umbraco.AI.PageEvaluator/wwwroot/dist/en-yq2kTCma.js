@@ -24,6 +24,7 @@ const e = {
     // Modal: parse failure warning
     parseFailedWarning: "The AI response could not be formatted as a structured report. Raw output is shown below.",
     parseFailedLinkText: "Refine the evaluator prompt",
+    parseFailedSuffix: "to improve structured output.",
     // Modal: AI error
     aiErrorMessage: "The evaluation could not be completed. The AI provider returned an error.",
     retryButton: "Retry",
@@ -120,4 +121,4 @@ const e = {
 export {
   e as default
 };
-//# sourceMappingURL=en-CCBFGXaV.js.map
+//# sourceMappingURL=en-yq2kTCma.js.map

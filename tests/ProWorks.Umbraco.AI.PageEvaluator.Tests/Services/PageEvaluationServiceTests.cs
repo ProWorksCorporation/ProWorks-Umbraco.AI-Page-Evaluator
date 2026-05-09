@@ -854,6 +854,45 @@ public class PageEvaluationServiceTests
         };
 
     // ---------------------------------------------------------------------------
+    // camelCase scoring fields (Task 7)
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public async Task EvaluateAsync_WhenJsonUsesCamelCaseScoringFields_ParsesScores()
+    {
+        const string documentTypeAlias = "blogPost";
+        _configService.GetActiveForDocumentTypeAsync(documentTypeAlias, Arg.Any<CancellationToken>())
+            .Returns(BuildConfig(documentTypeAlias, scoringEnabled: true));
+
+        var jsonResponse = """
+            {
+              "score": { "passed": 2, "total": 2 },
+              "checks": [
+                { "checkNumber": 1, "status": "Pass", "label": "Title", "explanation": null },
+                { "checkNumber": 2, "status": "Pass", "label": "Meta", "explanation": null }
+              ],
+              "suggestions": null,
+              "overallScore": 4.5,
+              "axisScores": [
+                { "name": "Clarity", "score": 4, "feedback": "Good" },
+                { "name": "SEO", "score": 5, "feedback": null }
+              ]
+            }
+            """;
+        MockChatResponse(jsonResponse);
+
+        EvaluationReport report = await _sut.EvaluateAsync(Guid.NewGuid(), documentTypeAlias, new Dictionary<string, object?>());
+
+        Assert.Equal(4.5, report.OverallScore);
+        Assert.NotNull(report.AxisScores);
+        Assert.Equal(2, report.AxisScores!.Count);
+        Assert.Equal("Clarity", report.AxisScores[0].Name);
+        Assert.Equal(4, report.AxisScores[0].Score);
+        Assert.Equal("Good", report.AxisScores[0].Feedback);
+        Assert.Null(report.AxisScores[1].Feedback);
+    }
+
+    // ---------------------------------------------------------------------------
     // T028: Regression — pre-feature JSON deserializes with null score fields
     // ---------------------------------------------------------------------------
 
@@ -910,8 +949,8 @@ public class PageEvaluationServiceTests
 
         Assert.NotNull(capturedMessages);
         var systemMsg = capturedMessages!.First(m => m.Role == ChatRole.System);
-        Assert.Contains("overall_score", systemMsg.Text!);
-        Assert.Contains("axis_scores", systemMsg.Text!);
+        Assert.Contains("overallScore", systemMsg.Text!);
+        Assert.Contains("axisScores", systemMsg.Text!);
     }
 
     [Fact]
@@ -933,8 +972,8 @@ public class PageEvaluationServiceTests
 
         Assert.NotNull(capturedMessages);
         var systemMsg = capturedMessages!.First(m => m.Role == ChatRole.System);
-        Assert.DoesNotContain("overall_score", systemMsg.Text!);
-        Assert.DoesNotContain("axis_scores", systemMsg.Text!);
+        Assert.DoesNotContain("overallScore", systemMsg.Text!);
+        Assert.DoesNotContain("axisScores", systemMsg.Text!);
     }
 
     // ---------------------------------------------------------------------------
@@ -953,8 +992,8 @@ public class PageEvaluationServiceTests
               "score": { "passed": 1, "total": 1 },
               "checks": [{ "checkNumber": 1, "status": "Pass", "label": "T", "explanation": null }],
               "suggestions": null,
-              "overall_score": 4.2,
-              "axis_scores": [
+              "overallScore": 4.2,
+              "axisScores": [
                 { "name": "Clarity", "score": 5, "feedback": "Crystal clear." },
                 { "name": "Tone", "score": 3, "feedback": null }
               ]
@@ -1004,8 +1043,8 @@ public class PageEvaluationServiceTests
               "score": { "passed": 1, "total": 1 },
               "checks": [{ "checkNumber": 1, "status": "Pass", "label": "T", "explanation": null }],
               "suggestions": null,
-              "overall_score": 6.5,
-              "axis_scores": [
+              "overallScore": 6.5,
+              "axisScores": [
                 { "name": "Clarity", "score": 4, "feedback": null }
               ]
             }
@@ -1032,8 +1071,8 @@ public class PageEvaluationServiceTests
               "score": { "passed": 1, "total": 1 },
               "checks": [{ "checkNumber": 1, "status": "Pass", "label": "T", "explanation": null }],
               "suggestions": null,
-              "overall_score": 3.0,
-              "axis_scores": [
+              "overallScore": 3.0,
+              "axisScores": [
                 { "name": "Clarity", "score": 5, "feedback": null },
                 { "name": "Tone", "score": 7, "feedback": null },
                 { "name": "Voice", "score": 2, "feedback": null }
@@ -1063,8 +1102,8 @@ public class PageEvaluationServiceTests
               "score": { "passed": 1, "total": 1 },
               "checks": [{ "checkNumber": 1, "status": "Pass", "label": "T", "explanation": null }],
               "suggestions": null,
-              "overall_score": 3.0,
-              "axis_scores": [
+              "overallScore": 3.0,
+              "axisScores": [
                 { "name": "Clarity", "score": 3.5, "feedback": null },
                 { "name": "Tone", "score": 4, "feedback": null }
               ]

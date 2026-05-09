@@ -326,8 +326,8 @@ public sealed partial class PageEvaluationService : IPageEvaluationService
                     { "checkNumber": 1, "status": "Pass|Fail|Warn", "label": "<label>", "explanation": "<explanation or null>" }
                   ],
                   "suggestions": "<overall suggestions or null>",
-                  "overall_score": <number 1-5, decimal allowed>,
-                  "axis_scores": [
+                  "overallScore": <number 1-5, decimal allowed>,
+                  "axisScores": [
                     { "name": "<dimension name>", "score": <integer 1-5>, "feedback": "<brief feedback or null>" }
                   ]
                 }
@@ -427,9 +427,9 @@ public sealed partial class PageEvaluationService : IPageEvaluationService
             if (root.TryGetProperty("suggestions", out JsonElement sugg) && sugg.ValueKind != JsonValueKind.Null)
                 suggestions = sugg.GetString();
 
-            // Parse overall_score — nullable double in [1.0, 5.0]; out-of-range or non-numeric becomes null.
+            // Parse overallScore — nullable double in [1.0, 5.0]; out-of-range or non-numeric becomes null.
             double? overallScore = null;
-            if (root.TryGetProperty("overall_score", out JsonElement osEl)
+            if (root.TryGetProperty("overallScore", out JsonElement osEl)
                 && osEl.ValueKind == JsonValueKind.Number
                 && osEl.TryGetDouble(out double os)
                 && os >= 1.0 && os <= 5.0)
@@ -437,9 +437,9 @@ public sealed partial class PageEvaluationService : IPageEvaluationService
                 overallScore = os;
             }
 
-            // Parse axis_scores — drop elements with non-integer score or score outside [1, 5]; preserve order.
+            // Parse axisScores — drop elements with non-integer score or score outside [1, 5]; preserve order.
             List<AxisScore>? axisScores = null;
-            if (root.TryGetProperty("axis_scores", out JsonElement axesEl)
+            if (root.TryGetProperty("axisScores", out JsonElement axesEl)
                 && axesEl.ValueKind == JsonValueKind.Array)
             {
                 axisScores = [];
