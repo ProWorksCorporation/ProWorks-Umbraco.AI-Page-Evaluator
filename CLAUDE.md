@@ -1,6 +1,6 @@
 ﻿# ProWorks-Umbraco-AI-Page-Evaluator Development Guidelines
 
-Last updated: 2026-04-13 (rev 6)
+Last updated: 2026-05-09 (rev 7)
 
 ## Active Technologies
 - C# .NET 10, TypeScript 5.x (strict: true) + Umbraco CMS 17.2.2, Umbraco.AI 1.8.0 (Anthropic 1.3.0, OpenAI 1.2.0), EF Core 10.0.2, Microsoft.Extensions.AI 10.3.0, Lit 3.x via @umbraco-cms/backoffice/external/lit
@@ -70,6 +70,8 @@ dotnet ef migrations add <Name> \
 - Checks `ChatFinishReason.Length` after response to detect truncation
 - Includes defensive preamble in user message to guard against prompt injection from content
 - Filters properties by `config.PropertyAliases` when set; strips HTML tags and truncates at 2000 chars
+- Scoring JSON fields use **camelCase**: `"overallScore"` and `"axisScores"` — these match the C# property names. **Never** use `"overall_score"` / `"axis_scores"` (snake_case); the prompt template, parser, and `PromptBuilderElement` scoring snippet must all use the same camelCase names
+- `CheckStatus` parsing is **case-insensitive** via the shared `ParseCheckStatus(string)` helper — both `TryParseJson` and `TryParseMarkdown` delegate to it; `"FAIL"`, `"fail"`, and `"Fail"` all map to `CheckStatus.Fail`
 
 ### Backoffice Extensions
 - Menu alias for Umbraco.AI Add-ons section: **`"Uai.Menu.Addons"`** (not `"Umb.Menu.Addons"`)
@@ -86,6 +88,16 @@ dotnet ef migrations add <Name> \
 - **Never** import from bare `lit` or `lit/decorators.js` — Umbraco 17's browser import map has no entry for these specifiers, causing a runtime `Failed to resolve module specifier` error
 - Always import Lit primitives from **`@umbraco-cms/backoffice/external/lit`**: e.g. `import { html, css, customElement, state } from '@umbraco-cms/backoffice/external/lit'`
 - The Vite external list does **not** need `/^lit/` or `/^@lit\//` entries — Lit is covered by the existing `/^@umbraco-cms\//` rule
+
+### Lit Event Listener Lifecycle
+- If `connectedCallback` adds event listeners on `this`, a matching `disconnectedCallback` **must** remove them — otherwise each re-connect duplicates the handler
+- Listeners must be stored as **`private readonly` arrow fields** (not inline lambdas) so the same reference is used for both `addEventListener` and `removeEventListener`. `removeEventListener` performs strict equality (`===`) and will silently fail if the reference differs:
+  ```typescript
+  private readonly _onFoo = (e: Event): void => { /* ... */ };
+  override connectedCallback(): void { super.connectedCallback(); this.addEventListener('foo', this._onFoo); }
+  override disconnectedCallback(): void { super.disconnectedCallback(); this.removeEventListener('foo', this._onFoo); }
+  ```
+- For async methods that write to `@state()` properties, add `if (!this.isConnected) return;` guards before every state write to prevent writes to a detached element when the element is unmounted while an async call is in flight
 
 ### UmbLitElement & Localization
 - All package components must extend **`UmbLitElement`** (from `@umbraco-cms/backoffice/lit-element`), not `LitElement` — this provides `this.localize.term('section_key')` via `UmbLocalizationController`
@@ -160,6 +172,7 @@ dotnet ef migrations add <Name> \
 - `GET /evaluate/cached/{nodeId}` and `POST /evaluate` both verify content node existence (`IContentService.GetById(Guid)`) and Browse permission (`IAuthorizationService.AuthorizeAsync` with `ContentPermissionResource.WithKeys(ActionBrowse.ActionLetter, nodeId)` + `AuthorizationPolicies.ContentPermissionByResource`) — returns 404 if node not found, 403 if unauthorized
 - `POST /evaluate` uses the canonical `DocumentTypeAlias` from the content node (`content.ContentType.Alias`), not the client-supplied value
 - `GetCurrentUserKey()` uses `HttpContext.User.Identity?.GetUserKey()` (from `Umbraco.Extensions`)
+- **Activation uses `SetActiveAsync`** (`IAIEvaluatorConfigService.SetActiveAsync(id, ct)`) — **never** route activation through `UpdateAsync`. `SetActiveAsync` only toggles the `IsActive` flag and does not bump `Version` or `DateModified`, which is intentional (toggling active is an administrative action, not a content change)
 
 ### Rate Limiter Registration
 - `PageEvaluatorComposer` registers the `"PageEvaluatorEvaluate"` fixed-window rate limiter policy (10 requests per user per minute) via `builder.Services.AddRateLimiter`
