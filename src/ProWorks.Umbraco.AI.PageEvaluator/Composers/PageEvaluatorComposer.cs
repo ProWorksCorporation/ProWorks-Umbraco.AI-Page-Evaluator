@@ -1,3 +1,6 @@
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.DependencyInjection;
 using ProWorks.Umbraco.AI.PageEvaluator.Evaluation;
 using ProWorks.Umbraco.AI.PageEvaluator.Evaluators;
@@ -26,6 +29,17 @@ public sealed class PageEvaluatorComposer : IComposer
         // Application services.
         builder.Services.AddScoped<IAIEvaluatorConfigService, AIEvaluatorConfigService>();
         builder.Services.AddScoped<IPageEvaluationService, PageEvaluationService>();
+
+        // Rate limiter: 10 AI evaluation requests per user per minute (per back-office user key).
+        // Consuming apps must call app.UseRateLimiter() in their middleware pipeline.
+        builder.Services.AddRateLimiter(options =>
+            options.AddFixedWindowLimiter("PageEvaluatorEvaluate", o =>
+            {
+                o.PermitLimit = 10;
+                o.Window = TimeSpan.FromMinutes(1);
+                o.QueueLimit = 0;
+            })
+        );
 
         // Invalidate cached evaluations when content is published.
         builder.AddNotificationAsyncHandler<ContentPublishedNotification, ContentPublishedNotificationHandler>();
