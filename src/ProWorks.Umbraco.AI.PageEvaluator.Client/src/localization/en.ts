@@ -53,6 +53,7 @@ export default {
     deleteButton: 'Delete',
     emptyState: 'No evaluator configurations found. Create one to get started.',
     loadError: 'Failed to load evaluator configurations.',
+    formLoadError: 'Failed to load the evaluator configuration.',
     activateError: 'Failed to activate the evaluator configuration.',
     deleteError: 'Failed to delete the evaluator configuration.',
     tableHeaderName: 'Name',

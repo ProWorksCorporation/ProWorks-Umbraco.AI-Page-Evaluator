@@ -222,7 +222,7 @@ export class EvaluatorFormElement extends UmbLitElement {
       void this._resolveDocTypeName(config.documentTypeAlias);
       void this._loadAvailableProperties(config.documentTypeAlias);
     } catch {
-      this._loadError = this.localize.term('evaluatorConfig_loadError');
+      this._loadError = this.localize.term('evaluatorConfig_formLoadError');
     }
   }
 

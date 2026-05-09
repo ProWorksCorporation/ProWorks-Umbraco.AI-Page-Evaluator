@@ -904,7 +904,7 @@ public class PageEvaluationServiceTests
         _configService.GetActiveForDocumentTypeAsync(documentTypeAlias, Arg.Any<CancellationToken>())
             .Returns(BuildConfig(documentTypeAlias, scoringEnabled: true));
 
-        // Legacy payload: no overall_score or axis_scores keys at all.
+        // Legacy payload: no overallScore or axisScores keys at all.
         MockChatResponse("""
             {
               "score": { "passed": 2, "total": 3 },
