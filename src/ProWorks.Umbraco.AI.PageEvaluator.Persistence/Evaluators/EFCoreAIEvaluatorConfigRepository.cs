@@ -169,6 +169,36 @@ public sealed class EFCoreAIEvaluatorConfigRepository : IAIEvaluatorConfigReposi
         scope.Complete();
     }
 
+    public async Task SetActiveAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        using IEfCoreScope<UmbracoAIPageEvaluatorDbContext> scope = _scopeProvider.CreateScope();
+        await scope.ExecuteWithContextAsync<object?>(async db =>
+        {
+            AIEvaluatorConfigEntity? target = await db.EvaluatorConfigs
+                .FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
+            if (target is null) return null;
+
+            await using var tx = await db.Database.BeginTransactionAsync(cancellationToken);
+            try
+            {
+                await db.EvaluatorConfigs
+                    .Where(e => e.DocumentTypeAlias == target.DocumentTypeAlias && e.IsActive)
+                    .ExecuteUpdateAsync(s => s.SetProperty(e => e.IsActive, false), cancellationToken);
+
+                target.IsActive = true;
+                await db.SaveChangesAsync(cancellationToken);
+                await tx.CommitAsync(cancellationToken);
+            }
+            catch
+            {
+                await tx.RollbackAsync(cancellationToken);
+                throw;
+            }
+
+            return null;
+        });
+    }
+
     public async Task<bool> AliasExistsAsync(string documentTypeAlias, CancellationToken cancellationToken = default)
     {
         using IEfCoreScope<UmbracoAIPageEvaluatorDbContext> scope = _scopeProvider.CreateScope();

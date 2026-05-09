@@ -93,6 +93,9 @@ public sealed class AIEvaluatorConfigService : IAIEvaluatorConfigService
     public Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
         => _repository.DeleteAsync(id, cancellationToken);
 
+    public Task SetActiveAsync(Guid id, CancellationToken cancellationToken = default) =>
+        _repository.SetActiveAsync(id, cancellationToken);
+
     // -------------------------------------------------------------------------
     // Validation helpers
     // -------------------------------------------------------------------------

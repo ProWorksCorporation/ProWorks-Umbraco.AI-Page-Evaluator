@@ -550,13 +550,26 @@ public class PageEvaluatorApiControllerTests
     // ---------------------------------------------------------------------------
 
     [Fact]
+    public async Task ActivateConfigurationAsync_CallsSetActiveAsync_NotUpdateAsync()
+    {
+        var id = Guid.NewGuid();
+        var config = BuildConfig("blogPost");
+        _configService.GetByIdAsync(id, Arg.Any<CancellationToken>()).Returns(config);
+        _configService.SetActiveAsync(id, Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+
+        await _sut.ActivateConfigurationAsync(id);
+
+        await _configService.Received(1).SetActiveAsync(id, Arg.Any<CancellationToken>());
+        await _configService.DidNotReceive().UpdateAsync(Arg.Any<AIEvaluatorConfig>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task ActivateConfigurationAsync_WhenExists_Returns200AndInvalidatesCache()
     {
         var id = Guid.NewGuid();
         var config = BuildConfig("blogPost");
         _configService.GetByIdAsync(id, Arg.Any<CancellationToken>()).Returns(config);
-        _configService.UpdateAsync(Arg.Any<AIEvaluatorConfig>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>())
-            .Returns(config);
+        _configService.SetActiveAsync(id, Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
 
         IActionResult result = await _sut.ActivateConfigurationAsync(id);
 
@@ -572,15 +585,11 @@ public class PageEvaluatorApiControllerTests
         var config = BuildConfig("blogPost");
         config.IsActive = false; // simulate an inactive config
         _configService.GetByIdAsync(id, Arg.Any<CancellationToken>()).Returns(config);
-        _configService.UpdateAsync(Arg.Any<AIEvaluatorConfig>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>())
-            .Returns(config);
+        _configService.SetActiveAsync(id, Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
 
         await _sut.ActivateConfigurationAsync(id);
 
-        await _configService.Received(1).UpdateAsync(
-            Arg.Is<AIEvaluatorConfig>(c => c.IsActive),
-            Arg.Any<Guid>(),
-            Arg.Any<CancellationToken>());
+        await _configService.Received(1).SetActiveAsync(id, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -610,7 +619,7 @@ public class PageEvaluatorApiControllerTests
         };
 
         _configService.GetByIdAsync(id, Arg.Any<CancellationToken>()).Returns(existing);
-        _configService.UpdateAsync(Arg.Any<AIEvaluatorConfig>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+        _configService.SetActiveAsync(id, Arg.Any<CancellationToken>())
             .ThrowsAsync(new DbUpdateConcurrencyException("Concurrency conflict."));
 
         IActionResult result = await _sut.ActivateConfigurationAsync(id);

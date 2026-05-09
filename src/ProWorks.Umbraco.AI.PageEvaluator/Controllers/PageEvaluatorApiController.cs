@@ -192,9 +192,11 @@ public sealed class PageEvaluatorApiController : ControllerBase
 
         try
         {
-            existing.IsActive = true;
-            AIEvaluatorConfig updated = await _configService.UpdateAsync(existing, GetCurrentUserKey(), cancellationToken);
-            await _cacheRepository.DeleteByDocumentTypeAliasAsync(updated.DocumentTypeAlias, cancellationToken);
+            await _configService.SetActiveAsync(id, cancellationToken);
+            await _cacheRepository.DeleteByDocumentTypeAliasAsync(existing.DocumentTypeAlias, cancellationToken);
+            AIEvaluatorConfig? updated = await _configService.GetByIdAsync(id, cancellationToken);
+            if (updated is null)
+                return NotFound(new { title = $"Evaluator configuration '{id}' not found after activation." });
             return Ok(await ToResponseAsync(updated, cancellationToken));
         }
         catch (DbUpdateConcurrencyException)

@@ -299,6 +299,20 @@ public class AIEvaluatorConfigServiceTests
     }
 
     // -------------------------------------------------------------------------
+    // SetActiveAsync
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task SetActiveAsync_CallsRepositorySetActiveAsync()
+    {
+        var id = Guid.NewGuid();
+
+        await _sut.SetActiveAsync(id);
+
+        await _repository.Received(1).SetActiveAsync(id, Arg.Any<CancellationToken>());
+    }
+
+    // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
 
