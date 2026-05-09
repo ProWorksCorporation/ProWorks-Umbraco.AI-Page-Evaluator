@@ -187,6 +187,7 @@ export class EvaluatorFormElement extends UmbLitElement {
   }
 
   private _resetFields(): void {
+    this._loadError = null;
     this._name = '';
     this._description = '';
     this._documentTypeAlias = '';
