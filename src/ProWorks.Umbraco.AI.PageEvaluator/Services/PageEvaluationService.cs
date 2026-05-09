@@ -464,9 +464,13 @@ public sealed partial class PageEvaluationService : IPageEvaluationService
             if (score is null && checks.Count == 0)
                 return null;
 
-            int passCount = score?.Passed ?? checks.Count(c => c.Status == CheckStatus.Pass);
-            int totalCount = score?.Total ?? checks.Count;
-            EvaluationScore finalScore = new(passCount, totalCount);
+            // If the AI returned total:0, treat it as absent and fall back to checks.Count.
+            int totalCount = (score?.Total > 0 ? (int?)score.Total : null) ?? checks.Count;
+            int passCount = (score?.Total > 0 ? (int?)score.Passed : null) ?? checks.Count(c => c.Status == CheckStatus.Pass);
+            EvaluationScore? finalScore = totalCount > 0 ? new EvaluationScore(passCount, totalCount) : null;
+
+            if (finalScore is null && checks.Count == 0)
+                return null;
 
             return EvaluationReport.Parsed(finalScore, checks, suggestions, overallScore, axisScores);
         }

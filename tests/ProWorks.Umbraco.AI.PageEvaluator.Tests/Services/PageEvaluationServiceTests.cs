@@ -715,6 +715,57 @@ public class PageEvaluationServiceTests
     }
 
     // ---------------------------------------------------------------------------
+    // Issue 5: Zero-total EvaluationScore guard
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public async Task EvaluateAsync_WhenAiReturnsZeroTotalScore_UsesFallbackCheckCount()
+    {
+        const string documentTypeAlias = "blogPost";
+        _configService.GetActiveForDocumentTypeAsync(documentTypeAlias, Arg.Any<CancellationToken>())
+            .Returns(BuildConfig(documentTypeAlias));
+
+        // AI returns score:{passed:0,total:0} but has real checks — total should fall back to checks.Count
+        MockChatResponse("""
+            {
+              "score": { "passed": 0, "total": 0 },
+              "checks": [
+                { "checkNumber": 1, "status": "Pass", "label": "Title" },
+                { "checkNumber": 2, "status": "Fail", "label": "Meta", "explanation": "Missing." }
+              ],
+              "suggestions": null
+            }
+            """);
+
+        EvaluationReport report = await _sut.EvaluateAsync(Guid.NewGuid(), documentTypeAlias, new Dictionary<string, object?>());
+
+        Assert.NotNull(report.Score);
+        Assert.Equal(2, report.Score!.Total);  // falls back to checks.Count
+        Assert.Equal(1, report.Score.Passed);  // counts actual Pass statuses
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_WhenAiReturnsZeroTotalAndNoChecks_ScoreIsNull()
+    {
+        const string documentTypeAlias = "blogPost";
+        _configService.GetActiveForDocumentTypeAsync(documentTypeAlias, Arg.Any<CancellationToken>())
+            .Returns(BuildConfig(documentTypeAlias));
+
+        MockChatResponse("""
+            {
+              "score": { "passed": 0, "total": 0 },
+              "checks": [],
+              "suggestions": null
+            }
+            """);
+
+        EvaluationReport report = await _sut.EvaluateAsync(Guid.NewGuid(), documentTypeAlias, new Dictionary<string, object?>());
+
+        // Empty result with zero total: either parse fails entirely or score is null
+        Assert.True(report.ParseFailed || report.Score is null);
+    }
+
+    // ---------------------------------------------------------------------------
     // Helpers
     // ---------------------------------------------------------------------------
 

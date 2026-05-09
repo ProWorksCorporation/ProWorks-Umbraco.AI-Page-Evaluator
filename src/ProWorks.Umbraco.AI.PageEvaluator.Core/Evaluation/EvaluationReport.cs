@@ -50,7 +50,7 @@ public sealed class EvaluationReport
 
     /// <summary>Creates a successfully parsed report.</summary>
     public static EvaluationReport Parsed(
-        EvaluationScore score,
+        EvaluationScore? score,
         IReadOnlyList<CheckResult> checks,
         string? suggestions,
         double? overallScore = null,
