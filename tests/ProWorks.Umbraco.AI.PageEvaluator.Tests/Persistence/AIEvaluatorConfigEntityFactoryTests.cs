@@ -104,4 +104,119 @@ public class AIEvaluatorConfigEntityFactoryTests
 
         Assert.Equal(8, entity.Version);  // domain.Version (7) + 1 = 8
     }
+
+    // ---------------------------------------------------------------------------
+    // PropertyAliases serialization round-trip
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public void ToEntity_SerializesPropertyAliasesToJson()
+    {
+        var domain = new AIEvaluatorConfig
+        {
+            Id = Guid.NewGuid(),
+            Name = "Test",
+            DocumentTypeAlias = "homePage",
+            ProfileId = Guid.NewGuid(),
+            PromptText = "Evaluate.",
+            PropertyAliases = ["title", "bodyText"],
+        };
+
+        var entity = AIEvaluatorConfigEntityFactory.ToEntity(domain);
+
+        Assert.Equal("""["title","bodyText"]""", entity.PropertyAliases);
+    }
+
+    [Fact]
+    public void ToEntity_WhenPropertyAliasesIsEmpty_StoresNull()
+    {
+        var domain = new AIEvaluatorConfig
+        {
+            Id = Guid.NewGuid(),
+            Name = "Test",
+            DocumentTypeAlias = "homePage",
+            ProfileId = Guid.NewGuid(),
+            PromptText = "Evaluate.",
+            PropertyAliases = [],
+        };
+
+        var entity = AIEvaluatorConfigEntityFactory.ToEntity(domain);
+
+        Assert.Null(entity.PropertyAliases);
+    }
+
+    [Fact]
+    public void ToEntity_WhenPropertyAliasesIsNull_StoresNull()
+    {
+        var domain = new AIEvaluatorConfig
+        {
+            Id = Guid.NewGuid(),
+            Name = "Test",
+            DocumentTypeAlias = "homePage",
+            ProfileId = Guid.NewGuid(),
+            PromptText = "Evaluate.",
+            PropertyAliases = null,
+        };
+
+        var entity = AIEvaluatorConfigEntityFactory.ToEntity(domain);
+
+        Assert.Null(entity.PropertyAliases);
+    }
+
+    [Fact]
+    public void ToDomain_DeserializesPropertyAliasesFromJson()
+    {
+        var entity = new AIEvaluatorConfigEntity
+        {
+            Id = Guid.NewGuid(),
+            Name = "Test",
+            DocumentTypeAlias = "homePage",
+            ProfileId = Guid.NewGuid(),
+            PromptText = "Evaluate.",
+            PropertyAliases = """["alpha","beta"]""",
+        };
+
+        var domain = AIEvaluatorConfigEntityFactory.ToDomain(entity);
+
+        Assert.NotNull(domain.PropertyAliases);
+        Assert.Equal(2, domain.PropertyAliases!.Count);
+        Assert.Equal("alpha", domain.PropertyAliases[0]);
+        Assert.Equal("beta", domain.PropertyAliases[1]);
+    }
+
+    [Fact]
+    public void ToDomain_WhenPropertyAliasesIsNull_ReturnsNull()
+    {
+        var entity = new AIEvaluatorConfigEntity
+        {
+            Id = Guid.NewGuid(),
+            Name = "Test",
+            DocumentTypeAlias = "homePage",
+            ProfileId = Guid.NewGuid(),
+            PromptText = "Evaluate.",
+            PropertyAliases = null,
+        };
+
+        var domain = AIEvaluatorConfigEntityFactory.ToDomain(entity);
+
+        Assert.Null(domain.PropertyAliases);
+    }
+
+    [Fact]
+    public void ToDomain_WhenPropertyAliasesJsonIsMalformed_ReturnsNull()
+    {
+        var entity = new AIEvaluatorConfigEntity
+        {
+            Id = Guid.NewGuid(),
+            Name = "Test",
+            DocumentTypeAlias = "homePage",
+            ProfileId = Guid.NewGuid(),
+            PromptText = "Evaluate.",
+            PropertyAliases = "not-valid-json!!!",
+        };
+
+        var domain = AIEvaluatorConfigEntityFactory.ToDomain(entity);
+
+        Assert.Null(domain.PropertyAliases);
+    }
 }
