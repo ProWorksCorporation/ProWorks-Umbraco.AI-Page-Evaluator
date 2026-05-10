@@ -49,7 +49,7 @@ export class EvaluatorFormElement extends UmbLitElement {
 
   // Document type picker state
   @state() private _docTypeDisplayName = '';
-  @state() private _docTypeSuggestions: Array<{ id: string; name: string }> = [];
+  @state() private _docTypeSuggestions: Array<{ id: string; name: string; alias?: string }> = [];
   @state() private _docTypeShowSuggestions = false;
   private _docTypeSearchTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -262,7 +262,7 @@ export class EvaluatorFormElement extends UmbLitElement {
         query: { query, isElement: false, skip: 0, take: 20 },
       });
       if (result.response.ok && result.data) {
-        const data = result.data as { items: Array<{ id: string; name: string }> };
+        const data = result.data as { items: Array<{ id: string; name: string; alias?: string }> };
         this._docTypeSuggestions = data.items;
         this._docTypeShowSuggestions = data.items.length > 0;
       }
@@ -445,6 +445,7 @@ export class EvaluatorFormElement extends UmbLitElement {
                     <div class="doc-type-suggestion"
                       @mousedown=${() => void this._selectDocType(s.id, s.name)}>
                       <span>${s.name}</span>
+                      ${s.alias ? html`<span class="doc-type-suggestion-alias">${s.alias}</span>` : nothing}
                     </div>
                   `)}
                 </div>

@@ -1,6 +1,6 @@
 import { property as m, state as a, customElement as f, html as o, nothing as n, css as x } from "@umbraco-cms/backoffice/external/lit";
 import { UmbLitElement as v } from "@umbraco-cms/backoffice/lit-element";
-import { f as b, c as $, h as g, B as y, u as T, i as C } from "./entry-point-fLh_l9_K.js";
+import { f as b, c as $, h as g, B as y, u as T, i as C } from "./entry-point-CTsA956V.js";
 const _ = [
   {
     id: "required-fields",
@@ -403,6 +403,7 @@ let s = class extends v {
                     <div class="doc-type-suggestion"
                       @mousedown=${() => void this._selectDocType(e.id, e.name)}>
                       <span>${e.name}</span>
+                      ${e.alias ? o`<span class="doc-type-suggestion-alias">${e.alias}</span>` : n}
                     </div>
                   `)}
                 </div>
@@ -733,4 +734,4 @@ s = p([
 export {
   s as EvaluatorFormElement
 };
-//# sourceMappingURL=evaluator-form.element-Bw9v9xf5.js.map
+//# sourceMappingURL=evaluator-form.element-JMRyNoT7.js.map
