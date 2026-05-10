@@ -4,6 +4,7 @@ import {
   apiClient,
   BEARER,
   createConfiguration,
+  fetchDocTypeProperties,
   getConfiguration,
   updateConfiguration,
 } from '../shared/api-client.js';
@@ -219,27 +220,23 @@ export class EvaluatorFormElement extends UmbLitElement {
       this._version = config.version;
       this._propertyAliases = config.propertyAliases ?? [];
       this._errors = {};
-      void this._resolveDocTypeName(config.documentTypeAlias);
-      void this._loadAvailableProperties(config.documentTypeAlias);
+      void this._loadDocTypeInfo(config.documentTypeAlias);
     } catch {
       this._loadError = this.localize.term('evaluatorConfig_formLoadError');
     }
   }
 
-  private async _resolveDocTypeName(alias: string): Promise<void> {
+  private async _loadDocTypeInfo(alias: string): Promise<void> {
+    this._availableProperties = [];
     try {
-      const result = await apiClient.get({
-        security: BEARER,
-        url: `/umbraco/management/api/v1/page-evaluator/document-type/${encodeURIComponent(alias)}/properties`,
-      });
-      if (result.response.ok && result.data) {
-        const detail = result.data as { name: string };
-        this._docTypeDisplayName = detail.name;
-      } else {
-        this._docTypeDisplayName = alias;
+      const info = await fetchDocTypeProperties(alias);
+      this._docTypeDisplayName = info.name;
+      this._availableProperties = info.properties;
+      if (this._propertyAliases.length === 0 && info.properties.length > 0) {
+        this._propertyAliases = info.properties.map((p) => p.alias);
       }
     } catch {
-      this._docTypeDisplayName = alias;
+      // Non-critical — the checkbox list simply won't appear
     }
   }
 
@@ -283,33 +280,13 @@ export class EvaluatorFormElement extends UmbLitElement {
         url: `/umbraco/management/api/v1/document-type/${encodeURIComponent(id)}`,
       });
       if (result.response.ok && result.data) {
-        const detail = result.data as { alias: string; name: string };
+        const detail = result.data as { alias: string };
         this._documentTypeAlias = detail.alias;
-        this._docTypeDisplayName = detail.name;
         this._propertyAliases = [];
-        void this._loadAvailableProperties(detail.alias);
+        void this._loadDocTypeInfo(detail.alias);
       }
     } catch {
       this._errors = { ...this._errors, documentTypeAlias: this.localize.term('evaluatorConfig_documentTypeAliasError') };
-    }
-  }
-
-  private async _loadAvailableProperties(alias: string): Promise<void> {
-    this._availableProperties = [];
-    try {
-      const result = await apiClient.get({
-        security: BEARER,
-        url: `/umbraco/management/api/v1/page-evaluator/document-type/${encodeURIComponent(alias)}/properties`,
-      });
-      if (result.response.ok && result.data) {
-        const data = result.data as { properties: DocumentTypePropertySummary[] };
-        this._availableProperties = data.properties ?? [];
-        if (this._propertyAliases.length === 0 && this._availableProperties.length > 0) {
-          this._propertyAliases = this._availableProperties.map(p => p.alias);
-        }
-      }
-    } catch {
-      // Non-critical — the checkbox list simply won't appear
     }
   }
 

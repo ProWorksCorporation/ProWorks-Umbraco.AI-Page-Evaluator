@@ -44,6 +44,7 @@ const e = {
     deleteButton: "Delete",
     emptyState: "No evaluator configurations found. Create one to get started.",
     loadError: "Failed to load evaluator configurations.",
+    formLoadError: "Failed to load the evaluator configuration.",
     activateError: "Failed to activate the evaluator configuration.",
     deleteError: "Failed to delete the evaluator configuration.",
     tableHeaderName: "Name",
@@ -121,4 +122,4 @@ const e = {
 export {
   e as default
 };
-//# sourceMappingURL=en-yq2kTCma.js.map
+//# sourceMappingURL=en-DdA0pv8A.js.map

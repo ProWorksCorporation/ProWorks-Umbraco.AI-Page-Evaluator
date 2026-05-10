@@ -14,6 +14,7 @@
 import { umbHttpClient } from '@umbraco-cms/backoffice/http-client';
 import type {
   CreateEvaluatorConfigRequest,
+  DocumentTypePropertySummary,
   EvaluatePageRequest,
   EvaluationReportResponse,
   EvaluatorConfigItem,
@@ -144,4 +145,39 @@ export async function evaluatePage(
     body: request,
   });
   return checkResult<EvaluationReportResponse>(result);
+}
+
+// ---------------------------------------------------------------------------
+// Document type properties endpoint
+// ---------------------------------------------------------------------------
+
+export interface DocumentTypeInfo {
+  readonly name: string;
+  readonly properties: DocumentTypePropertySummary[];
+}
+
+export async function fetchDocTypeProperties(
+  documentTypeAlias: string,
+): Promise<DocumentTypeInfo> {
+  const result = await apiClient.get({
+    security: BEARER,
+    url: `${BASE}/document-type/${encodeURIComponent(documentTypeAlias)}/properties`,
+  });
+  if (!result.response.ok) {
+    const text = await result.response.text().catch(() => '');
+    throw new Error(`API ${result.response.status}: ${text}`);
+  }
+  const data = result.data as {
+    name: string;
+    properties: readonly { alias: string; label: string; groupName: string; editorAlias: string }[];
+  };
+  return {
+    name: data.name,
+    properties: data.properties.map((p) => ({
+      alias: p.alias,
+      label: p.label,
+      groupName: p.groupName,
+      editorAlias: p.editorAlias,
+    })),
+  };
 }

@@ -1,7 +1,7 @@
 import "@umbraco-cms/backoffice/extension-registry";
-import { o as i, i as r } from "./entry-point-CgVcqeqs.js";
+import { o as r, j as t } from "./entry-point-DCi9B2SL.js";
 export {
-  i as onInit,
-  r as onUnload
+  r as onInit,
+  t as onUnload
 };
 //# sourceMappingURL=entry-point.js.map

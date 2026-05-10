@@ -2,51 +2,7 @@ import { customElement, property, state, html, nothing, type TemplateResult } fr
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { CHECKLIST_CATEGORIES } from './checklist-categories.js';
 import type { DocumentTypePropertySummary } from '../shared/types.js';
-import { apiClient, BEARER } from '../shared/api-client.js';
-
-// ---------------------------------------------------------------------------
-// Umbraco Management API helper (exported for MSW integration tests — T054)
-// ---------------------------------------------------------------------------
-
-interface UmbracoDocTypeProperty {
-  readonly alias: string;
-  readonly label: string;
-  readonly groupName: string;
-  readonly editorAlias: string;
-}
-
-interface UmbracoDocTypeResponse {
-  readonly alias: string;
-  readonly name: string;
-  readonly properties: readonly UmbracoDocTypeProperty[];
-}
-
-/**
- * Fetches document type properties from the Umbraco Management API.
- * Exported so integration tests (T054) can exercise the fetch logic directly.
- */
-export async function fetchDocTypeProperties(
-  documentTypeAlias: string,
-): Promise<DocumentTypePropertySummary[]> {
-  const result = await apiClient.get({
-    security: BEARER,
-    url: `/umbraco/management/api/v1/page-evaluator/document-type/${encodeURIComponent(documentTypeAlias)}/properties`,
-  });
-
-  if (!result.response.ok) {
-    const text = await result.response.text().catch(() => '');
-    throw new Error(`API ${result.response.status}: ${text}`);
-  }
-
-  const data = result.data as UmbracoDocTypeResponse;
-
-  return data.properties.map((p) => ({
-    alias: p.alias,
-    label: p.label,
-    groupName: p.groupName,
-    editorAlias: p.editorAlias,
-  }));
-}
+import { fetchDocTypeProperties } from '../shared/api-client.js';
 
 // ---------------------------------------------------------------------------
 // Prompt Builder Lit element
@@ -108,7 +64,7 @@ export class PromptBuilderElement extends UmbLitElement {
     this._loading = true;
     this._error = null;
     try {
-      this._properties = await fetchDocTypeProperties(this.documentTypeAlias);
+      this._properties = (await fetchDocTypeProperties(this.documentTypeAlias)).properties;
     } catch {
       this._error = this.localize.term('promptBuilder_loadError');
     } finally {
