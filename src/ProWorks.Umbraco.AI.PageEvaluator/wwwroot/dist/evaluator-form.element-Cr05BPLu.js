@@ -1,6 +1,6 @@
 import { property as m, state as a, customElement as f, html as o, nothing as n, css as x } from "@umbraco-cms/backoffice/external/lit";
 import { UmbLitElement as v } from "@umbraco-cms/backoffice/lit-element";
-import { f as b, c as $, h as g, B as y, u as T, i as C } from "./entry-point-DCi9B2SL.js";
+import { f as b, c as $, h as g, B as y, u as T, i as C } from "./entry-point-Caz_xmLh.js";
 const _ = [
   {
     id: "required-fields",
@@ -224,6 +224,7 @@ let s = class extends v {
       const t = await b(e);
       this._docTypeDisplayName = t.name, this._availableProperties = t.properties, this._propertyAliases.length === 0 && t.properties.length > 0 && (this._propertyAliases = t.properties.map((i) => i.alias));
     } catch {
+      this._docTypeDisplayName || (this._docTypeDisplayName = e);
     }
   }
   _onDocTypeInput(e) {
@@ -732,4 +733,4 @@ s = p([
 export {
   s as EvaluatorFormElement
 };
-//# sourceMappingURL=evaluator-form.element-BSN5xx81.js.map
+//# sourceMappingURL=evaluator-form.element-Cr05BPLu.js.map

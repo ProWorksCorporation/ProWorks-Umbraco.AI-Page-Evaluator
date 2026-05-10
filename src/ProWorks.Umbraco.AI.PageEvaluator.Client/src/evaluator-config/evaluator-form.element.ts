@@ -236,6 +236,7 @@ export class EvaluatorFormElement extends UmbLitElement {
         this._propertyAliases = info.properties.map((p) => p.alias);
       }
     } catch {
+      if (!this._docTypeDisplayName) this._docTypeDisplayName = alias;
       // Non-critical — the checkbox list simply won't appear
     }
   }
