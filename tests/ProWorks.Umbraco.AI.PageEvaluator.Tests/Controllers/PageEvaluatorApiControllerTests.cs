@@ -55,6 +55,10 @@ public class PageEvaluatorApiControllerTests
         {
             HttpContext = new DefaultHttpContext(),
         };
+        var identity = new ClaimsIdentity(
+            [new Claim("sub", Guid.NewGuid().ToString())],
+            "test");
+        _sut.ControllerContext.HttpContext.User = new ClaimsPrincipal(identity);
     }
 
     // ---------------------------------------------------------------------------

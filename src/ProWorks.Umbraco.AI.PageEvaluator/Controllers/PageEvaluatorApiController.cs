@@ -400,7 +400,8 @@ public sealed class PageEvaluatorApiController : ControllerBase
     // ---------------------------------------------------------------------------
 
     private Guid GetCurrentUserKey()
-        => HttpContext.User.Identity?.GetUserKey() ?? Guid.Empty;
+        => HttpContext.User.Identity?.GetUserKey()
+            ?? throw new InvalidOperationException("Authenticated user key not found on the current request.");
 
     private async Task<EvaluatorConfigResponse> ToResponseAsync(
         AIEvaluatorConfig config,
