@@ -71,4 +71,37 @@ public class AIEvaluatorConfigEntityFactoryTests
 
         Assert.False(entity.ScoringEnabled);
     }
+
+    [Fact]
+    public void ApplyToEntity_IncrementsVersionByOne()
+    {
+        var entity = BuildEntity(scoringEnabled: false);   // Version = 1
+        var domain = BuildDomain(scoringEnabled: false);   // Version = 1
+
+        AIEvaluatorConfigEntityFactory.ApplyToEntity(domain, entity);
+
+        Assert.Equal(2, entity.Version);  // domain.Version (1) + 1 = 2
+    }
+
+    [Fact]
+    public void ApplyToEntity_VersionIsAlwaysDomainVersionPlusOne()
+    {
+        var entity = BuildEntity(scoringEnabled: false);
+        entity.Version = 5;
+
+        var domain = new AIEvaluatorConfig
+        {
+            Id = Guid.NewGuid(),
+            Name = "Test",
+            DocumentTypeAlias = "homePage",
+            ProfileId = Guid.NewGuid(),
+            PromptText = "Evaluate this page.",
+            ScoringEnabled = false,
+            Version = 7,
+        };
+
+        AIEvaluatorConfigEntityFactory.ApplyToEntity(domain, entity);
+
+        Assert.Equal(8, entity.Version);  // domain.Version (7) + 1 = 8
+    }
 }
