@@ -3,13 +3,13 @@
 Last updated: 2026-05-09 (rev 7)
 
 ## Active Technologies
-- C# .NET 10, TypeScript 5.x (strict: true) + Umbraco CMS 17.2.2, Umbraco.AI 1.8.0 (Anthropic 1.3.0, OpenAI 1.2.0), EF Core 10.0.2, Microsoft.Extensions.AI 10.3.0, Lit 3.x via @umbraco-cms/backoffice/external/lit
+- C# .NET 10, TypeScript 5.x (strict: true) + Umbraco CMS 17.2.2, Umbraco.AI 1.8.0 (Anthropic 1.3.0, OpenAI 1.2.0), EF Core 10.0.4, Microsoft.Extensions.AI 10.3.0, Lit 3.x via @umbraco-cms/backoffice/external/lit
 - SQLite (dev), SQL Server (prod) via EF Core; evaluation cache in `umbracoAIEvaluationCache` table
-- C# .NET 10 (server) + TypeScript 5.x `strict: true, noUncheckedIndexedAccess: true` (client) + Umbraco CMS 17.2.2; Umbraco.AI 1.8.0 (Anthropic 1.3.0, OpenAI 1.2.0); EF Core 10.0.2; Microsoft.Extensions.AI 10.3.0 (pinned); Lit 3.x via `@umbraco-cms/backoffice/external/lit`; UUI components (`uui-toggle`, `uui-badge`) (feature/scoring)
+- C# .NET 10 (server) + TypeScript 5.x `strict: true, noUncheckedIndexedAccess: true` (client) + Umbraco CMS 17.2.2; Umbraco.AI 1.8.0 (Anthropic 1.3.0, OpenAI 1.2.0); EF Core 10.0.4; Microsoft.Extensions.AI 10.3.0 (pinned); Lit 3.x via `@umbraco-cms/backoffice/external/lit`; UUI components (`uui-toggle`, `uui-badge`) (feature/scoring)
 - SQLite (dev) / SQL Server (prod) via separate EF Core migration projects. New column `ScoringEnabled bit NOT NULL DEFAULT 0` on `umbracoAIEvaluatorConfig`. Cache table (`umbracoAIEvaluationCache`) unchanged structurally; existing rows remain valid. (feature/scoring)
 
 - **Client**: TypeScript 5.x `strict: true`, Vite build, Lit web components
-- **Server**: C# .NET 10, Umbraco CMS 17.2.2, EF Core 10.0.2
+- **Server**: C# .NET 10, Umbraco CMS 17.2.2, EF Core 10.0.4
 - **AI**: Umbraco.AI 1.8.0 ecosystem (Anthropic 1.3.0, OpenAI 1.2.0, Prompt 1.7.0, Agent 1.7.0, Agent.Copilot 1.0.0-alpha6)
 - **Database**: SQLite (dev), SQL Server (prod) via separate EF Core migration projects
 - **Content sync**: uSync 17.0.4
