@@ -990,4 +990,76 @@ public class PageEvaluatorApiControllerTests
         var attr = method!.GetCustomAttribute<RequestSizeLimitAttribute>();
         Assert.NotNull(attr);
     }
+
+    // ---------------------------------------------------------------------------
+    // GET /document-type/{alias}/properties
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public void GetDocumentTypeProperties_WhenAliasExists_Returns200WithMappedProperties()
+    {
+        const string alias = "blogPost";
+        var contentType = Substitute.For<IContentType>();
+        contentType.Alias.Returns(alias);
+        contentType.Name.Returns("Blog Post");
+
+        var prop = Substitute.For<IPropertyType>();
+        prop.Alias.Returns("pageTitle");
+        prop.Name.Returns("Page Title");
+        prop.PropertyEditorAlias.Returns("Umbraco.TextBox");
+
+        contentType.CompositionPropertyTypes.Returns(new[] { prop });
+        contentType.CompositionPropertyGroups.Returns(Enumerable.Empty<PropertyGroup>());
+
+        _contentTypeService.Get(alias).Returns(contentType);
+
+        IActionResult result = _sut.GetDocumentTypeProperties(alias);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        Assert.NotNull(ok.Value);
+        var type = ok.Value!.GetType();
+        Assert.Equal(alias, (string)type.GetProperty("alias")!.GetValue(ok.Value)!);
+        Assert.Equal("Blog Post", (string)type.GetProperty("name")!.GetValue(ok.Value)!);
+    }
+
+    [Fact]
+    public void GetDocumentTypeProperties_WhenAliasNotFound_Returns404()
+    {
+        _contentTypeService.Get("unknown").Returns((IContentType?)null);
+
+        IActionResult result = _sut.GetDocumentTypeProperties("unknown");
+
+        Assert.IsType<NotFoundObjectResult>(result);
+    }
+
+    [Fact]
+    public void GetDocumentTypeProperties_WhenPropertyNameIsNull_FallsBackToAlias()
+    {
+        const string alias = "article";
+        var contentType = Substitute.For<IContentType>();
+        contentType.Alias.Returns(alias);
+        contentType.Name.Returns("Article");
+
+        var prop = Substitute.For<IPropertyType>();
+        prop.Alias.Returns("bodyText");
+        prop.Name.Returns((string?)null);
+        prop.PropertyEditorAlias.Returns("Umbraco.TinyMCE");
+
+        contentType.CompositionPropertyTypes.Returns(new[] { prop });
+        contentType.CompositionPropertyGroups.Returns(Enumerable.Empty<PropertyGroup>());
+
+        _contentTypeService.Get(alias).Returns(contentType);
+
+        IActionResult result = _sut.GetDocumentTypeProperties(alias);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        Assert.NotNull(ok.Value);
+
+        var propertiesValue = ok.Value!.GetType().GetProperty("properties")!.GetValue(ok.Value)!;
+        var propertiesList = ((IEnumerable<object>)propertiesValue).ToList();
+        Assert.Single(propertiesList);
+        var firstProp = propertiesList[0];
+        var label = (string)firstProp.GetType().GetProperty("label")!.GetValue(firstProp)!;
+        Assert.Equal("bodyText", label);
+    }
 }
