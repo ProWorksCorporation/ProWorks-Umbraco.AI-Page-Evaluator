@@ -1,6 +1,6 @@
 ﻿# ProWorks-Umbraco-AI-Page-Evaluator Development Guidelines
 
-Last updated: 2026-05-09 (rev 7)
+Last updated: 2026-05-10 (rev 8)
 
 ## Active Technologies
 - C# .NET 10, TypeScript 5.x (strict: true) + Umbraco CMS 17.2.2, Umbraco.AI 1.8.0 (Anthropic 1.3.0, OpenAI 1.2.0), EF Core 10.0.4, Microsoft.Extensions.AI 10.3.0, Lit 3.x via @umbraco-cms/backoffice/external/lit
@@ -171,7 +171,7 @@ dotnet ef migrations add <Name> \
 - Evaluate endpoint has `[EnableRateLimiting("PageEvaluatorEvaluate")]` and `[RequestSizeLimit(1 * 1024 * 1024)]`
 - `GET /evaluate/cached/{nodeId}` and `POST /evaluate` both verify content node existence (`IContentService.GetById(Guid)`) and Browse permission (`IAuthorizationService.AuthorizeAsync` with `ContentPermissionResource.WithKeys(ActionBrowse.ActionLetter, nodeId)` + `AuthorizationPolicies.ContentPermissionByResource`) — returns 404 if node not found, 403 if unauthorized
 - `POST /evaluate` uses the canonical `DocumentTypeAlias` from the content node (`content.ContentType.Alias`), not the client-supplied value
-- `GetCurrentUserKey()` uses `HttpContext.User.Identity?.GetUserKey()` (from `Umbraco.Extensions`)
+- `GetCurrentUserKey()` uses `HttpContext.User.Identity?.GetUserKey()` (from `Umbraco.Extensions`) — throws `InvalidOperationException` if the identity is missing (all controller actions that call it are protected by `[Authorize]`, so this is an unexpected edge case). In controller unit tests, inject `new Claim("sub", Guid.NewGuid().ToString())` into the `HttpContext.User` — `GetUserKey()` reads the `"sub"` claim (`Constants.Security.OpenIdDictSubClaimType`)
 - **Activation uses `SetActiveAsync`** (`IAIEvaluatorConfigService.SetActiveAsync(id, ct)`) — **never** route activation through `UpdateAsync`. `SetActiveAsync` only toggles the `IsActive` flag and does not bump `Version` or `DateModified`, which is intentional (toggling active is an administrative action, not a content change)
 
 ### Rate Limiter Registration
