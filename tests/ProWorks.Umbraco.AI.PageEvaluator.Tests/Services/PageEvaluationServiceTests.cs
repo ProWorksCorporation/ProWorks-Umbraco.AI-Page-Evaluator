@@ -9,6 +9,9 @@ using Umbraco.AI.Core.Chat;
 using Umbraco.AI.Core.Contexts;
 using Umbraco.AI.Core.InlineChat;
 using Umbraco.Cms.Core.DeliveryApi;
+using Umbraco.Cms.Core.Models.DeliveryApi;
+using Umbraco.Cms.Core.Models.PublishedContent;
+using Umbraco.Cms.Core.PublishedCache;
 using Umbraco.Cms.Core.Web;
 using Xunit;
 
@@ -1117,6 +1120,100 @@ public class PageEvaluationServiceTests
         Assert.Single(report.AxisScores!);
         Assert.Equal("Tone", report.AxisScores![0].Name);
         Assert.Equal(4, report.AxisScores[0].Score);
+    }
+
+    // ---------------------------------------------------------------------------
+    // ResolveProperties: published cache paths (Task 9)
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public async Task EvaluateAsync_WhenPublishedContextAvailable_CallsApiContentBuilder()
+    {
+        // Fresh doubles for this test — class-level stub returns false for TryGetUmbracoContext
+        var contextAccessor = Substitute.For<IUmbracoContextAccessor>();
+        var contentBuilder = Substitute.For<IApiContentBuilder>();
+        var configService = Substitute.For<IAIEvaluatorConfigService>();
+        var chatService = Substitute.For<IAIChatService>();
+        var contextService = Substitute.For<IAIContextService>();
+        var contextProcessor = Substitute.For<IAIContextProcessor>();
+        var logger = Substitute.For<ILogger<PageEvaluationService>>();
+
+        const string documentTypeAlias = "blogPost";
+        var nodeId = Guid.NewGuid();
+        configService.GetActiveForDocumentTypeAsync(documentTypeAlias, Arg.Any<CancellationToken>())
+            .Returns(BuildConfig(documentTypeAlias));
+
+        var publishedContent = Substitute.For<IPublishedContent>();
+        var contentCache = Substitute.For<IPublishedContentCache>();
+        contentCache.GetById(nodeId).Returns(publishedContent);
+
+        var ctx = Substitute.For<IUmbracoContext>();
+        ctx.Content.Returns(contentCache);
+
+        contextAccessor
+            .TryGetUmbracoContext(out Arg.Any<IUmbracoContext?>())
+            .ReturnsForAnyArgs(x => { x[0] = ctx; return true; });
+
+        var apiContent = Substitute.For<IApiContent>();
+        apiContent.Properties.Returns(new Dictionary<string, object?> { ["title"] = "Published Title" });
+        contentBuilder.Build(publishedContent).Returns(apiContent);
+
+        chatService.GetChatResponseAsync(
+                Arg.Any<Action<AIChatBuilder>>(),
+                Arg.Any<IEnumerable<ChatMessage>>(),
+                Arg.Any<CancellationToken>())
+            .Returns(new ChatResponse(new ChatMessage(ChatRole.Assistant,
+                """{"score":{"passed":1,"total":1},"checks":[{"checkNumber":1,"status":"Pass","label":"T","explanation":null}],"suggestions":null}""")));
+
+        var sut = new PageEvaluationService(
+            configService, contextService, contextProcessor, chatService, contextAccessor, contentBuilder, logger);
+
+        EvaluationReport report = await sut.EvaluateAsync(nodeId, documentTypeAlias, new Dictionary<string, object?>());
+
+        contentBuilder.Received(1).Build(publishedContent);
+        Assert.False(report.ParseFailed);
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_WhenNodeNotInPublishedCache_DoesNotCallApiContentBuilder()
+    {
+        var contextAccessor = Substitute.For<IUmbracoContextAccessor>();
+        var contentBuilder = Substitute.For<IApiContentBuilder>();
+        var configService = Substitute.For<IAIEvaluatorConfigService>();
+        var chatService = Substitute.For<IAIChatService>();
+        var contextService = Substitute.For<IAIContextService>();
+        var contextProcessor = Substitute.For<IAIContextProcessor>();
+        var logger = Substitute.For<ILogger<PageEvaluationService>>();
+
+        const string documentTypeAlias = "blogPost";
+        var nodeId = Guid.NewGuid();
+        configService.GetActiveForDocumentTypeAsync(documentTypeAlias, Arg.Any<CancellationToken>())
+            .Returns(BuildConfig(documentTypeAlias));
+
+        var contentCache = Substitute.For<IPublishedContentCache>();
+        contentCache.GetById(nodeId).Returns((IPublishedContent?)null);
+
+        var ctx = Substitute.For<IUmbracoContext>();
+        ctx.Content.Returns(contentCache);
+
+        contextAccessor
+            .TryGetUmbracoContext(out Arg.Any<IUmbracoContext?>())
+            .ReturnsForAnyArgs(x => { x[0] = ctx; return true; });
+
+        chatService.GetChatResponseAsync(
+                Arg.Any<Action<AIChatBuilder>>(),
+                Arg.Any<IEnumerable<ChatMessage>>(),
+                Arg.Any<CancellationToken>())
+            .Returns(new ChatResponse(new ChatMessage(ChatRole.Assistant,
+                """{"score":{"passed":1,"total":1},"checks":[{"checkNumber":1,"status":"Pass","label":"T","explanation":null}],"suggestions":null}""")));
+
+        var sut = new PageEvaluationService(
+            configService, contextService, contextProcessor, chatService, contextAccessor, contentBuilder, logger);
+
+        EvaluationReport report = await sut.EvaluateAsync(nodeId, documentTypeAlias, new Dictionary<string, object?>());
+
+        contentBuilder.DidNotReceive().Build(Arg.Any<IPublishedContent>());
+        Assert.False(report.ParseFailed);
     }
 
     [Fact]
