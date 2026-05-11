@@ -135,3 +135,6 @@ CODE_REVIEW*.md
 ExamplePrompts/
 screenshots/
 specs/
+
+# Superpowers AI planning artifacts
+docs/superpowers/
