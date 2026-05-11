@@ -54,7 +54,7 @@ export class EvaluationModalElement extends UmbModalBaseElement<EvaluationModalD
   @state() private _modalState: ModalState = 'idle';
   @state() private _progressKey = '';
   @state() private _report: EvaluationReportResponse | null = null;
-  @state() private _inFlight = false;
+  private _inFlight = false;
 
   override connectedCallback(): void {
     super.connectedCallback();
@@ -91,7 +91,6 @@ export class EvaluationModalElement extends UmbModalBaseElement<EvaluationModalD
     }
 
     try {
-      if (!this.isConnected) return;
       this._modalState = 'loading';
       this._progressKey = PROGRESS_KEYS.sending;
       await this._tick();

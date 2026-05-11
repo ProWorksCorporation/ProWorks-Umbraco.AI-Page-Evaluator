@@ -1,72 +1,72 @@
-import { css as x, property as y, customElement as z, nothing as c, html as i, state as m } from "@umbraco-cms/backoffice/external/lit";
+import { css as b, property as y, customElement as x, nothing as c, html as r, state as z } from "@umbraco-cms/backoffice/external/lit";
 import { UmbModalBaseElement as C } from "@umbraco-cms/backoffice/modal";
-import { g as S, e as F } from "./entry-point-CD9dKpDs.js";
+import { g as S, e as F } from "./entry-point-lzWeVzBE.js";
 import { UmbLitElement as w } from "@umbraco-cms/backoffice/lit-element";
-var E = Object.defineProperty, B = Object.getOwnPropertyDescriptor, P = (e, t, s, r) => {
-  for (var a = r > 1 ? void 0 : r ? B(t, s) : t, n = e.length - 1, l; n >= 0; n--)
-    (l = e[n]) && (a = (r ? l(t, s, a) : l(a)) || a);
-  return r && a && E(t, s, a), a;
+var E = Object.defineProperty, B = Object.getOwnPropertyDescriptor, P = (e, a, s, i) => {
+  for (var t = i > 1 ? void 0 : i ? B(a, s) : a, n = e.length - 1, l; n >= 0; n--)
+    (l = e[n]) && (t = (i ? l(a, s, t) : l(t)) || t);
+  return i && t && E(a, s, t), t;
 };
-let g = class extends w {
+let d = class extends w {
   render() {
     if (!this.report) return c;
-    const { checks: e, suggestions: t, overallScore: s, axisScores: r } = this.report, a = s !== null || r !== null && r.length > 0, n = e.filter((u) => u.status === "Pass").length, l = e.filter((u) => u.status === "Warn").length, o = e.filter((u) => u.status === "Fail").length, $ = e.length, v = e.filter((u) => u.status === "Fail" || u.status === "Warn"), f = e.filter((u) => u.status === "Pass");
-    return i`
-      ${a ? this._renderScoring(s, r) : c}
+    const { checks: e, suggestions: a, overallScore: s, axisScores: i } = this.report, t = s !== null || i !== null && i.length > 0, n = e.filter((u) => u.status === "Pass").length, l = e.filter((u) => u.status === "Warn").length, o = e.filter((u) => u.status === "Fail").length, $ = e.length, m = e.filter((u) => u.status === "Fail" || u.status === "Warn"), v = e.filter((u) => u.status === "Pass");
+    return r`
+      ${t ? this._renderScoring(s, i) : c}
 
-      ${$ > 0 ? i`
+      ${$ > 0 ? r`
             <div class="score-row">
               <span class="score-total">${$} ${this.localize.term("evaluatePage_reportChecks")}</span>
               <span class="score-pill score-pill--pass">
                 <uui-icon name="icon-check"></uui-icon>${n} ${this.localize.term("evaluatePage_reportPassed")}
               </span>
-              ${l > 0 ? i`
+              ${l > 0 ? r`
                 <span class="score-pill score-pill--warn">
                   <uui-icon name="icon-alert"></uui-icon>${l} ${l !== 1 ? this.localize.term("evaluatePage_reportWarnings") : this.localize.term("evaluatePage_reportWarning")}
                 </span>` : c}
-              ${o > 0 ? i`
+              ${o > 0 ? r`
                 <span class="score-pill score-pill--fail">
                   <uui-icon name="icon-wrong"></uui-icon>${o} ${this.localize.term("evaluatePage_reportFailed")}
                 </span>` : c}
             </div>
           ` : c}
 
-      ${t ? i`
+      ${a ? r`
             <uui-box headline=${this.localize.term("evaluatePage_reportSuggestions")} class="suggestions-box">
-              ${this._renderSuggestions(t)}
+              ${this._renderSuggestions(a)}
             </uui-box>
           ` : c}
 
-      ${v.length > 0 ? i`
-            <p class="section-title">${this.localize.term("evaluatePage_reportAttentionItems")} (${v.length})</p>
+      ${m.length > 0 ? r`
+            <p class="section-title">${this.localize.term("evaluatePage_reportAttentionItems")} (${m.length})</p>
             <ul class="check-list">
-              ${v.map((u) => this._renderCheck(u))}
+              ${m.map((u) => this._renderCheck(u))}
             </ul>
           ` : c}
 
-      ${f.length > 0 ? i`
-            <p class="section-title">${this.localize.term("evaluatePage_reportPassingItems")} (${f.length})</p>
+      ${v.length > 0 ? r`
+            <p class="section-title">${this.localize.term("evaluatePage_reportPassingItems")} (${v.length})</p>
             <ul class="check-list">
-              ${f.map((u) => this._renderCheck(u))}
+              ${v.map((u) => this._renderCheck(u))}
             </ul>
           ` : c}
     `;
   }
   _renderSuggestions(e) {
-    const t = j(e);
-    if (t.length === 1)
-      return i`<p style="margin:0; font-size: var(--uui-type-small-size, 0.875rem); line-height: 1.5;">${_(t[0] ?? "")}</p>`;
-    const s = t[0] ?? "", r = s.endsWith(":"), a = r ? t.slice(1) : t;
-    return i`
-      ${r ? i`<p style="margin:0 0 var(--uui-size-space-2, 8px); font-size: var(--uui-type-small-size, 0.875rem); line-height: 1.5;">${_(s)}</p>` : c}
+    const a = j(e);
+    if (a.length === 1)
+      return r`<p style="margin:0; font-size: var(--uui-type-small-size, 0.875rem); line-height: 1.5;">${f(a[0] ?? "")}</p>`;
+    const s = a[0] ?? "", i = s.endsWith(":"), t = i ? a.slice(1) : a;
+    return r`
+      ${i ? r`<p style="margin:0 0 var(--uui-size-space-2, 8px); font-size: var(--uui-type-small-size, 0.875rem); line-height: 1.5;">${f(s)}</p>` : c}
       <ol class="suggestions-list">
-        ${a.map((n) => i`<li>${_(n)}</li>`)}
+        ${t.map((n) => r`<li>${f(n)}</li>`)}
       </ol>
     `;
   }
-  _renderScoring(e, t) {
-    return i`
-      ${e !== null ? i`
+  _renderScoring(e, a) {
+    return r`
+      ${e !== null ? r`
             <div class="overall-score-row">
               <span class="overall-score-label">${this.localize.term("evaluatePage_overallScore")}</span>
               <uui-tag color=${A(e)} look="primary">
@@ -74,29 +74,29 @@ let g = class extends w {
               </uui-tag>
             </div>
           ` : c}
-      ${t && t.length > 0 ? i`
+      ${a && a.length > 0 ? r`
             <div class="axis-scores-section">
               <p class="section-title">${this.localize.term("evaluatePage_axisScores")}</p>
               <ul class="axis-list">
-                ${t.map((s) => this._renderAxis(s))}
+                ${a.map((s) => this._renderAxis(s))}
               </ul>
             </div>
           ` : c}
     `;
   }
   _renderAxis(e) {
-    return i`
+    return r`
       <li class="axis-item">
         <uui-tag color=${R(e.score)} look="primary">${e.score} / 5</uui-tag>
         <div class="axis-body">
           <div class="axis-name">${O(e.name)}</div>
-          ${e.feedback ? i`<div class="axis-feedback">${e.feedback}</div>` : c}
+          ${e.feedback ? r`<div class="axis-feedback">${e.feedback}</div>` : c}
         </div>
       </li>
     `;
   }
   _renderCheck(e) {
-    return i`
+    return r`
       <li class="check-item">
         <uui-icon
           class="check-icon"
@@ -104,13 +104,13 @@ let g = class extends w {
           name="${W(e.status)}"></uui-icon>
         <div class="check-body">
           <div class="check-label">${e.label}</div>
-          ${e.explanation ? i`<div class="check-explanation">${e.explanation}</div>` : c}
+          ${e.explanation ? r`<div class="check-explanation">${e.explanation}</div>` : c}
         </div>
       </li>
     `;
   }
 };
-g.styles = x`
+d.styles = b`
     :host {
       display: block;
       padding: var(--uui-size-space-4, 16px);
@@ -284,12 +284,12 @@ g.styles = x`
   `;
 P([
   y({ attribute: !1 })
-], g.prototype, "report", 2);
-g = P([
-  z("page-evaluator-report")
-], g);
+], d.prototype, "report", 2);
+d = P([
+  x("page-evaluator-report")
+], d);
 function O(e) {
-  return e.replace(/_/g, " ").replace(/\b\w/g, (t) => t.toUpperCase());
+  return e.replace(/_/g, " ").replace(/\b\w/g, (a) => a.toUpperCase());
 }
 function A(e) {
   return e >= 4 ? "positive" : e >= 2.5 ? "warning" : "danger";
@@ -308,37 +308,37 @@ function W(e) {
   }
 }
 function j(e) {
-  const t = e.split(`
-`).map((o) => o.trim()).filter(Boolean), s = t.filter((o) => /^\d+\.\s+/.test(o));
+  const a = e.split(`
+`).map((o) => o.trim()).filter(Boolean), s = a.filter((o) => /^\d+\.\s+/.test(o));
   if (s.length > 1)
     return s.map((o) => o.replace(/^\d+\.\s+/, "").trim());
-  const r = t.filter((o) => /^\(\d+\)\s+/.test(o));
-  if (r.length > 1)
-    return r.map((o) => o.replace(/^\(\d+\)\s+/, "").trim());
-  const a = t.filter((o) => /^\d+\)\s+/.test(o));
-  if (a.length > 1)
-    return a.map((o) => o.replace(/^\d+\)\s+/, "").trim());
+  const i = a.filter((o) => /^\(\d+\)\s+/.test(o));
+  if (i.length > 1)
+    return i.map((o) => o.replace(/^\(\d+\)\s+/, "").trim());
+  const t = a.filter((o) => /^\d+\)\s+/.test(o));
+  if (t.length > 1)
+    return t.map((o) => o.replace(/^\d+\)\s+/, "").trim());
   const n = e.split(/\(\d+\)\s*/).map((o) => o.trim()).filter(Boolean);
   if (n.length > 1)
     return n;
   const l = e.split(/\d+\)\s+/).map((o) => o.trim()).filter(Boolean);
   return l.length > 1 ? l : [e.trim()];
 }
-function _(e) {
-  const t = e.split(/\*\*([^*]+)\*\*/g);
-  return i`${t.map((s, r) => r % 2 === 1 ? i`<strong>${s}</strong>` : s)}`;
+function f(e) {
+  const a = e.split(/\*\*([^*]+)\*\*/g);
+  return r`${a.map((s, i) => i % 2 === 1 ? r`<strong>${s}</strong>` : s)}`;
 }
-var D = Object.defineProperty, I = Object.getOwnPropertyDescriptor, k = (e, t, s, r) => {
-  for (var a = r > 1 ? void 0 : r ? I(t, s) : t, n = e.length - 1, l; n >= 0; n--)
-    (l = e[n]) && (a = (r ? l(t, s, a) : l(a)) || a);
-  return r && a && D(t, s, a), a;
+var D = Object.defineProperty, I = Object.getOwnPropertyDescriptor, k = (e, a, s, i) => {
+  for (var t = i > 1 ? void 0 : i ? I(a, s) : a, n = e.length - 1, l; n >= 0; n--)
+    (l = e[n]) && (t = (i ? l(a, s, t) : l(t)) || t);
+  return i && t && D(a, s, t), t;
 };
-let h = class extends w {
+let g = class extends w {
   constructor() {
     super(...arguments), this.rawResponse = null;
   }
   render() {
-    return i`
+    return r`
       <div class="warning-banner">
         <p>
           <uui-icon name="icon-alert"></uui-icon>
@@ -349,11 +349,11 @@ let h = class extends w {
           ${this.localize.term("evaluatePage_parseFailedSuffix")}
         </p>
       </div>
-      ${this.rawResponse ? i`<pre class="raw-response">${this.rawResponse}</pre>` : ""}
+      ${this.rawResponse ? r`<pre class="raw-response">${this.rawResponse}</pre>` : ""}
     `;
   }
 };
-h.styles = x`
+g.styles = b`
     :host {
       display: block;
     }
@@ -383,16 +383,16 @@ h.styles = x`
   `;
 k([
   y({ type: String })
-], h.prototype, "rawResponse", 2);
-h = k([
-  z("page-evaluator-warning")
-], h);
-var K = Object.defineProperty, L = Object.getOwnPropertyDescriptor, d = (e, t, s, r) => {
-  for (var a = r > 1 ? void 0 : r ? L(t, s) : t, n = e.length - 1, l; n >= 0; n--)
-    (l = e[n]) && (a = (r ? l(t, s, a) : l(a)) || a);
-  return r && a && K(t, s, a), a;
+], g.prototype, "rawResponse", 2);
+g = k([
+  x("page-evaluator-warning")
+], g);
+var K = Object.defineProperty, L = Object.getOwnPropertyDescriptor, h = (e, a, s, i) => {
+  for (var t = i > 1 ? void 0 : i ? L(a, s) : a, n = e.length - 1, l; n >= 0; n--)
+    (l = e[n]) && (t = (i ? l(a, s, t) : l(t)) || t);
+  return i && t && K(a, s, t), t;
 };
-const b = {
+const _ = {
   sending: "evaluatePage_progressSendingData",
   waiting: "evaluatePage_progressWaitingForAI",
   rendering: "evaluatePage_progressRendering"
@@ -408,10 +408,10 @@ let p = class extends C {
     const e = this.data;
     if (e) {
       try {
-        const t = await S(e.nodeId);
-        if (t) {
+        const a = await S(e.nodeId);
+        if (a) {
           if (!this.isConnected) return;
-          this._report = t, this._modalState = t.parseFailed ? "parse-failed" : "success";
+          this._report = a, this._modalState = a.parseFailed ? "parse-failed" : "success";
           return;
         }
       } catch {
@@ -428,11 +428,11 @@ let p = class extends C {
       return;
     }
     try {
-      if (!this.isConnected || (this._modalState = "loading", this._progressKey = b.sending, await this._tick(), !this.isConnected)) return;
-      this._progressKey = b.waiting;
-      const t = await F(e);
-      if (!this.isConnected || (this._progressKey = b.rendering, await this._tick(), !this.isConnected)) return;
-      this._report = t, this._modalState = t.parseFailed ? "parse-failed" : "success";
+      if (this._modalState = "loading", this._progressKey = _.sending, await this._tick(), !this.isConnected) return;
+      this._progressKey = _.waiting;
+      const a = await F(e);
+      if (!this.isConnected || (this._progressKey = _.rendering, await this._tick(), !this.isConnected)) return;
+      this._report = a, this._modalState = a.parseFailed ? "parse-failed" : "success";
     } catch {
       if (!this.isConnected) return;
       this._modalState = "error";
@@ -462,11 +462,11 @@ let p = class extends C {
     }
   }
   render() {
-    return i`
+    return r`
       <umb-body-layout headline=${this.localize.term("evaluatePage_modalHeadline")}>
         ${this._renderBody()}
         <div slot="actions">
-          ${this._modalState === "success" || this._modalState === "parse-failed" ? i`
+          ${this._modalState === "success" || this._modalState === "parse-failed" ? r`
                 <uui-button
                   look="secondary"
                   label=${this.localize.term("evaluatePage_rerunButton")}
@@ -489,26 +489,26 @@ let p = class extends C {
       case "idle":
         return c;
       case "loading":
-        return i`
+        return r`
           <div class="progress-container">
             <uui-loader></uui-loader>
             <p aria-live="polite" aria-atomic="true">${this.localize.term(this._progressKey)}</p>
           </div>
         `;
       case "success":
-        return i`
+        return r`
           ${this._renderCacheBar()}
           <page-evaluator-report
             .report="${this._report}"></page-evaluator-report>
         `;
       case "parse-failed":
-        return i`
+        return r`
           ${this._renderCacheBar()}
           <page-evaluator-warning
             .rawResponse="${((e = this._report) == null ? void 0 : e.rawResponse) ?? null}"></page-evaluator-warning>
         `;
       case "error":
-        return i`
+        return r`
           <div class="error-container" role="alert">
             <p>${this.localize.term("evaluatePage_aiErrorMessage")}</p>
             <uui-button
@@ -523,16 +523,16 @@ let p = class extends C {
     }
   }
   _renderCacheBar() {
-    var t;
-    const e = (t = this._report) == null ? void 0 : t.cachedAt;
-    return e ? i`
+    var a;
+    const e = (a = this._report) == null ? void 0 : a.cachedAt;
+    return e ? r`
       <div class="cache-bar">
         <span>${this.localize.term("evaluatePage_lastEvaluated")} ${this._formatCachedAt(e)}</span>
       </div>
     ` : c;
   }
 };
-p.styles = x`
+p.styles = b`
     .progress-container {
       display: flex;
       flex-direction: column;
@@ -560,22 +560,19 @@ p.styles = x`
       border-radius: var(--uui-border-radius, 4px);
     }
   `;
-d([
-  m()
+h([
+  z()
 ], p.prototype, "_modalState", 2);
-d([
-  m()
+h([
+  z()
 ], p.prototype, "_progressKey", 2);
-d([
-  m()
+h([
+  z()
 ], p.prototype, "_report", 2);
-d([
-  m()
-], p.prototype, "_inFlight", 2);
-p = d([
-  z("page-evaluator-modal")
+p = h([
+  x("page-evaluator-modal")
 ], p);
 export {
   p as EvaluationModalElement
 };
-//# sourceMappingURL=evaluation-modal.element-zeCTWG0a.js.map
+//# sourceMappingURL=evaluation-modal.element-Dv7cmDfZ.js.map
