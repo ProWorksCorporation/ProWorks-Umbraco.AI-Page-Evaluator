@@ -54,6 +54,7 @@ export class EvaluationModalElement extends UmbModalBaseElement<EvaluationModalD
   @state() private _modalState: ModalState = 'idle';
   @state() private _progressKey = '';
   @state() private _report: EvaluationReportResponse | null = null;
+  @state() private _inFlight = false;
 
   override connectedCallback(): void {
     super.connectedCallback();
@@ -67,6 +68,7 @@ export class EvaluationModalElement extends UmbModalBaseElement<EvaluationModalD
     try {
       const cached = await getCachedEvaluation(data.nodeId);
       if (cached) {
+        if (!this.isConnected) return;
         this._report = cached;
         this._modalState = cached.parseFailed ? 'parse-failed' : 'success';
         return;
@@ -75,12 +77,18 @@ export class EvaluationModalElement extends UmbModalBaseElement<EvaluationModalD
       // Cache check failed — fall through to a fresh evaluation.
     }
 
+    if (!this.isConnected) return;
     void this._runEvaluation();
   }
 
   private async _runEvaluation(): Promise<void> {
+    if (this._inFlight) return;
+    this._inFlight = true;
     const data = this.data;
-    if (!data) return;
+    if (!data) {
+      this._inFlight = false;
+      return;
+    }
 
     try {
       if (!this.isConnected) return;
@@ -102,6 +110,8 @@ export class EvaluationModalElement extends UmbModalBaseElement<EvaluationModalD
     } catch {
       if (!this.isConnected) return;
       this._modalState = 'error';
+    } finally {
+      this._inFlight = false;
     }
   }
 
