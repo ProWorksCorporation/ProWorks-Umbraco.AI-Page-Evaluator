@@ -1,6 +1,6 @@
-import { property as m, state as a, customElement as f, html as o, nothing as n, css as x } from "@umbraco-cms/backoffice/external/lit";
+import { property as m, state as s, customElement as f, html as o, nothing as n, css as x } from "@umbraco-cms/backoffice/external/lit";
 import { UmbLitElement as v } from "@umbraco-cms/backoffice/lit-element";
-import { f as b, c as $, h as g, B as y, u as T, i as C } from "./entry-point-DAGBXS4L.js";
+import { f as b, c as $, h as g, B as y, u as T, i as C } from "./entry-point-C1hQY3Ls.js";
 const _ = [
   {
     id: "required-fields",
@@ -174,22 +174,22 @@ d([
   m({ type: Boolean })
 ], u.prototype, "scoringEnabled", 2);
 d([
-  a()
+  s()
 ], u.prototype, "_properties", 2);
 d([
-  a()
+  s()
 ], u.prototype, "_selectedCategories", 2);
 d([
-  a()
+  s()
 ], u.prototype, "_siteContext", 2);
 d([
-  a()
+  s()
 ], u.prototype, "_draft", 2);
 d([
-  a()
+  s()
 ], u.prototype, "_loading", 2);
 d([
-  a()
+  s()
 ], u.prototype, "_error", 2);
 u = d([
   f("page-evaluator-prompt-builder")
@@ -199,7 +199,7 @@ var S = Object.defineProperty, E = Object.getOwnPropertyDescriptor, p = (e, t, i
     (h = e[c]) && (r = (l ? h(t, i, r) : h(r)) || r);
   return l && r && S(t, i, r), r;
 };
-let s = class extends v {
+let a = class extends v {
   constructor() {
     super(...arguments), this.configId = null, this._name = "", this._description = "", this._documentTypeAlias = "", this._profileId = "", this._contextId = "", this._promptText = "", this._scoringEnabled = !1, this._version = 0, this._errors = {}, this._saving = !1, this._loadError = null, this._promptBuilderOpen = !1, this._propertyAliases = [], this._availableProperties = [], this._docTypeDisplayName = "", this._docTypeSuggestions = [], this._docTypeShowSuggestions = !1, this._docTypeSearchTimer = null;
   }
@@ -249,6 +249,7 @@ let s = class extends v {
         url: "/umbraco/management/api/v1/item/document-type/search",
         query: { query: e, isElement: !1, skip: 0, take: 20 }
       });
+      if (!this.isConnected) return;
       if (t.response.ok && t.data) {
         const i = t.data;
         this._docTypeSuggestions = i.items, this._docTypeShowSuggestions = i.items.length > 0;
@@ -263,11 +264,13 @@ let s = class extends v {
         security: y,
         url: `/umbraco/management/api/v1/document-type/${encodeURIComponent(e)}`
       });
+      if (!this.isConnected) return;
       if (i.response.ok && i.data) {
         const l = i.data;
         this._documentTypeAlias = l.alias, this._propertyAliases = [], this._loadDocTypeInfo(l.alias);
       }
     } catch {
+      if (!this.isConnected) return;
       this._errors = { ...this._errors, documentTypeAlias: this.localize.term("evaluatorConfig_documentTypeAliasError") };
     }
   }
@@ -301,6 +304,7 @@ let s = class extends v {
           propertyAliases: this._propertyAliases.length > 0 ? this._propertyAliases : null,
           scoringEnabled: this._scoringEnabled
         });
+        if (!this.isConnected) return;
         this.dispatchEvent(
           new CustomEvent("evaluator-saved", {
             detail: e,
@@ -309,6 +313,7 @@ let s = class extends v {
           })
         );
       } catch (e) {
+        if (!this.isConnected) return;
         e instanceof Error && (this._errors._form = e.message);
       } finally {
         this._saving = !1;
@@ -559,7 +564,7 @@ let s = class extends v {
     `;
   }
 };
-s.styles = x`
+a.styles = x`
     :host {
       display: block;
     }
@@ -683,62 +688,62 @@ s.styles = x`
   `;
 p([
   m({ type: String, attribute: "config-id" })
-], s.prototype, "configId", 2);
+], a.prototype, "configId", 2);
 p([
-  a()
-], s.prototype, "_name", 2);
+  s()
+], a.prototype, "_name", 2);
 p([
-  a()
-], s.prototype, "_description", 2);
+  s()
+], a.prototype, "_description", 2);
 p([
-  a()
-], s.prototype, "_documentTypeAlias", 2);
+  s()
+], a.prototype, "_documentTypeAlias", 2);
 p([
-  a()
-], s.prototype, "_profileId", 2);
+  s()
+], a.prototype, "_profileId", 2);
 p([
-  a()
-], s.prototype, "_contextId", 2);
+  s()
+], a.prototype, "_contextId", 2);
 p([
-  a()
-], s.prototype, "_promptText", 2);
+  s()
+], a.prototype, "_promptText", 2);
 p([
-  a()
-], s.prototype, "_scoringEnabled", 2);
+  s()
+], a.prototype, "_scoringEnabled", 2);
 p([
-  a()
-], s.prototype, "_version", 2);
+  s()
+], a.prototype, "_version", 2);
 p([
-  a()
-], s.prototype, "_errors", 2);
+  s()
+], a.prototype, "_errors", 2);
 p([
-  a()
-], s.prototype, "_saving", 2);
+  s()
+], a.prototype, "_saving", 2);
 p([
-  a()
-], s.prototype, "_loadError", 2);
+  s()
+], a.prototype, "_loadError", 2);
 p([
-  a()
-], s.prototype, "_promptBuilderOpen", 2);
+  s()
+], a.prototype, "_promptBuilderOpen", 2);
 p([
-  a()
-], s.prototype, "_propertyAliases", 2);
+  s()
+], a.prototype, "_propertyAliases", 2);
 p([
-  a()
-], s.prototype, "_availableProperties", 2);
+  s()
+], a.prototype, "_availableProperties", 2);
 p([
-  a()
-], s.prototype, "_docTypeDisplayName", 2);
+  s()
+], a.prototype, "_docTypeDisplayName", 2);
 p([
-  a()
-], s.prototype, "_docTypeSuggestions", 2);
+  s()
+], a.prototype, "_docTypeSuggestions", 2);
 p([
-  a()
-], s.prototype, "_docTypeShowSuggestions", 2);
-s = p([
+  s()
+], a.prototype, "_docTypeShowSuggestions", 2);
+a = p([
   f("evaluator-form")
-], s);
+], a);
 export {
-  s as EvaluatorFormElement
+  a as EvaluatorFormElement
 };
-//# sourceMappingURL=evaluator-form.element-BRJEbfho.js.map
+//# sourceMappingURL=evaluator-form.element-C6ZUwK38.js.map

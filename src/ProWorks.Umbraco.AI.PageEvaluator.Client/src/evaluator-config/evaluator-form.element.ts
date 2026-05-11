@@ -272,6 +272,7 @@ export class EvaluatorFormElement extends UmbLitElement {
         url: '/umbraco/management/api/v1/item/document-type/search',
         query: { query, isElement: false, skip: 0, take: 20 },
       });
+      if (!this.isConnected) return;
       if (result.response.ok && result.data) {
         const data = result.data as { items: Array<{ id: string; name: string; alias?: string }> };
         this._docTypeSuggestions = data.items;
@@ -291,6 +292,7 @@ export class EvaluatorFormElement extends UmbLitElement {
         security: BEARER,
         url: `/umbraco/management/api/v1/document-type/${encodeURIComponent(id)}`,
       });
+      if (!this.isConnected) return;
       if (result.response.ok && result.data) {
         const detail = result.data as { alias: string };
         this._documentTypeAlias = detail.alias;
@@ -298,6 +300,7 @@ export class EvaluatorFormElement extends UmbLitElement {
         void this._loadDocTypeInfo(detail.alias);
       }
     } catch {
+      if (!this.isConnected) return;
       this._errors = { ...this._errors, documentTypeAlias: this.localize.term('evaluatorConfig_documentTypeAliasError') };
     }
   }
@@ -349,6 +352,7 @@ export class EvaluatorFormElement extends UmbLitElement {
             scoringEnabled: this._scoringEnabled,
           });
 
+      if (!this.isConnected) return;
       this.dispatchEvent(
         new CustomEvent('evaluator-saved', {
           detail: saved,
@@ -357,6 +361,7 @@ export class EvaluatorFormElement extends UmbLitElement {
         }),
       );
     } catch (err: unknown) {
+      if (!this.isConnected) return;
       if (err instanceof Error) {
         this._errors['_form'] = err.message;
       }
