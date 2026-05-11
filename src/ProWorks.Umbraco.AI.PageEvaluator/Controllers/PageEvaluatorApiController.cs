@@ -214,19 +214,12 @@ public sealed class PageEvaluatorApiController : ControllerBase
         if (existing is null)
             return NotFound(new { title = $"Evaluator configuration '{id}' not found." });
 
-        try
-        {
-            await _configService.SetActiveAsync(id, cancellationToken);
-            await _cacheRepository.DeleteByDocumentTypeAliasAsync(existing.DocumentTypeAlias, cancellationToken);
-            AIEvaluatorConfig? updated = await _configService.GetByIdAsync(id, cancellationToken);
-            if (updated is null)
-                return NotFound(new { title = $"Evaluator configuration '{id}' not found after activation." });
-            return Ok(await ToResponseAsync(updated, cancellationToken));
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            return Conflict(new { title = "This configuration was modified by another user. Please reload and try again." });
-        }
+        await _configService.SetActiveAsync(id, cancellationToken);
+        await _cacheRepository.DeleteByDocumentTypeAliasAsync(existing.DocumentTypeAlias, cancellationToken);
+        AIEvaluatorConfig? updated = await _configService.GetByIdAsync(id, cancellationToken);
+        if (updated is null)
+            return NotFound(new { title = $"Evaluator configuration '{id}' not found after activation." });
+        return Ok(await ToResponseAsync(updated, cancellationToken));
     }
 
     // ---------------------------------------------------------------------------

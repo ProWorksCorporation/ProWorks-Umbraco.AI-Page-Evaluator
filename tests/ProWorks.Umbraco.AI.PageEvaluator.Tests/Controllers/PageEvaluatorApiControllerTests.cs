@@ -659,30 +659,6 @@ public class PageEvaluatorApiControllerTests
         Assert.IsType<NotFoundObjectResult>(result);
     }
 
-    [Fact]
-    public async Task ActivateConfigurationAsync_WhenConcurrencyConflict_Returns409()
-    {
-        var id = Guid.NewGuid();
-        var existing = new AIEvaluatorConfig
-        {
-            Id = id,
-            Name = "Test",
-            DocumentTypeAlias = "blogPost",
-            ProfileId = Guid.NewGuid(),
-            PromptText = "Evaluate.",
-            IsActive = false,
-            Version = 2,
-        };
-
-        _configService.GetByIdAsync(id, Arg.Any<CancellationToken>()).Returns(existing);
-        _configService.SetActiveAsync(id, Arg.Any<CancellationToken>())
-            .ThrowsAsync(new DbUpdateConcurrencyException("Concurrency conflict."));
-
-        IActionResult result = await _sut.ActivateConfigurationAsync(id);
-
-        var conflict = Assert.IsType<ConflictObjectResult>(result);
-        Assert.Equal(409, conflict.StatusCode);
-    }
 
     [Fact]
     public async Task ActivateConfigurationAsync_WhenConfigDeletedBetweenActivateAndRefetch_Returns404()
