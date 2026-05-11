@@ -55,27 +55,38 @@ public sealed class EFCoreEvaluationCacheRepository : IEvaluationCacheRepository
         using IEfCoreScope<UmbracoAIPageEvaluatorDbContext> scope = _scopeProvider.CreateScope();
         await scope.ExecuteWithContextAsync<object?>(async db =>
         {
-            EvaluationCacheEntity? existing = await db.EvaluationCache
-                .FirstOrDefaultAsync(e => e.NodeId == entry.NodeId, cancellationToken);
-
-            if (existing is null)
+            await using var tx = await db.Database.BeginTransactionAsync(cancellationToken);
+            try
             {
-                db.EvaluationCache.Add(new EvaluationCacheEntity
+                EvaluationCacheEntity? existing = await db.EvaluationCache
+                    .FirstOrDefaultAsync(e => e.NodeId == entry.NodeId, cancellationToken);
+
+                if (existing is null)
                 {
-                    NodeId = entry.NodeId,
-                    DocumentTypeAlias = entry.DocumentTypeAlias,
-                    ReportJson = reportJson,
-                    CachedAt = entry.CachedAt,
-                });
+                    db.EvaluationCache.Add(new EvaluationCacheEntity
+                    {
+                        NodeId = entry.NodeId,
+                        DocumentTypeAlias = entry.DocumentTypeAlias,
+                        ReportJson = reportJson,
+                        CachedAt = entry.CachedAt,
+                    });
+                }
+                else
+                {
+                    existing.DocumentTypeAlias = entry.DocumentTypeAlias;
+                    existing.ReportJson = reportJson;
+                    existing.CachedAt = entry.CachedAt;
+                }
+
+                await db.SaveChangesAsync(cancellationToken);
+                await tx.CommitAsync(cancellationToken);
             }
-            else
+            catch
             {
-                existing.DocumentTypeAlias = entry.DocumentTypeAlias;
-                existing.ReportJson = reportJson;
-                existing.CachedAt = entry.CachedAt;
+                await tx.RollbackAsync(cancellationToken);
+                throw;
             }
 
-            await db.SaveChangesAsync(cancellationToken);
             return null;
         });
 
