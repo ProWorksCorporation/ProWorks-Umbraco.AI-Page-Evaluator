@@ -576,6 +576,31 @@ public class PageEvaluatorApiControllerTests
         Assert.IsType<UnprocessableEntityObjectResult>(result);
     }
 
+    [Fact]
+    public async Task UpdateConfigurationAsync_WhenVersionIsZero_Returns422WithConfigKey()
+    {
+        // Version=0 is rejected by AIEvaluatorConfigService.UpdateAsync to prevent
+        // silently bypassing the EF Core optimistic concurrency token.
+        var id = Guid.NewGuid();
+        var request = new UpdateEvaluatorConfigRequest
+        {
+            Name = "My Evaluator",
+            DocumentTypeAlias = "blogPost",
+            ProfileId = Guid.NewGuid(),
+            PromptText = "Some prompt.",
+            Version = 0,
+        };
+        _configService.UpdateAsync(Arg.Any<AIEvaluatorConfig>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new ArgumentException("Version is required for update. Reload the configuration and try again.", "config"));
+
+        IActionResult result = await _sut.UpdateConfigurationAsync(id, request);
+
+        var unprocessable = Assert.IsType<UnprocessableEntityObjectResult>(result);
+        var body = Assert.IsAssignableFrom<object>(unprocessable.Value);
+        var errors = (System.Collections.Generic.Dictionary<string, string[]>)body.GetType().GetProperty("errors")!.GetValue(body)!;
+        Assert.True(errors.ContainsKey("config"));
+    }
+
     // ---------------------------------------------------------------------------
     // POST /configurations/{id}/activate
     // ---------------------------------------------------------------------------
