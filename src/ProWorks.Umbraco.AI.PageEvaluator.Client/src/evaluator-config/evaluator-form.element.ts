@@ -187,6 +187,14 @@ export class EvaluatorFormElement extends UmbLitElement {
     }
   }
 
+  override disconnectedCallback(): void {
+    super.disconnectedCallback();
+    if (this._docTypeSearchTimer !== null) {
+      clearTimeout(this._docTypeSearchTimer);
+      this._docTypeSearchTimer = null;
+    }
+  }
+
   private _resetFields(): void {
     this._loadError = null;
     this._name = '';
@@ -210,6 +218,7 @@ export class EvaluatorFormElement extends UmbLitElement {
     this._loadError = null;
     try {
       const config: EvaluatorConfigItem = await getConfiguration(id);
+      if (!this.isConnected) return;
       this._name = config.name;
       this._description = config.description ?? '';
       this._documentTypeAlias = config.documentTypeAlias;
@@ -222,6 +231,7 @@ export class EvaluatorFormElement extends UmbLitElement {
       this._errors = {};
       void this._loadDocTypeInfo(config.documentTypeAlias);
     } catch {
+      if (!this.isConnected) return;
       this._loadError = this.localize.term('evaluatorConfig_formLoadError');
     }
   }
@@ -230,14 +240,15 @@ export class EvaluatorFormElement extends UmbLitElement {
     this._availableProperties = [];
     try {
       const info = await fetchDocTypeProperties(alias);
+      if (!this.isConnected) return;
       this._docTypeDisplayName = info.name;
       this._availableProperties = info.properties;
       if (this._propertyAliases.length === 0 && info.properties.length > 0) {
         this._propertyAliases = info.properties.map((p) => p.alias);
       }
     } catch {
+      if (!this.isConnected) return;
       if (!this._docTypeDisplayName) this._docTypeDisplayName = alias;
-      // Non-critical — the checkbox list simply won't appear
     }
   }
 

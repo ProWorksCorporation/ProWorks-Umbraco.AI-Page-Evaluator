@@ -1,6 +1,6 @@
 import { property as m, state as a, customElement as f, html as o, nothing as n, css as x } from "@umbraco-cms/backoffice/external/lit";
 import { UmbLitElement as v } from "@umbraco-cms/backoffice/lit-element";
-import { f as b, c as $, h as g, B as y, u as T, i as C } from "./entry-point-CTsA956V.js";
+import { f as b, c as $, h as g, B as y, u as T, i as C } from "./entry-point-DAGBXS4L.js";
 const _ = [
   {
     id: "required-fields",
@@ -206,6 +206,9 @@ let s = class extends v {
   updated(e) {
     super.updated(e), e.has("configId") && (this.configId ? this._loadConfig(this.configId) : this._resetFields());
   }
+  disconnectedCallback() {
+    super.disconnectedCallback(), this._docTypeSearchTimer !== null && (clearTimeout(this._docTypeSearchTimer), this._docTypeSearchTimer = null);
+  }
   _resetFields() {
     this._loadError = null, this._name = "", this._description = "", this._documentTypeAlias = "", this._docTypeDisplayName = "", this._docTypeSuggestions = [], this._docTypeShowSuggestions = !1, this._profileId = "", this._contextId = "", this._promptText = "", this._scoringEnabled = !1, this._version = 0, this._propertyAliases = [], this._availableProperties = [], this._errors = {}, this._promptBuilderOpen = !1;
   }
@@ -213,8 +216,10 @@ let s = class extends v {
     this._loadError = null;
     try {
       const t = await $(e);
+      if (!this.isConnected) return;
       this._name = t.name, this._description = t.description ?? "", this._documentTypeAlias = t.documentTypeAlias, this._profileId = t.profileId, this._contextId = t.contextId ?? "", this._promptText = t.promptText, this._scoringEnabled = t.scoringEnabled, this._version = t.version, this._propertyAliases = t.propertyAliases ?? [], this._errors = {}, this._loadDocTypeInfo(t.documentTypeAlias);
     } catch {
+      if (!this.isConnected) return;
       this._loadError = this.localize.term("evaluatorConfig_formLoadError");
     }
   }
@@ -222,8 +227,10 @@ let s = class extends v {
     this._availableProperties = [];
     try {
       const t = await b(e);
+      if (!this.isConnected) return;
       this._docTypeDisplayName = t.name, this._availableProperties = t.properties, this._propertyAliases.length === 0 && t.properties.length > 0 && (this._propertyAliases = t.properties.map((i) => i.alias));
     } catch {
+      if (!this.isConnected) return;
       this._docTypeDisplayName || (this._docTypeDisplayName = e);
     }
   }
@@ -734,4 +741,4 @@ s = p([
 export {
   s as EvaluatorFormElement
 };
-//# sourceMappingURL=evaluator-form.element-JMRyNoT7.js.map
+//# sourceMappingURL=evaluator-form.element-BRJEbfho.js.map
