@@ -11,6 +11,7 @@ using Umbraco.AI.Startup.Configuration;
 using Umbraco.Cms.Core.Composing;
 using Umbraco.Cms.Core.DependencyInjection;
 using Umbraco.Cms.Core.Notifications;
+using Umbraco.Extensions;
 
 namespace ProWorks.Umbraco.AI.PageEvaluator.Composers;
 
@@ -31,14 +32,21 @@ public sealed class PageEvaluatorComposer : IComposer
         builder.Services.AddScoped<IPageEvaluationService, PageEvaluationService>();
 
         // Rate limiter: 10 AI evaluation requests per user per minute (per back-office user key).
+        // Partitioned by user key so each back-office user gets their own 10 req/min bucket.
+        // Falls back to IP address for unauthenticated requests.
         // Consuming apps must call app.UseRateLimiter() in their middleware pipeline.
         builder.Services.AddRateLimiter(options =>
-            options.AddFixedWindowLimiter("PageEvaluatorEvaluate", o =>
-            {
-                o.PermitLimit = 10;
-                o.Window = TimeSpan.FromMinutes(1);
-                o.QueueLimit = 0;
-            })
+            options.AddPolicy("PageEvaluatorEvaluate", ctx =>
+                RateLimitPartition.GetFixedWindowLimiter(
+                    partitionKey: ctx.User.Identity?.GetUserKey()?.ToString()
+                        ?? ctx.Connection.RemoteIpAddress?.ToString()
+                        ?? "anonymous",
+                    factory: _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 10,
+                        Window = TimeSpan.FromMinutes(1),
+                        QueueLimit = 0,
+                    }))
         );
 
         // Invalidate cached evaluations when content is published.
