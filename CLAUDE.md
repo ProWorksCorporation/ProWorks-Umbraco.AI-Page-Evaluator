@@ -173,6 +173,7 @@ dotnet ef migrations add <Name> \
 - `POST /evaluate` uses the canonical `DocumentTypeAlias` from the content node (`content.ContentType.Alias`), not the client-supplied value
 - `GetCurrentUserKey()` uses `HttpContext.User.Identity?.GetUserKey()` (from `Umbraco.Extensions`) — throws `InvalidOperationException` if the identity is missing (all controller actions that call it are protected by `[Authorize]`, so this is an unexpected edge case). In controller unit tests, inject `new Claim("sub", Guid.NewGuid().ToString())` into the `HttpContext.User` — `GetUserKey()` reads the `"sub"` claim (`Constants.Security.OpenIdDictSubClaimType`)
 - **Activation uses `SetActiveAsync`** (`IAIEvaluatorConfigService.SetActiveAsync(id, ct)`) — **never** route activation through `UpdateAsync`. `SetActiveAsync` only toggles the `IsActive` flag and does not bump `Version` or `DateModified`, which is intentional (toggling active is an administrative action, not a content change)
+- **`UpdateAsync` preserves `IsActive`** — it copies the existing record's `IsActive` state onto the incoming config before saving. Do **not** add `config.IsActive = true` in `UpdateAsync`; that would silently activate inactive configs on edit
 
 ### Rate Limiter Registration
 - `PageEvaluatorComposer` registers the `"PageEvaluatorEvaluate"` fixed-window rate limiter policy (10 requests per user per minute) via `builder.Services.AddRateLimiter`
