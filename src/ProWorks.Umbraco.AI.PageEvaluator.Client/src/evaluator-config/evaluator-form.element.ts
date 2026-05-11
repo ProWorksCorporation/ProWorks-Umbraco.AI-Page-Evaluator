@@ -219,6 +219,7 @@ export class EvaluatorFormElement extends UmbLitElement {
     try {
       const config: EvaluatorConfigItem = await getConfiguration(id);
       if (!this.isConnected) return;
+      if (this.configId !== id) return;
       this._name = config.name;
       this._description = config.description ?? '';
       this._documentTypeAlias = config.documentTypeAlias;
@@ -232,6 +233,7 @@ export class EvaluatorFormElement extends UmbLitElement {
       void this._loadDocTypeInfo(config.documentTypeAlias);
     } catch {
       if (!this.isConnected) return;
+      if (this.configId !== id) return;
       this._loadError = this.localize.term('evaluatorConfig_formLoadError');
     }
   }

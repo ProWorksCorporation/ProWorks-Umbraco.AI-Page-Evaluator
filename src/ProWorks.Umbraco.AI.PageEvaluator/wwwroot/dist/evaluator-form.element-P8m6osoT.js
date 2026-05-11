@@ -1,6 +1,6 @@
 import { property as m, state as s, customElement as f, html as o, nothing as n, css as x } from "@umbraco-cms/backoffice/external/lit";
 import { UmbLitElement as v } from "@umbraco-cms/backoffice/lit-element";
-import { f as b, c as $, h as g, B as y, u as T, i as C } from "./entry-point-lzWeVzBE.js";
+import { f as b, c as $, h as g, B as y, u as T, i as C } from "./entry-point-CqHCNBTY.js";
 const _ = [
   {
     id: "required-fields",
@@ -216,10 +216,10 @@ let a = class extends v {
     this._loadError = null;
     try {
       const t = await $(e);
-      if (!this.isConnected) return;
+      if (!this.isConnected || this.configId !== e) return;
       this._name = t.name, this._description = t.description ?? "", this._documentTypeAlias = t.documentTypeAlias, this._profileId = t.profileId, this._contextId = t.contextId ?? "", this._promptText = t.promptText, this._scoringEnabled = t.scoringEnabled, this._version = t.version, this._propertyAliases = t.propertyAliases ?? [], this._errors = {}, this._loadDocTypeInfo(t.documentTypeAlias);
     } catch {
-      if (!this.isConnected) return;
+      if (!this.isConnected || this.configId !== e) return;
       this._loadError = this.localize.term("evaluatorConfig_formLoadError");
     }
   }
@@ -746,4 +746,4 @@ a = p([
 export {
   a as EvaluatorFormElement
 };
-//# sourceMappingURL=evaluator-form.element-Bys-ggL-.js.map
+//# sourceMappingURL=evaluator-form.element-P8m6osoT.js.map
