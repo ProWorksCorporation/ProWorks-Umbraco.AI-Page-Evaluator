@@ -69,10 +69,25 @@ public sealed class PageEvaluatorApiController : ControllerBase
     {
         IReadOnlyList<AIEvaluatorConfig> configs = await _configService.GetAllAsync(cancellationToken);
 
-        var items = new List<EvaluatorConfigResponse>(configs.Count);
-        foreach (AIEvaluatorConfig config in configs)
-            items.Add(await ToResponseAsync(config, cancellationToken));
+        // Pre-fetch all distinct profiles and contexts in parallel to avoid N+1 service calls.
+        Guid[] profileIds = configs
+            .Select(c => c.ProfileId).Where(id => id != Guid.Empty).Distinct().ToArray();
+        Guid[] contextIds = configs
+            .Select(c => c.ContextId).Where(id => id.HasValue).Select(id => id!.Value).Distinct().ToArray();
 
+        AIProfile?[] profileResults = await Task.WhenAll(
+            profileIds.Select(id => _profileService.GetProfileAsync(id, cancellationToken)));
+        AIContext?[] contextResults = await Task.WhenAll(
+            contextIds.Select(id => _contextService.GetContextAsync(id, cancellationToken)));
+
+        var profileNames = profileIds
+            .Zip(profileResults, (id, p) => (id, name: p?.Name))
+            .ToDictionary(x => x.id, x => x.name);
+        var contextNames = contextIds
+            .Zip(contextResults, (id, c) => (id, name: c?.Name))
+            .ToDictionary(x => x.id, x => x.name);
+
+        var items = configs.Select(c => ToResponse(c, profileNames, contextNames)).ToList();
         return Ok(new { items, total = items.Count });
     }
 
@@ -411,6 +426,37 @@ public sealed class PageEvaluatorApiController : ControllerBase
     private Guid GetCurrentUserKey()
         => HttpContext.User.Identity?.GetUserKey()
             ?? throw new InvalidOperationException("Authenticated user key not found on the current request.");
+
+    private EvaluatorConfigResponse ToResponse(
+        AIEvaluatorConfig config,
+        Dictionary<Guid, string?> profileNames,
+        Dictionary<Guid, string?> contextNames)
+    {
+        profileNames.TryGetValue(config.ProfileId, out string? profileName);
+        string? contextName = config.ContextId.HasValue
+            && contextNames.TryGetValue(config.ContextId.Value, out string? cn) ? cn : null;
+        string? documentTypeName = _contentTypeService.Get(config.DocumentTypeAlias)?.Name;
+
+        return new EvaluatorConfigResponse
+        {
+            Id = config.Id,
+            Name = config.Name,
+            Description = config.Description,
+            DocumentTypeAlias = config.DocumentTypeAlias,
+            DocumentTypeName = documentTypeName,
+            ProfileId = config.ProfileId,
+            ProfileName = profileName,
+            ContextId = config.ContextId,
+            ContextName = contextName,
+            PromptText = config.PromptText,
+            IsActive = config.IsActive,
+            DateCreated = config.DateCreated,
+            DateModified = config.DateModified,
+            PropertyAliases = config.PropertyAliases,
+            ScoringEnabled = config.ScoringEnabled,
+            Version = config.Version,
+        };
+    }
 
     private async Task<EvaluatorConfigResponse> ToResponseAsync(
         AIEvaluatorConfig config,

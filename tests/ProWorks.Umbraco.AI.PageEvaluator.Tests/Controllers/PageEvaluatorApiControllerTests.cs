@@ -358,6 +358,27 @@ public class PageEvaluatorApiControllerTests
     // ---------------------------------------------------------------------------
 
     [Fact]
+    public async Task GetConfigurationsAsync_WithTwoConfigsSharingProfile_FetchesProfileOnce()
+    {
+        var profileId = Guid.NewGuid();
+        var configs = new List<AIEvaluatorConfig>
+        {
+            new() { Id = Guid.NewGuid(), Name = "A", DocumentTypeAlias = "blogPost",
+                    ProfileId = profileId, PromptText = "p", Version = 1 },
+            new() { Id = Guid.NewGuid(), Name = "B", DocumentTypeAlias = "newsItem",
+                    ProfileId = profileId, PromptText = "p", Version = 1 },
+        };
+        _configService.GetAllAsync(Arg.Any<CancellationToken>())
+            .Returns((IReadOnlyList<AIEvaluatorConfig>)configs);
+        _profileService.GetProfileAsync(profileId, Arg.Any<CancellationToken>())
+            .Returns(new AIProfile { Alias = "test", Name = "Test Profile", ConnectionId = Guid.Empty });
+
+        await _sut.GetConfigurationsAsync();
+
+        await _profileService.Received(1).GetProfileAsync(profileId, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task GetConfigurationsAsync_Returns200WithAllConfigs()
     {
         var configs = new List<AIEvaluatorConfig>
