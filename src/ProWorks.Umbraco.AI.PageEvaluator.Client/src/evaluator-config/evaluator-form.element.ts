@@ -275,6 +275,7 @@ export class EvaluatorFormElement extends UmbLitElement {
         query: { query, isElement: false, skip: 0, take: 20 },
       });
       if (!this.isConnected) return;
+      if (this._docTypeDisplayName !== query) return;
       if (result.response.ok && result.data) {
         const data = result.data as { items: Array<{ id: string; name: string; alias?: string }> };
         this._docTypeSuggestions = data.items;

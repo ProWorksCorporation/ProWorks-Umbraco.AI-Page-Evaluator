@@ -1,6 +1,6 @@
 import { property as m, state as s, customElement as f, html as o, nothing as n, css as x } from "@umbraco-cms/backoffice/external/lit";
 import { UmbLitElement as v } from "@umbraco-cms/backoffice/lit-element";
-import { f as b, c as $, h as g, B as y, u as T, i as C } from "./entry-point-CqHCNBTY.js";
+import { f as b, c as $, h as g, B as y, u as T, i as C } from "./entry-point-CWmDYVjH.js";
 const _ = [
   {
     id: "required-fields",
@@ -249,7 +249,7 @@ let a = class extends v {
         url: "/umbraco/management/api/v1/item/document-type/search",
         query: { query: e, isElement: !1, skip: 0, take: 20 }
       });
-      if (!this.isConnected) return;
+      if (!this.isConnected || this._docTypeDisplayName !== e) return;
       if (t.response.ok && t.data) {
         const i = t.data;
         this._docTypeSuggestions = i.items, this._docTypeShowSuggestions = i.items.length > 0;
@@ -746,4 +746,4 @@ a = p([
 export {
   a as EvaluatorFormElement
 };
-//# sourceMappingURL=evaluator-form.element-P8m6osoT.js.map
+//# sourceMappingURL=evaluator-form.element-CQaCoLBL.js.map
