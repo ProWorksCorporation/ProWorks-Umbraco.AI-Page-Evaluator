@@ -164,6 +164,7 @@ public class AIEvaluatorConfigServiceTests
         MockProfileExists(profileId);
 
         var updated = NewConfig(id: id, profileId: profileId);
+        updated.Version = 1;
         var result = await _sut.UpdateAsync(updated, Guid.NewGuid());
 
         Assert.Equal(originalDate, result.DateCreated);
@@ -179,6 +180,7 @@ public class AIEvaluatorConfigServiceTests
         MockProfileExists(profileId);
 
         var updated = NewConfig(id: id, profileId: profileId);
+        updated.Version = 1;
         var result = await _sut.UpdateAsync(updated, Guid.NewGuid());
 
         Assert.True(result.IsActive);
@@ -203,7 +205,7 @@ public class AIEvaluatorConfigServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_FallsBackToExistingVersionPlusOne_WhenVersionIsZero()
+    public async Task UpdateAsync_ThrowsArgumentException_WhenVersionIsZero()
     {
         var id = Guid.NewGuid();
         var profileId = Guid.NewGuid();
@@ -213,11 +215,9 @@ public class AIEvaluatorConfigServiceTests
         MockProfileExists(profileId);
 
         var updated = NewConfig(id: id, profileId: profileId);
-        updated.Version = 0; // client didn't supply version
-        var result = await _sut.UpdateAsync(updated, Guid.NewGuid());
+        updated.Version = 0;
 
-        // Fallback uses existing.Version (3) as concurrency token; committed is 3+1=4.
-        Assert.Equal(4, result.Version);
+        await Assert.ThrowsAsync<ArgumentException>(() => _sut.UpdateAsync(updated, Guid.NewGuid()));
     }
 
     [Fact]

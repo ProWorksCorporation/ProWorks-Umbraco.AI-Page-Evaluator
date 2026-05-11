@@ -77,13 +77,14 @@ public sealed class AIEvaluatorConfigService : IAIEvaluatorConfigService
 
         config.DateCreated = existing.DateCreated;
         config.CreatedByUserId = existing.CreatedByUserId;
+
+        if (config.Version == 0)
+            throw new ArgumentException(
+                "Version is required for update. Reload the configuration and try again.", nameof(config));
+
         config.DateModified = DateTime.UtcNow;
         config.ModifiedByUserId = modifiedByUserId;
         config.IsActive = true;
-        // Preserve the client-supplied Version for optimistic concurrency.
-        // If Version was not supplied (0), use the existing version to avoid false conflicts.
-        if (config.Version == 0)
-            config.Version = existing.Version;
 
         await _repository.SaveAsync(config, cancellationToken);
         config.Version += 1; // Reflect what ApplyToEntity committed to the DB (domain.Version + 1).
