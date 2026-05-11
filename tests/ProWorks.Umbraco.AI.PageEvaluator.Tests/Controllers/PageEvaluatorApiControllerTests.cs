@@ -59,6 +59,12 @@ public class PageEvaluatorApiControllerTests
             [new Claim("sub", Guid.NewGuid().ToString())],
             "test");
         _sut.ControllerContext.HttpContext.User = new ClaimsPrincipal(identity);
+
+        // Default: GetByIdAsync returns a valid config for any ID so UpdateConfigurationAsync
+        // tests that don't set up their own mock still get past the pre-check.
+        // Tests that need specific behavior override this with their own setup.
+        _configService.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(BuildConfig("blogPost"));
     }
 
     // ---------------------------------------------------------------------------
@@ -646,6 +652,55 @@ public class PageEvaluatorApiControllerTests
         IActionResult result = await _sut.ActivateConfigurationAsync(id);
 
         Assert.IsType<NotFoundObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task UpdateConfigurationAsync_WhenDocumentTypeAliasChanges_InvalidatesBothOldAndNewAliasCache()
+    {
+        var id = Guid.NewGuid();
+        const string oldAlias = "blogPost";
+        const string newAlias = "newsArticle";
+
+        var existingConfig = new AIEvaluatorConfig
+        {
+            Id = id,
+            Name = "Existing",
+            DocumentTypeAlias = oldAlias,
+            ProfileId = Guid.NewGuid(),
+            PromptText = "Evaluate.",
+            Version = 1,
+        };
+        _configService.GetByIdAsync(id, Arg.Any<CancellationToken>()).Returns(existingConfig);
+
+        var updatedConfig = new AIEvaluatorConfig
+        {
+            Id = id,
+            Name = "Updated",
+            DocumentTypeAlias = newAlias,
+            ProfileId = existingConfig.ProfileId,
+            PromptText = "Evaluate.",
+            Version = 2,
+        };
+        _configService.UpdateAsync(Arg.Any<AIEvaluatorConfig>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(updatedConfig);
+
+        _profileService.GetProfileAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns((AIProfile?)null);
+
+        var request = new UpdateEvaluatorConfigRequest
+        {
+            Name = "Updated",
+            DocumentTypeAlias = newAlias,
+            ProfileId = existingConfig.ProfileId,
+            PromptText = "Evaluate.",
+            Version = 1,
+        };
+
+        IActionResult result = await _sut.UpdateConfigurationAsync(id, request);
+
+        Assert.IsType<OkObjectResult>(result);
+        await _cacheRepository.Received(1).DeleteByDocumentTypeAliasAsync(newAlias, Arg.Any<CancellationToken>());
+        await _cacheRepository.Received(1).DeleteByDocumentTypeAliasAsync(oldAlias, Arg.Any<CancellationToken>());
     }
 
     // ---------------------------------------------------------------------------

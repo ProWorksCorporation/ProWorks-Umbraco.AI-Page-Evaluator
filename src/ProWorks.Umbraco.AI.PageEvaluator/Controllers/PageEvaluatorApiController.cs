@@ -138,6 +138,13 @@ public sealed class PageEvaluatorApiController : ControllerBase
         [FromBody] UpdateEvaluatorConfigRequest request,
         CancellationToken cancellationToken = default)
     {
+        // Capture the old alias before the update so we can invalidate its cache entries
+        // if the DocumentTypeAlias changes.
+        AIEvaluatorConfig? existing = await _configService.GetByIdAsync(id, cancellationToken);
+        if (existing is null)
+            return NotFound(new { title = $"Evaluator configuration '{id}' not found." });
+        string oldAlias = existing.DocumentTypeAlias;
+
         var config = new AIEvaluatorConfig
         {
             Id = id,
@@ -156,6 +163,8 @@ public sealed class PageEvaluatorApiController : ControllerBase
         {
             AIEvaluatorConfig updated = await _configService.UpdateAsync(config, GetCurrentUserKey(), cancellationToken);
             await _cacheRepository.DeleteByDocumentTypeAliasAsync(updated.DocumentTypeAlias, cancellationToken);
+            if (!string.Equals(oldAlias, updated.DocumentTypeAlias, StringComparison.OrdinalIgnoreCase))
+                await _cacheRepository.DeleteByDocumentTypeAliasAsync(oldAlias, cancellationToken);
             return Ok(await ToResponseAsync(updated, cancellationToken));
         }
         catch (DbUpdateConcurrencyException)
