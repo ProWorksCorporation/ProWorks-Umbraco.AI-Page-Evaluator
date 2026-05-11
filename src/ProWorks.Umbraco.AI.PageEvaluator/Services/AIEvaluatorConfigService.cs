@@ -84,7 +84,7 @@ public sealed class AIEvaluatorConfigService : IAIEvaluatorConfigService
 
         config.DateModified = DateTime.UtcNow;
         config.ModifiedByUserId = modifiedByUserId;
-        config.IsActive = true;
+        config.IsActive = existing.IsActive;
 
         await _repository.SaveAsync(config, cancellationToken);
         config.Version += 1; // Reflect what ApplyToEntity committed to the DB (domain.Version + 1).

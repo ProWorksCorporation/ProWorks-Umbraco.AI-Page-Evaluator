@@ -171,7 +171,7 @@ public class AIEvaluatorConfigServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_SetsIsActiveTrueOnReturnedConfig()
+    public async Task UpdateAsync_PreservesIsActive_WhenExistingConfigIsActive()
     {
         var id = Guid.NewGuid();
         var profileId = Guid.NewGuid();
@@ -184,6 +184,22 @@ public class AIEvaluatorConfigServiceTests
         var result = await _sut.UpdateAsync(updated, Guid.NewGuid());
 
         Assert.True(result.IsActive);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_PreservesIsActive_WhenExistingConfigIsInactive()
+    {
+        var id = Guid.NewGuid();
+        var profileId = Guid.NewGuid();
+        var existing = ExistingConfig(id: id, profileId: profileId, isActive: false);
+        _repository.GetByIdAsync(id, Arg.Any<CancellationToken>()).Returns(existing);
+        MockProfileExists(profileId);
+
+        var updated = NewConfig(id: id, profileId: profileId);
+        updated.Version = 1;
+        var result = await _sut.UpdateAsync(updated, Guid.NewGuid());
+
+        Assert.False(result.IsActive);
     }
 
     [Fact]
@@ -347,7 +363,8 @@ public class AIEvaluatorConfigServiceTests
     private static AIEvaluatorConfig ExistingConfig(
         Guid? id = null,
         Guid? profileId = null,
-        DateTime? dateCreated = null)
+        DateTime? dateCreated = null,
+        bool isActive = true)
         => new()
         {
             Id = id ?? Guid.NewGuid(),
@@ -355,7 +372,7 @@ public class AIEvaluatorConfigServiceTests
             DocumentTypeAlias = "blogPost",
             ProfileId = profileId ?? Guid.NewGuid(),
             PromptText = "Evaluate this page.",
-            IsActive = true,
+            IsActive = isActive,
             DateCreated = dateCreated ?? DateTime.UtcNow,
             DateModified = DateTime.UtcNow,
         };

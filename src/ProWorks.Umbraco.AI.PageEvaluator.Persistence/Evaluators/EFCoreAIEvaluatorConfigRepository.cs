@@ -102,7 +102,6 @@ public sealed class EFCoreAIEvaluatorConfigRepository : IAIEvaluatorConfigReposi
                     // concurrency check (WHERE Version = @original) detects conflicts.
                     db.Entry(existing).Property(e => e.Version).OriginalValue = config.Version;
                     AIEvaluatorConfigEntityFactory.ApplyToEntity(config, existing);
-                    existing.IsActive = true;
                 }
 
                 await db.SaveChangesAsync(cancellationToken);
