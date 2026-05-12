@@ -127,6 +127,7 @@ public sealed class PageEvaluatorApiController : ControllerBase
             PromptText = request.PromptText,
             PropertyAliases = request.PropertyAliases,
             ScoringEnabled = request.ScoringEnabled,
+            GuardrailIds = request.GuardrailIds,
         };
 
         try
@@ -171,6 +172,7 @@ public sealed class PageEvaluatorApiController : ControllerBase
             PromptText = request.PromptText,
             PropertyAliases = request.PropertyAliases,
             ScoringEnabled = request.ScoringEnabled,
+            GuardrailIds = request.GuardrailIds,
             Version = request.Version,
         };
 
@@ -447,6 +449,7 @@ public sealed class PageEvaluatorApiController : ControllerBase
             DateModified = config.DateModified,
             PropertyAliases = config.PropertyAliases,
             ScoringEnabled = config.ScoringEnabled,
+            GuardrailIds = config.GuardrailIds,
             Version = config.Version,
         };
     }
@@ -488,6 +491,7 @@ public sealed class PageEvaluatorApiController : ControllerBase
             DateModified = config.DateModified,
             PropertyAliases = config.PropertyAliases,
             ScoringEnabled = config.ScoringEnabled,
+            GuardrailIds = config.GuardrailIds,
             Version = config.Version,
         };
     }
@@ -524,6 +528,7 @@ public sealed class CreateEvaluatorConfigRequest
     public string PromptText { get; set; } = string.Empty;
     public List<string>? PropertyAliases { get; set; }
     public bool ScoringEnabled { get; set; }
+    public List<Guid>? GuardrailIds { get; set; }
 }
 
 /// <summary>Request body for <c>PUT /configurations/{id}</c>.</summary>
@@ -537,6 +542,7 @@ public sealed class UpdateEvaluatorConfigRequest
     public string PromptText { get; set; } = string.Empty;
     public List<string>? PropertyAliases { get; set; }
     public bool ScoringEnabled { get; set; }
+    public List<Guid>? GuardrailIds { get; set; }
 
     /// <summary>
     /// The version of the config the client last read.
@@ -564,5 +570,6 @@ public sealed class EvaluatorConfigResponse
     public DateTime DateModified { get; init; }
     public List<string>? PropertyAliases { get; init; }
     public bool ScoringEnabled { get; init; }
+    public List<Guid>? GuardrailIds { get; init; }
     public int Version { get; init; }
 }
