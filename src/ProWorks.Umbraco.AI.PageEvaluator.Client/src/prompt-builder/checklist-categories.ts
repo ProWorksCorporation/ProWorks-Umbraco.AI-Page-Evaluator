@@ -12,7 +12,7 @@ import type { ChecklistCategory } from '../shared/types.js';
 export const CHECKLIST_CATEGORIES: readonly ChecklistCategory[] = [
   {
     id: 'required-fields',
-    label: 'Required Fields',
+    labelKey: 'promptBuilder_categoryRequiredFields',
     promptFragment:
       'Verify that all required fields are populated. ' +
       'The document type has the following properties: {{propertyAliases}}. ' +
@@ -21,7 +21,7 @@ export const CHECKLIST_CATEGORIES: readonly ChecklistCategory[] = [
   },
   {
     id: 'metadata-seo',
-    label: 'Metadata & SEO',
+    labelKey: 'promptBuilder_categoryMetadataSeo',
     promptFragment:
       'Evaluate the SEO metadata for this page. ' +
       'Check the following property aliases for SEO-relevant content: {{propertyAliases}}. ' +
@@ -31,7 +31,7 @@ export const CHECKLIST_CATEGORIES: readonly ChecklistCategory[] = [
   },
   {
     id: 'content-quality',
-    label: 'Content Quality',
+    labelKey: 'promptBuilder_categoryContentQuality',
     promptFragment:
       'Assess the content quality of this page. ' +
       'The page properties are: {{propertyAliases}}. ' +
@@ -41,7 +41,7 @@ export const CHECKLIST_CATEGORIES: readonly ChecklistCategory[] = [
   },
   {
     id: 'schema-structured-data',
-    label: 'Schema & Structured Data',
+    labelKey: 'promptBuilder_categorySchemaStructuredData',
     promptFragment:
       'Evaluate schema markup and structured data opportunities for this page. ' +
       'Review properties: {{propertyAliases}}. ' +
@@ -51,7 +51,7 @@ export const CHECKLIST_CATEGORIES: readonly ChecklistCategory[] = [
   },
   {
     id: 'accessibility-visibility',
-    label: 'Accessibility & Visibility',
+    labelKey: 'promptBuilder_categoryAccessibilityVisibility',
     promptFragment:
       'Review this page for accessibility and discoverability. ' +
       'Properties to evaluate: {{propertyAliases}}. ' +
@@ -61,7 +61,7 @@ export const CHECKLIST_CATEGORIES: readonly ChecklistCategory[] = [
   },
   {
     id: 'calls-to-action',
-    label: 'Calls to Action',
+    labelKey: 'promptBuilder_categoryCallsToAction',
     promptFragment:
       'Evaluate the calls to action on this page. ' +
       'Review the following properties: {{propertyAliases}}. ' +

@@ -138,11 +138,11 @@ export class PromptBuilderElement extends UmbLitElement {
             ${CHECKLIST_CATEGORIES.map(
               (cat) => html`
                 <uui-checkbox
-                  label=${cat.label}
+                  label=${this.localize.term(cat.labelKey)}
                   ?checked=${this._selectedCategories.has(cat.id)}
                   @change=${(e: Event) => {
                     this._toggleCategory(cat.id, (e.target as HTMLInputElement).checked);
-                  }}>${cat.label}</uui-checkbox>
+                  }}>${this.localize.term(cat.labelKey)}</uui-checkbox>
               `,
             )}
           </div>
@@ -154,7 +154,7 @@ export class PromptBuilderElement extends UmbLitElement {
           <uui-textarea
             id="site-context"
             label=${this.localize.term('promptBuilder_siteContextLabel')}
-            placeholder="Describe the site purpose, audience, or brand guidelines…"
+            placeholder=${this.localize.term('promptBuilder_siteContextPlaceholder')}
             .value=${this._siteContext}
             @input=${(e: InputEvent) => {
               this._siteContext = (e.target as HTMLTextAreaElement).value;
