@@ -47,6 +47,8 @@ public sealed class PageEvaluatorTestFeature : AITestFeatureBase<PageEvaluatorTe
             config.ProfileId = profileIdOverride.Value;
         if (guardrailIdsOverride is not null)
             config.GuardrailIds = guardrailIdsOverride.ToList();
+        // contextIdsOverride not applied: AIEvaluatorConfig uses a single ContextId, not a list.
+        // The test runner's multi-context override model has no direct mapping here.
 
         IReadOnlyDictionary<string, object?> properties;
         try
