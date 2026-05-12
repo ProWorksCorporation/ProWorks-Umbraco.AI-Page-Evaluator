@@ -74,8 +74,32 @@ public sealed partial class PageEvaluationService : IPageEvaluationService
         // Clean property values: strip HTML and truncate long strings.
         resolvedProperties = CleanProperties(resolvedProperties);
 
+        EvaluationRawResult raw = await EvaluateWithConfigAsync(config, resolvedProperties, cancellationToken);
+
+        EvaluationReport result = raw.Report;
+
+        _logger.LogInformation(
+            "[PageEvaluator] AI response received for node {NodeId} / {Alias} ({Length} chars, parseFailed={ParseFailed})",
+            nodeId, documentTypeAlias, raw.AiResponse.Length, result.ParseFailed);
+
+        _logger.LogDebug(
+            "[PageEvaluator] Raw AI response:\n{ResponseText}", raw.AiResponse);
+
+        if (result.ParseFailed)
+            _logger.LogWarning(
+                "[PageEvaluator] Parse failed for node {NodeId} / {Alias}. Response was not valid JSON or Markdown checklist.",
+                nodeId, documentTypeAlias);
+
+        return result;
+    }
+
+    public async Task<EvaluationRawResult> EvaluateWithConfigAsync(
+        AIEvaluatorConfig config,
+        IReadOnlyDictionary<string, object?> properties,
+        CancellationToken cancellationToken = default)
+    {
         string systemPrompt = await BuildSystemPromptAsync(config, cancellationToken);
-        string userMessage = BuildUserMessage(nodeId, documentTypeAlias, resolvedProperties);
+        string userMessage = BuildUserMessage(Guid.Empty, config.DocumentTypeAlias, properties);
 
         List<ChatMessage> messages =
         [
@@ -100,12 +124,16 @@ public sealed partial class PageEvaluationService : IPageEvaluationService
         };
 
         ChatResponse response = await _chatService.GetChatResponseAsync(
-            chat => chat
-                .WithAlias("proworks-page-evaluator")
-                .WithName("ProWorks Page Evaluator")
-                .WithDescription("Evaluates page content against configured criteria")
-                .WithProfile(config.ProfileId)
-                .WithChatOptions(chatOptions),
+            chat =>
+            {
+                chat.WithAlias("proworks-page-evaluator")
+                    .WithName("ProWorks Page Evaluator")
+                    .WithDescription("Evaluates page content against configured criteria")
+                    .WithProfile(config.ProfileId)
+                    .WithChatOptions(chatOptions);
+                if (config.GuardrailIds is { Count: > 0 })
+                    chat.WithGuardrails(config.GuardrailIds.ToArray());
+            },
             messages,
             cancellationToken);
 
@@ -114,26 +142,14 @@ public sealed partial class PageEvaluationService : IPageEvaluationService
         // Check for truncated response (FinishReason == Length).
         if (response.FinishReason == ChatFinishReason.Length)
             _logger.LogWarning(
-                "[PageEvaluator] AI response was truncated (FinishReason=Length) for node {NodeId} / {Alias}. Consider reducing content size or increasing MaxOutputTokens.",
-                nodeId, documentTypeAlias);
+                "[PageEvaluator] AI response was truncated (FinishReason=Length) for doctype {Alias}. Consider reducing content size or increasing MaxOutputTokens.",
+                config.DocumentTypeAlias);
 
-        EvaluationReport result = TryParseJson(responseText)
+        EvaluationReport report = TryParseJson(responseText)
             ?? TryParseMarkdown(responseText)
             ?? EvaluationReport.Failed(responseText);
 
-        _logger.LogInformation(
-            "[PageEvaluator] AI response received for node {NodeId} / {Alias} ({Length} chars, parseFailed={ParseFailed})",
-            nodeId, documentTypeAlias, responseText.Length, result.ParseFailed);
-
-        _logger.LogDebug(
-            "[PageEvaluator] Raw AI response:\n{ResponseText}", responseText);
-
-        if (result.ParseFailed)
-            _logger.LogWarning(
-                "[PageEvaluator] Parse failed for node {NodeId} / {Alias}. Response was not valid JSON or Markdown checklist.",
-                nodeId, documentTypeAlias);
-
-        return result;
+        return new EvaluationRawResult(report, systemPrompt, userMessage, responseText);
     }
 
     // ---------------------------------------------------------------------------

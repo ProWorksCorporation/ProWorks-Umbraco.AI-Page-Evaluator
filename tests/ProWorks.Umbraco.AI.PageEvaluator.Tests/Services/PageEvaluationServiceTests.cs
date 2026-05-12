@@ -821,6 +821,87 @@ public class PageEvaluationServiceTests
     }
 
     // ---------------------------------------------------------------------------
+    // Guardrails
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public async Task EvaluateAsync_WhenConfigHasGuardrailIds_CallsChatServiceSuccessfully()
+    {
+        const string documentTypeAlias = "blogPost";
+        var config = BuildConfig(documentTypeAlias);
+        config.GuardrailIds = [Guid.NewGuid(), Guid.NewGuid()];
+        _configService.GetActiveForDocumentTypeAsync(documentTypeAlias, Arg.Any<CancellationToken>())
+            .Returns(config);
+
+        MockChatResponse("""{"score":{"passed":1,"total":1},"checks":[{"checkNumber":1,"status":"Pass","label":"T","explanation":null}],"suggestions":null}""");
+
+        EvaluationReport report = await _sut.EvaluateAsync(Guid.NewGuid(), documentTypeAlias, new Dictionary<string, object?>());
+
+        Assert.False(report.ParseFailed);
+        await _chatService.Received(1).GetChatResponseAsync(
+            Arg.Any<Action<AIChatBuilder>>(),
+            Arg.Any<IEnumerable<ChatMessage>>(),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_WhenConfigHasNullGuardrailIds_CallsChatServiceSuccessfully()
+    {
+        const string documentTypeAlias = "blogPost";
+        var config = BuildConfig(documentTypeAlias);
+        config.GuardrailIds = null;
+        _configService.GetActiveForDocumentTypeAsync(documentTypeAlias, Arg.Any<CancellationToken>())
+            .Returns(config);
+
+        MockChatResponse("""{"score":{"passed":1,"total":1},"checks":[{"checkNumber":1,"status":"Pass","label":"T","explanation":null}],"suggestions":null}""");
+
+        EvaluationReport report = await _sut.EvaluateAsync(Guid.NewGuid(), documentTypeAlias, new Dictionary<string, object?>());
+
+        Assert.False(report.ParseFailed);
+        await _chatService.Received(1).GetChatResponseAsync(
+            Arg.Any<Action<AIChatBuilder>>(),
+            Arg.Any<IEnumerable<ChatMessage>>(),
+            Arg.Any<CancellationToken>());
+    }
+
+    // ---------------------------------------------------------------------------
+    // EvaluateWithConfigAsync
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public async Task EvaluateWithConfigAsync_ReturnsRawResult_WithSystemPromptUserMessageAndAiResponse()
+    {
+        const string documentTypeAlias = "homePage";
+        var config = BuildConfig(documentTypeAlias, promptText: "Evaluate this.");
+
+        const string aiResponseText = """{"score":{"passed":2,"total":2},"checks":[{"checkNumber":1,"status":"Pass","label":"Title","explanation":null},{"checkNumber":2,"status":"Pass","label":"Meta","explanation":null}],"suggestions":null}""";
+        MockChatResponse(aiResponseText);
+
+        var properties = new Dictionary<string, object?> { ["title"] = "Hello" };
+
+        EvaluationRawResult raw = await _sut.EvaluateWithConfigAsync(config, properties);
+
+        Assert.False(raw.Report.ParseFailed);
+        Assert.Contains("Evaluate this.", raw.SystemPrompt);
+        Assert.Contains("title", raw.UserMessage);
+        Assert.Equal(aiResponseText, raw.AiResponse);
+    }
+
+    [Fact]
+    public async Task EvaluateWithConfigAsync_WhenAiResponseCannotBeParsed_ReturnsFailedReport()
+    {
+        const string documentTypeAlias = "homePage";
+        var config = BuildConfig(documentTypeAlias);
+
+        MockChatResponse("not json not markdown");
+
+        EvaluationRawResult raw = await _sut.EvaluateWithConfigAsync(config, new Dictionary<string, object?>());
+
+        Assert.True(raw.Report.ParseFailed);
+        Assert.Equal("not json not markdown", raw.Report.RawResponse);
+    }
+
+    // ---------------------------------------------------------------------------
     // Helpers
     // ---------------------------------------------------------------------------
 
