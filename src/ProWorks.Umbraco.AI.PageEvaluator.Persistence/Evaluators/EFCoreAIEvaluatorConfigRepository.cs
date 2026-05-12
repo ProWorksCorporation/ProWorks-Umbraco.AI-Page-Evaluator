@@ -74,45 +74,34 @@ public sealed class EFCoreAIEvaluatorConfigRepository : IAIEvaluatorConfigReposi
         using IEfCoreScope<UmbracoAIPageEvaluatorDbContext> scope = _scopeProvider.CreateScope();
         await scope.ExecuteWithContextAsync<object?>(async db =>
         {
-            await using var tx = await db.Database.BeginTransactionAsync(cancellationToken);
-            try
+            // Active-one rule: deactivate all existing configs for this alias before saving.
+            if (config.IsActive)
             {
-                // Active-one rule: deactivate all existing configs for this alias before saving.
-                if (config.IsActive)
-                {
-                    await db.EvaluatorConfigs
-                        .Where(e => e.DocumentTypeAlias == config.DocumentTypeAlias && e.Id != config.Id)
-                        .ExecuteUpdateAsync(
-                            s => s.SetProperty(e => e.IsActive, false),
-                            cancellationToken);
-                }
-
-                AIEvaluatorConfigEntity? existing = await db.EvaluatorConfigs
-                    .FirstOrDefaultAsync(e => e.Id == config.Id, cancellationToken);
-
-                if (existing is null)
-                {
-                    AIEvaluatorConfigEntity newEntity = AIEvaluatorConfigEntityFactory.ToEntity(config);
-                    newEntity.IsActive = true; // new records are always active
-                    db.EvaluatorConfigs.Add(newEntity);
-                }
-                else
-                {
-                    // Set the original Version to the client-supplied value so EF Core's
-                    // concurrency check (WHERE Version = @original) detects conflicts.
-                    db.Entry(existing).Property(e => e.Version).OriginalValue = config.Version;
-                    AIEvaluatorConfigEntityFactory.ApplyToEntity(config, existing);
-                }
-
-                await db.SaveChangesAsync(cancellationToken);
-                await tx.CommitAsync(cancellationToken);
-            }
-            catch
-            {
-                await tx.RollbackAsync(cancellationToken);
-                throw;
+                await db.EvaluatorConfigs
+                    .Where(e => e.DocumentTypeAlias == config.DocumentTypeAlias && e.Id != config.Id)
+                    .ExecuteUpdateAsync(
+                        s => s.SetProperty(e => e.IsActive, false),
+                        cancellationToken);
             }
 
+            AIEvaluatorConfigEntity? existing = await db.EvaluatorConfigs
+                .FirstOrDefaultAsync(e => e.Id == config.Id, cancellationToken);
+
+            if (existing is null)
+            {
+                AIEvaluatorConfigEntity newEntity = AIEvaluatorConfigEntityFactory.ToEntity(config);
+                newEntity.IsActive = true; // new records are always active
+                db.EvaluatorConfigs.Add(newEntity);
+            }
+            else
+            {
+                // Set the original Version to the client-supplied value so EF Core's
+                // concurrency check (WHERE Version = @original) detects conflicts.
+                db.Entry(existing).Property(e => e.Version).OriginalValue = config.Version;
+                AIEvaluatorConfigEntityFactory.ApplyToEntity(config, existing);
+            }
+
+            await db.SaveChangesAsync(cancellationToken);
             return null;
         });
 
@@ -133,33 +122,22 @@ public sealed class EFCoreAIEvaluatorConfigRepository : IAIEvaluatorConfigReposi
             bool wasActive = entity.IsActive;
             string alias = entity.DocumentTypeAlias;
 
-            await using var tx = await db.Database.BeginTransactionAsync(cancellationToken);
-            try
-            {
-                db.EvaluatorConfigs.Remove(entity);
-                await db.SaveChangesAsync(cancellationToken);
+            db.EvaluatorConfigs.Remove(entity);
+            await db.SaveChangesAsync(cancellationToken);
 
-                // If the deleted record was active, promote the next most-recent one.
-                if (wasActive)
+            // If the deleted record was active, promote the next most-recent one.
+            if (wasActive)
+            {
+                AIEvaluatorConfigEntity? next = await db.EvaluatorConfigs
+                    .Where(e => e.DocumentTypeAlias == alias)
+                    .OrderByDescending(e => e.DateModified)
+                    .FirstOrDefaultAsync(cancellationToken);
+
+                if (next is not null)
                 {
-                    AIEvaluatorConfigEntity? next = await db.EvaluatorConfigs
-                        .Where(e => e.DocumentTypeAlias == alias)
-                        .OrderByDescending(e => e.DateModified)
-                        .FirstOrDefaultAsync(cancellationToken);
-
-                    if (next is not null)
-                    {
-                        next.IsActive = true;
-                        await db.SaveChangesAsync(cancellationToken);
-                    }
+                    next.IsActive = true;
+                    await db.SaveChangesAsync(cancellationToken);
                 }
-
-                await tx.CommitAsync(cancellationToken);
-            }
-            catch
-            {
-                await tx.RollbackAsync(cancellationToken);
-                throw;
             }
 
             return null;
@@ -177,23 +155,12 @@ public sealed class EFCoreAIEvaluatorConfigRepository : IAIEvaluatorConfigReposi
                 .FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
             if (target is null) return null;
 
-            await using var tx = await db.Database.BeginTransactionAsync(cancellationToken);
-            try
-            {
-                await db.EvaluatorConfigs
-                    .Where(e => e.DocumentTypeAlias == target.DocumentTypeAlias && e.IsActive)
-                    .ExecuteUpdateAsync(s => s.SetProperty(e => e.IsActive, false), cancellationToken);
+            await db.EvaluatorConfigs
+                .Where(e => e.DocumentTypeAlias == target.DocumentTypeAlias && e.IsActive)
+                .ExecuteUpdateAsync(s => s.SetProperty(e => e.IsActive, false), cancellationToken);
 
-                target.IsActive = true;
-                await db.SaveChangesAsync(cancellationToken);
-                await tx.CommitAsync(cancellationToken);
-            }
-            catch
-            {
-                await tx.RollbackAsync(cancellationToken);
-                throw;
-            }
-
+            target.IsActive = true;
+            await db.SaveChangesAsync(cancellationToken);
             return null;
         });
 
