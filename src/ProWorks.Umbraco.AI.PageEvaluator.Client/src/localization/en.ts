@@ -112,6 +112,8 @@ export default {
     // Form: dimensional scoring
     scoringLabel: 'Enable Scoring',
     scoringHelp: 'Ask the AI to rate the page on a 1-5 scale across the dimensions named in your prompt.',
+    guardrailsLabel: 'Guardrails',
+    guardrailsHelp: 'Optional Umbraco.AI guardrails to apply when evaluating pages. The chat pipeline enforces these before and after the AI response.',
   },
 
   promoNotice: {

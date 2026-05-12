@@ -97,7 +97,9 @@ const e = {
     validationRequired: "This field is required.",
     // Form: dimensional scoring
     scoringLabel: "Enable Scoring",
-    scoringHelp: "Ask the AI to rate the page on a 1-5 scale across the dimensions named in your prompt."
+    scoringHelp: "Ask the AI to rate the page on a 1-5 scale across the dimensions named in your prompt.",
+    guardrailsLabel: "Guardrails",
+    guardrailsHelp: "Optional Umbraco.AI guardrails to apply when evaluating pages. The chat pipeline enforces these before and after the AI response."
   },
   promoNotice: {
     headline: "See How AI Interprets Your Brand and Messaging",
@@ -112,14 +114,21 @@ const e = {
     categoriesLabel: "Checklist Categories",
     categoriesHelpText: "Select the categories to include in the generated prompt. Each category adds evaluation criteria the AI will check against your page content.",
     siteContextLabel: "Site Context (optional)",
+    siteContextPlaceholder: "Describe the site purpose, audience, or brand guidelines…",
     generateButton: "Generate Prompt Draft",
     usePromptButton: "Use This Prompt",
     propertiesLabel: "Document Type Properties",
     generatedDraftLabel: "Generated Draft",
-    loadError: "Could not load document type properties."
+    loadError: "Could not load document type properties.",
+    categoryRequiredFields: "Required Fields",
+    categoryMetadataSeo: "Metadata & SEO",
+    categoryContentQuality: "Content Quality",
+    categorySchemaStructuredData: "Schema & Structured Data",
+    categoryAccessibilityVisibility: "Accessibility & Visibility",
+    categoryCallsToAction: "Calls to Action"
   }
 };
 export {
   e as default
 };
-//# sourceMappingURL=en-DdA0pv8A.js.map
+//# sourceMappingURL=en-gZ9gfRC1.js.map

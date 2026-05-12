@@ -1,35 +1,35 @@
-import { property as m, state as s, customElement as f, html as o, nothing as n, css as x } from "@umbraco-cms/backoffice/external/lit";
+import { property as m, state as a, customElement as f, html as o, nothing as n, css as x } from "@umbraco-cms/backoffice/external/lit";
 import { UmbLitElement as v } from "@umbraco-cms/backoffice/lit-element";
-import { f as b, c as $, h as g, B as y, u as T, i as C } from "./entry-point-CWmDYVjH.js";
-const _ = [
+import { f as b, c as $, h as _, B as y, u as T, i as C } from "./entry-point-Cg088fXW.js";
+const g = [
   {
     id: "required-fields",
-    label: "Required Fields",
+    labelKey: "promptBuilder_categoryRequiredFields",
     promptFragment: "Verify that all required fields are populated. The document type has the following properties: {{propertyAliases}}. Check each one and report any that are empty or missing. Site context: {{siteContext}}"
   },
   {
     id: "metadata-seo",
-    label: "Metadata & SEO",
+    labelKey: "promptBuilder_categoryMetadataSeo",
     promptFragment: "Evaluate the SEO metadata for this page. Check the following property aliases for SEO-relevant content: {{propertyAliases}}. Verify meta description length (max 160 chars), browser title length (max 60 chars), and Open Graph tags if present. Site context: {{siteContext}}"
   },
   {
     id: "content-quality",
-    label: "Content Quality",
+    labelKey: "promptBuilder_categoryContentQuality",
     promptFragment: "Assess the content quality of this page. The page properties are: {{propertyAliases}}. Check for spelling/grammar issues, appropriate reading level, sufficient content length, and clear headings structure. Site context: {{siteContext}}"
   },
   {
     id: "schema-structured-data",
-    label: "Schema & Structured Data",
+    labelKey: "promptBuilder_categorySchemaStructuredData",
     promptFragment: "Evaluate schema markup and structured data opportunities for this page. Review properties: {{propertyAliases}}. Identify which fields map to schema.org types and whether structured data is present or recommended. Site context: {{siteContext}}"
   },
   {
     id: "accessibility-visibility",
-    label: "Accessibility & Visibility",
+    labelKey: "promptBuilder_categoryAccessibilityVisibility",
     promptFragment: "Review this page for accessibility and discoverability. Properties to evaluate: {{propertyAliases}}. Check for descriptive image alt text, meaningful link labels, logical heading hierarchy, and robots/sitemap inclusion. Site context: {{siteContext}}"
   },
   {
     id: "calls-to-action",
-    label: "Calls to Action",
+    labelKey: "promptBuilder_categoryCallsToAction",
     promptFragment: "Evaluate the calls to action on this page. Review the following properties: {{propertyAliases}}. Check for clear, actionable CTAs, appropriate placement, and alignment with the page goal. Site context: {{siteContext}}"
   }
 ];
@@ -40,7 +40,7 @@ var z = Object.defineProperty, A = Object.getOwnPropertyDescriptor, d = (e, t, i
 };
 let u = class extends v {
   constructor() {
-    super(...arguments), this.documentTypeAlias = "", this.selectedPropertyAliases = [], this.scoringEnabled = !1, this._properties = [], this._selectedCategories = new Set(_.map((e) => e.id)), this._siteContext = "", this._draft = "", this._loading = !1, this._error = null, this._onCategoryToggle = (e) => {
+    super(...arguments), this.documentTypeAlias = "", this.selectedPropertyAliases = [], this.scoringEnabled = !1, this._properties = [], this._selectedCategories = new Set(g.map((e) => e.id)), this._siteContext = "", this._draft = "", this._loading = !1, this._error = null, this._onCategoryToggle = (e) => {
       const { id: t, selected: i } = e.detail;
       this._toggleCategory(t, i);
     }, this._onUsePrompt = () => this.usePrompt();
@@ -70,7 +70,7 @@ let u = class extends v {
   }
   /** Assembles the prompt draft from selected categories, properties, and site context. */
   generateDraft() {
-    const t = (this.selectedPropertyAliases.length > 0 ? this._properties.filter((r) => this.selectedPropertyAliases.includes(r.alias)) : this._properties).map((r) => r.alias).join(", "), i = _.filter((r) => this._selectedCategories.has(r.id)).map(
+    const t = (this.selectedPropertyAliases.length > 0 ? this._properties.filter((r) => this.selectedPropertyAliases.includes(r.alias)) : this._properties).map((r) => r.alias).join(", "), i = g.filter((r) => this._selectedCategories.has(r.id)).map(
       (r) => r.promptFragment.replace("{{propertyAliases}}", t).replace("{{siteContext}}", this._siteContext)
     ), l = this.scoringEnabled ? `
 
@@ -110,14 +110,14 @@ Site context: ${this._siteContext}` + l).trim();
             ${this.localize.term("promptBuilder_categoriesHelpText")}
           </p>
           <div style="display: flex; flex-direction: column; gap: var(--uui-size-space-3); padding: var(--uui-size-space-3) 0;">
-            ${_.map(
+            ${g.map(
       (e) => o`
                 <uui-checkbox
-                  label=${e.label}
+                  label=${this.localize.term(e.labelKey)}
                   ?checked=${this._selectedCategories.has(e.id)}
                   @change=${(t) => {
         this._toggleCategory(e.id, t.target.checked);
-      }}>${e.label}</uui-checkbox>
+      }}>${this.localize.term(e.labelKey)}</uui-checkbox>
               `
     )}
           </div>
@@ -129,7 +129,7 @@ Site context: ${this._siteContext}` + l).trim();
           <uui-textarea
             id="site-context"
             label=${this.localize.term("promptBuilder_siteContextLabel")}
-            placeholder="Describe the site purpose, audience, or brand guidelines…"
+            placeholder=${this.localize.term("promptBuilder_siteContextPlaceholder")}
             .value=${this._siteContext}
             @input=${(e) => {
       this._siteContext = e.target.value;
@@ -174,34 +174,34 @@ d([
   m({ type: Boolean })
 ], u.prototype, "scoringEnabled", 2);
 d([
-  s()
+  a()
 ], u.prototype, "_properties", 2);
 d([
-  s()
+  a()
 ], u.prototype, "_selectedCategories", 2);
 d([
-  s()
+  a()
 ], u.prototype, "_siteContext", 2);
 d([
-  s()
+  a()
 ], u.prototype, "_draft", 2);
 d([
-  s()
+  a()
 ], u.prototype, "_loading", 2);
 d([
-  s()
+  a()
 ], u.prototype, "_error", 2);
 u = d([
   f("page-evaluator-prompt-builder")
 ], u);
-var S = Object.defineProperty, E = Object.getOwnPropertyDescriptor, p = (e, t, i, l) => {
-  for (var r = l > 1 ? void 0 : l ? E(t, i) : t, c = e.length - 1, h; c >= 0; c--)
+var S = Object.defineProperty, I = Object.getOwnPropertyDescriptor, p = (e, t, i, l) => {
+  for (var r = l > 1 ? void 0 : l ? I(t, i) : t, c = e.length - 1, h; c >= 0; c--)
     (h = e[c]) && (r = (l ? h(t, i, r) : h(r)) || r);
   return l && r && S(t, i, r), r;
 };
-let a = class extends v {
+let s = class extends v {
   constructor() {
-    super(...arguments), this.configId = null, this._name = "", this._description = "", this._documentTypeAlias = "", this._profileId = "", this._contextId = "", this._promptText = "", this._scoringEnabled = !1, this._version = 0, this._errors = {}, this._saving = !1, this._loadError = null, this._promptBuilderOpen = !1, this._propertyAliases = [], this._availableProperties = [], this._docTypeDisplayName = "", this._docTypeSuggestions = [], this._docTypeShowSuggestions = !1, this._docTypeSearchTimer = null;
+    super(...arguments), this.configId = null, this._name = "", this._description = "", this._documentTypeAlias = "", this._profileId = "", this._contextId = "", this._promptText = "", this._scoringEnabled = !1, this._guardrailIds = [], this._version = 0, this._errors = {}, this._saving = !1, this._loadError = null, this._promptBuilderOpen = !1, this._propertyAliases = [], this._availableProperties = [], this._docTypeDisplayName = "", this._docTypeSuggestions = [], this._docTypeShowSuggestions = !1, this._docTypeSearchTimer = null;
   }
   updated(e) {
     super.updated(e), e.has("configId") && (this.configId ? this._loadConfig(this.configId) : this._resetFields());
@@ -210,14 +210,14 @@ let a = class extends v {
     super.disconnectedCallback(), this._docTypeSearchTimer !== null && (clearTimeout(this._docTypeSearchTimer), this._docTypeSearchTimer = null);
   }
   _resetFields() {
-    this._loadError = null, this._name = "", this._description = "", this._documentTypeAlias = "", this._docTypeDisplayName = "", this._docTypeSuggestions = [], this._docTypeShowSuggestions = !1, this._profileId = "", this._contextId = "", this._promptText = "", this._scoringEnabled = !1, this._version = 0, this._propertyAliases = [], this._availableProperties = [], this._errors = {}, this._promptBuilderOpen = !1;
+    this._loadError = null, this._name = "", this._description = "", this._documentTypeAlias = "", this._docTypeDisplayName = "", this._docTypeSuggestions = [], this._docTypeShowSuggestions = !1, this._profileId = "", this._contextId = "", this._promptText = "", this._scoringEnabled = !1, this._guardrailIds = [], this._version = 0, this._propertyAliases = [], this._availableProperties = [], this._errors = {}, this._promptBuilderOpen = !1;
   }
   async _loadConfig(e) {
     this._loadError = null;
     try {
       const t = await $(e);
       if (!this.isConnected || this.configId !== e) return;
-      this._name = t.name, this._description = t.description ?? "", this._documentTypeAlias = t.documentTypeAlias, this._profileId = t.profileId, this._contextId = t.contextId ?? "", this._promptText = t.promptText, this._scoringEnabled = t.scoringEnabled, this._version = t.version, this._propertyAliases = t.propertyAliases ?? [], this._errors = {}, this._loadDocTypeInfo(t.documentTypeAlias);
+      this._name = t.name, this._description = t.description ?? "", this._documentTypeAlias = t.documentTypeAlias, this._profileId = t.profileId, this._contextId = t.contextId ?? "", this._promptText = t.promptText, this._scoringEnabled = t.scoringEnabled, this._guardrailIds = t.guardrailIds ? [...t.guardrailIds] : [], this._version = t.version, this._propertyAliases = t.propertyAliases ?? [], this._errors = {}, this._loadDocTypeInfo(t.documentTypeAlias);
     } catch {
       if (!this.isConnected || this.configId !== e) return;
       this._loadError = this.localize.term("evaluatorConfig_formLoadError");
@@ -244,7 +244,7 @@ let a = class extends v {
   }
   async _searchDocTypes(e) {
     try {
-      const t = await g.get({
+      const t = await _.get({
         security: y,
         url: "/umbraco/management/api/v1/item/document-type/search",
         query: { query: e, isElement: !1, skip: 0, take: 20 }
@@ -260,7 +260,7 @@ let a = class extends v {
   async _selectDocType(e, t) {
     this._docTypeShowSuggestions = !1, this._docTypeSuggestions = [], this._docTypeDisplayName = t;
     try {
-      const i = await g.get({
+      const i = await _.get({
         security: y,
         url: `/umbraco/management/api/v1/document-type/${encodeURIComponent(e)}`
       });
@@ -293,6 +293,7 @@ let a = class extends v {
           promptText: this._promptText,
           propertyAliases: this._propertyAliases.length > 0 ? this._propertyAliases : null,
           scoringEnabled: this._scoringEnabled,
+          guardrailIds: this._guardrailIds.length > 0 ? this._guardrailIds : null,
           version: this._version
         }) : await C({
           name: this._name,
@@ -302,7 +303,8 @@ let a = class extends v {
           contextId: this._contextId || null,
           promptText: this._promptText,
           propertyAliases: this._propertyAliases.length > 0 ? this._propertyAliases : null,
-          scoringEnabled: this._scoringEnabled
+          scoringEnabled: this._scoringEnabled,
+          guardrailIds: this._guardrailIds.length > 0 ? this._guardrailIds : null
         });
         if (!this.isConnected) return;
         this.dispatchEvent(
@@ -452,6 +454,21 @@ let a = class extends v {
             </uai-context-picker>
           </div>
         </umb-property-layout>
+
+        <umb-property-layout
+          label=${this.localize.term("evaluatorConfig_guardrailsLabel")}
+          description=${this.localize.term("evaluatorConfig_guardrailsHelp")}>
+          <div slot="editor">
+            <uai-guardrail-picker
+              multiple
+              .value=${this._guardrailIds}
+              @change=${(e) => {
+      const i = e.target.value;
+      this._guardrailIds = Array.isArray(i) ? i : i ? [i] : [];
+    }}>
+            </uai-guardrail-picker>
+          </div>
+        </umb-property-layout>
       </uui-box>
 
       ${this._availableProperties.length > 0 ? o`
@@ -564,7 +581,7 @@ let a = class extends v {
     `;
   }
 };
-a.styles = x`
+s.styles = x`
     :host {
       display: block;
     }
@@ -688,62 +705,65 @@ a.styles = x`
   `;
 p([
   m({ type: String, attribute: "config-id" })
-], a.prototype, "configId", 2);
+], s.prototype, "configId", 2);
 p([
-  s()
-], a.prototype, "_name", 2);
+  a()
+], s.prototype, "_name", 2);
 p([
-  s()
-], a.prototype, "_description", 2);
+  a()
+], s.prototype, "_description", 2);
 p([
-  s()
-], a.prototype, "_documentTypeAlias", 2);
+  a()
+], s.prototype, "_documentTypeAlias", 2);
 p([
-  s()
-], a.prototype, "_profileId", 2);
+  a()
+], s.prototype, "_profileId", 2);
 p([
-  s()
-], a.prototype, "_contextId", 2);
+  a()
+], s.prototype, "_contextId", 2);
 p([
-  s()
-], a.prototype, "_promptText", 2);
+  a()
+], s.prototype, "_promptText", 2);
 p([
-  s()
-], a.prototype, "_scoringEnabled", 2);
+  a()
+], s.prototype, "_scoringEnabled", 2);
 p([
-  s()
-], a.prototype, "_version", 2);
+  a()
+], s.prototype, "_guardrailIds", 2);
 p([
-  s()
-], a.prototype, "_errors", 2);
+  a()
+], s.prototype, "_version", 2);
 p([
-  s()
-], a.prototype, "_saving", 2);
+  a()
+], s.prototype, "_errors", 2);
 p([
-  s()
-], a.prototype, "_loadError", 2);
+  a()
+], s.prototype, "_saving", 2);
 p([
-  s()
-], a.prototype, "_promptBuilderOpen", 2);
+  a()
+], s.prototype, "_loadError", 2);
 p([
-  s()
-], a.prototype, "_propertyAliases", 2);
+  a()
+], s.prototype, "_promptBuilderOpen", 2);
 p([
-  s()
-], a.prototype, "_availableProperties", 2);
+  a()
+], s.prototype, "_propertyAliases", 2);
 p([
-  s()
-], a.prototype, "_docTypeDisplayName", 2);
+  a()
+], s.prototype, "_availableProperties", 2);
 p([
-  s()
-], a.prototype, "_docTypeSuggestions", 2);
+  a()
+], s.prototype, "_docTypeDisplayName", 2);
 p([
-  s()
-], a.prototype, "_docTypeShowSuggestions", 2);
-a = p([
+  a()
+], s.prototype, "_docTypeSuggestions", 2);
+p([
+  a()
+], s.prototype, "_docTypeShowSuggestions", 2);
+s = p([
   f("evaluator-form")
-], a);
+], s);
 export {
-  a as EvaluatorFormElement
+  s as EvaluatorFormElement
 };
-//# sourceMappingURL=evaluator-form.element-CQaCoLBL.js.map
+//# sourceMappingURL=evaluator-form.element-CxWWTrcU.js.map
