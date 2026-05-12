@@ -7,6 +7,8 @@ using ProWorks.Umbraco.AI.PageEvaluator.Evaluators;
 using ProWorks.Umbraco.AI.PageEvaluator.Notifications;
 using ProWorks.Umbraco.AI.PageEvaluator.Persistence.Configuration;
 using ProWorks.Umbraco.AI.PageEvaluator.Services;
+using ProWorks.Umbraco.AI.PageEvaluator.Tests;
+using Umbraco.AI.Extensions;
 using Umbraco.AI.Startup.Configuration;
 using Umbraco.Cms.Core.Composing;
 using Umbraco.Cms.Core.DependencyInjection;
@@ -51,5 +53,8 @@ public sealed class PageEvaluatorComposer : IComposer
 
         // Invalidate cached evaluations when content is published.
         builder.AddNotificationAsyncHandler<ContentPublishedNotification, ContentPublishedNotificationHandler>();
+
+        // Register the PageEvaluatorTestFeature with the Umbraco.AI test runner.
+        builder.AITestFeatures().Add<PageEvaluatorTestFeature>();
     }
 }
