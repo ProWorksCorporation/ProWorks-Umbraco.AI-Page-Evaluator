@@ -92,6 +92,11 @@ public sealed class PageEvaluatorTestFeature : AITestFeatureBase<PageEvaluatorTe
                 }),
             };
         }
+        catch (OperationCanceledException)
+        {
+            stopwatch.Stop();
+            throw;
+        }
         catch (Exception ex)
         {
             stopwatch.Stop();
