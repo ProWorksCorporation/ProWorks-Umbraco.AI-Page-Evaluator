@@ -55,38 +55,27 @@ public sealed class EFCoreEvaluationCacheRepository : IEvaluationCacheRepository
         using IEfCoreScope<UmbracoAIPageEvaluatorDbContext> scope = _scopeProvider.CreateScope();
         await scope.ExecuteWithContextAsync<object?>(async db =>
         {
-            await using var tx = await db.Database.BeginTransactionAsync(cancellationToken);
-            try
+            EvaluationCacheEntity? existing = await db.EvaluationCache
+                .FirstOrDefaultAsync(e => e.NodeId == entry.NodeId, cancellationToken);
+
+            if (existing is null)
             {
-                EvaluationCacheEntity? existing = await db.EvaluationCache
-                    .FirstOrDefaultAsync(e => e.NodeId == entry.NodeId, cancellationToken);
-
-                if (existing is null)
+                db.EvaluationCache.Add(new EvaluationCacheEntity
                 {
-                    db.EvaluationCache.Add(new EvaluationCacheEntity
-                    {
-                        NodeId = entry.NodeId,
-                        DocumentTypeAlias = entry.DocumentTypeAlias,
-                        ReportJson = reportJson,
-                        CachedAt = entry.CachedAt,
-                    });
-                }
-                else
-                {
-                    existing.DocumentTypeAlias = entry.DocumentTypeAlias;
-                    existing.ReportJson = reportJson;
-                    existing.CachedAt = entry.CachedAt;
-                }
-
-                await db.SaveChangesAsync(cancellationToken);
-                await tx.CommitAsync(cancellationToken);
+                    NodeId = entry.NodeId,
+                    DocumentTypeAlias = entry.DocumentTypeAlias,
+                    ReportJson = reportJson,
+                    CachedAt = entry.CachedAt,
+                });
             }
-            catch
+            else
             {
-                await tx.RollbackAsync(cancellationToken);
-                throw;
+                existing.DocumentTypeAlias = entry.DocumentTypeAlias;
+                existing.ReportJson = reportJson;
+                existing.CachedAt = entry.CachedAt;
             }
 
+            await db.SaveChangesAsync(cancellationToken);
             return null;
         });
 
