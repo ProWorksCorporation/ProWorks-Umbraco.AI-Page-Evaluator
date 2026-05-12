@@ -219,4 +219,73 @@ public class AIEvaluatorConfigEntityFactoryTests
 
         Assert.Null(domain.PropertyAliases);
     }
+
+    // ---------------------------------------------------------------------------
+    // GuardrailIds serialization round-trip
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public void ToDomain_WhenEntityHasGuardrailIds_DeserializesCorrectly()
+    {
+        var id1 = Guid.NewGuid();
+        var id2 = Guid.NewGuid();
+        var entity = BuildEntity(scoringEnabled: false);
+        entity.GuardrailIds = $"[\"{id1}\",\"{id2}\"]";
+
+        var domain = AIEvaluatorConfigEntityFactory.ToDomain(entity);
+
+        Assert.NotNull(domain.GuardrailIds);
+        Assert.Equal(2, domain.GuardrailIds!.Count);
+        Assert.Contains(id1, domain.GuardrailIds);
+        Assert.Contains(id2, domain.GuardrailIds);
+    }
+
+    [Fact]
+    public void ToDomain_WhenEntityHasNullGuardrailIds_ReturnsNull()
+    {
+        var entity = BuildEntity(scoringEnabled: false);
+        entity.GuardrailIds = null;
+
+        var domain = AIEvaluatorConfigEntityFactory.ToDomain(entity);
+
+        Assert.Null(domain.GuardrailIds);
+    }
+
+    [Fact]
+    public void ToEntity_WhenDomainHasGuardrailIds_SerializesCorrectly()
+    {
+        var id1 = Guid.NewGuid();
+        var domain = BuildDomain(scoringEnabled: false);
+        domain.GuardrailIds = [id1];
+
+        var entity = AIEvaluatorConfigEntityFactory.ToEntity(domain);
+
+        Assert.NotNull(entity.GuardrailIds);
+        Assert.Contains(id1.ToString(), entity.GuardrailIds!);
+    }
+
+    [Fact]
+    public void ToEntity_WhenDomainHasNullGuardrailIds_SerializesNull()
+    {
+        var domain = BuildDomain(scoringEnabled: false);
+        domain.GuardrailIds = null;
+
+        var entity = AIEvaluatorConfigEntityFactory.ToEntity(domain);
+
+        Assert.Null(entity.GuardrailIds);
+    }
+
+    [Fact]
+    public void ApplyToEntity_UpdatesGuardrailIds()
+    {
+        var id1 = Guid.NewGuid();
+        var entity = BuildEntity(scoringEnabled: false);
+        var domain = BuildDomain(scoringEnabled: false);
+        domain.GuardrailIds = [id1];
+
+        AIEvaluatorConfigEntityFactory.ApplyToEntity(domain, entity);
+
+        Assert.NotNull(entity.GuardrailIds);
+        Assert.Contains(id1.ToString(), entity.GuardrailIds!);
+    }
 }
