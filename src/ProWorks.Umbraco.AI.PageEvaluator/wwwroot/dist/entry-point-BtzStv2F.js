@@ -53,7 +53,7 @@ async function W(t) {
   });
   return i(e);
 }
-async function b(t) {
+async function U(t) {
   const e = await o.delete({
     security: r,
     url: `${n}/configurations/${encodeURIComponent(t)}`
@@ -63,7 +63,7 @@ async function b(t) {
     throw new Error(`API ${e.response.status}: ${a}`);
   }
 }
-async function U(t) {
+async function b(t) {
   const e = await o.get({
     security: r,
     url: `${n}/evaluate/cached/${encodeURIComponent(t)}`
@@ -107,12 +107,12 @@ class v extends f {
         this.permitted = !1;
         return;
       }
-      const u = ((l = s.structure.getOwnerContentType()) == null ? void 0 : l.alias) ?? "";
-      if (!u) {
+      const c = ((l = s.structure.getOwnerContentType()) == null ? void 0 : l.alias) ?? "";
+      if (!c) {
         this.permitted = !1;
         return;
       }
-      E(u).then((g) => {
+      E(c).then((g) => {
         this.permitted = g !== null;
       }).catch(() => {
         this.permitted = !1;
@@ -120,7 +120,7 @@ class v extends f {
     });
   }
 }
-const P = "Uai.Menu.Addons", c = [
+const P = "Uai.Menu.Addons", u = [
   // ---------------------------------------------------------------------------
   // Localization: English default translations for all package UI strings.
   // ---------------------------------------------------------------------------
@@ -169,7 +169,7 @@ const P = "Uai.Menu.Addons", c = [
     type: "modal",
     alias: "ProWorks.AI.PageEvaluator.Modal.Evaluation",
     name: "Page Evaluator Evaluation Modal",
-    element: () => import("./evaluation-modal.element-XnghqErZ.js").then((t) => ({
+    element: () => import("./evaluation-modal.element-BVyMEQ2a.js").then((t) => ({
       element: t.EvaluationModalElement
     }))
   },
@@ -194,9 +194,25 @@ const P = "Uai.Menu.Addons", c = [
     meta: {
       entityType: "evaluator-config"
     },
-    element: () => import("./evaluator-config-workspace.element-BzqcFJIH.js").then((t) => ({
+    element: () => import("./evaluator-config-workspace.element-CgVNU_40.js").then((t) => ({
       element: t.EvaluatorConfigWorkspaceElement
     }))
+  },
+  // ---------------------------------------------------------------------------
+  // Umbraco.AI Tests integration — entity picker repository for the test runner
+  // ---------------------------------------------------------------------------
+  // Provides the list of AIEvaluatorConfig entities for the "Target" picker
+  // when creating a test with the "Page Evaluator Test" feature.
+  // Discovery: the test runner searches for repositories with
+  //   alias starting "Uai.Repository.TestFeatureEntity." AND meta.feature matching our feature ID.
+  {
+    type: "repository",
+    alias: "Uai.Repository.TestFeatureEntity.ProworksPageEvaluator",
+    name: "Page Evaluator Test Feature Entity Repository",
+    meta: {
+      feature: "proworks-page-evaluator"
+    },
+    api: () => import("./page-evaluator-test-entity.repository-BwwoKLa0.js")
   },
   {
     type: "workspaceView",
@@ -213,14 +229,14 @@ const P = "Uai.Menu.Addons", c = [
         match: "ProWorks.AI.PageEvaluator.Workspace"
       }
     ],
-    element: () => import("./evaluator-form.element-CxWWTrcU.js").then((t) => ({
+    element: () => import("./evaluator-form.element-C-FRmbyo.js").then((t) => ({
       element: t.EvaluatorFormElement
     }))
   }
-], O = (t) => {
-  console.log("[ProWorks.AI.PageEvaluator] onInit called — registering", c.length, "extensions"), m.registerMany(c);
-}, T = (t, e) => {
-  for (const a of c)
+], T = (t) => {
+  console.log("[ProWorks.AI.PageEvaluator] onInit called — registering", u.length, "extensions"), m.registerMany(u);
+}, O = (t, e) => {
+  for (const a of u)
     m.unregister(a.alias);
 };
 export {
@@ -228,14 +244,14 @@ export {
   h as a,
   W as b,
   k as c,
-  b as d,
+  U as d,
   R as e,
   _ as f,
-  U as g,
+  b as g,
   o as h,
   w as i,
-  T as j,
-  O as o,
+  O as j,
+  T as o,
   $ as u
 };
-//# sourceMappingURL=entry-point-Cg088fXW.js.map
+//# sourceMappingURL=entry-point-BtzStv2F.js.map

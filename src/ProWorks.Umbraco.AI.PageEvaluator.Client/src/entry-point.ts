@@ -115,6 +115,24 @@ const manifests: UmbExtensionManifest[] = [
       })),
   },
 
+  // ---------------------------------------------------------------------------
+  // Umbraco.AI Tests integration — entity picker repository for the test runner
+  // ---------------------------------------------------------------------------
+
+  // Provides the list of AIEvaluatorConfig entities for the "Target" picker
+  // when creating a test with the "Page Evaluator Test" feature.
+  // Discovery: the test runner searches for repositories with
+  //   alias starting "Uai.Repository.TestFeatureEntity." AND meta.feature matching our feature ID.
+  {
+    type: 'repository',
+    alias: 'Uai.Repository.TestFeatureEntity.ProworksPageEvaluator',
+    name: 'Page Evaluator Test Feature Entity Repository',
+    meta: {
+      feature: 'proworks-page-evaluator',
+    },
+    api: () => import('./test/page-evaluator-test-entity.repository.js'),
+  } as UmbExtensionManifest,
+
   {
     type: 'workspaceView',
     alias: 'ProWorks.AI.PageEvaluator.Workspace.Form',
