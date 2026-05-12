@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using ProWorks.Umbraco.AI.PageEvaluator.Persistence;
 
@@ -10,9 +11,11 @@ using ProWorks.Umbraco.AI.PageEvaluator.Persistence;
 namespace ProWorks.Umbraco.AI.PageEvaluator.Persistence.Sqlite.Migrations
 {
     [DbContext(typeof(UmbracoAIPageEvaluatorDbContext))]
-    partial class UmbracoAIPageEvaluatorDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260512024010_UmbracoAIPageEvaluator_AddGuardrailIds")]
+    partial class UmbracoAIPageEvaluator_AddGuardrailIds
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.4");
