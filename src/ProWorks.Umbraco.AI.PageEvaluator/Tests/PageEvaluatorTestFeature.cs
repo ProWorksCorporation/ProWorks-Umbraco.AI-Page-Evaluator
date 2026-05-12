@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text.Json;
+using Microsoft.Extensions.DependencyInjection;
 using ProWorks.Umbraco.AI.PageEvaluator.Evaluation;
 using ProWorks.Umbraco.AI.PageEvaluator.Evaluators;
 using Umbraco.AI.Core.EditableModels;
@@ -10,20 +11,20 @@ namespace ProWorks.Umbraco.AI.PageEvaluator.Tests;
 [AITestFeature("proworks-page-evaluator", "Page Evaluator Test", Category = "ProWorks")]
 public sealed class PageEvaluatorTestFeature : AITestFeatureBase<PageEvaluatorTestFeatureConfig>
 {
-    private readonly IPageEvaluationService _evaluationService;
-    private readonly IAIEvaluatorConfigService _configService;
+    // IPageEvaluationService and IAIEvaluatorConfigService are Scoped; this feature is
+    // registered as Singleton by the Umbraco.AI test runner. Resolve them per-execution
+    // via IServiceScopeFactory to avoid the captive-dependency error.
+    private readonly IServiceScopeFactory _scopeFactory;
 
     public override string Description => "Tests a page evaluator configuration with mock page content";
 
     public PageEvaluatorTestFeature(
-        IPageEvaluationService evaluationService,
-        IAIEvaluatorConfigService configService,
+        IServiceScopeFactory scopeFactory,
         AITestContextResolver contextResolver,
         IAIEditableModelSchemaBuilder schemaBuilder)
         : base(contextResolver, schemaBuilder)
     {
-        _evaluationService = evaluationService;
-        _configService = configService;
+        _scopeFactory = scopeFactory;
     }
 
     public override async Task<AITestTranscript> ExecuteAsync(
@@ -38,7 +39,11 @@ public sealed class PageEvaluatorTestFeature : AITestFeatureBase<PageEvaluatorTe
         if (featureConfig is null)
             throw new InvalidOperationException("Failed to deserialize PageEvaluatorTestFeatureConfig.");
 
-        AIEvaluatorConfig? config = await _configService.GetByIdAsync(test.TestTargetId, cancellationToken);
+        using var scope = _scopeFactory.CreateScope();
+        var configService = scope.ServiceProvider.GetRequiredService<IAIEvaluatorConfigService>();
+        var evaluationService = scope.ServiceProvider.GetRequiredService<IPageEvaluationService>();
+
+        AIEvaluatorConfig? config = await configService.GetByIdAsync(test.TestTargetId, cancellationToken);
         if (config is null)
             throw new InvalidOperationException(
                 $"Evaluator configuration '{test.TestTargetId}' not found.");
@@ -65,7 +70,7 @@ public sealed class PageEvaluatorTestFeature : AITestFeatureBase<PageEvaluatorTe
 
         try
         {
-            EvaluationRawResult raw = await _evaluationService.EvaluateWithConfigAsync(
+            EvaluationRawResult raw = await evaluationService.EvaluateWithConfigAsync(
                 config, properties, cancellationToken);
             stopwatch.Stop();
 
@@ -78,7 +83,7 @@ public sealed class PageEvaluatorTestFeature : AITestFeatureBase<PageEvaluatorTe
 
             return new AITestTranscript
             {
-                RunId = Guid.NewGuid(),
+                RunId = Guid.NewGuid(), // Will be set by the runner
                 Messages = JsonSerializer.SerializeToElement(messages),
                 FinalOutput = JsonSerializer.SerializeToElement(new
                 {
@@ -104,7 +109,7 @@ public sealed class PageEvaluatorTestFeature : AITestFeatureBase<PageEvaluatorTe
             stopwatch.Stop();
             return new AITestTranscript
             {
-                RunId = Guid.NewGuid(),
+                RunId = Guid.NewGuid(), // Will be set by the runner
                 Messages = JsonSerializer.SerializeToElement(new[]
                 {
                     new { role = "error", content = ex.Message },

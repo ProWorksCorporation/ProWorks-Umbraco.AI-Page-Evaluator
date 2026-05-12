@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 using ProWorks.Umbraco.AI.PageEvaluator.Evaluation;
@@ -21,8 +22,19 @@ public class PageEvaluatorTestFeatureTests
 
     public PageEvaluatorTestFeatureTests()
     {
-        _sut = new PageEvaluatorTestFeature(
-            _evaluationService, _configService, _contextResolver, _schemaBuilder);
+        // PageEvaluatorTestFeature is a Singleton that consumes Scoped services via IServiceScopeFactory.
+        // Wire up a scope factory that returns mocks for both scoped services.
+        var serviceProvider = Substitute.For<IServiceProvider>();
+        serviceProvider.GetService(typeof(IPageEvaluationService)).Returns(_evaluationService);
+        serviceProvider.GetService(typeof(IAIEvaluatorConfigService)).Returns(_configService);
+
+        var scope = Substitute.For<IServiceScope>();
+        scope.ServiceProvider.Returns(serviceProvider);
+
+        var scopeFactory = Substitute.For<IServiceScopeFactory>();
+        scopeFactory.CreateScope().Returns(scope);
+
+        _sut = new PageEvaluatorTestFeature(scopeFactory, _contextResolver, _schemaBuilder);
     }
 
     [Fact]
