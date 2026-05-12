@@ -65,4 +65,6 @@ public sealed class AIEvaluatorConfig
     /// existing behavior for pre-existing configurations.
     /// </summary>
     public bool ScoringEnabled { get; set; }
+
+    public List<Guid>? GuardrailIds { get; set; }
 }

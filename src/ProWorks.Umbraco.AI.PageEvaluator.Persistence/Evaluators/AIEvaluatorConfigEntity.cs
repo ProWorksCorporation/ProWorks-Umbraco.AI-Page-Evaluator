@@ -57,4 +57,6 @@ public sealed class AIEvaluatorConfigEntity
     /// Default false; pre-existing rows are backfilled with false by the migration default.
     /// </summary>
     public bool ScoringEnabled { get; set; }
+
+    public string? GuardrailIds { get; set; }
 }
