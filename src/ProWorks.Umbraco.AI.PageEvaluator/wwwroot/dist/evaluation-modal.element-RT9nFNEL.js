@@ -1,6 +1,6 @@
 import { css as x, property as y, customElement as $, nothing as c, html as r, state as m } from "@umbraco-cms/backoffice/external/lit";
 import { UmbModalBaseElement as C } from "@umbraco-cms/backoffice/modal";
-import { g as S, e as F } from "./entry-point-Cp2GUpa3.js";
+import { g as S, e as F } from "./entry-point-fq8H4LAY.js";
 import { UmbLitElement as w } from "@umbraco-cms/backoffice/lit-element";
 var E = Object.defineProperty, B = Object.getOwnPropertyDescriptor, P = (e, t, s, i) => {
   for (var a = i > 1 ? void 0 : i ? B(t, s) : t, n = e.length - 1, l; n >= 0; n--)
@@ -587,4 +587,4 @@ p = d([
 export {
   p as EvaluationModalElement
 };
-//# sourceMappingURL=evaluation-modal.element-BdVlRtc6.js.map
+//# sourceMappingURL=evaluation-modal.element-RT9nFNEL.js.map

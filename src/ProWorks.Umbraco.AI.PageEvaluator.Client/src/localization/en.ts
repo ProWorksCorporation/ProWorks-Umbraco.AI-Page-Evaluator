@@ -119,10 +119,10 @@ export default {
   },
 
   promoNotice: {
-    headline: 'See How AI Interprets Your Brand and Messaging',
-    body: 'Get a free AI-driven analysis of your website that reveals how your positioning, messaging, and value are interpreted across your site.',
-    body2: 'Want to go deeper? Our full evaluation reviews every page individually, identifying specific issues and opportunities with actionable recommendations.',
-    linkText: 'Get Your Free AI Brand Analysis',
+    headline: 'See How AI Interprets Your Brand Messaging',
+    body: 'Get a free AI-driven analysis of your website. Reveal how your site positioning, messaging, and value are interpreted by AI.',
+    body2: 'Our full evaluation service reviews your website, reports what AI thinks your brand represents, and identifies specific issues and opportunities with actionable recommendations.',
+    linkText: 'Get Your Free Website Brand Analysis',
   },
 
   promptBuilder: {
