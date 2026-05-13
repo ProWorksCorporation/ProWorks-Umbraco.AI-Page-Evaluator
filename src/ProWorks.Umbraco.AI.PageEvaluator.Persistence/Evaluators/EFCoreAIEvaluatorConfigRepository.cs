@@ -99,7 +99,6 @@ public sealed class EFCoreAIEvaluatorConfigRepository : IAIEvaluatorConfigReposi
                 // concurrency check (WHERE Version = @original) detects conflicts.
                 db.Entry(existing).Property(e => e.Version).OriginalValue = config.Version;
                 AIEvaluatorConfigEntityFactory.ApplyToEntity(config, existing);
-                existing.IsActive = true;
             }
 
             await db.SaveChangesAsync(cancellationToken);
@@ -118,9 +117,7 @@ public sealed class EFCoreAIEvaluatorConfigRepository : IAIEvaluatorConfigReposi
                 .FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
 
             if (entity is null)
-            {
                 return null;
-            }
 
             bool wasActive = entity.IsActive;
             string alias = entity.DocumentTypeAlias;
@@ -143,6 +140,27 @@ public sealed class EFCoreAIEvaluatorConfigRepository : IAIEvaluatorConfigReposi
                 }
             }
 
+            return null;
+        });
+
+        scope.Complete();
+    }
+
+    public async Task SetActiveAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        using IEfCoreScope<UmbracoAIPageEvaluatorDbContext> scope = _scopeProvider.CreateScope();
+        await scope.ExecuteWithContextAsync<object?>(async db =>
+        {
+            AIEvaluatorConfigEntity? target = await db.EvaluatorConfigs
+                .FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
+            if (target is null) return null;
+
+            await db.EvaluatorConfigs
+                .Where(e => e.DocumentTypeAlias == target.DocumentTypeAlias && e.IsActive)
+                .ExecuteUpdateAsync(s => s.SetProperty(e => e.IsActive, false), cancellationToken);
+
+            target.IsActive = true;
+            await db.SaveChangesAsync(cancellationToken);
             return null;
         });
 

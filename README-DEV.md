@@ -77,6 +77,8 @@ After a fresh clone, import the demo content via **Settings → uSync → Import
 dotnet test
 ```
 
+The test suite covers controller error handling, service behavior, persistence mapping, cache invalidation, notification handling, and the Umbraco.AI test feature integration (146 tests, xUnit + NSubstitute).
+
 ### Build the NuGet package
 
 Build the client JS first so `wwwroot/dist/` is up to date, then pack:
@@ -210,3 +212,21 @@ The response parser tries JSON first, then a Markdown numbered-list fallback, th
 ### Optimistic concurrency
 
 Evaluator configurations use a `Version` column as an EF Core concurrency token. The PUT endpoint requires clients to send the `version` they last read; if another user has saved since, the server returns `409 Conflict`. The front-end tracks this automatically and prompts the user to reload.
+
+### Guardrails
+
+Guardrail rules are configured at the **AI profile level** in Umbraco.AI, not per evaluator configuration. When a guardrail fires (pre- or post-generate), `IAIChatService` throws `AIGuardrailBlockedException`. The controller catches this and returns **422 Unprocessable Content** with the guardrail's message as the `title` field. The modal maps 422 responses to a dedicated "guardrail-blocked" state that shows the policy reason rather than the generic retry UI.
+
+This means you can create a dedicated AI profile for page evaluation that omits content-moderation guardrails that are not relevant to evaluation tasks (e.g. an SEO-warning guardrail that flags SEO-related output would incorrectly block evaluation reports discussing SEO).
+
+### Error response mapping
+
+| Condition | HTTP status | Client behavior |
+|---|---|---|
+| No active config for document type | 404 | Modal shows "no configuration" message |
+| Guardrail policy blocked content | 422 | Modal shows guardrail reason message |
+| AI provider HTTP error | 502 | Modal shows generic error + Retry button |
+| AI provider temporarily overloaded (e.g. Anthropic 529) | 503 | Modal shows "temporarily unavailable" + Retry button |
+| Unexpected server error | 500 | Modal shows generic error + Retry button |
+
+Provider error details are never forwarded to the client to avoid leaking API key or account information.

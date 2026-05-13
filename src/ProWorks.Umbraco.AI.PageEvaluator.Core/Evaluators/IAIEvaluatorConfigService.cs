@@ -32,4 +32,10 @@ public interface IAIEvaluatorConfigService
     /// modified configuration for the same document type is promoted to active.
     /// </summary>
     Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Activates the specified configuration and deactivates all others for the same document type.
+    /// Does nothing if the configuration does not exist.
+    /// </summary>
+    Task SetActiveAsync(Guid id, CancellationToken cancellationToken = default);
 }

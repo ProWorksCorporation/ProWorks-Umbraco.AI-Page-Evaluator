@@ -10,6 +10,7 @@ WebApplication app = builder.Build();
 
 await app.BootUmbracoAsync();
 
+app.UseRateLimiter(); // Required for [EnableRateLimiting] attributes to be enforced.
 
 app.UseUmbraco()
     .WithMiddleware(u =>

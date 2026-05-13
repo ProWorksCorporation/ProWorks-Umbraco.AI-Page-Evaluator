@@ -24,9 +24,12 @@ const e = {
     // Modal: parse failure warning
     parseFailedWarning: "The AI response could not be formatted as a structured report. Raw output is shown below.",
     parseFailedLinkText: "Refine the evaluator prompt",
+    parseFailedSuffix: "to improve structured output.",
     // Modal: AI error
     aiErrorMessage: "The evaluation could not be completed. The AI provider returned an error.",
     retryButton: "Retry",
+    // Modal: guardrail block
+    guardrailBlockedMessage: "The evaluation was blocked by an Umbraco.AI guardrail policy. Review the guardrail rules configured on the AI profile.",
     // Modal: dimensional scoring
     overallScore: "Overall Score",
     axisScores: "Score Breakdown"
@@ -43,6 +46,7 @@ const e = {
     deleteButton: "Delete",
     emptyState: "No evaluator configurations found. Create one to get started.",
     loadError: "Failed to load evaluator configurations.",
+    formLoadError: "Failed to load the evaluator configuration.",
     activateError: "Failed to activate the evaluator configuration.",
     deleteError: "Failed to delete the evaluator configuration.",
     tableHeaderName: "Name",
@@ -98,10 +102,10 @@ const e = {
     scoringHelp: "Ask the AI to rate the page on a 1-5 scale across the dimensions named in your prompt."
   },
   promoNotice: {
-    headline: "See How AI Interprets Your Brand and Messaging",
-    body: "Get a free AI-driven analysis of your website that reveals how your positioning, messaging, and value are interpreted across your site.",
-    body2: "Want to go deeper? Our full evaluation reviews every page individually, identifying specific issues and opportunities with actionable recommendations.",
-    linkText: "Get Your Free AI Brand Analysis"
+    headline: "See How AI Interprets Your Brand Messaging",
+    body: "Get a free AI-driven analysis of your website. Reveal how your site positioning, messaging, and value are interpreted by AI.",
+    body2: "Our full evaluation service reviews your website, reports what AI thinks your brand represents, and identifies specific issues and opportunities with actionable recommendations.",
+    linkText: "Get Your Free Website Brand Analysis"
   },
   promptBuilder: {
     openButton: "Open Prompt Builder",
@@ -110,14 +114,21 @@ const e = {
     categoriesLabel: "Checklist Categories",
     categoriesHelpText: "Select the categories to include in the generated prompt. Each category adds evaluation criteria the AI will check against your page content.",
     siteContextLabel: "Site Context (optional)",
+    siteContextPlaceholder: "Describe the site purpose, audience, or brand guidelines…",
     generateButton: "Generate Prompt Draft",
     usePromptButton: "Use This Prompt",
     propertiesLabel: "Document Type Properties",
     generatedDraftLabel: "Generated Draft",
-    loadError: "Could not load document type properties."
+    loadError: "Could not load document type properties.",
+    categoryRequiredFields: "Required Fields",
+    categoryMetadataSeo: "Metadata & SEO",
+    categoryContentQuality: "Content Quality",
+    categorySchemaStructuredData: "Schema & Structured Data",
+    categoryAccessibilityVisibility: "Accessibility & Visibility",
+    categoryCallsToAction: "Calls to Action"
   }
 };
 export {
   e as default
 };
-//# sourceMappingURL=en-CCBFGXaV.js.map
+//# sourceMappingURL=en-CUX7Xhn3.js.map

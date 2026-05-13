@@ -12,7 +12,7 @@
     <AddRazorSupportForMvc>false</AddRazorSupportForMvc>
     <!-- NuGet packaging -->
     <PackageId>ProWorks.Umbraco.AI.PageEvaluator</PackageId>
-    <Version>1.0.16</Version>
+    <Version>1.0.17</Version>
     <Authors>ProWorks, Jason Prothero</Authors>
     <Company>ProWorks Corporation</Company>
     <PackageTags>umbraco;umbraco-marketplace;umbraco-cms;umbraco-ai;ai;page-evaluator;backoffice</PackageTags>
@@ -45,9 +45,9 @@
   <ItemGroup>
     <!-- Umbraco.AI.Core provides IAIProfileService and IAIContextService -->
     <!-- Verify version against installed Umbraco.AI package before building -->
-    <PackageReference Include="Umbraco.AI.Core" Version="1.9.0" />
+    <PackageReference Include="Umbraco.AI.Core" Version="1.10.1" />
     <!-- Umbraco.AI.Startup provides UmbracoAIComposer (required for [ComposeAfter]) -->
-    <PackageReference Include="Umbraco.AI.Startup" Version="1.9.0" />
+    <PackageReference Include="Umbraco.AI.Startup" Version="1.10.1" />
     <!-- Pin Microsoft.Extensions.AI packages to 10.3.0 — the minimum that satisfies all transitive
          deps (Microsoft.Agents.AI 1.0.0-rc3 and M.E.AI.OpenAI 10.3.0 both require >= 10.3.0).
          Do NOT use 10.4.1: it changes McpServerToolCallContent.Arguments setter signature,

@@ -31,6 +31,13 @@ public interface IAIEvaluatorConfigRepository
     /// </summary>
     Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Sets the specified configuration as the active one for its document type.
+    /// All other configurations for the same document type are set inactive.
+    /// Does nothing if the configuration does not exist.
+    /// </summary>
+    Task SetActiveAsync(Guid id, CancellationToken cancellationToken = default);
+
     /// <summary>Returns true if at least one configuration exists for the given document type alias.</summary>
     Task<bool> AliasExistsAsync(string documentTypeAlias, CancellationToken cancellationToken = default);
 }

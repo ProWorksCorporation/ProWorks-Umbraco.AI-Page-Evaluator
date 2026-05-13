@@ -2,51 +2,7 @@ import { customElement, property, state, html, nothing, type TemplateResult } fr
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { CHECKLIST_CATEGORIES } from './checklist-categories.js';
 import type { DocumentTypePropertySummary } from '../shared/types.js';
-import { apiClient, BEARER } from '../shared/api-client.js';
-
-// ---------------------------------------------------------------------------
-// Umbraco Management API helper (exported for MSW integration tests — T054)
-// ---------------------------------------------------------------------------
-
-interface UmbracoDocTypeProperty {
-  readonly alias: string;
-  readonly label: string;
-  readonly groupName: string;
-  readonly editorAlias: string;
-}
-
-interface UmbracoDocTypeResponse {
-  readonly alias: string;
-  readonly name: string;
-  readonly properties: readonly UmbracoDocTypeProperty[];
-}
-
-/**
- * Fetches document type properties from the Umbraco Management API.
- * Exported so integration tests (T054) can exercise the fetch logic directly.
- */
-export async function fetchDocTypeProperties(
-  documentTypeAlias: string,
-): Promise<DocumentTypePropertySummary[]> {
-  const result = await apiClient.get({
-    security: BEARER,
-    url: `/umbraco/management/api/v1/page-evaluator/document-type/${encodeURIComponent(documentTypeAlias)}/properties`,
-  });
-
-  if (!result.response.ok) {
-    const text = await result.response.text().catch(() => '');
-    throw new Error(`API ${result.response.status}: ${text}`);
-  }
-
-  const data = result.data as UmbracoDocTypeResponse;
-
-  return data.properties.map((p) => ({
-    alias: p.alias,
-    label: p.label,
-    groupName: p.groupName,
-    editorAlias: p.editorAlias,
-  }));
-}
+import { fetchDocTypeProperties } from '../shared/api-client.js';
 
 // ---------------------------------------------------------------------------
 // Prompt Builder Lit element
@@ -76,14 +32,23 @@ export class PromptBuilderElement extends UmbLitElement {
   @state() private _loading = false;
   @state() private _error: string | null = null;
 
+  private readonly _onCategoryToggle = (e: Event): void => {
+    const { id, selected } = (e as CustomEvent<{ id: string; selected: boolean }>).detail;
+    this._toggleCategory(id, selected);
+  };
+
+  private readonly _onUsePrompt = (): void => this.usePrompt();
+
   override connectedCallback(): void {
     super.connectedCallback();
-    // Allow tests to trigger category toggles and use-prompt via custom events
-    this.addEventListener('category-toggle', (e: Event) => {
-      const { id, selected } = (e as CustomEvent<{ id: string; selected: boolean }>).detail;
-      this._toggleCategory(id, selected);
-    });
-    this.addEventListener('use-prompt', () => this.usePrompt());
+    this.addEventListener('category-toggle', this._onCategoryToggle);
+    this.addEventListener('use-prompt', this._onUsePrompt);
+  }
+
+  override disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this.removeEventListener('category-toggle', this._onCategoryToggle);
+    this.removeEventListener('use-prompt', this._onUsePrompt);
   }
 
   override updated(changed: Map<string, unknown>): void {
@@ -99,7 +64,7 @@ export class PromptBuilderElement extends UmbLitElement {
     this._loading = true;
     this._error = null;
     try {
-      this._properties = await fetchDocTypeProperties(this.documentTypeAlias);
+      this._properties = (await fetchDocTypeProperties(this.documentTypeAlias)).properties;
     } catch {
       this._error = this.localize.term('promptBuilder_loadError');
     } finally {
@@ -133,7 +98,7 @@ export class PromptBuilderElement extends UmbLitElement {
       );
 
     const scoringSnippet = this.scoringEnabled
-      ? '\n\nRate the page on a scale of 1-5 for each evaluation dimension listed above.\nProvide an overall_score (1-5) and individual axis_scores with brief feedback for each.'
+      ? '\n\nRate the page on a scale of 1-5 for each evaluation dimension listed above.\nProvide an overallScore (1-5) and individual axisScores with brief feedback for each.'
       : '';
 
     if (fragments.length === 0) {
@@ -173,11 +138,11 @@ export class PromptBuilderElement extends UmbLitElement {
             ${CHECKLIST_CATEGORIES.map(
               (cat) => html`
                 <uui-checkbox
-                  label=${cat.label}
+                  label=${this.localize.term(cat.labelKey)}
                   ?checked=${this._selectedCategories.has(cat.id)}
                   @change=${(e: Event) => {
                     this._toggleCategory(cat.id, (e.target as HTMLInputElement).checked);
-                  }}>${cat.label}</uui-checkbox>
+                  }}>${this.localize.term(cat.labelKey)}</uui-checkbox>
               `,
             )}
           </div>
@@ -189,7 +154,7 @@ export class PromptBuilderElement extends UmbLitElement {
           <uui-textarea
             id="site-context"
             label=${this.localize.term('promptBuilder_siteContextLabel')}
-            placeholder="Describe the site purpose, audience, or brand guidelines…"
+            placeholder=${this.localize.term('promptBuilder_siteContextPlaceholder')}
             .value=${this._siteContext}
             @input=${(e: InputEvent) => {
               this._siteContext = (e.target as HTMLTextAreaElement).value;

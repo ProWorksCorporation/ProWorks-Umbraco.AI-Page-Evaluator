@@ -164,13 +164,14 @@ public class AIEvaluatorConfigServiceTests
         MockProfileExists(profileId);
 
         var updated = NewConfig(id: id, profileId: profileId);
+        updated.Version = 1;
         var result = await _sut.UpdateAsync(updated, Guid.NewGuid());
 
         Assert.Equal(originalDate, result.DateCreated);
     }
 
     [Fact]
-    public async Task UpdateAsync_SetsIsActiveTrueOnReturnedConfig()
+    public async Task UpdateAsync_PreservesIsActive_WhenExistingConfigIsActive()
     {
         var id = Guid.NewGuid();
         var profileId = Guid.NewGuid();
@@ -179,13 +180,30 @@ public class AIEvaluatorConfigServiceTests
         MockProfileExists(profileId);
 
         var updated = NewConfig(id: id, profileId: profileId);
+        updated.Version = 1;
         var result = await _sut.UpdateAsync(updated, Guid.NewGuid());
 
         Assert.True(result.IsActive);
     }
 
     [Fact]
-    public async Task UpdateAsync_PreservesClientSuppliedVersion()
+    public async Task UpdateAsync_PreservesIsActive_WhenExistingConfigIsInactive()
+    {
+        var id = Guid.NewGuid();
+        var profileId = Guid.NewGuid();
+        var existing = ExistingConfig(id: id, profileId: profileId, isActive: false);
+        _repository.GetByIdAsync(id, Arg.Any<CancellationToken>()).Returns(existing);
+        MockProfileExists(profileId);
+
+        var updated = NewConfig(id: id, profileId: profileId);
+        updated.Version = 1;
+        var result = await _sut.UpdateAsync(updated, Guid.NewGuid());
+
+        Assert.False(result.IsActive);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_ReturnsCommittedVersion_WhenClientSuppliesVersion()
     {
         var id = Guid.NewGuid();
         var profileId = Guid.NewGuid();
@@ -198,11 +216,12 @@ public class AIEvaluatorConfigServiceTests
         updated.Version = 5;
         var result = await _sut.UpdateAsync(updated, Guid.NewGuid());
 
-        Assert.Equal(5, result.Version);
+        // Returned version is input+1 (what was committed to the DB by ApplyToEntity).
+        Assert.Equal(6, result.Version);
     }
 
     [Fact]
-    public async Task UpdateAsync_FallsBackToExistingVersion_WhenVersionIsZero()
+    public async Task UpdateAsync_ThrowsArgumentException_WhenVersionIsZero()
     {
         var id = Guid.NewGuid();
         var profileId = Guid.NewGuid();
@@ -212,10 +231,9 @@ public class AIEvaluatorConfigServiceTests
         MockProfileExists(profileId);
 
         var updated = NewConfig(id: id, profileId: profileId);
-        updated.Version = 0; // client didn't supply version
-        var result = await _sut.UpdateAsync(updated, Guid.NewGuid());
+        updated.Version = 0;
 
-        Assert.Equal(3, result.Version);
+        await Assert.ThrowsAsync<ArgumentException>(() => _sut.UpdateAsync(updated, Guid.NewGuid()));
     }
 
     [Fact]
@@ -230,6 +248,59 @@ public class AIEvaluatorConfigServiceTests
     }
 
     // -------------------------------------------------------------------------
+    // Issue 4: UpdateAsync returns the committed version (input Version + 1)
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task UpdateAsync_ReturnsVersionIncrementedByOne()
+    {
+        var profileId = Guid.NewGuid();
+        MockProfileExists(profileId);
+        var configId = Guid.NewGuid();
+        var config = NewConfig(profileId: profileId);
+        config.Id = configId;
+        config.Version = 3;
+
+        _repository.GetByIdAsync(configId, Arg.Any<CancellationToken>())
+            .Returns(NewConfig(profileId: profileId));
+
+        var result = await _sut.UpdateAsync(config, Guid.NewGuid());
+
+        Assert.Equal(4, result.Version); // committed Version is input+1
+    }
+
+    // -------------------------------------------------------------------------
+    // Issue 10: PromptText max length validation
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task CreateAsync_WhenPromptTextExceedsMaxLength_ThrowsArgumentException()
+    {
+        var profileId = Guid.NewGuid();
+        MockProfileExists(profileId);
+        var config = NewConfig(profileId: profileId);
+        config.PromptText = new string('x', 32_769); // one char over the 32 KB limit
+
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            _sut.CreateAsync(config, Guid.NewGuid()));
+    }
+
+    [Fact]
+    public async Task UpdateAsync_WhenPromptTextExceedsMaxLength_ThrowsArgumentException()
+    {
+        var profileId = Guid.NewGuid();
+        MockProfileExists(profileId);
+        var existingId = Guid.NewGuid();
+        var config = NewConfig(id: existingId, profileId: profileId);
+        config.PromptText = new string('x', 32_769);
+        _repository.GetByIdAsync(existingId, Arg.Any<CancellationToken>())
+            .Returns(NewConfig(profileId: profileId));
+
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            _sut.UpdateAsync(config, Guid.NewGuid()));
+    }
+
+    // -------------------------------------------------------------------------
     // DeleteAsync
     // -------------------------------------------------------------------------
 
@@ -241,6 +312,20 @@ public class AIEvaluatorConfigServiceTests
         await _sut.DeleteAsync(id);
 
         await _repository.Received(1).DeleteAsync(id, Arg.Any<CancellationToken>());
+    }
+
+    // -------------------------------------------------------------------------
+    // SetActiveAsync
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public async Task SetActiveAsync_CallsRepositorySetActiveAsync()
+    {
+        var id = Guid.NewGuid();
+
+        await _sut.SetActiveAsync(id);
+
+        await _repository.Received(1).SetActiveAsync(id, Arg.Any<CancellationToken>());
     }
 
     // -------------------------------------------------------------------------
@@ -278,7 +363,8 @@ public class AIEvaluatorConfigServiceTests
     private static AIEvaluatorConfig ExistingConfig(
         Guid? id = null,
         Guid? profileId = null,
-        DateTime? dateCreated = null)
+        DateTime? dateCreated = null,
+        bool isActive = true)
         => new()
         {
             Id = id ?? Guid.NewGuid(),
@@ -286,7 +372,7 @@ public class AIEvaluatorConfigServiceTests
             DocumentTypeAlias = "blogPost",
             ProfileId = profileId ?? Guid.NewGuid(),
             PromptText = "Evaluate this page.",
-            IsActive = true,
+            IsActive = isActive,
             DateCreated = dateCreated ?? DateTime.UtcNow,
             DateModified = DateTime.UtcNow,
         };

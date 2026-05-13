@@ -126,6 +126,6 @@ export interface DocumentTypePropertySummary {
 
 export interface ChecklistCategory {
   readonly id: string;
-  readonly label: string;
+  readonly labelKey: string;
   readonly promptFragment: string;
 }

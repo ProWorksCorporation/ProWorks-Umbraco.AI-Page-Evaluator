@@ -4,6 +4,7 @@ import {
   apiClient,
   BEARER,
   createConfiguration,
+  fetchDocTypeProperties,
   getConfiguration,
   updateConfiguration,
 } from '../shared/api-client.js';
@@ -39,6 +40,7 @@ export class EvaluatorFormElement extends UmbLitElement {
   @state() _errors: Record<string, string> = {};
 
   @state() private _saving = false;
+  @state() private _loadError: string | null = null;
   @state() private _promptBuilderOpen = false;
 
   // Property alias filtering
@@ -47,7 +49,7 @@ export class EvaluatorFormElement extends UmbLitElement {
 
   // Document type picker state
   @state() private _docTypeDisplayName = '';
-  @state() private _docTypeSuggestions: Array<{ id: string; name: string }> = [];
+  @state() private _docTypeSuggestions: Array<{ id: string; name: string; alias?: string }> = [];
   @state() private _docTypeShowSuggestions = false;
   private _docTypeSearchTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -185,7 +187,16 @@ export class EvaluatorFormElement extends UmbLitElement {
     }
   }
 
+  override disconnectedCallback(): void {
+    super.disconnectedCallback();
+    if (this._docTypeSearchTimer !== null) {
+      clearTimeout(this._docTypeSearchTimer);
+      this._docTypeSearchTimer = null;
+    }
+  }
+
   private _resetFields(): void {
+    this._loadError = null;
     this._name = '';
     this._description = '';
     this._documentTypeAlias = '';
@@ -204,36 +215,42 @@ export class EvaluatorFormElement extends UmbLitElement {
   }
 
   private async _loadConfig(id: string): Promise<void> {
-    const config: EvaluatorConfigItem = await getConfiguration(id);
-    this._name = config.name;
-    this._description = config.description ?? '';
-    this._documentTypeAlias = config.documentTypeAlias;
-    this._profileId = config.profileId;
-    this._contextId = config.contextId ?? '';
-    this._promptText = config.promptText;
-    this._scoringEnabled = config.scoringEnabled;
-    this._version = config.version;
-    this._propertyAliases = config.propertyAliases ?? [];
-    this._errors = {};
-    // Resolve display name and load available properties for the alias
-    void this._resolveDocTypeName(config.documentTypeAlias);
-    void this._loadAvailableProperties(config.documentTypeAlias);
+    this._loadError = null;
+    try {
+      const config: EvaluatorConfigItem = await getConfiguration(id);
+      if (!this.isConnected) return;
+      if (this.configId !== id) return;
+      this._name = config.name;
+      this._description = config.description ?? '';
+      this._documentTypeAlias = config.documentTypeAlias;
+      this._profileId = config.profileId;
+      this._contextId = config.contextId ?? '';
+      this._promptText = config.promptText;
+      this._scoringEnabled = config.scoringEnabled;
+      this._version = config.version;
+      this._propertyAliases = config.propertyAliases ?? [];
+      this._errors = {};
+      void this._loadDocTypeInfo(config.documentTypeAlias);
+    } catch {
+      if (!this.isConnected) return;
+      if (this.configId !== id) return;
+      this._loadError = this.localize.term('evaluatorConfig_formLoadError');
+    }
   }
 
-  private async _resolveDocTypeName(alias: string): Promise<void> {
+  private async _loadDocTypeInfo(alias: string): Promise<void> {
+    this._availableProperties = [];
     try {
-      const result = await apiClient.get({
-        security: BEARER,
-        url: `/umbraco/management/api/v1/page-evaluator/document-type/${encodeURIComponent(alias)}/properties`,
-      });
-      if (result.response.ok && result.data) {
-        const detail = result.data as { name: string };
-        this._docTypeDisplayName = detail.name;
-      } else {
-        this._docTypeDisplayName = alias;
+      const info = await fetchDocTypeProperties(alias);
+      if (!this.isConnected) return;
+      this._docTypeDisplayName = info.name;
+      this._availableProperties = info.properties;
+      if (this._propertyAliases.length === 0 && info.properties.length > 0) {
+        this._propertyAliases = info.properties.map((p) => p.alias);
       }
     } catch {
-      this._docTypeDisplayName = alias;
+      if (!this.isConnected) return;
+      if (!this._docTypeDisplayName) this._docTypeDisplayName = alias;
     }
   }
 
@@ -257,8 +274,10 @@ export class EvaluatorFormElement extends UmbLitElement {
         url: '/umbraco/management/api/v1/item/document-type/search',
         query: { query, isElement: false, skip: 0, take: 20 },
       });
+      if (!this.isConnected) return;
+      if (this._docTypeDisplayName !== query) return;
       if (result.response.ok && result.data) {
-        const data = result.data as { items: Array<{ id: string; name: string }> };
+        const data = result.data as { items: Array<{ id: string; name: string; alias?: string }> };
         this._docTypeSuggestions = data.items;
         this._docTypeShowSuggestions = data.items.length > 0;
       }
@@ -276,34 +295,16 @@ export class EvaluatorFormElement extends UmbLitElement {
         security: BEARER,
         url: `/umbraco/management/api/v1/document-type/${encodeURIComponent(id)}`,
       });
+      if (!this.isConnected) return;
       if (result.response.ok && result.data) {
-        const detail = result.data as { alias: string; name: string };
+        const detail = result.data as { alias: string };
         this._documentTypeAlias = detail.alias;
-        this._docTypeDisplayName = detail.name;
-        // Load available properties for the newly selected doc type
-        void this._loadAvailableProperties(detail.alias);
+        this._propertyAliases = [];
+        void this._loadDocTypeInfo(detail.alias);
       }
     } catch {
+      if (!this.isConnected) return;
       this._errors = { ...this._errors, documentTypeAlias: this.localize.term('evaluatorConfig_documentTypeAliasError') };
-    }
-  }
-
-  private async _loadAvailableProperties(alias: string): Promise<void> {
-    this._availableProperties = [];
-    try {
-      const result = await apiClient.get({
-        security: BEARER,
-        url: `/umbraco/management/api/v1/page-evaluator/document-type/${encodeURIComponent(alias)}/properties`,
-      });
-      if (result.response.ok && result.data) {
-        const data = result.data as { properties: DocumentTypePropertySummary[] };
-        this._availableProperties = data.properties ?? [];
-        if (this._propertyAliases.length === 0 && this._availableProperties.length > 0) {
-          this._propertyAliases = this._availableProperties.map(p => p.alias);
-        }
-      }
-    } catch {
-      // Non-critical — the checkbox list simply won't appear
     }
   }
 
@@ -354,6 +355,7 @@ export class EvaluatorFormElement extends UmbLitElement {
             scoringEnabled: this._scoringEnabled,
           });
 
+      if (!this.isConnected) return;
       this.dispatchEvent(
         new CustomEvent('evaluator-saved', {
           detail: saved,
@@ -362,6 +364,7 @@ export class EvaluatorFormElement extends UmbLitElement {
         }),
       );
     } catch (err: unknown) {
+      if (!this.isConnected) return;
       if (err instanceof Error) {
         this._errors['_form'] = err.message;
       }
@@ -407,6 +410,9 @@ export class EvaluatorFormElement extends UmbLitElement {
 
   override render(): TemplateResult {
     return html`
+      ${this._loadError
+        ? html`<uui-tag color="danger" style="margin-bottom: 1rem;">${this._loadError}</uui-tag>`
+        : nothing}
       ${this._errors['_form']
         ? html`<uui-box><uui-tag color="danger">${this._errors['_form']}</uui-tag></uui-box>`
         : nothing}
@@ -458,6 +464,7 @@ export class EvaluatorFormElement extends UmbLitElement {
                     <div class="doc-type-suggestion"
                       @mousedown=${() => void this._selectDocType(s.id, s.name)}>
                       <span>${s.name}</span>
+                      ${s.alias ? html`<span class="doc-type-suggestion-alias">${s.alias}</span>` : nothing}
                     </div>
                   `)}
                 </div>
@@ -490,6 +497,7 @@ export class EvaluatorFormElement extends UmbLitElement {
             </uai-context-picker>
           </div>
         </umb-property-layout>
+
       </uui-box>
 
       ${this._availableProperties.length > 0 ? html`

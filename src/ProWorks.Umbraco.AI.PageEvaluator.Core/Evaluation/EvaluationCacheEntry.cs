@@ -12,7 +12,7 @@ public sealed class EvaluationCacheEntry
     public string DocumentTypeAlias { get; init; } = string.Empty;
 
     /// <summary>The cached evaluation report.</summary>
-    public EvaluationReport Report { get; init; } = null!;
+    public required EvaluationReport Report { get; init; }
 
     /// <summary>UTC timestamp when this result was cached.</summary>
     public DateTime CachedAt { get; init; }

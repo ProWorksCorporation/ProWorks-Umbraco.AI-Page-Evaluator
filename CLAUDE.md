@@ -1,15 +1,15 @@
 ﻿# ProWorks-Umbraco-AI-Page-Evaluator Development Guidelines
 
-Last updated: 2026-04-13 (rev 6)
+Last updated: 2026-05-10 (rev 8)
 
 ## Active Technologies
-- C# .NET 10, TypeScript 5.x (strict: true) + Umbraco CMS 17.2.2, Umbraco.AI 1.8.0 (Anthropic 1.3.0, OpenAI 1.2.0), EF Core 10.0.2, Microsoft.Extensions.AI 10.3.0, Lit 3.x via @umbraco-cms/backoffice/external/lit
+- C# .NET 10, TypeScript 5.x (strict: true) + Umbraco CMS 17.2.2, Umbraco.AI 1.8.0 (Anthropic 1.3.0, OpenAI 1.2.0), EF Core 10.0.4, Microsoft.Extensions.AI 10.3.0, Lit 3.x via @umbraco-cms/backoffice/external/lit
 - SQLite (dev), SQL Server (prod) via EF Core; evaluation cache in `umbracoAIEvaluationCache` table
-- C# .NET 10 (server) + TypeScript 5.x `strict: true, noUncheckedIndexedAccess: true` (client) + Umbraco CMS 17.2.2; Umbraco.AI 1.8.0 (Anthropic 1.3.0, OpenAI 1.2.0); EF Core 10.0.2; Microsoft.Extensions.AI 10.3.0 (pinned); Lit 3.x via `@umbraco-cms/backoffice/external/lit`; UUI components (`uui-toggle`, `uui-badge`) (feature/scoring)
+- C# .NET 10 (server) + TypeScript 5.x `strict: true, noUncheckedIndexedAccess: true` (client) + Umbraco CMS 17.2.2; Umbraco.AI 1.8.0 (Anthropic 1.3.0, OpenAI 1.2.0); EF Core 10.0.4; Microsoft.Extensions.AI 10.3.0 (pinned); Lit 3.x via `@umbraco-cms/backoffice/external/lit`; UUI components (`uui-toggle`, `uui-badge`) (feature/scoring)
 - SQLite (dev) / SQL Server (prod) via separate EF Core migration projects. New column `ScoringEnabled bit NOT NULL DEFAULT 0` on `umbracoAIEvaluatorConfig`. Cache table (`umbracoAIEvaluationCache`) unchanged structurally; existing rows remain valid. (feature/scoring)
 
 - **Client**: TypeScript 5.x `strict: true`, Vite build, Lit web components
-- **Server**: C# .NET 10, Umbraco CMS 17.2.2, EF Core 10.0.2
+- **Server**: C# .NET 10, Umbraco CMS 17.2.2, EF Core 10.0.4
 - **AI**: Umbraco.AI 1.8.0 ecosystem (Anthropic 1.3.0, OpenAI 1.2.0, Prompt 1.7.0, Agent 1.7.0, Agent.Copilot 1.0.0-alpha6)
 - **Database**: SQLite (dev), SQL Server (prod) via separate EF Core migration projects
 - **Content sync**: uSync 17.0.4
@@ -70,6 +70,8 @@ dotnet ef migrations add <Name> \
 - Checks `ChatFinishReason.Length` after response to detect truncation
 - Includes defensive preamble in user message to guard against prompt injection from content
 - Filters properties by `config.PropertyAliases` when set; strips HTML tags and truncates at 2000 chars
+- Scoring JSON fields use **camelCase**: `"overallScore"` and `"axisScores"` — these match the C# property names. **Never** use `"overall_score"` / `"axis_scores"` (snake_case); the prompt template, parser, and `PromptBuilderElement` scoring snippet must all use the same camelCase names
+- `CheckStatus` parsing is **case-insensitive** via the shared `ParseCheckStatus(string)` helper — both `TryParseJson` and `TryParseMarkdown` delegate to it; `"FAIL"`, `"fail"`, and `"Fail"` all map to `CheckStatus.Fail`
 
 ### Backoffice Extensions
 - Menu alias for Umbraco.AI Add-ons section: **`"Uai.Menu.Addons"`** (not `"Umb.Menu.Addons"`)
@@ -86,6 +88,16 @@ dotnet ef migrations add <Name> \
 - **Never** import from bare `lit` or `lit/decorators.js` — Umbraco 17's browser import map has no entry for these specifiers, causing a runtime `Failed to resolve module specifier` error
 - Always import Lit primitives from **`@umbraco-cms/backoffice/external/lit`**: e.g. `import { html, css, customElement, state } from '@umbraco-cms/backoffice/external/lit'`
 - The Vite external list does **not** need `/^lit/` or `/^@lit\//` entries — Lit is covered by the existing `/^@umbraco-cms\//` rule
+
+### Lit Event Listener Lifecycle
+- If `connectedCallback` adds event listeners on `this`, a matching `disconnectedCallback` **must** remove them — otherwise each re-connect duplicates the handler
+- Listeners must be stored as **`private readonly` arrow fields** (not inline lambdas) so the same reference is used for both `addEventListener` and `removeEventListener`. `removeEventListener` performs strict equality (`===`) and will silently fail if the reference differs:
+  ```typescript
+  private readonly _onFoo = (e: Event): void => { /* ... */ };
+  override connectedCallback(): void { super.connectedCallback(); this.addEventListener('foo', this._onFoo); }
+  override disconnectedCallback(): void { super.disconnectedCallback(); this.removeEventListener('foo', this._onFoo); }
+  ```
+- For async methods that write to `@state()` properties, add `if (!this.isConnected) return;` guards before every state write to prevent writes to a detached element when the element is unmounted while an async call is in flight
 
 ### UmbLitElement & Localization
 - All package components must extend **`UmbLitElement`** (from `@umbraco-cms/backoffice/lit-element`), not `LitElement` — this provides `this.localize.term('section_key')` via `UmbLocalizationController`
@@ -156,5 +168,17 @@ dotnet ef migrations add <Name> \
 ### Controller
 - `PageEvaluatorApiController` extends `ControllerBase` (not the obsolete `UmbracoApiController`)
 - Config CRUD endpoints require `[Authorize(Policy = AuthorizationPolicies.SectionAccessSettings)]`
-- Evaluate endpoint has `[EnableRateLimiting("PageEvaluatorEvaluate")]` — consuming app must register the rate limiter policy
-- `GetCurrentUserKey()` uses `HttpContext.User.Identity?.GetUserKey()` (from `Umbraco.Extensions`)
+- Evaluate endpoint has `[EnableRateLimiting("PageEvaluatorEvaluate")]` and `[RequestSizeLimit(1 * 1024 * 1024)]`
+- `GET /evaluate/cached/{nodeId}` and `POST /evaluate` both verify content node existence (`IContentService.GetById(Guid)`) and Browse permission (`IAuthorizationService.AuthorizeAsync` with `ContentPermissionResource.WithKeys(ActionBrowse.ActionLetter, nodeId)` + `AuthorizationPolicies.ContentPermissionByResource`) — returns 404 if node not found, 403 if unauthorized
+- `POST /evaluate` uses the canonical `DocumentTypeAlias` from the content node (`content.ContentType.Alias`), not the client-supplied value
+- `POST /evaluate` error responses: 404 on `InvalidOperationException` (no active config); **422** on `AIGuardrailBlockedException` (guardrail policy blocked the content — `ex.Message` is forwarded as `title`); **502** on `HttpRequestException` (AI provider HTTP error — generic message, no provider detail leaked); **503** on any exception whose type name ends with `"5xxException"` (e.g. `Anthropic.Exceptions.Anthropic5xxException` for 529 Overloaded — transient, safe to retry); **500** on any other unexpected exception. `OperationCanceledException` is not caught and propagates normally.
+- Guardrails are configured at the **profile level** in Umbraco.AI, not per-evaluator config. `AIGuardrailBlockedException` (namespace `Umbraco.AI.Core.Guardrails`) is thrown by `IAIChatService` when a pre- or post-generate guardrail fires. The controller catches it and returns 422 so the frontend can display a specific "blocked by guardrail" message rather than a generic error.
+- The Anthropic 5xx catch uses `ex.GetType().Name.EndsWith("5xxException", StringComparison.Ordinal)` to avoid adding a direct `Anthropic` package reference to the controller project. In tests, use a `private sealed class Fake5xxException : Exception` whose type name satisfies the same suffix check.
+- `GetCurrentUserKey()` uses `HttpContext.User.Identity?.GetUserKey()` (from `Umbraco.Extensions`) — throws `InvalidOperationException` if the identity is missing (all controller actions that call it are protected by `[Authorize]`, so this is an unexpected edge case). In controller unit tests, inject `new Claim("sub", Guid.NewGuid().ToString())` into the `HttpContext.User` — `GetUserKey()` reads the `"sub"` claim (`Constants.Security.OpenIdDictSubClaimType`)
+- **Activation uses `SetActiveAsync`** (`IAIEvaluatorConfigService.SetActiveAsync(id, ct)`) — **never** route activation through `UpdateAsync`. `SetActiveAsync` only toggles the `IsActive` flag and does not bump `Version` or `DateModified`, which is intentional (toggling active is an administrative action, not a content change)
+- **`UpdateAsync` preserves `IsActive`** — it copies the existing record's `IsActive` state onto the incoming config before saving. Do **not** add `config.IsActive = true` in `UpdateAsync`; that would silently activate inactive configs on edit
+
+### Rate Limiter Registration
+- `PageEvaluatorComposer` registers the `"PageEvaluatorEvaluate"` fixed-window rate limiter policy (10 requests per user per minute) via `builder.Services.AddRateLimiter`
+- Registering the policy requires two usings: `using Microsoft.AspNetCore.Builder;` (for `AddRateLimiter`) AND `using Microsoft.AspNetCore.RateLimiting;` (for `AddFixedWindowLimiter`) — neither alone is sufficient
+- **Consuming apps must call `app.UseRateLimiter()` BEFORE `app.UseUmbraco()`** in their middleware pipeline; without it `[EnableRateLimiting]` is silently a no-op

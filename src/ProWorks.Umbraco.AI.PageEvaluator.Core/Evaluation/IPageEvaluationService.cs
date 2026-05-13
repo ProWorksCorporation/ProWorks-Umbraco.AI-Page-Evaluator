@@ -1,3 +1,5 @@
+using ProWorks.Umbraco.AI.PageEvaluator.Evaluators;
+
 namespace ProWorks.Umbraco.AI.PageEvaluator.Evaluation;
 
 /// <summary>
@@ -32,6 +34,22 @@ public interface IPageEvaluationService
     Task<EvaluationReport> EvaluateAsync(
         Guid nodeId,
         string documentTypeAlias,
+        IReadOnlyDictionary<string, object?> properties,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Evaluates using a pre-resolved config and properties, returning raw strings alongside the
+    /// structured report. Useful for test transcripts and diagnostic tooling.
+    /// </summary>
+    /// <param name="config">The active evaluator configuration to use.</param>
+    /// <param name="properties">Already-resolved and cleaned property values to evaluate.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>
+    /// An <see cref="EvaluationRawResult"/> containing the parsed report together with the system
+    /// prompt, user message, and raw AI response text.
+    /// </returns>
+    Task<EvaluationRawResult> EvaluateWithConfigAsync(
+        AIEvaluatorConfig config,
         IReadOnlyDictionary<string, object?> properties,
         CancellationToken cancellationToken = default);
 }

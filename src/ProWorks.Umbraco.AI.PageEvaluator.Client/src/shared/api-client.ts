@@ -14,6 +14,7 @@
 import { umbHttpClient } from '@umbraco-cms/backoffice/http-client';
 import type {
   CreateEvaluatorConfigRequest,
+  DocumentTypePropertySummary,
   EvaluatePageRequest,
   EvaluationReportResponse,
   EvaluatorConfigItem,
@@ -33,10 +34,24 @@ const BASE = '/umbraco/management/api/v1/page-evaluator';
 /** Security descriptor used on every request — tells the client to send the Bearer token. */
 export const BEARER = [{ scheme: 'bearer', type: 'http' }] as const;
 
+export class ApiError extends Error {
+  constructor(
+    public readonly status: number,
+    public readonly detail: string,
+  ) {
+    super(`API error ${status}: ${detail}`);
+  }
+}
+
 async function checkResult<T>(result: { data?: T; error?: unknown; response: Response }): Promise<T> {
   if (!result.response.ok) {
-    const detail = result.error ? JSON.stringify(result.error) : `HTTP ${result.response.status}`;
-    throw new Error(`API error: ${detail}`);
+    const err = result.error;
+    const title =
+      err !== null && typeof err === 'object' && 'title' in err && typeof (err as Record<string, unknown>)['title'] === 'string'
+        ? (err as Record<string, unknown>)['title'] as string
+        : null;
+    const detail = title ?? (err ? JSON.stringify(err) : `HTTP ${result.response.status}`);
+    throw new ApiError(result.response.status, detail);
   }
   return result.data as T;
 }
@@ -144,4 +159,39 @@ export async function evaluatePage(
     body: request,
   });
   return checkResult<EvaluationReportResponse>(result);
+}
+
+// ---------------------------------------------------------------------------
+// Document type properties endpoint
+// ---------------------------------------------------------------------------
+
+export interface DocumentTypeInfo {
+  readonly name: string;
+  readonly properties: DocumentTypePropertySummary[];
+}
+
+export async function fetchDocTypeProperties(
+  documentTypeAlias: string,
+): Promise<DocumentTypeInfo> {
+  const result = await apiClient.get({
+    security: BEARER,
+    url: `${BASE}/document-type/${encodeURIComponent(documentTypeAlias)}/properties`,
+  });
+  if (!result.response.ok) {
+    const text = await result.response.text().catch(() => '');
+    throw new Error(`API ${result.response.status}: ${text}`);
+  }
+  const data = result.data as {
+    name: string;
+    properties: readonly { alias: string; label: string; groupName: string; editorAlias: string }[];
+  };
+  return {
+    name: data.name,
+    properties: data.properties.map((p) => ({
+      alias: p.alias,
+      label: p.label,
+      groupName: p.groupName,
+      editorAlias: p.editorAlias,
+    })),
+  };
 }

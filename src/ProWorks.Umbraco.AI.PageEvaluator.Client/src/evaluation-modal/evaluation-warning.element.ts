@@ -49,7 +49,7 @@ export class EvaluationWarningElement extends UmbLitElement {
         </p>
         <p>
           <a href="/umbraco/section/ai/page-evaluator">${this.localize.term('evaluatePage_parseFailedLinkText')}</a>
-          to improve structured output.
+          ${this.localize.term('evaluatePage_parseFailedSuffix')}
         </p>
       </div>
       ${this.rawResponse

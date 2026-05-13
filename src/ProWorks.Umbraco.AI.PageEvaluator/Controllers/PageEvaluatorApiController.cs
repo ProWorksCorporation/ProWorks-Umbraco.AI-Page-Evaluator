@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
@@ -7,7 +8,11 @@ using ProWorks.Umbraco.AI.PageEvaluator.Evaluation;
 using ProWorks.Umbraco.AI.PageEvaluator.Evaluators;
 using ProWorks.Umbraco.AI.PageEvaluator.Services;
 using Umbraco.AI.Core.Contexts;
+using Umbraco.AI.Core.Guardrails;
 using Umbraco.AI.Core.Profiles;
+using Umbraco.Cms.Core.Actions;
+using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Core.Security.Authorization;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Web.Common.Authorization;
 using Umbraco.Extensions;
@@ -30,6 +35,8 @@ public sealed class PageEvaluatorApiController : ControllerBase
     private readonly IContentTypeService _contentTypeService;
     private readonly IEvaluationCacheRepository _cacheRepository;
     private readonly ILogger<PageEvaluatorApiController> _logger;
+    private readonly IContentService _contentService;
+    private readonly IAuthorizationService _authorizationService;
 
     public PageEvaluatorApiController(
         IPageEvaluationService evaluationService,
@@ -38,7 +45,9 @@ public sealed class PageEvaluatorApiController : ControllerBase
         IAIContextService contextService,
         IContentTypeService contentTypeService,
         IEvaluationCacheRepository cacheRepository,
-        ILogger<PageEvaluatorApiController> logger)
+        ILogger<PageEvaluatorApiController> logger,
+        IContentService contentService,
+        IAuthorizationService authorizationService)
     {
         _evaluationService = evaluationService;
         _configService = configService;
@@ -47,6 +56,8 @@ public sealed class PageEvaluatorApiController : ControllerBase
         _contentTypeService = contentTypeService;
         _cacheRepository = cacheRepository;
         _logger = logger;
+        _contentService = contentService;
+        _authorizationService = authorizationService;
     }
 
     // ---------------------------------------------------------------------------
@@ -59,10 +70,25 @@ public sealed class PageEvaluatorApiController : ControllerBase
     {
         IReadOnlyList<AIEvaluatorConfig> configs = await _configService.GetAllAsync(cancellationToken);
 
-        var items = new List<EvaluatorConfigResponse>(configs.Count);
-        foreach (AIEvaluatorConfig config in configs)
-            items.Add(await ToResponseAsync(config, cancellationToken));
+        // Pre-fetch all distinct profiles and contexts in parallel to avoid N+1 service calls.
+        Guid[] profileIds = configs
+            .Select(c => c.ProfileId).Where(id => id != Guid.Empty).Distinct().ToArray();
+        Guid[] contextIds = configs
+            .Select(c => c.ContextId).Where(id => id.HasValue).Select(id => id!.Value).Distinct().ToArray();
 
+        AIProfile?[] profileResults = await Task.WhenAll(
+            profileIds.Select(id => _profileService.GetProfileAsync(id, cancellationToken)));
+        AIContext?[] contextResults = await Task.WhenAll(
+            contextIds.Select(id => _contextService.GetContextAsync(id, cancellationToken)));
+
+        var profileNames = profileIds
+            .Zip(profileResults, (id, p) => (id, name: p?.Name))
+            .ToDictionary(x => x.id, x => x.name);
+        var contextNames = contextIds
+            .Zip(contextResults, (id, c) => (id, name: c?.Name))
+            .ToDictionary(x => x.id, x => x.name);
+
+        var items = configs.Select(c => ToResponse(c, profileNames, contextNames)).ToList();
         return Ok(new { items, total = items.Count });
     }
 
@@ -128,6 +154,13 @@ public sealed class PageEvaluatorApiController : ControllerBase
         [FromBody] UpdateEvaluatorConfigRequest request,
         CancellationToken cancellationToken = default)
     {
+        // Capture the old alias before the update so we can invalidate its cache entries
+        // if the DocumentTypeAlias changes.
+        AIEvaluatorConfig? existing = await _configService.GetByIdAsync(id, cancellationToken);
+        if (existing is null)
+            return NotFound(new { title = $"Evaluator configuration '{id}' not found." });
+        string oldAlias = existing.DocumentTypeAlias;
+
         var config = new AIEvaluatorConfig
         {
             Id = id,
@@ -146,6 +179,8 @@ public sealed class PageEvaluatorApiController : ControllerBase
         {
             AIEvaluatorConfig updated = await _configService.UpdateAsync(config, GetCurrentUserKey(), cancellationToken);
             await _cacheRepository.DeleteByDocumentTypeAliasAsync(updated.DocumentTypeAlias, cancellationToken);
+            if (!string.Equals(oldAlias, updated.DocumentTypeAlias, StringComparison.OrdinalIgnoreCase))
+                await _cacheRepository.DeleteByDocumentTypeAliasAsync(oldAlias, cancellationToken);
             return Ok(await ToResponseAsync(updated, cancellationToken));
         }
         catch (DbUpdateConcurrencyException)
@@ -180,9 +215,11 @@ public sealed class PageEvaluatorApiController : ControllerBase
         if (existing is null)
             return NotFound(new { title = $"Evaluator configuration '{id}' not found." });
 
-        existing.IsActive = true;
-        AIEvaluatorConfig updated = await _configService.UpdateAsync(existing, GetCurrentUserKey(), cancellationToken);
-        await _cacheRepository.DeleteByDocumentTypeAliasAsync(updated.DocumentTypeAlias, cancellationToken);
+        await _configService.SetActiveAsync(id, cancellationToken);
+        await _cacheRepository.DeleteByDocumentTypeAliasAsync(existing.DocumentTypeAlias, cancellationToken);
+        AIEvaluatorConfig? updated = await _configService.GetByIdAsync(id, cancellationToken);
+        if (updated is null)
+            return NotFound(new { title = $"Evaluator configuration '{id}' not found after activation." });
         return Ok(await ToResponseAsync(updated, cancellationToken));
     }
 
@@ -211,13 +248,27 @@ public sealed class PageEvaluatorApiController : ControllerBase
 
     /// <summary>
     /// Returns the cached evaluation report for a content node, if one exists.
-    /// Returns 404 when no cached result is available — the client should then call POST /evaluate.
+    /// Returns 404 when the content node does not exist or no cached result is available.
+    /// Returns 403 when the requesting user lacks Browse permission on the content node.
     /// </summary>
     [HttpGet("evaluate/cached/{nodeId:guid}")]
     public async Task<IActionResult> GetCachedEvaluationAsync(
         Guid nodeId,
         CancellationToken cancellationToken = default)
     {
+        // Verify the content node exists and the requesting user has Browse access.
+        IContent? content = _contentService.GetById(nodeId);
+        if (content is null)
+            return NotFound(new { title = $"Content node '{nodeId}' not found." });
+
+        AuthorizationResult authResult = await _authorizationService.AuthorizeAsync(
+            User,
+            ContentPermissionResource.WithKeys(ActionBrowse.ActionLetter, nodeId),
+            AuthorizationPolicies.ContentPermissionByResource);
+        if (!authResult.Succeeded)
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new { title = "You do not have permission to view the cached evaluation for this content node." });
+
         EvaluationCacheEntry? entry = await _cacheRepository.GetAsync(nodeId, cancellationToken);
         if (entry is null)
             return NotFound(new { title = $"No cached evaluation for node '{nodeId}'." });
@@ -233,19 +284,38 @@ public sealed class PageEvaluatorApiController : ControllerBase
     /// Triggers a fresh AI evaluation for a content page.
     /// Saves the result to the evaluation cache (keyed on NodeId) and returns the report
     /// with <c>cachedAt</c> set to the current UTC time.
-    /// Returns 404 when no active evaluator is configured, or 502 on AI provider failure.
+    /// Returns 404 when the content node does not exist or no active evaluator is configured.
+    /// Returns 403 when the requesting user lacks Browse permission on the content node.
+    /// Returns 502 on AI provider failure.
     /// </summary>
     [HttpPost("evaluate")]
     [EnableRateLimiting("PageEvaluatorEvaluate")]
+    [RequestSizeLimit(1 * 1024 * 1024)] // 1 MB cap on the evaluation request body
     public async Task<IActionResult> EvaluateAsync(
         [FromBody] EvaluatePageRequest request,
         CancellationToken cancellationToken = default)
     {
+        // Verify the content node exists and the requesting user has Browse access.
+        IContent? content = _contentService.GetById(request.NodeId);
+        if (content is null)
+            return NotFound(new { title = $"Content node '{request.NodeId}' not found." });
+
+        AuthorizationResult authResult = await _authorizationService.AuthorizeAsync(
+            User,
+            ContentPermissionResource.WithKeys(ActionBrowse.ActionLetter, request.NodeId),
+            AuthorizationPolicies.ContentPermissionByResource);
+        if (!authResult.Succeeded)
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new { title = "You do not have permission to evaluate this content node." });
+
+        // Use the canonical alias from the content node, not the client-supplied value.
+        string documentTypeAlias = content.ContentType.Alias;
+
         try
         {
             EvaluationReport report = await _evaluationService.EvaluateAsync(
                 request.NodeId,
-                request.DocumentTypeAlias,
+                documentTypeAlias,
                 request.Properties,
                 cancellationToken);
 
@@ -253,7 +323,7 @@ public sealed class PageEvaluatorApiController : ControllerBase
             await _cacheRepository.SaveAsync(new EvaluationCacheEntry
             {
                 NodeId = request.NodeId,
-                DocumentTypeAlias = request.DocumentTypeAlias,
+                DocumentTypeAlias = documentTypeAlias,
                 Report = report,
                 CachedAt = cachedAt,
             }, cancellationToken);
@@ -264,21 +334,26 @@ public sealed class PageEvaluatorApiController : ControllerBase
         {
             return NotFound(new { title = ex.Message });
         }
+        catch (AIGuardrailBlockedException ex)
+        {
+            _logger.LogInformation(ex, "[PageEvaluator] Guardrail blocked evaluation of node {NodeId}.", request.NodeId);
+            return UnprocessableEntity(new { title = ex.Message });
+        }
         catch (HttpRequestException ex)
         {
-            _logger.LogError(ex, "[PageEvaluator] AI provider error during evaluation of node {NodeId}.", request.NodeId);
-            return StatusCode(502, new
-            {
-                title = "The AI provider returned an error. Please try again later.",
-            });
+            _logger.LogError(ex, "[PageEvaluator] AI provider HTTP error during evaluation of node {NodeId}.", request.NodeId);
+            return StatusCode(502, new { title = "The AI provider returned an error. Please try again later." });
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException && ex.GetType().Name.EndsWith("5xxException", StringComparison.Ordinal))
+        {
+            // Anthropic.Exceptions.Anthropic5xxException (e.g. 529 Overloaded) — transient, safe to retry
+            _logger.LogWarning(ex, "[PageEvaluator] AI provider temporarily unavailable for node {NodeId}.", request.NodeId);
+            return StatusCode(503, new { title = "The AI provider is temporarily unavailable. Please try again in a moment." });
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             _logger.LogError(ex, "[PageEvaluator] Unexpected error during evaluation of node {NodeId}.", request.NodeId);
-            return StatusCode(500, new
-            {
-                title = "An unexpected error occurred during evaluation. Please try again later.",
-            });
+            return StatusCode(500, new { title = "An unexpected error occurred during evaluation. Please try again later." });
         }
     }
 
@@ -348,7 +423,39 @@ public sealed class PageEvaluatorApiController : ControllerBase
     // ---------------------------------------------------------------------------
 
     private Guid GetCurrentUserKey()
-        => HttpContext.User.Identity?.GetUserKey() ?? Guid.Empty;
+        => HttpContext.User.Identity?.GetUserKey()
+            ?? throw new InvalidOperationException("Authenticated user key not found on the current request.");
+
+    private EvaluatorConfigResponse ToResponse(
+        AIEvaluatorConfig config,
+        Dictionary<Guid, string?> profileNames,
+        Dictionary<Guid, string?> contextNames)
+    {
+        profileNames.TryGetValue(config.ProfileId, out string? profileName);
+        string? contextName = config.ContextId.HasValue
+            && contextNames.TryGetValue(config.ContextId.Value, out string? cn) ? cn : null;
+        string? documentTypeName = _contentTypeService.Get(config.DocumentTypeAlias)?.Name;
+
+        return new EvaluatorConfigResponse
+        {
+            Id = config.Id,
+            Name = config.Name,
+            Description = config.Description,
+            DocumentTypeAlias = config.DocumentTypeAlias,
+            DocumentTypeName = documentTypeName,
+            ProfileId = config.ProfileId,
+            ProfileName = profileName,
+            ContextId = config.ContextId,
+            ContextName = contextName,
+            PromptText = config.PromptText,
+            IsActive = config.IsActive,
+            DateCreated = config.DateCreated,
+            DateModified = config.DateModified,
+            PropertyAliases = config.PropertyAliases,
+            ScoringEnabled = config.ScoringEnabled,
+            Version = config.Version,
+        };
+    }
 
     private async Task<EvaluatorConfigResponse> ToResponseAsync(
         AIEvaluatorConfig config,

@@ -11,6 +11,9 @@ namespace ProWorks.Umbraco.AI.PageEvaluator.Services;
 /// </summary>
 public sealed class AIEvaluatorConfigService : IAIEvaluatorConfigService
 {
+    // 32,768 characters ≈ 32 KB — prevents oversized prompts from bloating AI requests.
+    private const int MaxPromptTextLength = 32_768;
+
     private readonly IAIEvaluatorConfigRepository _repository;
     private readonly IAIProfileService _profileService;
     private readonly IAIContextService _contextService;
@@ -74,20 +77,25 @@ public sealed class AIEvaluatorConfigService : IAIEvaluatorConfigService
 
         config.DateCreated = existing.DateCreated;
         config.CreatedByUserId = existing.CreatedByUserId;
+
+        if (config.Version == 0)
+            throw new ArgumentException(
+                "Version is required for update. Reload the configuration and try again.", nameof(config));
+
         config.DateModified = DateTime.UtcNow;
         config.ModifiedByUserId = modifiedByUserId;
-        config.IsActive = true;
-        // Preserve the client-supplied Version for optimistic concurrency.
-        // If Version was not supplied (0), use the existing version to avoid false conflicts.
-        if (config.Version == 0)
-            config.Version = existing.Version;
+        config.IsActive = existing.IsActive;
 
         await _repository.SaveAsync(config, cancellationToken);
+        config.Version += 1; // Reflect what ApplyToEntity committed to the DB (domain.Version + 1).
         return config;
     }
 
     public Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
         => _repository.DeleteAsync(id, cancellationToken);
+
+    public Task SetActiveAsync(Guid id, CancellationToken cancellationToken = default) =>
+        _repository.SetActiveAsync(id, cancellationToken);
 
     // -------------------------------------------------------------------------
     // Validation helpers
@@ -106,6 +114,10 @@ public sealed class AIEvaluatorConfigService : IAIEvaluatorConfigService
 
         if (string.IsNullOrWhiteSpace(config.PromptText))
             throw new ArgumentException("Prompt text is required.", nameof(config));
+
+        if (config.PromptText.Length > MaxPromptTextLength)
+            throw new ArgumentException(
+                $"Prompt text must not exceed {MaxPromptTextLength:N0} characters.", nameof(config));
     }
 
     private async Task ValidateProfileAsync(Guid profileId, CancellationToken cancellationToken)

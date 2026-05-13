@@ -13,7 +13,10 @@ using ProWorks.Umbraco.AI.PageEvaluator.Evaluation;
 using ProWorks.Umbraco.AI.PageEvaluator.Evaluators;
 using ProWorks.Umbraco.AI.PageEvaluator.Services;
 using Umbraco.AI.Core.Contexts;
+using Umbraco.AI.Core.Guardrails;
+using Umbraco.AI.Core.Guardrails.Evaluators;
 using Umbraco.AI.Core.Profiles;
+using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Web.Common.Authorization;
 using Xunit;
@@ -32,15 +35,38 @@ public class PageEvaluatorApiControllerTests
     private readonly IContentTypeService _contentTypeService = Substitute.For<IContentTypeService>();
     private readonly IEvaluationCacheRepository _cacheRepository = Substitute.For<IEvaluationCacheRepository>();
     private readonly ILogger<PageEvaluatorApiController> _logger = Substitute.For<ILogger<PageEvaluatorApiController>>();
+    private readonly IContentService _contentService = Substitute.For<IContentService>();
+    private readonly IAuthorizationService _authorizationService = Substitute.For<IAuthorizationService>();
     private readonly PageEvaluatorApiController _sut;
 
     public PageEvaluatorApiControllerTests()
     {
-        _sut = new PageEvaluatorApiController(_evaluationService, _configService, _profileService, _contextService, _contentTypeService, _cacheRepository, _logger);
+        // Default: any node exists and any user is authorized (so existing tests are unaffected).
+        var defaultContent = Substitute.For<IContent>();
+        defaultContent.ContentType.Alias.Returns("blogPost");
+        _contentService.GetById(Arg.Any<Guid>()).Returns(defaultContent);
+        _authorizationService
+            .AuthorizeAsync(Arg.Any<ClaimsPrincipal>(), Arg.Any<object?>(), Arg.Any<string>())
+            .Returns(AuthorizationResult.Success());
+
+        _sut = new PageEvaluatorApiController(
+            _evaluationService, _configService, _profileService, _contextService,
+            _contentTypeService, _cacheRepository, _logger,
+            _contentService, _authorizationService);
         _sut.ControllerContext = new ControllerContext
         {
             HttpContext = new DefaultHttpContext(),
         };
+        var identity = new ClaimsIdentity(
+            [new Claim("sub", Guid.NewGuid().ToString())],
+            "test");
+        _sut.ControllerContext.HttpContext.User = new ClaimsPrincipal(identity);
+
+        // Default: GetByIdAsync returns a valid config for any ID so UpdateConfigurationAsync
+        // tests that don't set up their own mock still get past the pre-check.
+        // Tests that need specific behavior override this with their own setup.
+        _configService.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(BuildConfig("blogPost"));
     }
 
     // ---------------------------------------------------------------------------
@@ -159,6 +185,108 @@ public class PageEvaluatorApiControllerTests
     }
 
     // ---------------------------------------------------------------------------
+    // POST /evaluate — authorization
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public async Task EvaluateAsync_WhenContentNodeNotFound_Returns404()
+    {
+        var request = new EvaluatePageRequest
+        {
+            NodeId = Guid.NewGuid(),
+            DocumentTypeAlias = "blogPost",
+            Properties = new(),
+        };
+
+        _contentService.GetById(request.NodeId).Returns((IContent?)null);
+
+        IActionResult result = await _sut.EvaluateAsync(request);
+
+        Assert.IsType<NotFoundObjectResult>(result);
+        await _evaluationService.DidNotReceive()
+            .EvaluateAsync(Arg.Any<Guid>(), Arg.Any<string>(),
+                Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_WhenUserLacksPermission_Returns403()
+    {
+        var nodeId = Guid.NewGuid();
+        var content = Substitute.For<IContent>();
+        content.ContentType.Alias.Returns("blogPost");
+        _contentService.GetById(nodeId).Returns(content);
+
+        _authorizationService
+            .AuthorizeAsync(Arg.Any<ClaimsPrincipal>(), Arg.Any<object?>(), Arg.Any<string>())
+            .Returns(AuthorizationResult.Failed());
+
+        var request = new EvaluatePageRequest { NodeId = nodeId, DocumentTypeAlias = "blogPost", Properties = new() };
+        IActionResult result = await _sut.EvaluateAsync(request);
+
+        var statusResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(403, statusResult.StatusCode);
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_UsesCanonicalDocTypeAliasFromContentNode_NotClientSupplied()
+    {
+        var nodeId = Guid.NewGuid();
+        var content = Substitute.For<IContent>();
+        content.ContentType.Alias.Returns("blogPost"); // canonical alias
+        _contentService.GetById(nodeId).Returns(content);
+
+        _evaluationService
+            .EvaluateAsync(nodeId, "blogPost", Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<CancellationToken>())
+            .Returns(EvaluationReport.Parsed(new EvaluationScore(1, 1), [], null));
+
+        var request = new EvaluatePageRequest
+        {
+            NodeId = nodeId,
+            DocumentTypeAlias = "wrongAlias", // client sends wrong alias
+            Properties = new(),
+        };
+        IActionResult result = await _sut.EvaluateAsync(request);
+
+        await _evaluationService.Received(1)
+            .EvaluateAsync(nodeId, "blogPost", Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<CancellationToken>());
+        Assert.IsType<OkObjectResult>(result);
+    }
+
+    // ---------------------------------------------------------------------------
+    // GET /evaluate/cached/{nodeId} — authorization
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public async Task GetCachedEvaluationAsync_WhenContentNodeNotFound_Returns404()
+    {
+        var nodeId = Guid.NewGuid();
+        _contentService.GetById(nodeId).Returns((IContent?)null);
+
+        IActionResult result = await _sut.GetCachedEvaluationAsync(nodeId);
+
+        Assert.IsType<NotFoundObjectResult>(result);
+        await _cacheRepository.DidNotReceive().GetAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task GetCachedEvaluationAsync_WhenUserLacksPermission_Returns403()
+    {
+        var nodeId = Guid.NewGuid();
+        var content = Substitute.For<IContent>();
+        content.ContentType.Alias.Returns("blogPost");
+        _contentService.GetById(nodeId).Returns(content);
+
+        _authorizationService
+            .AuthorizeAsync(Arg.Any<ClaimsPrincipal>(), Arg.Any<object?>(), Arg.Any<string>())
+            .Returns(AuthorizationResult.Failed());
+
+        IActionResult result = await _sut.GetCachedEvaluationAsync(nodeId);
+
+        var statusResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(403, statusResult.StatusCode);
+    }
+
+    // ---------------------------------------------------------------------------
     // GET /evaluate/cached/{nodeId}
     // ---------------------------------------------------------------------------
 
@@ -230,6 +358,27 @@ public class PageEvaluatorApiControllerTests
     // ---------------------------------------------------------------------------
     // GET /configurations  (T047 RED — method does not exist yet)
     // ---------------------------------------------------------------------------
+
+    [Fact]
+    public async Task GetConfigurationsAsync_WithTwoConfigsSharingProfile_FetchesProfileOnce()
+    {
+        var profileId = Guid.NewGuid();
+        var configs = new List<AIEvaluatorConfig>
+        {
+            new() { Id = Guid.NewGuid(), Name = "A", DocumentTypeAlias = "blogPost",
+                    ProfileId = profileId, PromptText = "p", Version = 1 },
+            new() { Id = Guid.NewGuid(), Name = "B", DocumentTypeAlias = "newsItem",
+                    ProfileId = profileId, PromptText = "p", Version = 1 },
+        };
+        _configService.GetAllAsync(Arg.Any<CancellationToken>())
+            .Returns((IReadOnlyList<AIEvaluatorConfig>)configs);
+        _profileService.GetProfileAsync(profileId, Arg.Any<CancellationToken>())
+            .Returns(new AIProfile { Alias = "test", Name = "Test Profile", ConnectionId = Guid.Empty });
+
+        await _sut.GetConfigurationsAsync();
+
+        await _profileService.Received(1).GetProfileAsync(profileId, Arg.Any<CancellationToken>());
+    }
 
     [Fact]
     public async Task GetConfigurationsAsync_Returns200WithAllConfigs()
@@ -429,9 +578,48 @@ public class PageEvaluatorApiControllerTests
         Assert.IsType<UnprocessableEntityObjectResult>(result);
     }
 
+    [Fact]
+    public async Task UpdateConfigurationAsync_WhenVersionIsZero_Returns422WithConfigKey()
+    {
+        // Version=0 is rejected by AIEvaluatorConfigService.UpdateAsync to prevent
+        // silently bypassing the EF Core optimistic concurrency token.
+        var id = Guid.NewGuid();
+        var request = new UpdateEvaluatorConfigRequest
+        {
+            Name = "My Evaluator",
+            DocumentTypeAlias = "blogPost",
+            ProfileId = Guid.NewGuid(),
+            PromptText = "Some prompt.",
+            Version = 0,
+        };
+        _configService.UpdateAsync(Arg.Any<AIEvaluatorConfig>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new ArgumentException("Version is required for update. Reload the configuration and try again.", "config"));
+
+        IActionResult result = await _sut.UpdateConfigurationAsync(id, request);
+
+        var unprocessable = Assert.IsType<UnprocessableEntityObjectResult>(result);
+        var body = Assert.IsAssignableFrom<object>(unprocessable.Value);
+        var errors = (System.Collections.Generic.Dictionary<string, string[]>)body.GetType().GetProperty("errors")!.GetValue(body)!;
+        Assert.True(errors.ContainsKey("config"));
+    }
+
     // ---------------------------------------------------------------------------
     // POST /configurations/{id}/activate
     // ---------------------------------------------------------------------------
+
+    [Fact]
+    public async Task ActivateConfigurationAsync_CallsSetActiveAsync_NotUpdateAsync()
+    {
+        var id = Guid.NewGuid();
+        var config = BuildConfig("blogPost");
+        _configService.GetByIdAsync(id, Arg.Any<CancellationToken>()).Returns(config);
+        _configService.SetActiveAsync(id, Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+
+        await _sut.ActivateConfigurationAsync(id);
+
+        await _configService.Received(1).SetActiveAsync(id, Arg.Any<CancellationToken>());
+        await _configService.DidNotReceive().UpdateAsync(Arg.Any<AIEvaluatorConfig>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+    }
 
     [Fact]
     public async Task ActivateConfigurationAsync_WhenExists_Returns200AndInvalidatesCache()
@@ -439,8 +627,7 @@ public class PageEvaluatorApiControllerTests
         var id = Guid.NewGuid();
         var config = BuildConfig("blogPost");
         _configService.GetByIdAsync(id, Arg.Any<CancellationToken>()).Returns(config);
-        _configService.UpdateAsync(Arg.Any<AIEvaluatorConfig>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>())
-            .Returns(config);
+        _configService.SetActiveAsync(id, Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
 
         IActionResult result = await _sut.ActivateConfigurationAsync(id);
 
@@ -456,15 +643,11 @@ public class PageEvaluatorApiControllerTests
         var config = BuildConfig("blogPost");
         config.IsActive = false; // simulate an inactive config
         _configService.GetByIdAsync(id, Arg.Any<CancellationToken>()).Returns(config);
-        _configService.UpdateAsync(Arg.Any<AIEvaluatorConfig>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>())
-            .Returns(config);
+        _configService.SetActiveAsync(id, Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
 
         await _sut.ActivateConfigurationAsync(id);
 
-        await _configService.Received(1).UpdateAsync(
-            Arg.Is<AIEvaluatorConfig>(c => c.IsActive),
-            Arg.Any<Guid>(),
-            Arg.Any<CancellationToken>());
+        await _configService.Received(1).SetActiveAsync(id, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -476,6 +659,72 @@ public class PageEvaluatorApiControllerTests
         IActionResult result = await _sut.ActivateConfigurationAsync(id);
 
         Assert.IsType<NotFoundObjectResult>(result);
+    }
+
+
+    [Fact]
+    public async Task ActivateConfigurationAsync_WhenConfigDeletedBetweenActivateAndRefetch_Returns404()
+    {
+        var id = Guid.NewGuid();
+        var config = BuildConfig("blogPost");
+        // First GetByIdAsync (pre-check) returns the config
+        // Second GetByIdAsync (post-activate re-fetch) returns null
+        _configService.GetByIdAsync(id, Arg.Any<CancellationToken>())
+            .Returns(config, (AIEvaluatorConfig?)null);
+        _configService.SetActiveAsync(id, Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+
+        IActionResult result = await _sut.ActivateConfigurationAsync(id);
+
+        Assert.IsType<NotFoundObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task UpdateConfigurationAsync_WhenDocumentTypeAliasChanges_InvalidatesBothOldAndNewAliasCache()
+    {
+        var id = Guid.NewGuid();
+        const string oldAlias = "blogPost";
+        const string newAlias = "newsArticle";
+
+        var existingConfig = new AIEvaluatorConfig
+        {
+            Id = id,
+            Name = "Existing",
+            DocumentTypeAlias = oldAlias,
+            ProfileId = Guid.NewGuid(),
+            PromptText = "Evaluate.",
+            Version = 1,
+        };
+        _configService.GetByIdAsync(id, Arg.Any<CancellationToken>()).Returns(existingConfig);
+
+        var updatedConfig = new AIEvaluatorConfig
+        {
+            Id = id,
+            Name = "Updated",
+            DocumentTypeAlias = newAlias,
+            ProfileId = existingConfig.ProfileId,
+            PromptText = "Evaluate.",
+            Version = 2,
+        };
+        _configService.UpdateAsync(Arg.Any<AIEvaluatorConfig>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(updatedConfig);
+
+        _profileService.GetProfileAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns((AIProfile?)null);
+
+        var request = new UpdateEvaluatorConfigRequest
+        {
+            Name = "Updated",
+            DocumentTypeAlias = newAlias,
+            ProfileId = existingConfig.ProfileId,
+            PromptText = "Evaluate.",
+            Version = 1,
+        };
+
+        IActionResult result = await _sut.UpdateConfigurationAsync(id, request);
+
+        Assert.IsType<OkObjectResult>(result);
+        await _cacheRepository.Received(1).DeleteByDocumentTypeAliasAsync(newAlias, Arg.Any<CancellationToken>());
+        await _cacheRepository.Received(1).DeleteByDocumentTypeAliasAsync(oldAlias, Arg.Any<CancellationToken>());
     }
 
     // ---------------------------------------------------------------------------
@@ -538,6 +787,13 @@ public class PageEvaluatorApiControllerTests
     // T010: Generic 500 on unexpected Exception
     // ---------------------------------------------------------------------------
 
+    // Fake exception whose type name ends with "5xxException" to exercise the
+    // Anthropic5xxException catch-when pattern without a direct SDK dependency.
+    private sealed class Fake5xxException : Exception
+    {
+        public Fake5xxException(string message) : base(message) { }
+    }
+
     [Fact]
     public async Task EvaluateAsync_WhenUnexpectedException_Returns500WithGenericMessage()
     {
@@ -557,6 +813,65 @@ public class PageEvaluatorApiControllerTests
         Assert.Equal(500, statusResult.StatusCode);
         string json = System.Text.Json.JsonSerializer.Serialize(statusResult.Value);
         Assert.DoesNotContain("Object reference", json);
+    }
+
+    // ---------------------------------------------------------------------------
+    // Guardrail blocked → 422
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public async Task EvaluateAsync_WhenGuardrailBlocked_Returns422WithBlockedMessage()
+    {
+        var request = new EvaluatePageRequest
+        {
+            NodeId = Guid.NewGuid(),
+            DocumentTypeAlias = "blogPost",
+            Properties = new(),
+        };
+
+        var evaluationResult = new AIGuardrailEvaluationResult
+        {
+            Action = AIGuardrailAction.Block,
+            Phase = AIGuardrailPhase.PostGenerate,
+            RuleResults = [],
+        };
+        _evaluationService.EvaluateAsync(
+                Arg.Any<Guid>(), Arg.Any<string>(),
+                Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new AIGuardrailBlockedException(evaluationResult));
+
+        IActionResult result = await _sut.EvaluateAsync(request);
+
+        var unprocessable = Assert.IsType<UnprocessableEntityObjectResult>(result);
+        string json = System.Text.Json.JsonSerializer.Serialize(unprocessable.Value);
+        Assert.Contains("blocked by a guardrail policy", json);
+    }
+
+    // ---------------------------------------------------------------------------
+    // Anthropic 5xx transient overload → 503
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public async Task EvaluateAsync_WhenAiProvider5xxException_Returns503WithRetryMessage()
+    {
+        var request = new EvaluatePageRequest
+        {
+            NodeId = Guid.NewGuid(),
+            DocumentTypeAlias = "blogPost",
+            Properties = new(),
+        };
+
+        _evaluationService.EvaluateAsync(
+                Arg.Any<Guid>(), Arg.Any<string>(),
+                Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new Fake5xxException("Status Code: 529 Too Many Requests"));
+
+        IActionResult result = await _sut.EvaluateAsync(request);
+
+        var statusResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(503, statusResult.StatusCode);
+        string json = System.Text.Json.JsonSerializer.Serialize(statusResult.Value);
+        Assert.Contains("temporarily unavailable", json);
     }
 
     // ---------------------------------------------------------------------------
@@ -807,5 +1122,89 @@ public class PageEvaluatorApiControllerTests
         var attr = method!.GetCustomAttribute<EnableRateLimitingAttribute>();
         Assert.NotNull(attr);
         Assert.Equal("PageEvaluatorEvaluate", attr!.PolicyName);
+    }
+
+    [Fact]
+    public void EvaluateAsync_HasRequestSizeLimitAttribute()
+    {
+        var method = typeof(PageEvaluatorApiController).GetMethod(
+            nameof(PageEvaluatorApiController.EvaluateAsync),
+            BindingFlags.Public | BindingFlags.Instance);
+        Assert.NotNull(method);
+
+        var attr = method!.GetCustomAttribute<RequestSizeLimitAttribute>();
+        Assert.NotNull(attr);
+    }
+
+    // ---------------------------------------------------------------------------
+    // GET /document-type/{alias}/properties
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public void GetDocumentTypeProperties_WhenAliasExists_Returns200WithMappedProperties()
+    {
+        const string alias = "blogPost";
+        var contentType = Substitute.For<IContentType>();
+        contentType.Alias.Returns(alias);
+        contentType.Name.Returns("Blog Post");
+
+        var prop = Substitute.For<IPropertyType>();
+        prop.Alias.Returns("pageTitle");
+        prop.Name.Returns("Page Title");
+        prop.PropertyEditorAlias.Returns("Umbraco.TextBox");
+
+        contentType.CompositionPropertyTypes.Returns(new[] { prop });
+        contentType.CompositionPropertyGroups.Returns(Enumerable.Empty<PropertyGroup>());
+
+        _contentTypeService.Get(alias).Returns(contentType);
+
+        IActionResult result = _sut.GetDocumentTypeProperties(alias);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        Assert.NotNull(ok.Value);
+        var type = ok.Value!.GetType();
+        Assert.Equal(alias, (string)type.GetProperty("alias")!.GetValue(ok.Value)!);
+        Assert.Equal("Blog Post", (string)type.GetProperty("name")!.GetValue(ok.Value)!);
+    }
+
+    [Fact]
+    public void GetDocumentTypeProperties_WhenAliasNotFound_Returns404()
+    {
+        _contentTypeService.Get("unknown").Returns((IContentType?)null);
+
+        IActionResult result = _sut.GetDocumentTypeProperties("unknown");
+
+        Assert.IsType<NotFoundObjectResult>(result);
+    }
+
+    [Fact]
+    public void GetDocumentTypeProperties_WhenPropertyNameIsNull_FallsBackToAlias()
+    {
+        const string alias = "article";
+        var contentType = Substitute.For<IContentType>();
+        contentType.Alias.Returns(alias);
+        contentType.Name.Returns("Article");
+
+        var prop = Substitute.For<IPropertyType>();
+        prop.Alias.Returns("bodyText");
+        prop.Name.Returns((string?)null);
+        prop.PropertyEditorAlias.Returns("Umbraco.TinyMCE");
+
+        contentType.CompositionPropertyTypes.Returns(new[] { prop });
+        contentType.CompositionPropertyGroups.Returns(Enumerable.Empty<PropertyGroup>());
+
+        _contentTypeService.Get(alias).Returns(contentType);
+
+        IActionResult result = _sut.GetDocumentTypeProperties(alias);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        Assert.NotNull(ok.Value);
+
+        var propertiesValue = ok.Value!.GetType().GetProperty("properties")!.GetValue(ok.Value)!;
+        var propertiesList = ((IEnumerable<object>)propertiesValue).ToList();
+        Assert.Single(propertiesList);
+        var firstProp = propertiesList[0];
+        var label = (string)firstProp.GetType().GetProperty("label")!.GetValue(firstProp)!;
+        Assert.Equal("bodyText", label);
     }
 }

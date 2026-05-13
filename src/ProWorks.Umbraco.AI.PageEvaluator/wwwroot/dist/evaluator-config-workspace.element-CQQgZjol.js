@@ -1,16 +1,16 @@
-import { html as l, nothing as d, css as h, state as n, customElement as m } from "@umbraco-cms/backoffice/external/lit";
+import { html as a, nothing as d, css as h, state as n, customElement as m } from "@umbraco-cms/backoffice/external/lit";
 import { UmbLitElement as p } from "@umbraco-cms/backoffice/lit-element";
-import { umbConfirmModal as v } from "@umbraco-cms/backoffice/modal";
-import { a as f, b as g, d as _ } from "./entry-point-rFvFzWUR.js";
-import "./evaluator-form.element-D993mZtF.js";
-var b = Object.defineProperty, y = Object.getOwnPropertyDescriptor, u = (t, i, o, a) => {
-  for (var e = a > 1 ? void 0 : a ? y(i, o) : i, s = t.length - 1, c; s >= 0; s--)
-    (c = t[s]) && (e = (a ? c(i, o, e) : c(e)) || e);
-  return a && e && b(i, o, e), e;
+import { umbConfirmModal as g } from "@umbraco-cms/backoffice/modal";
+import { a as f, b as v, d as _ } from "./entry-point-fq8H4LAY.js";
+import "./evaluator-form.element-B2uwL51a.js";
+var b = Object.defineProperty, y = Object.getOwnPropertyDescriptor, u = (e, i, o, t) => {
+  for (var l = t > 1 ? void 0 : t ? y(i, o) : i, s = e.length - 1, c; s >= 0; s--)
+    (c = e[s]) && (l = (t ? c(i, o, l) : c(l)) || l);
+  return t && l && b(i, o, l), l;
 };
 let r = class extends p {
   constructor() {
-    super(...arguments), this._configs = [], this._loading = !1, this._error = null, this._view = "list", this._editId = null;
+    super(...arguments), this._configs = [], this._groupedConfigs = /* @__PURE__ */ new Map(), this._loading = !1, this._error = null, this._view = "list", this._editId = null;
   }
   connectedCallback() {
     super.connectedCallback(), this._loadConfigs();
@@ -18,8 +18,8 @@ let r = class extends p {
   async _loadConfigs() {
     this._loading = !0, this._error = null;
     try {
-      const t = await f();
-      this._configs = [...t.items];
+      const e = await f();
+      this._configs = [...e.items], this._groupedConfigs = this._groupByDocType();
     } catch {
       this._error = this.localize.term("evaluatorConfig_loadError");
     } finally {
@@ -27,25 +27,25 @@ let r = class extends p {
     }
   }
   _groupByDocType() {
-    const t = /* @__PURE__ */ new Map();
+    const e = /* @__PURE__ */ new Map();
     for (const i of this._configs) {
-      const o = t.get(i.documentTypeAlias) ?? [];
-      o.push(i), t.set(i.documentTypeAlias, o);
+      const o = e.get(i.documentTypeAlias) ?? [];
+      o.push(i), e.set(i.documentTypeAlias, o);
     }
-    for (const [i, o] of t)
-      o.sort((a, e) => a.isActive !== e.isActive ? a.isActive ? -1 : 1 : e.dateModified.localeCompare(a.dateModified)), t.set(i, o);
-    return t;
+    for (const [i, o] of e)
+      o.sort((t, l) => t.isActive !== l.isActive ? t.isActive ? -1 : 1 : l.dateModified.localeCompare(t.dateModified)), e.set(i, o);
+    return e;
   }
-  async _handleActivate(t) {
+  async _handleActivate(e) {
     try {
-      await g(t), await this._loadConfigs();
+      await v(e), await this._loadConfigs();
     } catch {
       this._error = this.localize.term("evaluatorConfig_activateError");
     }
   }
-  async _handleDelete(t) {
+  async _handleDelete(e) {
     try {
-      await v(this, {
+      await g(this, {
         headline: this.localize.term("evaluatorConfig_deleteConfirmHeadline"),
         content: this.localize.term("evaluatorConfig_deleteConfirmContent"),
         color: "danger",
@@ -55,13 +55,13 @@ let r = class extends p {
       return;
     }
     try {
-      await _(t), this._configs = this._configs.filter((i) => i.id !== t);
+      await _(e), this._configs = this._configs.filter((i) => i.id !== e), this._groupedConfigs = this._groupByDocType();
     } catch {
       this._error = this.localize.term("evaluatorConfig_deleteError");
     }
   }
-  _handleEdit(t) {
-    this._editId = t, this._view = "form";
+  _handleEdit(e) {
+    this._editId = e, this._view = "form";
   }
   _handleCreate() {
     this._editId = null, this._view = "form";
@@ -73,8 +73,7 @@ let r = class extends p {
     this._view = "list", this._editId = null;
   }
   render() {
-    if (this._view === "form")
-      return l`
+    return this._view === "form" ? a`
         <div id="content">
           <div class="form-header">
             <h3>${this._editId ? this.localize.term("evaluatorConfig_editHeadline") : this.localize.term("evaluatorConfig_createHeadline")}</h3>
@@ -90,11 +89,7 @@ let r = class extends p {
             @evaluator-saved=${() => this._handleSaved()}>
           </evaluator-form>
         </div>
-      `;
-    if (this._loading)
-      return l`<div id="content"><uui-loader></uui-loader></div>`;
-    const t = this._groupByDocType();
-    return l`
+      ` : this._loading ? a`<div id="content"><uui-loader></uui-loader></div>` : a`
       <div id="content">
         <div class="promo-notice">
           <img class="promo-logo" src="/App_Plugins/ProWorks.AI.PageEvaluator/proworks-logo.png" alt="ProWorks" />
@@ -122,13 +117,13 @@ let r = class extends p {
           </uui-button>
         </div>
 
-        ${this._error ? l`<uui-tag color="danger">${this._error}</uui-tag>` : d}
+        ${this._error ? a`<uui-tag color="danger">${this._error}</uui-tag>` : d}
 
-        ${t.size === 0 ? l`<p>${this.localize.term("evaluatorConfig_emptyState")}</p>` : Array.from(t.entries()).map(
-      ([i, o]) => {
-        var a;
-        return l`
-                <uui-box headline=${((a = o[0]) == null ? void 0 : a.documentTypeName) ?? i}>
+        ${this._groupedConfigs.size === 0 ? a`<p>${this.localize.term("evaluatorConfig_emptyState")}</p>` : Array.from(this._groupedConfigs.entries()).map(
+      ([e, i]) => {
+        var o;
+        return a`
+                <uui-box headline=${((o = i[0]) == null ? void 0 : o.documentTypeName) ?? e}>
                   <uui-table>
                     <uui-table-head>
                       <uui-table-head-cell>${this.localize.term("evaluatorConfig_tableHeaderName")}</uui-table-head-cell>
@@ -136,34 +131,34 @@ let r = class extends p {
                       <uui-table-head-cell>${this.localize.term("evaluatorConfig_tableHeaderStatus")}</uui-table-head-cell>
                       <uui-table-head-cell>${this.localize.term("evaluatorConfig_tableHeaderActions")}</uui-table-head-cell>
                     </uui-table-head>
-                    ${o.map(
-          (e) => l`
+                    ${i.map(
+          (t) => a`
                         <uui-table-row>
                           <uui-table-cell>
-                            <strong>${e.name}</strong>
-                            ${e.description ? l`<br /><small>${e.description}</small>` : d}
+                            <strong>${t.name}</strong>
+                            ${t.description ? a`<br /><small>${t.description}</small>` : d}
                           </uui-table-cell>
-                          <uui-table-cell>${e.profileName ?? e.profileId}</uui-table-cell>
+                          <uui-table-cell>${t.profileName ?? t.profileId}</uui-table-cell>
                           <uui-table-cell>
-                            ${e.isActive ? l`<uui-tag color="positive" look="primary">${this.localize.term("evaluatorConfig_activeLabel")}</uui-tag>` : l`<uui-tag look="secondary">${this.localize.term("evaluatorConfig_inactiveLabel")}</uui-tag>`}
+                            ${t.isActive ? a`<uui-tag color="positive" look="primary">${this.localize.term("evaluatorConfig_activeLabel")}</uui-tag>` : a`<uui-tag look="secondary">${this.localize.term("evaluatorConfig_inactiveLabel")}</uui-tag>`}
                           </uui-table-cell>
                           <uui-table-cell>
-                            ${e.isActive ? d : l`<uui-button
+                            ${t.isActive ? d : a`<uui-button
                                   look="secondary"
                                   label=${this.localize.term("evaluatorConfig_activateButton")}
-                                  @click=${() => this._handleActivate(e.id)}>
+                                  @click=${() => this._handleActivate(t.id)}>
                                   ${this.localize.term("evaluatorConfig_activateButton")}
                                 </uui-button>`}
                             <uui-button
                               look="secondary"
                               label=${this.localize.term("evaluatorConfig_editButton")}
-                              @click=${() => this._handleEdit(e.id)}>
+                              @click=${() => this._handleEdit(t.id)}>
                               ${this.localize.term("evaluatorConfig_editButton")}
                             </uui-button>
                             <uui-button
                               look="danger"
                               label=${this.localize.term("evaluatorConfig_deleteButton")}
-                              @click=${() => this._handleDelete(e.id)}>
+                              @click=${() => this._handleDelete(t.id)}>
                               ${this.localize.term("evaluatorConfig_deleteButton")}
                             </uui-button>
                           </uui-table-cell>
@@ -265,6 +260,9 @@ u([
 ], r.prototype, "_configs", 2);
 u([
   n()
+], r.prototype, "_groupedConfigs", 2);
+u([
+  n()
 ], r.prototype, "_loading", 2);
 u([
   n()
@@ -281,4 +279,4 @@ r = u([
 export {
   r as EvaluatorConfigWorkspaceElement
 };
-//# sourceMappingURL=evaluator-config-workspace.element-DadmODym.js.map
+//# sourceMappingURL=evaluator-config-workspace.element-CQQgZjol.js.map

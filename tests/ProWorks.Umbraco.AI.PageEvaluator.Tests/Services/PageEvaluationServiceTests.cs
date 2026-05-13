@@ -9,6 +9,9 @@ using Umbraco.AI.Core.Chat;
 using Umbraco.AI.Core.Contexts;
 using Umbraco.AI.Core.InlineChat;
 using Umbraco.Cms.Core.DeliveryApi;
+using Umbraco.Cms.Core.Models.DeliveryApi;
+using Umbraco.Cms.Core.Models.PublishedContent;
+using Umbraco.Cms.Core.PublishedCache;
 using Umbraco.Cms.Core.Web;
 using Xunit;
 
@@ -110,6 +113,58 @@ public class PageEvaluationServiceTests
         Assert.False(report.ParseFailed);
         Assert.Equal(2, report.Score!.Passed);
         Assert.Equal(2, report.Checks.Count);
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_WhenJsonStatusIsLowercase_ParsesCorrectly()
+    {
+        const string documentTypeAlias = "blogPost";
+        _configService.GetActiveForDocumentTypeAsync(documentTypeAlias, Arg.Any<CancellationToken>())
+            .Returns(BuildConfig(documentTypeAlias));
+
+        var jsonResponse = """
+            {
+              "score": { "passed": 1, "total": 3 },
+              "checks": [
+                { "checkNumber": 1, "status": "fail", "label": "Title", "explanation": null },
+                { "checkNumber": 2, "status": "warn", "label": "Meta", "explanation": null },
+                { "checkNumber": 3, "status": "pass", "label": "Image", "explanation": null }
+              ],
+              "suggestions": null
+            }
+            """;
+        MockChatResponse(jsonResponse);
+
+        EvaluationReport report = await _sut.EvaluateAsync(Guid.NewGuid(), documentTypeAlias, new Dictionary<string, object?>());
+
+        Assert.Equal(CheckStatus.Fail, report.Checks[0].Status);
+        Assert.Equal(CheckStatus.Warn, report.Checks[1].Status);
+        Assert.Equal(CheckStatus.Pass, report.Checks[2].Status);
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_WhenJsonStatusIsUppercase_ParsesCorrectly()
+    {
+        const string documentTypeAlias = "blogPost";
+        _configService.GetActiveForDocumentTypeAsync(documentTypeAlias, Arg.Any<CancellationToken>())
+            .Returns(BuildConfig(documentTypeAlias));
+
+        var jsonResponse = """
+            {
+              "score": { "passed": 0, "total": 2 },
+              "checks": [
+                { "checkNumber": 1, "status": "FAIL", "label": "Title", "explanation": null },
+                { "checkNumber": 2, "status": "WARNING", "label": "Meta", "explanation": null }
+              ],
+              "suggestions": null
+            }
+            """;
+        MockChatResponse(jsonResponse);
+
+        EvaluationReport report = await _sut.EvaluateAsync(Guid.NewGuid(), documentTypeAlias, new Dictionary<string, object?>());
+
+        Assert.Equal(CheckStatus.Fail, report.Checks[0].Status);
+        Assert.Equal(CheckStatus.Warn, report.Checks[1].Status);
     }
 
     // ---------------------------------------------------------------------------
@@ -715,6 +770,94 @@ public class PageEvaluationServiceTests
     }
 
     // ---------------------------------------------------------------------------
+    // Issue 5: Zero-total EvaluationScore guard
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public async Task EvaluateAsync_WhenAiReturnsZeroTotalScore_UsesFallbackCheckCount()
+    {
+        const string documentTypeAlias = "blogPost";
+        _configService.GetActiveForDocumentTypeAsync(documentTypeAlias, Arg.Any<CancellationToken>())
+            .Returns(BuildConfig(documentTypeAlias));
+
+        // AI returns score:{passed:0,total:0} but has real checks — total should fall back to checks.Count
+        MockChatResponse("""
+            {
+              "score": { "passed": 0, "total": 0 },
+              "checks": [
+                { "checkNumber": 1, "status": "Pass", "label": "Title" },
+                { "checkNumber": 2, "status": "Fail", "label": "Meta", "explanation": "Missing." }
+              ],
+              "suggestions": null
+            }
+            """);
+
+        EvaluationReport report = await _sut.EvaluateAsync(Guid.NewGuid(), documentTypeAlias, new Dictionary<string, object?>());
+
+        Assert.NotNull(report.Score);
+        Assert.Equal(2, report.Score!.Total);  // falls back to checks.Count
+        Assert.Equal(1, report.Score.Passed);  // counts actual Pass statuses
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_WhenAiReturnsZeroTotalAndNoChecks_ScoreIsNull()
+    {
+        const string documentTypeAlias = "blogPost";
+        _configService.GetActiveForDocumentTypeAsync(documentTypeAlias, Arg.Any<CancellationToken>())
+            .Returns(BuildConfig(documentTypeAlias));
+
+        MockChatResponse("""
+            {
+              "score": { "passed": 0, "total": 0 },
+              "checks": [],
+              "suggestions": null
+            }
+            """);
+
+        EvaluationReport report = await _sut.EvaluateAsync(Guid.NewGuid(), documentTypeAlias, new Dictionary<string, object?>());
+
+        // Empty result with zero total: either parse fails entirely or score is null
+        Assert.True(report.ParseFailed || report.Score is null);
+    }
+
+    // ---------------------------------------------------------------------------
+    // EvaluateWithConfigAsync
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public async Task EvaluateWithConfigAsync_ReturnsRawResult_WithSystemPromptUserMessageAndAiResponse()
+    {
+        const string documentTypeAlias = "homePage";
+        var config = BuildConfig(documentTypeAlias, promptText: "Evaluate this.");
+
+        const string aiResponseText = """{"score":{"passed":2,"total":2},"checks":[{"checkNumber":1,"status":"Pass","label":"Title","explanation":null},{"checkNumber":2,"status":"Pass","label":"Meta","explanation":null}],"suggestions":null}""";
+        MockChatResponse(aiResponseText);
+
+        var properties = new Dictionary<string, object?> { ["title"] = "Hello" };
+
+        EvaluationRawResult raw = await _sut.EvaluateWithConfigAsync(config, properties);
+
+        Assert.False(raw.Report.ParseFailed);
+        Assert.Contains("Evaluate this.", raw.SystemPrompt);
+        Assert.Contains("title", raw.UserMessage);
+        Assert.Equal(aiResponseText, raw.AiResponse);
+    }
+
+    [Fact]
+    public async Task EvaluateWithConfigAsync_WhenAiResponseCannotBeParsed_ReturnsFailedReport()
+    {
+        const string documentTypeAlias = "homePage";
+        var config = BuildConfig(documentTypeAlias);
+
+        MockChatResponse("not json not markdown");
+
+        EvaluationRawResult raw = await _sut.EvaluateWithConfigAsync(config, new Dictionary<string, object?>());
+
+        Assert.True(raw.Report.ParseFailed);
+        Assert.Equal("not json not markdown", raw.Report.RawResponse);
+    }
+
+    // ---------------------------------------------------------------------------
     // Helpers
     // ---------------------------------------------------------------------------
 
@@ -751,6 +894,45 @@ public class PageEvaluationServiceTests
         };
 
     // ---------------------------------------------------------------------------
+    // camelCase scoring fields (Task 7)
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public async Task EvaluateAsync_WhenJsonUsesCamelCaseScoringFields_ParsesScores()
+    {
+        const string documentTypeAlias = "blogPost";
+        _configService.GetActiveForDocumentTypeAsync(documentTypeAlias, Arg.Any<CancellationToken>())
+            .Returns(BuildConfig(documentTypeAlias, scoringEnabled: true));
+
+        var jsonResponse = """
+            {
+              "score": { "passed": 2, "total": 2 },
+              "checks": [
+                { "checkNumber": 1, "status": "Pass", "label": "Title", "explanation": null },
+                { "checkNumber": 2, "status": "Pass", "label": "Meta", "explanation": null }
+              ],
+              "suggestions": null,
+              "overallScore": 4.5,
+              "axisScores": [
+                { "name": "Clarity", "score": 4, "feedback": "Good" },
+                { "name": "SEO", "score": 5, "feedback": null }
+              ]
+            }
+            """;
+        MockChatResponse(jsonResponse);
+
+        EvaluationReport report = await _sut.EvaluateAsync(Guid.NewGuid(), documentTypeAlias, new Dictionary<string, object?>());
+
+        Assert.Equal(4.5, report.OverallScore);
+        Assert.NotNull(report.AxisScores);
+        Assert.Equal(2, report.AxisScores!.Count);
+        Assert.Equal("Clarity", report.AxisScores[0].Name);
+        Assert.Equal(4, report.AxisScores[0].Score);
+        Assert.Equal("Good", report.AxisScores[0].Feedback);
+        Assert.Null(report.AxisScores[1].Feedback);
+    }
+
+    // ---------------------------------------------------------------------------
     // T028: Regression — pre-feature JSON deserializes with null score fields
     // ---------------------------------------------------------------------------
 
@@ -762,7 +944,7 @@ public class PageEvaluationServiceTests
         _configService.GetActiveForDocumentTypeAsync(documentTypeAlias, Arg.Any<CancellationToken>())
             .Returns(BuildConfig(documentTypeAlias, scoringEnabled: true));
 
-        // Legacy payload: no overall_score or axis_scores keys at all.
+        // Legacy payload: no overallScore or axisScores keys at all.
         MockChatResponse("""
             {
               "score": { "passed": 2, "total": 3 },
@@ -807,8 +989,8 @@ public class PageEvaluationServiceTests
 
         Assert.NotNull(capturedMessages);
         var systemMsg = capturedMessages!.First(m => m.Role == ChatRole.System);
-        Assert.Contains("overall_score", systemMsg.Text!);
-        Assert.Contains("axis_scores", systemMsg.Text!);
+        Assert.Contains("overallScore", systemMsg.Text!);
+        Assert.Contains("axisScores", systemMsg.Text!);
     }
 
     [Fact]
@@ -830,8 +1012,8 @@ public class PageEvaluationServiceTests
 
         Assert.NotNull(capturedMessages);
         var systemMsg = capturedMessages!.First(m => m.Role == ChatRole.System);
-        Assert.DoesNotContain("overall_score", systemMsg.Text!);
-        Assert.DoesNotContain("axis_scores", systemMsg.Text!);
+        Assert.DoesNotContain("overallScore", systemMsg.Text!);
+        Assert.DoesNotContain("axisScores", systemMsg.Text!);
     }
 
     // ---------------------------------------------------------------------------
@@ -850,8 +1032,8 @@ public class PageEvaluationServiceTests
               "score": { "passed": 1, "total": 1 },
               "checks": [{ "checkNumber": 1, "status": "Pass", "label": "T", "explanation": null }],
               "suggestions": null,
-              "overall_score": 4.2,
-              "axis_scores": [
+              "overallScore": 4.2,
+              "axisScores": [
                 { "name": "Clarity", "score": 5, "feedback": "Crystal clear." },
                 { "name": "Tone", "score": 3, "feedback": null }
               ]
@@ -901,8 +1083,8 @@ public class PageEvaluationServiceTests
               "score": { "passed": 1, "total": 1 },
               "checks": [{ "checkNumber": 1, "status": "Pass", "label": "T", "explanation": null }],
               "suggestions": null,
-              "overall_score": 6.5,
-              "axis_scores": [
+              "overallScore": 6.5,
+              "axisScores": [
                 { "name": "Clarity", "score": 4, "feedback": null }
               ]
             }
@@ -929,8 +1111,8 @@ public class PageEvaluationServiceTests
               "score": { "passed": 1, "total": 1 },
               "checks": [{ "checkNumber": 1, "status": "Pass", "label": "T", "explanation": null }],
               "suggestions": null,
-              "overall_score": 3.0,
-              "axis_scores": [
+              "overallScore": 3.0,
+              "axisScores": [
                 { "name": "Clarity", "score": 5, "feedback": null },
                 { "name": "Tone", "score": 7, "feedback": null },
                 { "name": "Voice", "score": 2, "feedback": null }
@@ -960,8 +1142,8 @@ public class PageEvaluationServiceTests
               "score": { "passed": 1, "total": 1 },
               "checks": [{ "checkNumber": 1, "status": "Pass", "label": "T", "explanation": null }],
               "suggestions": null,
-              "overall_score": 3.0,
-              "axis_scores": [
+              "overallScore": 3.0,
+              "axisScores": [
                 { "name": "Clarity", "score": 3.5, "feedback": null },
                 { "name": "Tone", "score": 4, "feedback": null }
               ]
@@ -975,6 +1157,100 @@ public class PageEvaluationServiceTests
         Assert.Single(report.AxisScores!);
         Assert.Equal("Tone", report.AxisScores![0].Name);
         Assert.Equal(4, report.AxisScores[0].Score);
+    }
+
+    // ---------------------------------------------------------------------------
+    // ResolveProperties: published cache paths (Task 9)
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public async Task EvaluateAsync_WhenPublishedContextAvailable_CallsApiContentBuilder()
+    {
+        // Fresh doubles for this test — class-level stub returns false for TryGetUmbracoContext
+        var contextAccessor = Substitute.For<IUmbracoContextAccessor>();
+        var contentBuilder = Substitute.For<IApiContentBuilder>();
+        var configService = Substitute.For<IAIEvaluatorConfigService>();
+        var chatService = Substitute.For<IAIChatService>();
+        var contextService = Substitute.For<IAIContextService>();
+        var contextProcessor = Substitute.For<IAIContextProcessor>();
+        var logger = Substitute.For<ILogger<PageEvaluationService>>();
+
+        const string documentTypeAlias = "blogPost";
+        var nodeId = Guid.NewGuid();
+        configService.GetActiveForDocumentTypeAsync(documentTypeAlias, Arg.Any<CancellationToken>())
+            .Returns(BuildConfig(documentTypeAlias));
+
+        var publishedContent = Substitute.For<IPublishedContent>();
+        var contentCache = Substitute.For<IPublishedContentCache>();
+        contentCache.GetById(nodeId).Returns(publishedContent);
+
+        var ctx = Substitute.For<IUmbracoContext>();
+        ctx.Content.Returns(contentCache);
+
+        contextAccessor
+            .TryGetUmbracoContext(out Arg.Any<IUmbracoContext?>())
+            .ReturnsForAnyArgs(x => { x[0] = ctx; return true; });
+
+        var apiContent = Substitute.For<IApiContent>();
+        apiContent.Properties.Returns(new Dictionary<string, object?> { ["title"] = "Published Title" });
+        contentBuilder.Build(publishedContent).Returns(apiContent);
+
+        chatService.GetChatResponseAsync(
+                Arg.Any<Action<AIChatBuilder>>(),
+                Arg.Any<IEnumerable<ChatMessage>>(),
+                Arg.Any<CancellationToken>())
+            .Returns(new ChatResponse(new ChatMessage(ChatRole.Assistant,
+                """{"score":{"passed":1,"total":1},"checks":[{"checkNumber":1,"status":"Pass","label":"T","explanation":null}],"suggestions":null}""")));
+
+        var sut = new PageEvaluationService(
+            configService, contextService, contextProcessor, chatService, contextAccessor, contentBuilder, logger);
+
+        EvaluationReport report = await sut.EvaluateAsync(nodeId, documentTypeAlias, new Dictionary<string, object?>());
+
+        contentBuilder.Received(1).Build(publishedContent);
+        Assert.False(report.ParseFailed);
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_WhenNodeNotInPublishedCache_DoesNotCallApiContentBuilder()
+    {
+        var contextAccessor = Substitute.For<IUmbracoContextAccessor>();
+        var contentBuilder = Substitute.For<IApiContentBuilder>();
+        var configService = Substitute.For<IAIEvaluatorConfigService>();
+        var chatService = Substitute.For<IAIChatService>();
+        var contextService = Substitute.For<IAIContextService>();
+        var contextProcessor = Substitute.For<IAIContextProcessor>();
+        var logger = Substitute.For<ILogger<PageEvaluationService>>();
+
+        const string documentTypeAlias = "blogPost";
+        var nodeId = Guid.NewGuid();
+        configService.GetActiveForDocumentTypeAsync(documentTypeAlias, Arg.Any<CancellationToken>())
+            .Returns(BuildConfig(documentTypeAlias));
+
+        var contentCache = Substitute.For<IPublishedContentCache>();
+        contentCache.GetById(nodeId).Returns((IPublishedContent?)null);
+
+        var ctx = Substitute.For<IUmbracoContext>();
+        ctx.Content.Returns(contentCache);
+
+        contextAccessor
+            .TryGetUmbracoContext(out Arg.Any<IUmbracoContext?>())
+            .ReturnsForAnyArgs(x => { x[0] = ctx; return true; });
+
+        chatService.GetChatResponseAsync(
+                Arg.Any<Action<AIChatBuilder>>(),
+                Arg.Any<IEnumerable<ChatMessage>>(),
+                Arg.Any<CancellationToken>())
+            .Returns(new ChatResponse(new ChatMessage(ChatRole.Assistant,
+                """{"score":{"passed":1,"total":1},"checks":[{"checkNumber":1,"status":"Pass","label":"T","explanation":null}],"suggestions":null}""")));
+
+        var sut = new PageEvaluationService(
+            configService, contextService, contextProcessor, chatService, contextAccessor, contentBuilder, logger);
+
+        EvaluationReport report = await sut.EvaluateAsync(nodeId, documentTypeAlias, new Dictionary<string, object?>());
+
+        contentBuilder.DidNotReceive().Build(Arg.Any<IPublishedContent>());
+        Assert.False(report.ParseFailed);
     }
 
     [Fact]

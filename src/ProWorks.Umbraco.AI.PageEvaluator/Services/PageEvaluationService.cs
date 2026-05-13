@@ -74,8 +74,32 @@ public sealed partial class PageEvaluationService : IPageEvaluationService
         // Clean property values: strip HTML and truncate long strings.
         resolvedProperties = CleanProperties(resolvedProperties);
 
+        EvaluationRawResult raw = await EvaluateWithConfigAsync(config, resolvedProperties, cancellationToken);
+
+        EvaluationReport result = raw.Report;
+
+        _logger.LogInformation(
+            "[PageEvaluator] AI response received for node {NodeId} / {Alias} ({Length} chars, parseFailed={ParseFailed})",
+            nodeId, documentTypeAlias, raw.AiResponse.Length, result.ParseFailed);
+
+        _logger.LogDebug(
+            "[PageEvaluator] Raw AI response:\n{ResponseText}", raw.AiResponse);
+
+        if (result.ParseFailed)
+            _logger.LogWarning(
+                "[PageEvaluator] Parse failed for node {NodeId} / {Alias}. Response was not valid JSON or Markdown checklist.",
+                nodeId, documentTypeAlias);
+
+        return result;
+    }
+
+    public async Task<EvaluationRawResult> EvaluateWithConfigAsync(
+        AIEvaluatorConfig config,
+        IReadOnlyDictionary<string, object?> properties,
+        CancellationToken cancellationToken = default)
+    {
         string systemPrompt = await BuildSystemPromptAsync(config, cancellationToken);
-        string userMessage = BuildUserMessage(nodeId, documentTypeAlias, resolvedProperties);
+        string userMessage = BuildUserMessage(Guid.Empty, config.DocumentTypeAlias, properties);
 
         List<ChatMessage> messages =
         [
@@ -100,12 +124,14 @@ public sealed partial class PageEvaluationService : IPageEvaluationService
         };
 
         ChatResponse response = await _chatService.GetChatResponseAsync(
-            chat => chat
-                .WithAlias("proworks-page-evaluator")
-                .WithName("ProWorks Page Evaluator")
-                .WithDescription("Evaluates page content against configured criteria")
-                .WithProfile(config.ProfileId)
-                .WithChatOptions(chatOptions),
+            chat =>
+            {
+                chat.WithAlias("proworks-page-evaluator")
+                    .WithName("ProWorks Page Evaluator")
+                    .WithDescription("Evaluates page content against configured criteria")
+                    .WithProfile(config.ProfileId)
+                    .WithChatOptions(chatOptions);
+            },
             messages,
             cancellationToken);
 
@@ -114,26 +140,14 @@ public sealed partial class PageEvaluationService : IPageEvaluationService
         // Check for truncated response (FinishReason == Length).
         if (response.FinishReason == ChatFinishReason.Length)
             _logger.LogWarning(
-                "[PageEvaluator] AI response was truncated (FinishReason=Length) for node {NodeId} / {Alias}. Consider reducing content size or increasing MaxOutputTokens.",
-                nodeId, documentTypeAlias);
+                "[PageEvaluator] AI response was truncated (FinishReason=Length) for doctype {Alias}. Consider reducing content size or increasing MaxOutputTokens.",
+                config.DocumentTypeAlias);
 
-        EvaluationReport result = TryParseJson(responseText)
+        EvaluationReport report = TryParseJson(responseText)
             ?? TryParseMarkdown(responseText)
             ?? EvaluationReport.Failed(responseText);
 
-        _logger.LogInformation(
-            "[PageEvaluator] AI response received for node {NodeId} / {Alias} ({Length} chars, parseFailed={ParseFailed})",
-            nodeId, documentTypeAlias, responseText.Length, result.ParseFailed);
-
-        _logger.LogDebug(
-            "[PageEvaluator] Raw AI response:\n{ResponseText}", responseText);
-
-        if (result.ParseFailed)
-            _logger.LogWarning(
-                "[PageEvaluator] Parse failed for node {NodeId} / {Alias}. Response was not valid JSON or Markdown checklist.",
-                nodeId, documentTypeAlias);
-
-        return result;
+        return new EvaluationRawResult(report, systemPrompt, userMessage, responseText);
     }
 
     // ---------------------------------------------------------------------------
@@ -326,8 +340,8 @@ public sealed partial class PageEvaluationService : IPageEvaluationService
                     { "checkNumber": 1, "status": "Pass|Fail|Warn", "label": "<label>", "explanation": "<explanation or null>" }
                   ],
                   "suggestions": "<overall suggestions or null>",
-                  "overall_score": <number 1-5, decimal allowed>,
-                  "axis_scores": [
+                  "overallScore": <number 1-5, decimal allowed>,
+                  "axisScores": [
                     { "name": "<dimension name>", "score": <integer 1-5>, "feedback": "<brief feedback or null>" }
                   ]
                 }
@@ -373,6 +387,14 @@ public sealed partial class PageEvaluationService : IPageEvaluationService
     // Response parsing: JSON → Markdown → raw fallback
     // ---------------------------------------------------------------------------
 
+    private static CheckStatus ParseCheckStatus(string status) =>
+        status.ToUpperInvariant() switch
+        {
+            "FAIL" => CheckStatus.Fail,
+            "WARN" or "WARNING" => CheckStatus.Warn,
+            _ => CheckStatus.Pass,
+        };
+
     private static EvaluationReport? TryParseJson(string text)
     {
         // Extract JSON from the response — handles preamble text before a code fence.
@@ -410,12 +432,7 @@ public sealed partial class PageEvaluationService : IPageEvaluationService
                     ? e.GetString()
                     : null;
 
-                CheckStatus status = statusStr switch
-                {
-                    "Fail" => CheckStatus.Fail,
-                    "Warn" => CheckStatus.Warn,
-                    _ => CheckStatus.Pass,
-                };
+                CheckStatus status = ParseCheckStatus(statusStr);
 
                 checks.Add(new CheckResult(checkNumber, status, label, explanation));
             }
@@ -424,9 +441,9 @@ public sealed partial class PageEvaluationService : IPageEvaluationService
             if (root.TryGetProperty("suggestions", out JsonElement sugg) && sugg.ValueKind != JsonValueKind.Null)
                 suggestions = sugg.GetString();
 
-            // Parse overall_score — nullable double in [1.0, 5.0]; out-of-range or non-numeric becomes null.
+            // Parse overallScore — nullable double in [1.0, 5.0]; out-of-range or non-numeric becomes null.
             double? overallScore = null;
-            if (root.TryGetProperty("overall_score", out JsonElement osEl)
+            if (root.TryGetProperty("overallScore", out JsonElement osEl)
                 && osEl.ValueKind == JsonValueKind.Number
                 && osEl.TryGetDouble(out double os)
                 && os >= 1.0 && os <= 5.0)
@@ -434,9 +451,9 @@ public sealed partial class PageEvaluationService : IPageEvaluationService
                 overallScore = os;
             }
 
-            // Parse axis_scores — drop elements with non-integer score or score outside [1, 5]; preserve order.
+            // Parse axisScores — drop elements with non-integer score or score outside [1, 5]; preserve order.
             List<AxisScore>? axisScores = null;
-            if (root.TryGetProperty("axis_scores", out JsonElement axesEl)
+            if (root.TryGetProperty("axisScores", out JsonElement axesEl)
                 && axesEl.ValueKind == JsonValueKind.Array)
             {
                 axisScores = [];
@@ -464,9 +481,13 @@ public sealed partial class PageEvaluationService : IPageEvaluationService
             if (score is null && checks.Count == 0)
                 return null;
 
-            int passCount = score?.Passed ?? checks.Count(c => c.Status == CheckStatus.Pass);
-            int totalCount = score?.Total ?? checks.Count;
-            EvaluationScore finalScore = new(passCount, totalCount);
+            // If the AI returned total:0, treat it as absent and fall back to checks.Count.
+            int totalCount = (score?.Total > 0 ? (int?)score.Total : null) ?? checks.Count;
+            int passCount = (score?.Total > 0 ? (int?)score.Passed : null) ?? checks.Count(c => c.Status == CheckStatus.Pass);
+            EvaluationScore? finalScore = totalCount > 0 ? new EvaluationScore(passCount, totalCount) : null;
+
+            if (finalScore is null && checks.Count == 0)
+                return null;
 
             return EvaluationReport.Parsed(finalScore, checks, suggestions, overallScore, axisScores);
         }
@@ -557,12 +578,7 @@ public sealed partial class PageEvaluationService : IPageEvaluationService
             if (parts.Length < 2)
                 continue;
 
-            CheckStatus status = parts[0].ToUpperInvariant() switch
-            {
-                "FAIL" => CheckStatus.Fail,
-                "WARN" or "WARNING" => CheckStatus.Warn,
-                _ => CheckStatus.Pass,
-            };
+            CheckStatus status = ParseCheckStatus(parts[0]);
 
             string label = parts[1];
             string? explanation = parts.Length >= 3 ? parts[2] : null;

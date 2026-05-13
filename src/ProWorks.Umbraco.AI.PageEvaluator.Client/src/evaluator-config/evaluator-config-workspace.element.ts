@@ -96,6 +96,7 @@ export class EvaluatorConfigWorkspaceElement extends UmbLitElement {
   `;
 
   @state() _configs: EvaluatorConfigItem[] = [];
+  @state() private _groupedConfigs: Map<string, EvaluatorConfigItem[]> = new Map();
   @state() private _loading = false;
   @state() private _error: string | null = null;
   @state() private _view: 'list' | 'form' = 'list';
@@ -112,6 +113,7 @@ export class EvaluatorConfigWorkspaceElement extends UmbLitElement {
     try {
       const response: EvaluatorConfigListResponse = await getConfigurations();
       this._configs = [...response.items];
+      this._groupedConfigs = this._groupByDocType();
     } catch {
       this._error = this.localize.term('evaluatorConfig_loadError');
     } finally {
@@ -160,6 +162,7 @@ export class EvaluatorConfigWorkspaceElement extends UmbLitElement {
     try {
       await deleteConfiguration(id);
       this._configs = this._configs.filter((c) => c.id !== id);
+      this._groupedConfigs = this._groupByDocType();
     } catch {
       this._error = this.localize.term('evaluatorConfig_deleteError');
     }
@@ -211,8 +214,6 @@ export class EvaluatorConfigWorkspaceElement extends UmbLitElement {
       return html`<div id="content"><uui-loader></uui-loader></div>`;
     }
 
-    const groups = this._groupByDocType();
-
     return html`
       <div id="content">
         <div class="promo-notice">
@@ -243,9 +244,9 @@ export class EvaluatorConfigWorkspaceElement extends UmbLitElement {
 
         ${this._error ? html`<uui-tag color="danger">${this._error}</uui-tag>` : nothing}
 
-        ${groups.size === 0
+        ${this._groupedConfigs.size === 0
           ? html`<p>${this.localize.term('evaluatorConfig_emptyState')}</p>`
-          : Array.from(groups.entries()).map(
+          : Array.from(this._groupedConfigs.entries()).map(
               ([alias, items]) => html`
                 <uui-box headline=${items[0]?.documentTypeName ?? alias}>
                   <uui-table>

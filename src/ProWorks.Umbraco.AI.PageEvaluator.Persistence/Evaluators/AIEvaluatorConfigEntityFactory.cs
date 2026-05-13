@@ -77,4 +77,5 @@ public static class AIEvaluatorConfigEntityFactory
         try { return JsonSerializer.Deserialize<List<string>>(json); }
         catch (JsonException) { return null; }
     }
+
 }
