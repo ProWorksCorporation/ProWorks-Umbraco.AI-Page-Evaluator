@@ -13,6 +13,8 @@ using ProWorks.Umbraco.AI.PageEvaluator.Evaluation;
 using ProWorks.Umbraco.AI.PageEvaluator.Evaluators;
 using ProWorks.Umbraco.AI.PageEvaluator.Services;
 using Umbraco.AI.Core.Contexts;
+using Umbraco.AI.Core.Guardrails;
+using Umbraco.AI.Core.Guardrails.Evaluators;
 using Umbraco.AI.Core.Profiles;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Services;
@@ -785,6 +787,13 @@ public class PageEvaluatorApiControllerTests
     // T010: Generic 500 on unexpected Exception
     // ---------------------------------------------------------------------------
 
+    // Fake exception whose type name ends with "5xxException" to exercise the
+    // Anthropic5xxException catch-when pattern without a direct SDK dependency.
+    private sealed class Fake5xxException : Exception
+    {
+        public Fake5xxException(string message) : base(message) { }
+    }
+
     [Fact]
     public async Task EvaluateAsync_WhenUnexpectedException_Returns500WithGenericMessage()
     {
@@ -804,6 +813,65 @@ public class PageEvaluatorApiControllerTests
         Assert.Equal(500, statusResult.StatusCode);
         string json = System.Text.Json.JsonSerializer.Serialize(statusResult.Value);
         Assert.DoesNotContain("Object reference", json);
+    }
+
+    // ---------------------------------------------------------------------------
+    // Guardrail blocked → 422
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public async Task EvaluateAsync_WhenGuardrailBlocked_Returns422WithBlockedMessage()
+    {
+        var request = new EvaluatePageRequest
+        {
+            NodeId = Guid.NewGuid(),
+            DocumentTypeAlias = "blogPost",
+            Properties = new(),
+        };
+
+        var evaluationResult = new AIGuardrailEvaluationResult
+        {
+            Action = AIGuardrailAction.Block,
+            Phase = AIGuardrailPhase.PostGenerate,
+            RuleResults = [],
+        };
+        _evaluationService.EvaluateAsync(
+                Arg.Any<Guid>(), Arg.Any<string>(),
+                Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new AIGuardrailBlockedException(evaluationResult));
+
+        IActionResult result = await _sut.EvaluateAsync(request);
+
+        var unprocessable = Assert.IsType<UnprocessableEntityObjectResult>(result);
+        string json = System.Text.Json.JsonSerializer.Serialize(unprocessable.Value);
+        Assert.Contains("blocked by a guardrail policy", json);
+    }
+
+    // ---------------------------------------------------------------------------
+    // Anthropic 5xx transient overload → 503
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public async Task EvaluateAsync_WhenAiProvider5xxException_Returns503WithRetryMessage()
+    {
+        var request = new EvaluatePageRequest
+        {
+            NodeId = Guid.NewGuid(),
+            DocumentTypeAlias = "blogPost",
+            Properties = new(),
+        };
+
+        _evaluationService.EvaluateAsync(
+                Arg.Any<Guid>(), Arg.Any<string>(),
+                Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new Fake5xxException("Status Code: 529 Too Many Requests"));
+
+        IActionResult result = await _sut.EvaluateAsync(request);
+
+        var statusResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(503, statusResult.StatusCode);
+        string json = System.Text.Json.JsonSerializer.Serialize(statusResult.Value);
+        Assert.Contains("temporarily unavailable", json);
     }
 
     // ---------------------------------------------------------------------------

@@ -8,6 +8,7 @@ using ProWorks.Umbraco.AI.PageEvaluator.Evaluation;
 using ProWorks.Umbraco.AI.PageEvaluator.Evaluators;
 using ProWorks.Umbraco.AI.PageEvaluator.Services;
 using Umbraco.AI.Core.Contexts;
+using Umbraco.AI.Core.Guardrails;
 using Umbraco.AI.Core.Profiles;
 using Umbraco.Cms.Core.Actions;
 using Umbraco.Cms.Core.Models;
@@ -127,7 +128,6 @@ public sealed class PageEvaluatorApiController : ControllerBase
             PromptText = request.PromptText,
             PropertyAliases = request.PropertyAliases,
             ScoringEnabled = request.ScoringEnabled,
-            GuardrailIds = request.GuardrailIds,
         };
 
         try
@@ -172,7 +172,6 @@ public sealed class PageEvaluatorApiController : ControllerBase
             PromptText = request.PromptText,
             PropertyAliases = request.PropertyAliases,
             ScoringEnabled = request.ScoringEnabled,
-            GuardrailIds = request.GuardrailIds,
             Version = request.Version,
         };
 
@@ -335,21 +334,26 @@ public sealed class PageEvaluatorApiController : ControllerBase
         {
             return NotFound(new { title = ex.Message });
         }
+        catch (AIGuardrailBlockedException ex)
+        {
+            _logger.LogInformation(ex, "[PageEvaluator] Guardrail blocked evaluation of node {NodeId}.", request.NodeId);
+            return UnprocessableEntity(new { title = ex.Message });
+        }
         catch (HttpRequestException ex)
         {
-            _logger.LogError(ex, "[PageEvaluator] AI provider error during evaluation of node {NodeId}.", request.NodeId);
-            return StatusCode(502, new
-            {
-                title = "The AI provider returned an error. Please try again later.",
-            });
+            _logger.LogError(ex, "[PageEvaluator] AI provider HTTP error during evaluation of node {NodeId}.", request.NodeId);
+            return StatusCode(502, new { title = "The AI provider returned an error. Please try again later." });
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException && ex.GetType().Name.EndsWith("5xxException", StringComparison.Ordinal))
+        {
+            // Anthropic.Exceptions.Anthropic5xxException (e.g. 529 Overloaded) — transient, safe to retry
+            _logger.LogWarning(ex, "[PageEvaluator] AI provider temporarily unavailable for node {NodeId}.", request.NodeId);
+            return StatusCode(503, new { title = "The AI provider is temporarily unavailable. Please try again in a moment." });
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             _logger.LogError(ex, "[PageEvaluator] Unexpected error during evaluation of node {NodeId}.", request.NodeId);
-            return StatusCode(500, new
-            {
-                title = "An unexpected error occurred during evaluation. Please try again later.",
-            });
+            return StatusCode(500, new { title = "An unexpected error occurred during evaluation. Please try again later." });
         }
     }
 
@@ -449,7 +453,6 @@ public sealed class PageEvaluatorApiController : ControllerBase
             DateModified = config.DateModified,
             PropertyAliases = config.PropertyAliases,
             ScoringEnabled = config.ScoringEnabled,
-            GuardrailIds = config.GuardrailIds,
             Version = config.Version,
         };
     }
@@ -491,7 +494,6 @@ public sealed class PageEvaluatorApiController : ControllerBase
             DateModified = config.DateModified,
             PropertyAliases = config.PropertyAliases,
             ScoringEnabled = config.ScoringEnabled,
-            GuardrailIds = config.GuardrailIds,
             Version = config.Version,
         };
     }
@@ -528,7 +530,6 @@ public sealed class CreateEvaluatorConfigRequest
     public string PromptText { get; set; } = string.Empty;
     public List<string>? PropertyAliases { get; set; }
     public bool ScoringEnabled { get; set; }
-    public List<Guid>? GuardrailIds { get; set; }
 }
 
 /// <summary>Request body for <c>PUT /configurations/{id}</c>.</summary>
@@ -542,7 +543,6 @@ public sealed class UpdateEvaluatorConfigRequest
     public string PromptText { get; set; } = string.Empty;
     public List<string>? PropertyAliases { get; set; }
     public bool ScoringEnabled { get; set; }
-    public List<Guid>? GuardrailIds { get; set; }
 
     /// <summary>
     /// The version of the config the client last read.
@@ -570,6 +570,5 @@ public sealed class EvaluatorConfigResponse
     public DateTime DateModified { get; init; }
     public List<string>? PropertyAliases { get; init; }
     public bool ScoringEnabled { get; init; }
-    public List<Guid>? GuardrailIds { get; init; }
     public int Version { get; init; }
 }

@@ -36,6 +36,10 @@ export default {
       'The evaluation could not be completed. The AI provider returned an error.',
     retryButton: 'Retry',
 
+    // Modal: guardrail block
+    guardrailBlockedMessage:
+      'The evaluation was blocked by an Umbraco.AI guardrail policy. Review the guardrail rules configured on the AI profile.',
+
     // Modal: dimensional scoring
     overallScore: 'Overall Score',
     axisScores: 'Score Breakdown',
@@ -112,8 +116,6 @@ export default {
     // Form: dimensional scoring
     scoringLabel: 'Enable Scoring',
     scoringHelp: 'Ask the AI to rate the page on a 1-5 scale across the dimensions named in your prompt.',
-    guardrailsLabel: 'Guardrails',
-    guardrailsHelp: 'Optional Umbraco.AI guardrails to apply when evaluating pages. The chat pipeline enforces these before and after the AI response.',
   },
 
   promoNotice: {

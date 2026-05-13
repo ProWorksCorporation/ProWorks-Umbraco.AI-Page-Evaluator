@@ -131,8 +131,6 @@ public sealed partial class PageEvaluationService : IPageEvaluationService
                     .WithDescription("Evaluates page content against configured criteria")
                     .WithProfile(config.ProfileId)
                     .WithChatOptions(chatOptions);
-                if (config.GuardrailIds is { Count: > 0 })
-                    chat.WithGuardrails(config.GuardrailIds.ToArray());
             },
             messages,
             cancellationToken);

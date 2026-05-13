@@ -28,6 +28,8 @@ const e = {
     // Modal: AI error
     aiErrorMessage: "The evaluation could not be completed. The AI provider returned an error.",
     retryButton: "Retry",
+    // Modal: guardrail block
+    guardrailBlockedMessage: "The evaluation was blocked by an Umbraco.AI guardrail policy. Review the guardrail rules configured on the AI profile.",
     // Modal: dimensional scoring
     overallScore: "Overall Score",
     axisScores: "Score Breakdown"
@@ -97,9 +99,7 @@ const e = {
     validationRequired: "This field is required.",
     // Form: dimensional scoring
     scoringLabel: "Enable Scoring",
-    scoringHelp: "Ask the AI to rate the page on a 1-5 scale across the dimensions named in your prompt.",
-    guardrailsLabel: "Guardrails",
-    guardrailsHelp: "Optional Umbraco.AI guardrails to apply when evaluating pages. The chat pipeline enforces these before and after the AI response."
+    scoringHelp: "Ask the AI to rate the page on a 1-5 scale across the dimensions named in your prompt."
   },
   promoNotice: {
     headline: "See How AI Interprets Your Brand and Messaging",
@@ -131,4 +131,4 @@ const e = {
 export {
   e as default
 };
-//# sourceMappingURL=en-gZ9gfRC1.js.map
+//# sourceMappingURL=en-d3fnpqoD.js.map

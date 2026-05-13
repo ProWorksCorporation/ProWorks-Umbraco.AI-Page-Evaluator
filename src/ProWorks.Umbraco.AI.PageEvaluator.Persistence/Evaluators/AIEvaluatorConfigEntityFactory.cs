@@ -28,7 +28,6 @@ public static class AIEvaluatorConfigEntityFactory
             Version = entity.Version,
             PropertyAliases = DeserializePropertyAliases(entity.PropertyAliases),
             ScoringEnabled = entity.ScoringEnabled,
-            GuardrailIds = DeserializeGuardrailIds(entity.GuardrailIds),
         };
 
     /// <summary>Maps a domain model to a new EFCore entity (for inserts).</summary>
@@ -50,7 +49,6 @@ public static class AIEvaluatorConfigEntityFactory
             Version = domain.Version,
             PropertyAliases = SerializePropertyAliases(domain.PropertyAliases),
             ScoringEnabled = domain.ScoringEnabled,
-            GuardrailIds = SerializeGuardrailIds(domain.GuardrailIds),
         };
 
     /// <summary>Applies domain model changes onto an existing tracked EFCore entity (for updates).</summary>
@@ -68,7 +66,6 @@ public static class AIEvaluatorConfigEntityFactory
         entity.Version = domain.Version + 1;
         entity.PropertyAliases = SerializePropertyAliases(domain.PropertyAliases);
         entity.ScoringEnabled = domain.ScoringEnabled;
-        entity.GuardrailIds = SerializeGuardrailIds(domain.GuardrailIds);
     }
 
     private static string? SerializePropertyAliases(List<string>? aliases)
@@ -81,13 +78,4 @@ public static class AIEvaluatorConfigEntityFactory
         catch (JsonException) { return null; }
     }
 
-    private static string? SerializeGuardrailIds(List<Guid>? ids)
-        => ids is { Count: > 0 } ? JsonSerializer.Serialize(ids) : null;
-
-    private static List<Guid>? DeserializeGuardrailIds(string? json)
-    {
-        if (string.IsNullOrWhiteSpace(json)) return null;
-        try { return JsonSerializer.Deserialize<List<Guid>>(json); }
-        catch (JsonException) { return null; }
-    }
 }

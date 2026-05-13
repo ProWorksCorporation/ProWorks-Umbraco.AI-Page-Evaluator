@@ -50,8 +50,7 @@ public sealed class PageEvaluatorTestFeature : AITestFeatureBase<PageEvaluatorTe
 
         if (profileIdOverride.HasValue)
             config.ProfileId = profileIdOverride.Value;
-        if (guardrailIdsOverride is not null)
-            config.GuardrailIds = guardrailIdsOverride.ToList();
+        // guardrailIdsOverride not applied: guardrails are configured at the profile level in Umbraco.AI.
         // contextIdsOverride not applied: AIEvaluatorConfig uses a single ContextId, not a list.
         // The test runner's multi-context override model has no direct mapping here.
 

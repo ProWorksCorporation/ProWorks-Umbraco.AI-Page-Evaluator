@@ -6,7 +6,7 @@ import type { EvaluationModalData, EvaluationModalValue } from './evaluation-mod
 import './evaluation-report.element.js';
 import './evaluation-warning.element.js';
 
-type ModalState = 'idle' | 'loading' | 'success' | 'parse-failed' | 'error';
+type ModalState = 'idle' | 'loading' | 'success' | 'parse-failed' | 'guardrail-blocked' | 'error';
 
 /** Localization keys for each progress phase, resolved via this.localize.term(). */
 const PROGRESS_KEYS = {
@@ -46,14 +46,16 @@ export class EvaluationModalElement extends UmbModalBaseElement<EvaluationModalD
 
     .error-container {
       padding: var(--uui-size-space-4, 16px);
-      background: var(--uui-color-danger-standalone, #f8d7da);
+      background: var(--uui-color-danger-standalone, #b91c1c);
       border-radius: var(--uui-border-radius, 4px);
+      color: var(--uui-color-danger-contrast, #fff);
     }
   `;
 
   @state() private _modalState: ModalState = 'idle';
   @state() private _progressKey = '';
   @state() private _report: EvaluationReportResponse | null = null;
+  @state() private _errorDetail: string | null = null;
   private _inFlight = false;
 
   override connectedCallback(): void {
@@ -106,9 +108,21 @@ export class EvaluationModalElement extends UmbModalBaseElement<EvaluationModalD
       if (!this.isConnected) return;
       this._report = report;
       this._modalState = report.parseFailed ? 'parse-failed' : 'success';
-    } catch {
+    } catch (err) {
       if (!this.isConnected) return;
-      this._modalState = 'error';
+      const status = err !== null && typeof err === 'object' && 'status' in err
+        ? (err as { status: unknown }).status
+        : null;
+      const detail = err !== null && typeof err === 'object' && 'detail' in err
+        ? String((err as { detail: unknown }).detail)
+        : null;
+      if (status === 422) {
+        this._modalState = 'guardrail-blocked';
+        this._errorDetail = detail;
+      } else {
+        this._modalState = 'error';
+        this._errorDetail = detail;
+      }
     } finally {
       this._inFlight = false;
     }
@@ -191,10 +205,18 @@ export class EvaluationModalElement extends UmbModalBaseElement<EvaluationModalD
             .rawResponse="${this._report?.rawResponse ?? null}"></page-evaluator-warning>
         `;
 
+      case 'guardrail-blocked':
+        return html`
+          <div class="error-container" role="alert">
+            <p>${this.localize.term('evaluatePage_guardrailBlockedMessage')}</p>
+            ${this._errorDetail ? html`<p><em>${this._errorDetail}</em></p>` : nothing}
+          </div>
+        `;
+
       case 'error':
         return html`
           <div class="error-container" role="alert">
-            <p>${this.localize.term('evaluatePage_aiErrorMessage')}</p>
+            <p>${this._errorDetail ?? this.localize.term('evaluatePage_aiErrorMessage')}</p>
             <uui-button
               look="primary"
               color="warning"

@@ -26,7 +26,6 @@ export interface EvaluatorConfigItem {
   readonly dateModified: string; // ISO 8601
   readonly propertyAliases: string[] | null;
   readonly scoringEnabled: boolean;
-  readonly guardrailIds: readonly string[] | null;
   readonly version: number;
 }
 
@@ -46,7 +45,6 @@ export interface CreateEvaluatorConfigRequest {
   readonly description?: string | null;
   readonly propertyAliases?: string[] | null;
   readonly scoringEnabled: boolean;
-  readonly guardrailIds?: readonly string[] | null;
 }
 
 /** Request body for PUT /configurations/{id}. */
@@ -59,7 +57,6 @@ export interface UpdateEvaluatorConfigRequest {
   readonly description?: string | null;
   readonly propertyAliases?: string[] | null;
   readonly scoringEnabled: boolean;
-  readonly guardrailIds?: readonly string[] | null;
   readonly version: number;
 }
 

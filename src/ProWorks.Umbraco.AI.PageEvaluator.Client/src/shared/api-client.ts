@@ -34,10 +34,24 @@ const BASE = '/umbraco/management/api/v1/page-evaluator';
 /** Security descriptor used on every request — tells the client to send the Bearer token. */
 export const BEARER = [{ scheme: 'bearer', type: 'http' }] as const;
 
+export class ApiError extends Error {
+  constructor(
+    public readonly status: number,
+    public readonly detail: string,
+  ) {
+    super(`API error ${status}: ${detail}`);
+  }
+}
+
 async function checkResult<T>(result: { data?: T; error?: unknown; response: Response }): Promise<T> {
   if (!result.response.ok) {
-    const detail = result.error ? JSON.stringify(result.error) : `HTTP ${result.response.status}`;
-    throw new Error(`API error: ${detail}`);
+    const err = result.error;
+    const title =
+      err !== null && typeof err === 'object' && 'title' in err && typeof (err as Record<string, unknown>)['title'] === 'string'
+        ? (err as Record<string, unknown>)['title'] as string
+        : null;
+    const detail = title ?? (err ? JSON.stringify(err) : `HTTP ${result.response.status}`);
+    throw new ApiError(result.response.status, detail);
   }
   return result.data as T;
 }

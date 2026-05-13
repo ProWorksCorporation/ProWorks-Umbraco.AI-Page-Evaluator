@@ -132,39 +132,6 @@ public class PageEvaluatorTestFeatureTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_WhenGuardrailIdsOverrideProvided_ReplacesGuardrailIds()
-    {
-        var configId = Guid.NewGuid();
-        var guardrailId = Guid.NewGuid();
-        var config = new AIEvaluatorConfig
-        {
-            Id = configId,
-            Name = "Test",
-            DocumentTypeAlias = "homePage",
-            ProfileId = Guid.NewGuid(),
-            PromptText = "Evaluate.",
-        };
-        SetupConfigById(configId, config);
-
-        AIEvaluatorConfig? capturedConfig = null;
-        _evaluationService.EvaluateWithConfigAsync(
-                Arg.Do<AIEvaluatorConfig>(c => capturedConfig = c),
-                Arg.Any<IReadOnlyDictionary<string, object?>>(),
-                Arg.Any<CancellationToken>())
-            .Returns(new EvaluationRawResult(
-                EvaluationReport.Parsed(null, [], null),
-                "sys", "usr", "{}"));
-
-        var test = BuildAITest(configId, new PageEvaluatorTestFeatureConfig());
-
-        await _sut.ExecuteAsync(test, 1, null, null, [guardrailId], CancellationToken.None);
-
-        Assert.NotNull(capturedConfig);
-        Assert.NotNull(capturedConfig!.GuardrailIds);
-        Assert.Contains(guardrailId, capturedConfig.GuardrailIds!);
-    }
-
-    [Fact]
     public async Task ExecuteAsync_WhenEvaluationThrows_ReturnsErrorTranscript()
     {
         var configId = Guid.NewGuid();

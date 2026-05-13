@@ -821,50 +821,6 @@ public class PageEvaluationServiceTests
     }
 
     // ---------------------------------------------------------------------------
-    // Guardrails
-    // ---------------------------------------------------------------------------
-
-    [Fact]
-    public async Task EvaluateAsync_WhenConfigHasGuardrailIds_CallsChatServiceSuccessfully()
-    {
-        const string documentTypeAlias = "blogPost";
-        var config = BuildConfig(documentTypeAlias);
-        config.GuardrailIds = [Guid.NewGuid(), Guid.NewGuid()];
-        _configService.GetActiveForDocumentTypeAsync(documentTypeAlias, Arg.Any<CancellationToken>())
-            .Returns(config);
-
-        MockChatResponse("""{"score":{"passed":1,"total":1},"checks":[{"checkNumber":1,"status":"Pass","label":"T","explanation":null}],"suggestions":null}""");
-
-        EvaluationReport report = await _sut.EvaluateAsync(Guid.NewGuid(), documentTypeAlias, new Dictionary<string, object?>());
-
-        Assert.False(report.ParseFailed);
-        await _chatService.Received(1).GetChatResponseAsync(
-            Arg.Any<Action<AIChatBuilder>>(),
-            Arg.Any<IEnumerable<ChatMessage>>(),
-            Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task EvaluateAsync_WhenConfigHasNullGuardrailIds_CallsChatServiceSuccessfully()
-    {
-        const string documentTypeAlias = "blogPost";
-        var config = BuildConfig(documentTypeAlias);
-        config.GuardrailIds = null;
-        _configService.GetActiveForDocumentTypeAsync(documentTypeAlias, Arg.Any<CancellationToken>())
-            .Returns(config);
-
-        MockChatResponse("""{"score":{"passed":1,"total":1},"checks":[{"checkNumber":1,"status":"Pass","label":"T","explanation":null}],"suggestions":null}""");
-
-        EvaluationReport report = await _sut.EvaluateAsync(Guid.NewGuid(), documentTypeAlias, new Dictionary<string, object?>());
-
-        Assert.False(report.ParseFailed);
-        await _chatService.Received(1).GetChatResponseAsync(
-            Arg.Any<Action<AIChatBuilder>>(),
-            Arg.Any<IEnumerable<ChatMessage>>(),
-            Arg.Any<CancellationToken>());
-    }
-
-    // ---------------------------------------------------------------------------
     // EvaluateWithConfigAsync
     // ---------------------------------------------------------------------------
 
