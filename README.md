@@ -48,13 +48,13 @@ Package page: https://www.nuget.org/packages/ProWorks.Umbraco.AI.PageEvaluator
 
 ### 2. Configure an AI profile
 
-In the Umbraco backoffice, go to **Settings → Umbraco.AI → Profiles** and create or verify an AI profile (Anthropic Claude is recommended for evaluation tasks).
+In the Umbraco backoffice, go to **AI > Connections** and **AI > Profiles** create or verify an AI profile with a connection.
 
 ### 3. Create an Evaluator Configuration
 
-Go to **Settings → AI Add-ons → Page Evaluator**.
+Go to **AI > Page Evaluator**.
 
-1. Click **Create New Configuration**
+1. Click **Create New**
 2. Select the **Document Type** you want to evaluate
 3. Choose the **AI Profile**
 4. Optionally select specific **properties to evaluate** (if none are selected, all properties are sent)
