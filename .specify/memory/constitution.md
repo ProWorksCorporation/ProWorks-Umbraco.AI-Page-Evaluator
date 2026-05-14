@@ -1,40 +1,42 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.0.0 → 1.1.0
-Bump rationale: MINOR — new mandatory implementation rules added to Principles II and IV;
-  new "Umbraco-First Development" guidance added to Principle IV; TDD principle corrected
-  to reflect actual C# test stack (xUnit + NSubstitute) and honest status of TypeScript
-  client tests (aspirational); Development Workflow updated with Umbraco skills gate.
+Version change: 1.1.0 → 1.2.0
+Bump rationale: MINOR — new mandatory implementation rules added to Principles III and IV;
+  new "Package Version Constraints" subsection added to Technology Stack; stale/incorrect
+  references corrected (IAIChatClientFactory → IAIChatService, EF Core version, BEARER constant).
 
 Modified principles:
-  - II. Test-Driven Development — corrected test tooling to reflect reality:
-      C# (xUnit + NSubstitute) is the active layer; Vitest/MSW/Playwright are aspirational
-      targets for the TypeScript client layer and MUST be established before that layer
-      grows further.
-  - IV. Umbraco Extension Architecture — materially expanded with hard-won rules:
-      - Umbraco skills agent MUST be consulted first for any extension work
-      - Lit MUST be imported from @umbraco-cms/backoffice/external/lit
-      - workspaceAction MUST declare kind: + api: (element-only is forbidden)
-      - Visibility MUST be controlled via UmbConditionBase conditions, not disable()
-      - API calls MUST use umbHttpClient from @umbraco-cms/backoffice/http-client
+  - III. Back-Office UX Consistency — added explicit nested localization object format rule
+      and UmbLitElement base class requirement (components MUST extend UmbLitElement, not
+      bare LitElement).
+  - IV. Umbraco Extension Architecture — added Lit Event Listener Lifecycle rules:
+      - connectedCallback/disconnectedCallback pairing is REQUIRED
+      - event listener references MUST be private readonly arrow fields (not inline lambdas)
+      - async methods that write to @state() MUST guard with if (!this.isConnected) return;
+      - updated BEARER constant reference (use shared/api-client.ts export, not inline literal)
 
-Added sections: None
+Corrections (errors in v1.1.0):
+  - Technology Stack: IAIChatClientFactory → IAIChatService (IAIChatClientFactory is FORBIDDEN)
+  - Technology Stack: EF Core 10.0.2 → 10.0.4 (required by Umbraco.Cms.Persistence.EFCore 17.3.4)
+  - Principle IV API client rules: reworded to reference BEARER constant from shared/api-client.ts
+
+Added sections:
+  - "Package Version Constraints" subsection in Technology Stack & Constraints — governs the
+    pinned Microsoft.Extensions.AI 10.3.0 and EF Core 10.0.4 requirements that caused
+    MissingMethodException and TypeLoadException failures when upgraded prematurely.
+
 Removed sections: None
 
 Templates reviewed:
   ✅ .specify/templates/plan-template.md
-       Constitution Check gate (Principles I–V) updated to I–V reflecting no renumbering.
-       No structural change required.
+       Constitution Check gate references "Core Principle (I–V)" — still valid (no new numbered
+       principle added; package constraints are a subsection of Technology Stack). No change needed.
   ✅ .specify/templates/spec-template.md
        No changes needed; principle additions are implementation-level rules.
   ✅ .specify/templates/tasks-template.md
        "Tests are OPTIONAL" note is template boilerplate; project MUST still follow
        Principle II (TDD). No structural change required.
-  ✅ .specify/templates/checklist-template.md
-       Generic; no outdated references. No change required.
-  ✅ .specify/templates/agent-file-template.md
-       Generic; no outdated references. No change required.
 
 Deferred TODOs:
   - TypeScript client tests (Vitest/MSW/Playwright): currently zero tests exist for the
@@ -100,9 +102,20 @@ Umbraco v17 design system. Specifically:
   hardcoded colour, spacing, or typography values are forbidden.
 - All interactive controls MUST use UUI base elements (`uui-button`, `uui-input`,
   `uui-toggle`, etc.) with correct ARIA roles and full keyboard navigation.
-- Localisation strings MUST be registered and consumed via the Umbraco Localisation API
-  (`UmbLocalizationContext`); hardcoded English strings in component templates are
-  forbidden.
+- **Base class**: All package components MUST extend `UmbLitElement`
+  (from `@umbraco-cms/backoffice/lit-element`), not bare `LitElement`. This provides
+  `this.localize.term(...)` via `UmbLocalizationController`. Modal elements extend
+  `UmbModalBaseElement` which already extends `UmbLitElement` — no base class change
+  needed for modals.
+- Localisation strings MUST be registered and consumed via the Umbraco Localisation API.
+  Specifically:
+  - The localisation file MUST default-export a **nested** object
+    `{ section: { key: 'value' } }`. Umbraco's `UmbLocalizationRegistry` resolves
+    `this.localize.term('section_key')` by joining the section name, underscore, and key.
+  - **Never** use a flat key format (`section_key: 'value'`) in the localisation file —
+    the registry expects nested structure and flat keys are silently ignored.
+  - All user-facing strings MUST go through localisation — no hardcoded English strings
+    in component templates.
 - Icons MUST be sourced from the Umbraco icon registry (`UmbIconRegistry`) — embedding
   custom SVG outside the registry is forbidden unless a suitable icon is absent.
 - All modals and overlays MUST use the Umbraco Modal Manager (`UmbModalManagerContext`).
@@ -140,6 +153,27 @@ point and MUST NOT mutate global state outside the manifest lifecycle. Specific 
 is forbidden — Umbraco v17's browser import map has no entry for these specifiers,
 causing a runtime `Failed to resolve module specifier` error that is silent during build.
 
+**Lit event listener lifecycle rules (NON-NEGOTIABLE)**:
+- If `connectedCallback` adds event listeners on `this`, a matching `disconnectedCallback`
+  MUST remove them — each re-connect duplicates the handler if not removed.
+- Event listener references MUST be stored as `private readonly` arrow fields (not inline
+  lambdas). `removeEventListener` performs strict reference equality (`===`) and silently
+  fails if the reference differs from the one passed to `addEventListener`:
+  ```typescript
+  private readonly _onFoo = (e: Event): void => { /* ... */ };
+  override connectedCallback(): void {
+    super.connectedCallback();
+    this.addEventListener('foo', this._onFoo);
+  }
+  override disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this.removeEventListener('foo', this._onFoo);
+  }
+  ```
+- Async methods that write to `@state()` properties MUST include
+  `if (!this.isConnected) return;` before every state write. This guards against writes
+  to a detached element when the element is unmounted while an async call is in flight.
+
 **workspaceAction manifest rules**:
 - A `workspaceAction` manifest MUST declare both `kind:` and `api:`; using `element:`
   alone (without `kind:`) is forbidden — Umbraco requires `kind` to resolve the renderer.
@@ -156,8 +190,9 @@ causing a runtime `Failed to resolve module specifier` error that is silent duri
   `apiClient` from `shared/api-client.ts`) for all Management API calls.
 - Do NOT import `createClient` from `@umbraco-cms/backoffice/external/backend-api` —
   that package only exports the `client` singleton and generated service classes.
-- All API call functions MUST include `security: [{ scheme: 'bearer', type: 'http' }]`
-  so the client attaches the Bearer token on each request.
+- All API call functions MUST pass `security: BEARER` where `BEARER` is the constant
+  exported from `shared/api-client.ts`. Do NOT redefine the bearer security object
+  inline — use the shared constant.
 
 **Rationale**: Manifest-driven, context-mediated architecture is the contract Umbraco v17
 defines for package authors. Violating it produces silent failures on upgrade and makes
@@ -195,10 +230,11 @@ can cause symbol conflicts with CMS internals.
   extension code. Lit MUST be imported via `@umbraco-cms/backoffice/external/lit`.
 - **CMS Platform**: Umbraco v17; all APIs used MUST be published in the Umbraco v17
   package docs or the `@umbraco-cms/backoffice` typings
-- **Server**: ASP.NET Core (Umbraco RCL), EF Core 10.0.2, SQLite (dev) / SQL Server (prod)
+- **Server**: ASP.NET Core (Umbraco RCL), EF Core 10.0.4, SQLite (dev) / SQL Server (prod)
 - **AI Integration**: Calls to AI providers MUST be proxied via a server-side Umbraco API
-  controller using `IAIChatClientFactory`; direct browser-to-provider credential usage is
-  forbidden
+  controller using `IAIChatService` (from `Umbraco.AI.Core.Chat`). Injecting
+  `IChatClient` or `IAIChatClientFactory` directly is FORBIDDEN. Direct browser-to-provider
+  credential usage is forbidden.
 - **Package Distribution**: Primary artefact is a NuGet package containing the compiled
   JS; npm publishing is secondary and optional
 - **Browser Support**: Evergreen browsers only — Chrome, Edge, Firefox, Safari (current
@@ -206,6 +242,23 @@ can cause symbol conflicts with CMS internals.
 - **Accessibility**: WCAG 2.1 AA compliance is REQUIRED for all custom UI components
 - **Extension development guidance**: The `umbraco-cms-backoffice-skills` agent MUST be
   the first resource consulted for any Umbraco-specific extension patterns
+
+### Package Version Constraints (NON-NEGOTIABLE)
+
+These pinned versions MUST NOT be upgraded without explicit team approval and regression
+testing against the full Umbraco.AI ecosystem. Upgrading past these pins has caused
+`MissingMethodException` and `TypeLoadException` failures in production.
+
+- **`Microsoft.Extensions.AI*`** (all packages in this family) MUST be pinned to
+  `10.3.0`. Do NOT use `10.4.1` or later:
+  - `10.4.1` changed `McpServerToolCallContent.set_Arguments` signature →
+    `MissingMethodException` in `Umbraco.AI.Anthropic 1.3.0`
+  - `10.4.1` pulls `OpenAI SDK 2.9.1` which removed `GetResponsesClient(string)` →
+    `MissingMethodException` in `Umbraco.AI.OpenAI 1.2.0`
+- **`Microsoft.Extensions.AI`** and **`Microsoft.Extensions.AI.Abstractions`** MUST
+  always be the same version — mismatches cause
+  `TypeLoadException: FunctionApprovalRequestContent`.
+- **EF Core** MUST be `10.0.4` (required by `Umbraco.Cms.Persistence.EFCore 17.3.4`).
 
 ## Development Workflow & Quality Gates
 
@@ -249,4 +302,4 @@ removes or redefines a Core Principle.
 All PRs and code reviews MUST verify compliance with each Core Principle. Complexity
 violations MUST be documented in the Complexity Tracking table of the relevant feature plan.
 
-**Version**: 1.1.0 | **Ratified**: 2026-03-30 | **Last Amended**: 2026-04-02
+**Version**: 1.2.0 | **Ratified**: 2026-03-30 | **Last Amended**: 2026-05-14
