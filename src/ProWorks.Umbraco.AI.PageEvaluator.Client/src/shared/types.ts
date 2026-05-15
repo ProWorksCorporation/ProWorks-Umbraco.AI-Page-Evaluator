@@ -105,6 +105,8 @@ export interface EvaluationReportResponse {
   readonly cachedAt: string | null;
   readonly overallScore: number | null;
   readonly axisScores: readonly AxisScore[] | null;
+  /** Maps each property alias to its Umbraco property editor alias. Empty when unavailable. */
+  readonly propertyEditorAliases: Record<string, string>;
 }
 
 /** Request body for POST /evaluate. */
