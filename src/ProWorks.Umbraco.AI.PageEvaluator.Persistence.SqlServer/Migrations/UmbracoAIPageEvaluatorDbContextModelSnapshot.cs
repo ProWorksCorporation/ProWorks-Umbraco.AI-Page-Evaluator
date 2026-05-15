@@ -93,6 +93,9 @@ namespace ProWorks.Umbraco.AI.PageEvaluator.Persistence.SqlServer.Migrations
                     b.Property<string>("PropertyAliases")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<bool>("RecommendationsEnabled")
+                        .HasColumnType("bit");
+
                     b.Property<bool>("ScoringEnabled")
                         .HasColumnType("bit");
 
