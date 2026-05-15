@@ -79,7 +79,7 @@ public sealed record EvaluationReport
     public EvaluationReport WithCachedAt(DateTime cachedAt) => this with { CachedAt = cachedAt };
 
     /// <summary>
-    /// Returns a copy of this report with the specified property editor alias map attached.
+    /// Returns a copy of this report with the specified <see cref="PropertyEditorAliases"/> map attached.
     /// Call this in the controller just before returning — do not store the map in the cache.
     /// </summary>
     public EvaluationReport WithPropertyEditorAliases(IReadOnlyDictionary<string, string> aliases) =>

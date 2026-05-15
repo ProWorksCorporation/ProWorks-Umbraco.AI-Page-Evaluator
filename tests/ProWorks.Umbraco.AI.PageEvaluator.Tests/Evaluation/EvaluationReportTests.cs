@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using ProWorks.Umbraco.AI.PageEvaluator.Evaluation;
 using Xunit;
 
@@ -50,6 +51,48 @@ public class EvaluationReportTests
         Assert.Equal(cachedAt, copy.CachedAt);
         Assert.True(copy.ParseFailed);
         Assert.Equal("Could not parse.", copy.RawResponse);
+    }
+
+    // ---------------------------------------------------------------------------
+    // WithPropertyEditorAliases
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public void WithPropertyEditorAliases_ReturnsCopyWithAliasesSet()
+    {
+        var report = EvaluationReport.Parsed(new EvaluationScore(2, 3), [], null);
+        var aliases = new Dictionary<string, string> { ["title"] = "Umbraco.TextBox" };
+
+        var result = report.WithPropertyEditorAliases(aliases);
+
+        Assert.NotNull(result.PropertyEditorAliases);
+        Assert.Equal("Umbraco.TextBox", result.PropertyEditorAliases["title"]);
+        Assert.Equal(report.Score, result.Score);
+        Assert.Equal(report.Checks, result.Checks);
+    }
+
+    [Fact]
+    public void WithPropertyEditorAliases_DoesNotMutateOriginal()
+    {
+        var report = EvaluationReport.Parsed(new EvaluationScore(1, 1), [], null);
+        var aliases = new Dictionary<string, string> { ["title"] = "Umbraco.TextBox" };
+
+        _ = report.WithPropertyEditorAliases(aliases);
+
+        Assert.Null(report.PropertyEditorAliases);
+    }
+
+    [Fact]
+    public void WithPropertyEditorAliases_WorksOnFailedReport()
+    {
+        var report = EvaluationReport.Failed("raw output");
+        var aliases = new Dictionary<string, string>();
+
+        var result = report.WithPropertyEditorAliases(aliases);
+
+        Assert.NotNull(result.PropertyEditorAliases);
+        Assert.Empty(result.PropertyEditorAliases);
+        Assert.True(result.ParseFailed);
     }
 
     // ---------------------------------------------------------------------------
