@@ -1219,6 +1219,85 @@ public class PageEvaluatorApiControllerTests
     // ---------------------------------------------------------------------------
 
     [Fact]
+    public async Task EvaluateAsync_AttachesPropertyEditorAliases_FromContentType()
+    {
+        var nodeId = Guid.NewGuid();
+        const string alias = "blogPost";
+        var request = new EvaluatePageRequest { NodeId = nodeId, DocumentTypeAlias = alias, Properties = new() };
+
+        _evaluationService.EvaluateAsync(nodeId, alias, Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<CancellationToken>())
+            .Returns(EvaluationReport.Parsed(new EvaluationScore(1, 1), [], null));
+
+        var contentType = Substitute.For<IContentType>();
+        var propType = Substitute.For<IPropertyType>();
+        propType.Alias.Returns("metaDescription");
+        propType.PropertyEditorAlias.Returns("Umbraco.TextBox");
+        contentType.CompositionPropertyTypes.Returns([propType]);
+        _contentTypeService.Get(alias).Returns(contentType);
+
+        IActionResult result = await _sut.EvaluateAsync(request);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var report = Assert.IsAssignableFrom<EvaluationReport>(ok.Value);
+        Assert.NotNull(report.PropertyEditorAliases);
+        Assert.Equal("Umbraco.TextBox", report.PropertyEditorAliases["metaDescription"]);
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_WhenContentTypeNotFound_AttachesEmptyAliases()
+    {
+        var nodeId = Guid.NewGuid();
+        const string alias = "blogPost";
+        var request = new EvaluatePageRequest { NodeId = nodeId, DocumentTypeAlias = alias, Properties = new() };
+
+        _evaluationService.EvaluateAsync(nodeId, alias, Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<CancellationToken>())
+            .Returns(EvaluationReport.Parsed(new EvaluationScore(1, 1), [], null));
+
+        _contentTypeService.Get(alias).Returns((IContentType?)null);
+
+        IActionResult result = await _sut.EvaluateAsync(request);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var report = Assert.IsAssignableFrom<EvaluationReport>(ok.Value);
+        Assert.NotNull(report.PropertyEditorAliases);
+        Assert.Empty(report.PropertyEditorAliases);
+    }
+
+    [Fact]
+    public async Task GetCachedEvaluationAsync_AttachesPropertyEditorAliases_FromContentType()
+    {
+        var nodeId = Guid.NewGuid();
+        const string alias = "blogPost";
+        var cachedReport = EvaluationReport.Parsed(new EvaluationScore(1, 1), [], null);
+        var entry = new EvaluationCacheEntry
+        {
+            NodeId = nodeId,
+            DocumentTypeAlias = alias,
+            Report = cachedReport,
+            CachedAt = DateTime.UtcNow,
+        };
+        _cacheRepository.GetAsync(nodeId, Arg.Any<CancellationToken>()).Returns(entry);
+
+        var contentType = Substitute.For<IContentType>();
+        var propType = Substitute.For<IPropertyType>();
+        propType.Alias.Returns("heroImage");
+        propType.PropertyEditorAlias.Returns("Umbraco.MediaPicker3");
+        contentType.CompositionPropertyTypes.Returns([propType]);
+        _contentTypeService.Get(alias).Returns(contentType);
+
+        IActionResult result = await _sut.GetCachedEvaluationAsync(nodeId);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var report = Assert.IsAssignableFrom<EvaluationReport>(ok.Value);
+        Assert.NotNull(report.PropertyEditorAliases);
+        Assert.Equal("Umbraco.MediaPicker3", report.PropertyEditorAliases["heroImage"]);
+    }
+
+    // ---------------------------------------------------------------------------
+    // POST /recommend
+    // ---------------------------------------------------------------------------
+
+    [Fact]
     public async Task RecommendAsync_NodeNotFound_Returns404()
     {
         _contentService.GetById(Arg.Any<Guid>()).Returns((IContent?)null);

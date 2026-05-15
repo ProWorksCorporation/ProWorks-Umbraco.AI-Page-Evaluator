@@ -284,7 +284,8 @@ public sealed class PageEvaluatorApiController : ControllerBase
         if (entry is null)
             return NotFound(new { title = $"No cached evaluation for node '{nodeId}'." });
 
-        return Ok(entry.Report.WithCachedAt(entry.CachedAt));
+        IReadOnlyDictionary<string, string> editorAliases = BuildPropertyEditorAliases(entry.DocumentTypeAlias);
+        return Ok(entry.Report.WithCachedAt(entry.CachedAt).WithPropertyEditorAliases(editorAliases));
     }
 
     // ---------------------------------------------------------------------------
@@ -339,7 +340,8 @@ public sealed class PageEvaluatorApiController : ControllerBase
                 CachedAt = cachedAt,
             }, cancellationToken);
 
-            return Ok(report.WithCachedAt(cachedAt));
+            IReadOnlyDictionary<string, string> editorAliases = BuildPropertyEditorAliases(documentTypeAlias);
+            return Ok(report.WithCachedAt(cachedAt).WithPropertyEditorAliases(editorAliases));
         }
         catch (InvalidOperationException ex)
         {
@@ -502,6 +504,16 @@ public sealed class PageEvaluatorApiController : ControllerBase
     // ---------------------------------------------------------------------------
     // Private helpers
     // ---------------------------------------------------------------------------
+
+    private IReadOnlyDictionary<string, string> BuildPropertyEditorAliases(string documentTypeAlias)
+    {
+        IContentType? contentType = _contentTypeService.Get(documentTypeAlias);
+        if (contentType is null)
+            return new Dictionary<string, string>();
+
+        return contentType.CompositionPropertyTypes
+            .ToDictionary(p => p.Alias, p => p.PropertyEditorAlias);
+    }
 
     private Guid GetCurrentUserKey()
         => HttpContext.User.Identity?.GetUserKey()
