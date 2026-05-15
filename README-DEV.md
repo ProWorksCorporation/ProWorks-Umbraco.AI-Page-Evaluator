@@ -77,7 +77,7 @@ After a fresh clone, import the demo content via **Settings → uSync → Import
 dotnet test
 ```
 
-The test suite covers controller error handling, service behavior, persistence mapping, cache invalidation, notification handling, and the Umbraco.AI test feature integration (146 tests, xUnit + NSubstitute).
+The test suite covers controller error handling, service behavior, persistence mapping, cache invalidation, notification handling, and the Umbraco.AI test feature integration (161 tests, xUnit + NSubstitute).
 
 ### Build the NuGet package
 
@@ -194,11 +194,23 @@ The system prompt instructs the model to respond with a strict JSON schema:
 {
   "score": { "passed": 22, "total": 34 },
   "checks": [
-    { "checkNumber": 1, "status": "Pass|Fail|Warn", "label": "…", "explanation": "…" }
+    {
+      "checkNumber": 1,
+      "status": "Pass|Fail|Warn",
+      "label": "…",
+      "explanation": "…",
+      "propertyAlias": "metaDescription"
+    }
   ],
-  "suggestions": "…"
+  "suggestions": "…",
+  "overallScore": 3.8,
+  "axisScores": [
+    { "name": "Clarity", "score": 4, "feedback": "…" }
+  ]
 }
 ```
+
+`propertyAlias` links a check to a specific Umbraco property so the UI can offer an AI text recommendation for that field. It is `null` for structural or computed checks (e.g. "page has no H1 tag") that do not map to a single editable property. `overallScore` and `axisScores` are only present when dimensional scoring is enabled on the evaluator configuration.
 
 The response parser tries JSON first, then a Markdown numbered-list fallback, then stores the raw text for display if both fail.
 
@@ -221,6 +233,8 @@ This means you can create a dedicated AI profile for page evaluation that omits 
 
 ### Error response mapping
 
+#### POST /evaluate
+
 | Condition | HTTP status | Client behavior |
 |---|---|---|
 | No active config for document type | 404 | Modal shows "no configuration" message |
@@ -228,5 +242,17 @@ This means you can create a dedicated AI profile for page evaluation that omits 
 | AI provider HTTP error | 502 | Modal shows generic error + Retry button |
 | AI provider temporarily overloaded (e.g. Anthropic 529) | 503 | Modal shows "temporarily unavailable" + Retry button |
 | Unexpected server error | 500 | Modal shows generic error + Retry button |
+
+#### POST /recommend
+
+| Condition | HTTP status | Client behavior |
+|---|---|---|
+| Content node not found | 404 | Recommendation button shows error state |
+| No active config for document type | 404 | Recommendation button shows error state |
+| Property alias not found on document type | 400 | Recommendation button shows error state |
+| Guardrail policy blocked content | 422 | Recommendation button shows error state |
+| AI provider HTTP error | 502 | Recommendation button shows error state |
+| AI provider temporarily overloaded | 503 | Recommendation button shows error state |
+| Unexpected server error | 500 | Recommendation button shows error state |
 
 Provider error details are never forwarded to the client to avoid leaking API key or account information.
