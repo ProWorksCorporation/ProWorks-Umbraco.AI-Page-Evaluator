@@ -72,6 +72,7 @@ export interface CheckResult {
   readonly status: CheckStatus;
   readonly label: string;
   readonly explanation: string | null;
+  readonly propertyAlias: string | null;
 }
 
 /** Overall pass/total score. */
@@ -111,6 +112,20 @@ export interface EvaluatePageRequest {
   readonly nodeId: string;
   readonly documentTypeAlias: string;
   readonly properties: Record<string, unknown>;
+}
+
+/** Request body for POST /recommend. */
+export interface RecommendRequest {
+  readonly nodeId: string;
+  readonly propertyAlias: string;
+  readonly checkLabel: string;
+  readonly checkExplanation: string | null;
+  readonly properties: Record<string, string>;
+}
+
+/** Response body for POST /recommend. */
+export interface RecommendResponse {
+  readonly recommendedValue: string | null;
 }
 
 // ---------------------------------------------------------------------------
