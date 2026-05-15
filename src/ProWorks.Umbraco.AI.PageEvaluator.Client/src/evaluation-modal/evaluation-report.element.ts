@@ -1,6 +1,9 @@
-import { html, css, nothing, type TemplateResult, customElement, property } from '@umbraco-cms/backoffice/external/lit';
+import { html, css, nothing, state, type TemplateResult, customElement, property } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import type { EvaluationReportResponse, CheckResult, CheckStatus, AxisScore } from '../shared/types.js';
+import { recommend } from '../shared/api-client.js';
+import type { RecommendRequest } from '../shared/types.js';
+import type { RecommendationState } from './recommendation-state.js';
 
 type TagColor = 'positive' | 'warning' | 'danger';
 
@@ -138,6 +141,53 @@ export class EvaluationReportElement extends UmbLitElement {
       line-height: 1.4;
     }
 
+    .rec-generating {
+      display: flex;
+      align-items: center;
+      gap: var(--uui-size-space-2, 8px);
+      font-size: var(--uui-type-small-size, 0.875rem);
+      color: var(--uui-color-text-alt, #666);
+      margin-top: var(--uui-size-space-2, 8px);
+    }
+
+    .rec-box {
+      margin-top: var(--uui-size-space-2, 8px);
+      padding: var(--uui-size-space-3, 12px) var(--uui-size-space-4, 16px);
+      background: var(--uui-color-surface, #fff);
+      border: 1px solid var(--uui-color-border, #d8d7d9);
+      border-left: 3px solid var(--uui-color-default, #283a97);
+      border-radius: var(--uui-border-radius, 3px);
+    }
+
+    .rec-box.applied {
+      border-color: var(--uui-color-border, #d8d7d9);
+      border-left-color: var(--uui-color-positive, #0b8152);
+    }
+
+    .rec-label {
+      display: flex;
+      align-items: center;
+      gap: var(--uui-size-space-1, 3px);
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--uui-color-default-standalone, #25358b);
+      margin-bottom: var(--uui-size-space-2, 8px);
+    }
+
+    .rec-label.applied {
+      color: var(--uui-color-positive-standalone, #0a7349);
+    }
+
+    .rec-text {
+      font-size: var(--uui-type-small-size, 0.875rem);
+      line-height: 1.5;
+      color: var(--uui-color-text, #060606);
+      margin-bottom: var(--uui-size-space-3, 9px);
+      word-break: break-word;
+    }
+
     .overall-score-row {
       display: flex;
       align-items: center;
@@ -193,6 +243,15 @@ export class EvaluationReportElement extends UmbLitElement {
 
   @property({ attribute: false })
   report: EvaluationReportResponse | undefined;
+
+  @property({ attribute: false })
+  nodeId: string = '';
+
+  @property({ attribute: false })
+  properties: Record<string, unknown> = {};
+
+  @state()
+  private _recStates = new Map<number, RecommendationState>();
 
   override render(): TemplateResult | typeof nothing {
     if (!this.report) return nothing;
@@ -316,6 +375,10 @@ export class EvaluationReportElement extends UmbLitElement {
   }
 
   private _renderCheck(check: CheckResult): TemplateResult {
+    const state: RecommendationState = this._recStates.get(check.checkNumber) ?? { kind: 'idle' };
+    const showRec =
+      (check.status === 'Fail' || check.status === 'Warn') && check.propertyAlias !== null;
+
     return html`
       <li class="check-item">
         <uui-icon
@@ -327,9 +390,127 @@ export class EvaluationReportElement extends UmbLitElement {
           ${check.explanation
             ? html`<div class="check-explanation">${check.explanation}</div>`
             : nothing}
+          ${showRec ? this._renderRecState(check, state) : nothing}
         </div>
       </li>
     `;
+  }
+
+  private _renderRecState(check: CheckResult, state: RecommendationState): TemplateResult {
+    switch (state.kind) {
+      case 'idle':
+        return html`
+          <uui-button
+            style="margin-top: var(--uui-size-space-2, 8px);"
+            look="secondary"
+            compact
+            label=${this.localize.term('evaluatePage_recGenerate')}
+            @click=${() => { void this._handleGenerate(check); }}>
+            <uui-icon name="icon-wand" slot="icon"></uui-icon>
+            ${this.localize.term('evaluatePage_recGenerate')}
+          </uui-button>
+        `;
+      case 'generating':
+        return html`
+          <div class="rec-generating">
+            <uui-loader></uui-loader>
+            <span>${this.localize.term('evaluatePage_recGenerating')}</span>
+          </div>
+        `;
+      case 'result':
+        return this._renderRecBox(check, state.value, false);
+      case 'applied':
+        return this._renderRecBox(check, state.value, true);
+    }
+  }
+
+  private _renderRecBox(check: CheckResult, value: string | null, applied: boolean): TemplateResult {
+    return html`
+      <div class="rec-box ${applied ? 'applied' : ''}">
+        <div class="rec-label ${applied ? 'applied' : ''}">
+          <uui-icon name="${applied ? 'icon-check' : 'icon-wand'}"></uui-icon>
+          ${applied
+            ? this.localize.term('evaluatePage_recApplied')
+            : this.localize.term('evaluatePage_recSuggested')}
+        </div>
+        <div class="rec-text">${value ?? ''}</div>
+        <uui-action-bar>
+          ${!applied
+            ? html`
+                <uui-button
+                  look="primary"
+                  color="positive"
+                  compact
+                  label=${this.localize.term('evaluatePage_recApply')}
+                  @click=${() => this._handleApply(check, value)}>
+                  ${this.localize.term('evaluatePage_recApply')}
+                </uui-button>
+              `
+            : nothing}
+          <uui-button
+            look="secondary"
+            compact
+            label=${this.localize.term('evaluatePage_recRegenerate')}
+            @click=${() => { void this._handleGenerate(check); }}>
+            <uui-icon name="icon-sync" slot="icon"></uui-icon>
+            ${this.localize.term('evaluatePage_recRegenerate')}
+          </uui-button>
+          <uui-button
+            look="secondary"
+            compact
+            label=${this.localize.term('evaluatePage_recCopy')}
+            @click=${() => { void this._handleCopy(value); }}>
+            <uui-icon name="icon-clipboard-copy" slot="icon"></uui-icon>
+            ${this.localize.term('evaluatePage_recCopy')}
+          </uui-button>
+        </uui-action-bar>
+      </div>
+    `;
+  }
+
+  private _setRecState(checkNumber: number, state: RecommendationState): void {
+    this._recStates = new Map(this._recStates).set(checkNumber, state);
+  }
+
+  private async _handleGenerate(check: CheckResult): Promise<void> {
+    if (!check.propertyAlias) return;
+    this._setRecState(check.checkNumber, { kind: 'generating' });
+
+    const request: RecommendRequest = {
+      nodeId: this.nodeId,
+      propertyAlias: check.propertyAlias,
+      checkLabel: check.label,
+      checkExplanation: check.explanation ?? null,
+      properties: Object.fromEntries(
+        Object.entries(this.properties).map(([k, v]) => [k, String(v ?? '')]),
+      ),
+    };
+
+    try {
+      const response = await recommend(request);
+      if (!this.isConnected) return;
+      this._setRecState(check.checkNumber, { kind: 'result', value: response.recommendedValue });
+    } catch {
+      if (!this.isConnected) return;
+      this._setRecState(check.checkNumber, { kind: 'idle' });
+    }
+  }
+
+  private _handleApply(check: CheckResult, value: string | null): void {
+    if (!check.propertyAlias || value === null) return;
+    this.dispatchEvent(
+      new CustomEvent('page-evaluator-rec-apply', {
+        bubbles: true,
+        composed: true,
+        detail: { propertyAlias: check.propertyAlias, value },
+      }),
+    );
+    this._setRecState(check.checkNumber, { kind: 'applied', value });
+  }
+
+  private async _handleCopy(value: string | null): Promise<void> {
+    if (value === null) return;
+    await navigator.clipboard.writeText(value);
   }
 }
 
