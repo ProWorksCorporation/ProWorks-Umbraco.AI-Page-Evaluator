@@ -268,21 +268,22 @@ After apply, left border turns forest-green and label changes to "✓ Applied to
 ## Section 7 — Files Changed
 
 ### New files
-- `src/.../Client/src/evaluation-modal/recommendation-state.ts` — per-check recommendation state type (`idle | generating | result | applied`)
+- `src/ProWorks.Umbraco.AI.PageEvaluator.Client/src/evaluation-modal/recommendation-state.ts` — per-check recommendation state type (`idle | generating | result | applied`)
+- `src/ProWorks.Umbraco.AI.PageEvaluator/Models/RecommendRequest.cs` — API request DTO
+- `src/ProWorks.Umbraco.AI.PageEvaluator/Models/RecommendResponse.cs` — API response DTO
 
 ### Modified files
 
 **C# server:**
-- `Core/Evaluation/CheckResult.cs` — add `string? PropertyAlias`
-- `Services/PageEvaluationService.cs` — extend system prompt + `TryParseJson()` for `propertyAlias`
-- `Controllers/PageEvaluatorApiController.cs` — add `POST /recommend` action
-- `Core/Recommend/` (new) — `RecommendRequest.cs`, `RecommendResponse.cs` (request/response models)
+- `src/ProWorks.Umbraco.AI.PageEvaluator.Core/Evaluation/CheckResult.cs` — add `string? PropertyAlias`
+- `src/ProWorks.Umbraco.AI.PageEvaluator/Services/PageEvaluationService.cs` — extend system prompt + `TryParseJson()` for `propertyAlias`
+- `src/ProWorks.Umbraco.AI.PageEvaluator/Controllers/PageEvaluatorApiController.cs` — add `POST /recommend` action
 
 **TypeScript client:**
-- `shared/types.ts` — add `propertyAlias: string | null` to `CheckResult`; add `RecommendRequest`, `RecommendResponse` types
-- `evaluation-modal/evaluation-modal.element.ts` — consume `UMB_DOCUMENT_WORKSPACE_CONTEXT`; wire recommend call and apply
-- `evaluation-modal/evaluation-report.element.ts` — render generate button, loading state, rec box per check item
-- `workspace-action/page-evaluator-action.api.ts` — switch `modalManagerCtx.open` → `umbOpenModal`
+- `src/ProWorks.Umbraco.AI.PageEvaluator.Client/src/shared/types.ts` — add `propertyAlias: string | null` to `CheckResult`; add `RecommendRequest`, `RecommendResponse` types
+- `src/ProWorks.Umbraco.AI.PageEvaluator.Client/src/evaluation-modal/evaluation-modal.element.ts` — consume `UMB_DOCUMENT_WORKSPACE_CONTEXT`; wire recommend call and apply; verify `applyValueChange` call shape against Umbraco.AI Prompt addon source at `C:\Repositories\Umbraco.AI\Umbraco.AI.Prompt\`
+- `src/ProWorks.Umbraco.AI.PageEvaluator.Client/src/evaluation-modal/evaluation-report.element.ts` — render generate button, loading state, rec box per check item
+- `src/ProWorks.Umbraco.AI.PageEvaluator.Client/src/workspace-action/page-evaluator-action.api.ts` — switch `modalManagerCtx.open` → `umbOpenModal`
 
 **No schema changes** — `umbracoAIEvaluationCache` stores serialized `EvaluationReport`; adding `PropertyAlias` to `CheckResult` is additive; existing cached rows with `null` for the new field are valid.
 
