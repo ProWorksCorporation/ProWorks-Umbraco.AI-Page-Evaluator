@@ -38,4 +38,16 @@ public class ContentPublishedNotificationHandlerTests
         await _cacheRepository.Received(1).DeleteAsync(key1, Arg.Any<CancellationToken>());
         await _cacheRepository.Received(1).DeleteAsync(key2, Arg.Any<CancellationToken>());
     }
+
+    [Fact]
+    public async Task HandleAsync_WhenNoEntitiesPublished_DoesNotCallRepository()
+    {
+        var notification = new ContentPublishedNotification(
+            Array.Empty<IContent>(),
+            new EventMessages());
+
+        await _sut.HandleAsync(notification, CancellationToken.None);
+
+        await _cacheRepository.DidNotReceive().DeleteAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+    }
 }

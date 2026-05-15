@@ -1332,4 +1332,59 @@ public class PageEvaluationServiceTests
         Assert.Null(report.AxisScores);
         Assert.NotNull(report.RawResponse);
     }
+
+    // ---------------------------------------------------------------------------
+    // axisScores: [] — empty array is distinct from absent key (null vs empty list)
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public async Task EvaluateAsync_WhenAxisScoresIsEmptyArray_AxisScoresIsEmptyNotNull()
+    {
+        const string documentTypeAlias = "blogPost";
+        _configService.GetActiveForDocumentTypeAsync(documentTypeAlias, Arg.Any<CancellationToken>())
+            .Returns(BuildConfig(documentTypeAlias, scoringEnabled: true));
+
+        MockChatResponse("""
+            {
+              "score": { "passed": 1, "total": 1 },
+              "checks": [{ "checkNumber": 1, "status": "Pass", "label": "Title", "explanation": null }],
+              "suggestions": null,
+              "overallScore": 4,
+              "axisScores": []
+            }
+            """);
+
+        var report = await _sut.EvaluateAsync(Guid.NewGuid(), documentTypeAlias, new Dictionary<string, object?>());
+
+        Assert.False(report.ParseFailed);
+        Assert.NotNull(report.AxisScores);
+        Assert.Empty(report.AxisScores!);
+    }
+
+    // ---------------------------------------------------------------------------
+    // ParseCheckStatus unknown value — falls back to Pass in markdown parse
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public async Task EvaluateAsync_WhenMarkdownContainsUnknownStatus_TreatsAsPass()
+    {
+        const string documentTypeAlias = "blogPost";
+        _configService.GetActiveForDocumentTypeAsync(documentTypeAlias, Arg.Any<CancellationToken>())
+            .Returns(BuildConfig(documentTypeAlias));
+
+        MockChatResponse("""
+            ## Evaluation Results
+
+            1. UNKNOWN - Some Check - Explanation here.
+            2. Fail - Other Check - Another explanation.
+            """);
+
+        var report = await _sut.EvaluateAsync(Guid.NewGuid(), documentTypeAlias, new Dictionary<string, object?>());
+
+        Assert.False(report.ParseFailed);
+        Assert.Equal(2, report.Checks.Count);
+        Assert.Equal(CheckStatus.Pass, report.Checks[0].Status);
+        Assert.Equal("Some Check", report.Checks[0].Label);
+        Assert.Equal(CheckStatus.Fail, report.Checks[1].Status);
+    }
 }

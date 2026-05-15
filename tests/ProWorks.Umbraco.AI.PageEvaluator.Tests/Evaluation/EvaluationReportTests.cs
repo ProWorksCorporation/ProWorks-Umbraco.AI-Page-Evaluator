@@ -112,4 +112,15 @@ public class EvaluationReportTests
         Assert.Equal(4.2, copy.OverallScore);
         Assert.Same(axis, copy.AxisScores);
     }
+
+    // ---------------------------------------------------------------------------
+    // EvaluationScore.DisplayText
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public void EvaluationScore_DisplayText_FormatsAsPassedSlashTotal()
+    {
+        var score = new EvaluationScore(3, 5);
+        Assert.Equal("3/5 checks passed", score.DisplayText);
+    }
 }
