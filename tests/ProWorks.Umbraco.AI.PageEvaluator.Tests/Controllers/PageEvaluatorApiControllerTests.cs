@@ -1343,6 +1343,92 @@ public class PageEvaluatorApiControllerTests
         Assert.Empty(report.PropertyEditorAliases);
     }
 
+    [Fact]
+    public async Task EvaluateAsync_AttachesPropertyNames_FromContentType()
+    {
+        var nodeId = Guid.NewGuid();
+        const string alias = "blogPost";
+        var request = new EvaluatePageRequest { NodeId = nodeId, DocumentTypeAlias = alias, Properties = new() };
+
+        _evaluationService.EvaluateAsync(nodeId, alias, Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<CancellationToken>())
+            .Returns(EvaluationReport.Parsed(new EvaluationScore(1, 1), [], null));
+
+        var contentType = Substitute.For<IContentType>();
+        var propType = Substitute.For<IPropertyType>();
+        propType.Alias.Returns("metaDescription");
+        propType.Name.Returns("Meta Description");
+        propType.PropertyEditorAlias.Returns("Umbraco.TextBox");
+        contentType.CompositionPropertyTypes.Returns([propType]);
+        _contentTypeService.Get(alias).Returns(contentType);
+
+        IActionResult result = await _sut.EvaluateAsync(request);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var report = Assert.IsAssignableFrom<EvaluationReport>(ok.Value);
+        Assert.NotNull(report.PropertyNames);
+        Assert.Equal("Meta Description", report.PropertyNames["metaDescription"]);
+    }
+
+    [Fact]
+    public async Task GetCachedEvaluationAsync_AttachesPropertyNames_FromContentType()
+    {
+        var nodeId = Guid.NewGuid();
+        const string alias = "blogPost";
+        var cachedReport = EvaluationReport.Parsed(new EvaluationScore(1, 1), [], null);
+        var entry = new EvaluationCacheEntry
+        {
+            NodeId = nodeId,
+            DocumentTypeAlias = alias,
+            Report = cachedReport,
+            CachedAt = DateTime.UtcNow,
+        };
+        _cacheRepository.GetAsync(nodeId, Arg.Any<CancellationToken>()).Returns(entry);
+
+        var contentType = Substitute.For<IContentType>();
+        var propType = Substitute.For<IPropertyType>();
+        propType.Alias.Returns("heroImage");
+        propType.Name.Returns("Hero Image");
+        propType.PropertyEditorAlias.Returns("Umbraco.MediaPicker3");
+        contentType.CompositionPropertyTypes.Returns([propType]);
+        _contentTypeService.Get(alias).Returns(contentType);
+
+        IActionResult result = await _sut.GetCachedEvaluationAsync(nodeId);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var report = Assert.IsAssignableFrom<EvaluationReport>(ok.Value);
+        Assert.NotNull(report.PropertyNames);
+        Assert.Equal("Hero Image", report.PropertyNames["heroImage"]);
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_DoesNotCachePropertyNames()
+    {
+        var nodeId = Guid.NewGuid();
+        const string alias = "blogPost";
+        var request = new EvaluatePageRequest { NodeId = nodeId, DocumentTypeAlias = alias, Properties = new() };
+
+        _evaluationService.EvaluateAsync(nodeId, alias, Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<CancellationToken>())
+            .Returns(EvaluationReport.Parsed(new EvaluationScore(1, 1), [], null));
+
+        var contentType = Substitute.For<IContentType>();
+        var propType = Substitute.For<IPropertyType>();
+        propType.Alias.Returns("title");
+        propType.Name.Returns("Page Title");
+        propType.PropertyEditorAlias.Returns("Umbraco.TextBox");
+        contentType.CompositionPropertyTypes.Returns([propType]);
+        _contentTypeService.Get(alias).Returns(contentType);
+
+        EvaluationCacheEntry? capturedEntry = null;
+        _cacheRepository
+            .SaveAsync(Arg.Do<EvaluationCacheEntry>(e => capturedEntry = e), Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+
+        await _sut.EvaluateAsync(request);
+
+        Assert.NotNull(capturedEntry);
+        Assert.Null(capturedEntry.Report.PropertyNames);
+    }
+
     // ---------------------------------------------------------------------------
     // POST /recommend
     // ---------------------------------------------------------------------------

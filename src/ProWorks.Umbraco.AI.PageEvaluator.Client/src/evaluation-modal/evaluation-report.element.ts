@@ -277,6 +277,9 @@ export class EvaluationReportElement extends UmbLitElement {
   @property({ attribute: false })
   propertyEditorAliases: Record<string, string> = {};
 
+  @property({ attribute: false })
+  propertyNames: Record<string, string> = {};
+
   @state()
   private _recStates = new Map<number, RecommendationState>();
 
@@ -454,6 +457,14 @@ export class EvaluationReportElement extends UmbLitElement {
     return trimmed[0] !== '{' && trimmed[0] !== '[' && !trimmed.startsWith('umb://');
   }
 
+  private _recSuggestedLabel(propertyAlias: string | null): string {
+    if (propertyAlias === null) return this.localize.term('evaluatePage_recSuggested');
+    const name = this.propertyNames[propertyAlias];
+    return name !== undefined
+      ? `${this.localize.term('evaluatePage_recSuggestedFor')} ${name}`
+      : this.localize.term('evaluatePage_recSuggested');
+  }
+
   private _renderCheck(check: CheckResult): TemplateResult {
     const state: RecommendationState = this._recStates.get(check.checkNumber) ?? { kind: 'idle' };
     const showRec =
@@ -539,7 +550,7 @@ export class EvaluationReportElement extends UmbLitElement {
           <uui-icon name="${applied ? 'icon-check' : 'icon-wand'}"></uui-icon>
           ${applied
             ? this.localize.term('evaluatePage_recApplied')
-            : this.localize.term('evaluatePage_recSuggested')}
+            : this._recSuggestedLabel(check.propertyAlias)}
         </div>
         <div class="rec-text">${value ?? ''}</div>
         <div class="rec-actions">

@@ -96,6 +96,48 @@ public class EvaluationReportTests
     }
 
     // ---------------------------------------------------------------------------
+    // WithPropertyNames
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public void WithPropertyNames_ReturnsCopyWithNamesSet()
+    {
+        var report = EvaluationReport.Parsed(new EvaluationScore(2, 3), [], null);
+        var names = new Dictionary<string, string> { ["metaDescription"] = "Meta Description" };
+
+        var result = report.WithPropertyNames(names);
+
+        Assert.NotNull(result.PropertyNames);
+        Assert.Equal("Meta Description", result.PropertyNames["metaDescription"]);
+        Assert.Equal(report.Score, result.Score);
+        Assert.Equal(report.Checks, result.Checks);
+    }
+
+    [Fact]
+    public void WithPropertyNames_DoesNotMutateOriginal()
+    {
+        var report = EvaluationReport.Parsed(new EvaluationScore(1, 1), [], null);
+        var names = new Dictionary<string, string> { ["title"] = "Page Title" };
+
+        _ = report.WithPropertyNames(names);
+
+        Assert.Null(report.PropertyNames);
+    }
+
+    [Fact]
+    public void WithPropertyNames_WorksOnFailedReport()
+    {
+        var report = EvaluationReport.Failed("raw output");
+        var names = new Dictionary<string, string>();
+
+        var result = report.WithPropertyNames(names);
+
+        Assert.NotNull(result.PropertyNames);
+        Assert.Empty(result.PropertyNames);
+        Assert.True(result.ParseFailed);
+    }
+
+    // ---------------------------------------------------------------------------
     // Scoring fields (OverallScore / AxisScores) — additive, default null
     // ---------------------------------------------------------------------------
 

@@ -48,6 +48,7 @@ export default {
     recGenerate: 'Generate recommendation',
     recGenerating: 'Generating recommendation…',
     recSuggested: 'Suggested value',
+    recSuggestedFor: 'Suggested value for',
     recApply: 'Apply to field',
     recApplied: 'Applied to field',
     recRegenerate: 'Regenerate',

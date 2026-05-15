@@ -223,7 +223,8 @@ export class EvaluationModalElement extends UmbModalBaseElement<EvaluationModalD
             .report="${this._report!}"
             .nodeId="${this.data?.nodeId ?? ''}"
             .properties="${(this.data?.properties ?? {}) as Record<string, unknown>}"
-            .propertyEditorAliases="${this._report?.propertyEditorAliases ?? {}}">
+            .propertyEditorAliases="${this._report?.propertyEditorAliases ?? {}}"
+            .propertyNames="${this._report?.propertyNames ?? {}}">
           </page-evaluator-report>
         `;
 

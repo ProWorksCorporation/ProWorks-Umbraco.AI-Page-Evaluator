@@ -37,6 +37,7 @@ const e = {
     recGenerate: "Generate recommendation",
     recGenerating: "Generating recommendation…",
     recSuggested: "Suggested value",
+    recSuggestedFor: "Suggested value for",
     recApply: "Apply to field",
     recApplied: "Applied to field",
     recRegenerate: "Regenerate",
@@ -141,4 +142,4 @@ const e = {
 export {
   e as default
 };
-//# sourceMappingURL=en-DSFrIs6c.js.map
+//# sourceMappingURL=en-BupNVGSl.js.map

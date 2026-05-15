@@ -144,7 +144,7 @@ const A = "Uai.Menu.Addons", c = [
     meta: {
       culture: "en"
     },
-    js: () => import("./en-DSFrIs6c.js")
+    js: () => import("./en-BupNVGSl.js")
   },
   // ---------------------------------------------------------------------------
   // US1 — Content Editor Evaluates a Page
@@ -182,7 +182,7 @@ const A = "Uai.Menu.Addons", c = [
     type: "modal",
     alias: "ProWorks.AI.PageEvaluator.Modal.Evaluation",
     name: "Page Evaluator Evaluation Modal",
-    element: () => import("./evaluation-modal.element-CBvLgchE.js").then((e) => ({
+    element: () => import("./evaluation-modal.element-BP-alj9N.js").then((e) => ({
       element: e.EvaluationModalElement
     }))
   },
@@ -207,7 +207,7 @@ const A = "Uai.Menu.Addons", c = [
     meta: {
       entityType: "evaluator-config"
     },
-    element: () => import("./evaluator-config-workspace.element-C1r4Xx3q.js").then((e) => ({
+    element: () => import("./evaluator-config-workspace.element-CP7lBib-.js").then((e) => ({
       element: e.EvaluatorConfigWorkspaceElement
     }))
   },
@@ -225,7 +225,7 @@ const A = "Uai.Menu.Addons", c = [
     meta: {
       feature: "proworks-page-evaluator"
     },
-    api: () => import("./page-evaluator-test-entity.repository-BplCcvLf.js")
+    api: () => import("./page-evaluator-test-entity.repository-Bcn8KYcV.js")
   },
   {
     type: "workspaceView",
@@ -242,7 +242,7 @@ const A = "Uai.Menu.Addons", c = [
         match: "ProWorks.AI.PageEvaluator.Workspace"
       }
     ],
-    element: () => import("./evaluator-form.element-AkR5iE2p.js").then((e) => ({
+    element: () => import("./evaluator-form.element-Dc374VVk.js").then((e) => ({
       element: e.EvaluatorFormElement
     }))
   }
@@ -268,4 +268,4 @@ export {
   T as r,
   W as u
 };
-//# sourceMappingURL=entry-point-a0cPUw86.js.map
+//# sourceMappingURL=entry-point-7v-9sL9q.js.map

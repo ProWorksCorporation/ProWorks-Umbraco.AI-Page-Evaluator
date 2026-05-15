@@ -285,7 +285,8 @@ public sealed class PageEvaluatorApiController : ControllerBase
             return NotFound(new { title = $"No cached evaluation for node '{nodeId}'." });
 
         IReadOnlyDictionary<string, string> editorAliases = BuildPropertyEditorAliases(entry.DocumentTypeAlias);
-        return Ok(entry.Report.WithCachedAt(entry.CachedAt).WithPropertyEditorAliases(editorAliases));
+        IReadOnlyDictionary<string, string> propertyNames = BuildPropertyNames(entry.DocumentTypeAlias);
+        return Ok(entry.Report.WithCachedAt(entry.CachedAt).WithPropertyEditorAliases(editorAliases).WithPropertyNames(propertyNames));
     }
 
     // ---------------------------------------------------------------------------
@@ -341,7 +342,8 @@ public sealed class PageEvaluatorApiController : ControllerBase
             }, cancellationToken);
 
             IReadOnlyDictionary<string, string> editorAliases = BuildPropertyEditorAliases(documentTypeAlias);
-            return Ok(report.WithCachedAt(cachedAt).WithPropertyEditorAliases(editorAliases));
+            IReadOnlyDictionary<string, string> propertyNames = BuildPropertyNames(documentTypeAlias);
+            return Ok(report.WithCachedAt(cachedAt).WithPropertyEditorAliases(editorAliases).WithPropertyNames(propertyNames));
         }
         catch (InvalidOperationException ex)
         {
@@ -513,6 +515,16 @@ public sealed class PageEvaluatorApiController : ControllerBase
 
         return contentType.CompositionPropertyTypes
             .ToDictionary(p => p.Alias, p => p.PropertyEditorAlias);
+    }
+
+    private IReadOnlyDictionary<string, string> BuildPropertyNames(string documentTypeAlias)
+    {
+        IContentType? contentType = _contentTypeService.Get(documentTypeAlias);
+        if (contentType is null)
+            return new Dictionary<string, string>();
+
+        return contentType.CompositionPropertyTypes
+            .ToDictionary(p => p.Alias, p => p.Name);
     }
 
     private Guid GetCurrentUserKey()

@@ -1,77 +1,77 @@
-import { css as z, property as m, state as g, customElement as $, nothing as n, html as i } from "@umbraco-cms/backoffice/external/lit";
+import { css as z, property as g, state as m, customElement as $, nothing as n, html as s } from "@umbraco-cms/backoffice/external/lit";
 import { UmbModalBaseElement as k } from "@umbraco-cms/backoffice/modal";
 import { UMB_DOCUMENT_WORKSPACE_CONTEXT as S } from "@umbraco-cms/backoffice/document";
-import { r as E, g as A, e as R } from "./entry-point-a0cPUw86.js";
+import { r as E, g as A, e as R } from "./entry-point-7v-9sL9q.js";
 import { resolveEntityAdapterByType as O } from "@umbraco-ai/core";
 import { UmbLitElement as P } from "@umbraco-cms/backoffice/lit-element";
-var F = Object.defineProperty, D = Object.getOwnPropertyDescriptor, h = (e, t, r, a) => {
-  for (var s = a > 1 ? void 0 : a ? D(t, r) : t, l = e.length - 1, c; l >= 0; l--)
-    (c = e[l]) && (s = (a ? c(t, r, s) : c(s)) || s);
-  return a && s && F(t, r, s), s;
+var F = Object.defineProperty, D = Object.getOwnPropertyDescriptor, d = (e, t, r, a) => {
+  for (var i = a > 1 ? void 0 : a ? D(t, r) : t, l = e.length - 1, c; l >= 0; l--)
+    (c = e[l]) && (i = (a ? c(t, r, i) : c(i)) || i);
+  return a && i && F(t, r, i), i;
 };
-let p = class extends P {
+let u = class extends P {
   constructor() {
-    super(...arguments), this.nodeId = "", this.properties = {}, this.propertyEditorAliases = {}, this._recStates = /* @__PURE__ */ new Map(), this._copiedChecks = /* @__PURE__ */ new Set();
+    super(...arguments), this.nodeId = "", this.properties = {}, this.propertyEditorAliases = {}, this.propertyNames = {}, this._recStates = /* @__PURE__ */ new Map(), this._copiedChecks = /* @__PURE__ */ new Set();
   }
   render() {
     if (!this.report) return n;
-    const { checks: e, suggestions: t, overallScore: r, axisScores: a } = this.report, s = r !== null || a !== null && a.length > 0, l = e.filter((u) => u.status === "Pass").length, c = e.filter((u) => u.status === "Warn").length, o = e.filter((u) => u.status === "Fail").length, w = e.length, _ = e.filter((u) => u.status === "Fail" || u.status === "Warn"), b = e.filter((u) => u.status === "Pass");
-    return i`
-      ${s ? this._renderScoring(r, a) : n}
+    const { checks: e, suggestions: t, overallScore: r, axisScores: a } = this.report, i = r !== null || a !== null && a.length > 0, l = e.filter((p) => p.status === "Pass").length, c = e.filter((p) => p.status === "Warn").length, o = e.filter((p) => p.status === "Fail").length, w = e.length, _ = e.filter((p) => p.status === "Fail" || p.status === "Warn"), b = e.filter((p) => p.status === "Pass");
+    return s`
+      ${i ? this._renderScoring(r, a) : n}
 
-      ${w > 0 ? i`
+      ${w > 0 ? s`
             <div class="score-row">
               <span class="score-total">${w} ${this.localize.term("evaluatePage_reportChecks")}</span>
               <span class="score-pill score-pill--pass">
                 <uui-icon name="icon-check"></uui-icon>${l} ${this.localize.term("evaluatePage_reportPassed")}
               </span>
-              ${c > 0 ? i`
+              ${c > 0 ? s`
                 <span class="score-pill score-pill--warn">
                   <uui-icon name="icon-alert"></uui-icon>${c} ${c !== 1 ? this.localize.term("evaluatePage_reportWarnings") : this.localize.term("evaluatePage_reportWarning")}
                 </span>` : n}
-              ${o > 0 ? i`
+              ${o > 0 ? s`
                 <span class="score-pill score-pill--fail">
                   <uui-icon name="icon-wrong"></uui-icon>${o} ${this.localize.term("evaluatePage_reportFailed")}
                 </span>` : n}
             </div>
           ` : n}
 
-      ${t ? i`
+      ${t ? s`
             <uui-box headline=${this.localize.term("evaluatePage_reportSuggestions")} class="suggestions-box">
               ${this._renderSuggestions(t)}
             </uui-box>
           ` : n}
 
-      ${_.length > 0 ? i`
+      ${_.length > 0 ? s`
             <p class="section-title">${this.localize.term("evaluatePage_reportAttentionItems")} (${_.length})</p>
             <ul class="check-list">
-              ${_.map((u) => this._renderCheck(u))}
+              ${_.map((p) => this._renderCheck(p))}
             </ul>
           ` : n}
 
-      ${b.length > 0 ? i`
+      ${b.length > 0 ? s`
             <p class="section-title">${this.localize.term("evaluatePage_reportPassingItems")} (${b.length})</p>
             <ul class="check-list">
-              ${b.map((u) => this._renderCheck(u))}
+              ${b.map((p) => this._renderCheck(p))}
             </ul>
           ` : n}
     `;
   }
   _renderSuggestions(e) {
-    const t = L(e);
+    const t = M(e);
     if (t.length === 1)
-      return i`<p style="margin:0; font-size: var(--uui-type-small-size, 0.875rem); line-height: 1.5;">${y(t[0] ?? "")}</p>`;
-    const r = t[0] ?? "", a = r.endsWith(":"), s = a ? t.slice(1) : t;
-    return i`
-      ${a ? i`<p style="margin:0 0 var(--uui-size-space-2, 8px); font-size: var(--uui-type-small-size, 0.875rem); line-height: 1.5;">${y(r)}</p>` : n}
+      return s`<p style="margin:0; font-size: var(--uui-type-small-size, 0.875rem); line-height: 1.5;">${y(t[0] ?? "")}</p>`;
+    const r = t[0] ?? "", a = r.endsWith(":"), i = a ? t.slice(1) : t;
+    return s`
+      ${a ? s`<p style="margin:0 0 var(--uui-size-space-2, 8px); font-size: var(--uui-type-small-size, 0.875rem); line-height: 1.5;">${y(r)}</p>` : n}
       <ol class="suggestions-list">
-        ${s.map((l) => i`<li>${y(l)}</li>`)}
+        ${i.map((l) => s`<li>${y(l)}</li>`)}
       </ol>
     `;
   }
   _renderScoring(e, t) {
-    return i`
-      ${e !== null ? i`
+    return s`
+      ${e !== null ? s`
             <div class="overall-score-row">
               <span class="overall-score-label">${this.localize.term("evaluatePage_overallScore")}</span>
               <uui-tag color=${I(e)} look="primary">
@@ -79,7 +79,7 @@ let p = class extends P {
               </uui-tag>
             </div>
           ` : n}
-      ${t && t.length > 0 ? i`
+      ${t && t.length > 0 ? s`
             <div class="axis-scores-section">
               <p class="section-title">${this.localize.term("evaluatePage_axisScores")}</p>
               <ul class="axis-list">
@@ -90,12 +90,12 @@ let p = class extends P {
     `;
   }
   _renderAxis(e) {
-    return i`
+    return s`
       <li class="axis-item">
         <uui-tag color=${T(e.score)} look="primary">${e.score} / 5</uui-tag>
         <div class="axis-body">
           <div class="axis-name">${B(e.name)}</div>
-          ${e.feedback ? i`<div class="axis-feedback">${e.feedback}</div>` : n}
+          ${e.feedback ? s`<div class="axis-feedback">${e.feedback}</div>` : n}
         </div>
       </li>
     `;
@@ -108,7 +108,7 @@ let p = class extends P {
   _canRecommend(e) {
     const t = this.propertyEditorAliases[e];
     if (t !== void 0)
-      return p._FULL_RECOMMEND_EDITORS.has(t) || p._COPY_ONLY_EDITORS.has(t);
+      return u._FULL_RECOMMEND_EDITORS.has(t) || u._COPY_ONLY_EDITORS.has(t);
     const r = this.properties[e];
     if (typeof r != "string") return !1;
     const a = r.trimStart();
@@ -121,23 +121,28 @@ let p = class extends P {
   _canApply(e) {
     const t = this.propertyEditorAliases[e];
     if (t !== void 0)
-      return p._FULL_RECOMMEND_EDITORS.has(t);
+      return u._FULL_RECOMMEND_EDITORS.has(t);
     const r = this.properties[e];
     if (typeof r != "string") return !1;
     const a = r.trimStart();
     return a.length === 0 ? !0 : a[0] !== "{" && a[0] !== "[" && !a.startsWith("umb://");
   }
+  _recSuggestedLabel(e) {
+    if (e === null) return this.localize.term("evaluatePage_recSuggested");
+    const t = this.propertyNames[e];
+    return t !== void 0 ? `${this.localize.term("evaluatePage_recSuggestedFor")} ${t}` : this.localize.term("evaluatePage_recSuggested");
+  }
   _renderCheck(e) {
     const t = this._recStates.get(e.checkNumber) ?? { kind: "idle" }, r = (e.status === "Fail" || e.status === "Warn") && e.propertyAlias !== null && this._canRecommend(e.propertyAlias);
-    return i`
+    return s`
       <li class="check-item">
         <uui-icon
           class="check-icon"
           data-status="${e.status}"
-          name="${M(e.status)}"></uui-icon>
+          name="${L(e.status)}"></uui-icon>
         <div class="check-body">
           <div class="check-label">${e.label}</div>
-          ${e.explanation ? i`<div class="check-explanation">${e.explanation}</div>` : n}
+          ${e.explanation ? s`<div class="check-explanation">${e.explanation}</div>` : n}
           ${r ? this._renderRecState(e, t) : n}
         </div>
       </li>
@@ -146,7 +151,7 @@ let p = class extends P {
   _renderRecState(e, t) {
     switch (t.kind) {
       case "idle":
-        return i`
+        return s`
           <uui-button
             class="rec-generate-link"
             look="default"
@@ -159,7 +164,7 @@ let p = class extends P {
           </uui-button>
         `;
       case "generating":
-        return i`
+        return s`
           <div class="rec-generating">
             <uui-loader></uui-loader>
             <span>${this.localize.term("evaluatePage_recGenerating")}</span>
@@ -175,7 +180,7 @@ let p = class extends P {
       case "applied":
         return this._renderRecBox(e, t.value, !0, !1);
       case "error":
-        return i`
+        return s`
           <div style="display:flex;align-items:center;gap:var(--uui-size-space-2,8px);margin-top:var(--uui-size-space-2,8px);">
             <uui-icon name="icon-alert" style="color:var(--uui-color-danger-standalone,#b91c1c);"></uui-icon>
             <span style="color:var(--uui-color-danger-standalone,#b91c1c);font-size:0.85rem;">
@@ -195,16 +200,16 @@ let p = class extends P {
     }
   }
   _renderRecBox(e, t, r, a) {
-    const s = this._copiedChecks.has(e.checkNumber);
-    return i`
+    const i = this._copiedChecks.has(e.checkNumber);
+    return s`
       <div class="rec-box ${r ? "applied" : ""}">
         <div class="rec-label ${r ? "applied" : ""}">
           <uui-icon name="${r ? "icon-check" : "icon-wand"}"></uui-icon>
-          ${r ? this.localize.term("evaluatePage_recApplied") : this.localize.term("evaluatePage_recSuggested")}
+          ${r ? this.localize.term("evaluatePage_recApplied") : this._recSuggestedLabel(e.propertyAlias)}
         </div>
         <div class="rec-text">${t ?? ""}</div>
         <div class="rec-actions">
-          ${a && !r ? i`
+          ${a && !r ? s`
                 <uui-button
                   look="primary"
                   color="positive"
@@ -217,13 +222,13 @@ let p = class extends P {
           <uui-button
             look="secondary"
             compact
-            label=${s ? this.localize.term("evaluatePage_recCopied") : this.localize.term("evaluatePage_recCopy")}
-            ?disabled=${s}
+            label=${i ? this.localize.term("evaluatePage_recCopied") : this.localize.term("evaluatePage_recCopy")}
+            ?disabled=${i}
             @click=${() => {
       this._handleCopy(e.checkNumber, t);
     }}>
-            <uui-icon name="${s ? "icon-check" : "icon-clipboard-copy"}" slot="icon"></uui-icon>
-            ${s ? this.localize.term("evaluatePage_recCopied") : this.localize.term("evaluatePage_recCopy")}
+            <uui-icon name="${i ? "icon-check" : "icon-clipboard-copy"}" slot="icon"></uui-icon>
+            ${i ? this.localize.term("evaluatePage_recCopied") : this.localize.term("evaluatePage_recCopy")}
           </uui-button>
           <uui-button
             look="secondary"
@@ -280,7 +285,7 @@ let p = class extends P {
     }, 2e3)));
   }
 };
-p.styles = z`
+u.styles = z`
     :host {
       display: block;
       padding: var(--uui-size-space-4, 16px);
@@ -523,37 +528,40 @@ p.styles = z`
       line-height: 1.4;
     }
   `;
-p._FULL_RECOMMEND_EDITORS = /* @__PURE__ */ new Set([
+u._FULL_RECOMMEND_EDITORS = /* @__PURE__ */ new Set([
   "Umbraco.TextBox",
   "Umbraco.TextArea",
   "Umbraco.Markdown",
   "Umbraco.Tags"
 ]);
-p._COPY_ONLY_EDITORS = /* @__PURE__ */ new Set([
+u._COPY_ONLY_EDITORS = /* @__PURE__ */ new Set([
   "Umbraco.RichText",
   "Umbraco.TinyMCE"
 ]);
-h([
-  m({ attribute: !1 })
-], p.prototype, "report", 2);
-h([
-  m({ attribute: !1 })
-], p.prototype, "nodeId", 2);
-h([
-  m({ attribute: !1 })
-], p.prototype, "properties", 2);
-h([
-  m({ attribute: !1 })
-], p.prototype, "propertyEditorAliases", 2);
-h([
-  g()
-], p.prototype, "_recStates", 2);
-h([
-  g()
-], p.prototype, "_copiedChecks", 2);
-p = h([
+d([
+  g({ attribute: !1 })
+], u.prototype, "report", 2);
+d([
+  g({ attribute: !1 })
+], u.prototype, "nodeId", 2);
+d([
+  g({ attribute: !1 })
+], u.prototype, "properties", 2);
+d([
+  g({ attribute: !1 })
+], u.prototype, "propertyEditorAliases", 2);
+d([
+  g({ attribute: !1 })
+], u.prototype, "propertyNames", 2);
+d([
+  m()
+], u.prototype, "_recStates", 2);
+d([
+  m()
+], u.prototype, "_copiedChecks", 2);
+u = d([
   $("page-evaluator-report")
-], p);
+], u);
 function B(e) {
   return e.replace(/_/g, " ").replace(/\b\w/g, (t) => t.toUpperCase());
 }
@@ -563,7 +571,7 @@ function I(e) {
 function T(e) {
   return e >= 4 ? "positive" : e >= 3 ? "warning" : "danger";
 }
-function M(e) {
+function L(e) {
   switch (e) {
     case "Pass":
       return "icon-check";
@@ -573,7 +581,7 @@ function M(e) {
       return "icon-alert";
   }
 }
-function L(e) {
+function M(e) {
   const t = e.split(`
 `).map((o) => o.trim()).filter(Boolean), r = t.filter((o) => /^\d+\.\s+/.test(o));
   if (r.length > 1)
@@ -581,9 +589,9 @@ function L(e) {
   const a = t.filter((o) => /^\(\d+\)\s+/.test(o));
   if (a.length > 1)
     return a.map((o) => o.replace(/^\(\d+\)\s+/, "").trim());
-  const s = t.filter((o) => /^\d+\)\s+/.test(o));
-  if (s.length > 1)
-    return s.map((o) => o.replace(/^\d+\)\s+/, "").trim());
+  const i = t.filter((o) => /^\d+\)\s+/.test(o));
+  if (i.length > 1)
+    return i.map((o) => o.replace(/^\d+\)\s+/, "").trim());
   const l = e.split(/\(\d+\)\s*/).map((o) => o.trim()).filter(Boolean);
   if (l.length > 1)
     return l;
@@ -592,19 +600,19 @@ function L(e) {
 }
 function y(e) {
   const t = e.split(/\*\*([^*]+)\*\*/g);
-  return i`${t.map((r, a) => a % 2 === 1 ? i`<strong>${r}</strong>` : r)}`;
+  return s`${t.map((r, a) => a % 2 === 1 ? s`<strong>${r}</strong>` : r)}`;
 }
-var U = Object.defineProperty, W = Object.getOwnPropertyDescriptor, C = (e, t, r, a) => {
-  for (var s = a > 1 ? void 0 : a ? W(t, r) : t, l = e.length - 1, c; l >= 0; l--)
-    (c = e[l]) && (s = (a ? c(t, r, s) : c(s)) || s);
-  return a && s && U(t, r, s), s;
+var N = Object.defineProperty, U = Object.getOwnPropertyDescriptor, C = (e, t, r, a) => {
+  for (var i = a > 1 ? void 0 : a ? U(t, r) : t, l = e.length - 1, c; l >= 0; l--)
+    (c = e[l]) && (i = (a ? c(t, r, i) : c(i)) || i);
+  return a && i && N(t, r, i), i;
 };
 let f = class extends P {
   constructor() {
     super(...arguments), this.rawResponse = null;
   }
   render() {
-    return i`
+    return s`
       <div class="warning-banner">
         <p>
           <uui-icon name="icon-alert"></uui-icon>
@@ -615,7 +623,7 @@ let f = class extends P {
           ${this.localize.term("evaluatePage_parseFailedSuffix")}
         </p>
       </div>
-      ${this.rawResponse ? i`<pre class="raw-response">${this.rawResponse}</pre>` : ""}
+      ${this.rawResponse ? s`<pre class="raw-response">${this.rawResponse}</pre>` : ""}
     `;
   }
 };
@@ -648,22 +656,22 @@ f.styles = z`
     }
   `;
 C([
-  m({ type: String })
+  g({ type: String })
 ], f.prototype, "rawResponse", 2);
 f = C([
   $("page-evaluator-warning")
 ], f);
-var j = Object.defineProperty, N = Object.getOwnPropertyDescriptor, v = (e, t, r, a) => {
-  for (var s = a > 1 ? void 0 : a ? N(t, r) : t, l = e.length - 1, c; l >= 0; l--)
-    (c = e[l]) && (s = (a ? c(t, r, s) : c(s)) || s);
-  return a && s && j(t, r, s), s;
+var W = Object.defineProperty, j = Object.getOwnPropertyDescriptor, v = (e, t, r, a) => {
+  for (var i = a > 1 ? void 0 : a ? j(t, r) : t, l = e.length - 1, c; l >= 0; l--)
+    (c = e[l]) && (i = (a ? c(t, r, i) : c(i)) || i);
+  return a && i && W(t, r, i), i;
 };
 const x = {
   sending: "evaluatePage_progressSendingData",
   waiting: "evaluatePage_progressWaitingForAI",
   rendering: "evaluatePage_progressRendering"
 };
-let d = class extends k {
+let h = class extends k {
   constructor() {
     super(...arguments), this._modalState = "idle", this._progressKey = "", this._report = null, this._errorDetail = null, this._inFlight = !1, this._onRecApply = async (e) => {
       const t = e.detail;
@@ -742,11 +750,11 @@ let d = class extends k {
     this.isConnected && r != null && r.applyValueChange && await r.applyValueChange(this._workspaceContext, { path: e, value: t });
   }
   render() {
-    return i`
+    return s`
       <umb-body-layout headline=${this.localize.term("evaluatePage_modalHeadline")}>
         ${this._renderBody()}
         <div slot="actions">
-          ${this._modalState === "success" || this._modalState === "parse-failed" ? i`
+          ${this._modalState === "success" || this._modalState === "parse-failed" ? s`
                 <uui-button
                   look="secondary"
                   label=${this.localize.term("evaluatePage_rerunButton")}
@@ -764,42 +772,43 @@ let d = class extends k {
     `;
   }
   _renderBody() {
-    var e, t, r, a;
+    var e, t, r, a, i;
     switch (this._modalState) {
       case "idle":
         return n;
       case "loading":
-        return i`
+        return s`
           <div class="progress-container">
             <uui-loader></uui-loader>
             <p aria-live="polite" aria-atomic="true">${this.localize.term(this._progressKey)}</p>
           </div>
         `;
       case "success":
-        return i`
+        return s`
           ${this._renderCacheBar()}
           <page-evaluator-report
             .report="${this._report}"
             .nodeId="${((e = this.data) == null ? void 0 : e.nodeId) ?? ""}"
             .properties="${((t = this.data) == null ? void 0 : t.properties) ?? {}}"
-            .propertyEditorAliases="${((r = this._report) == null ? void 0 : r.propertyEditorAliases) ?? {}}">
+            .propertyEditorAliases="${((r = this._report) == null ? void 0 : r.propertyEditorAliases) ?? {}}"
+            .propertyNames="${((a = this._report) == null ? void 0 : a.propertyNames) ?? {}}">
           </page-evaluator-report>
         `;
       case "parse-failed":
-        return i`
+        return s`
           ${this._renderCacheBar()}
           <page-evaluator-warning
-            .rawResponse="${((a = this._report) == null ? void 0 : a.rawResponse) ?? null}"></page-evaluator-warning>
+            .rawResponse="${((i = this._report) == null ? void 0 : i.rawResponse) ?? null}"></page-evaluator-warning>
         `;
       case "guardrail-blocked":
-        return i`
+        return s`
           <div class="error-container" role="alert">
             <p>${this.localize.term("evaluatePage_guardrailBlockedMessage")}</p>
-            ${this._errorDetail ? i`<p><em>${this._errorDetail}</em></p>` : n}
+            ${this._errorDetail ? s`<p><em>${this._errorDetail}</em></p>` : n}
           </div>
         `;
       case "error":
-        return i`
+        return s`
           <div class="error-container" role="alert">
             <p>${this._errorDetail ?? this.localize.term("evaluatePage_aiErrorMessage")}</p>
             <uui-button
@@ -816,14 +825,14 @@ let d = class extends k {
   _renderCacheBar() {
     var t;
     const e = (t = this._report) == null ? void 0 : t.cachedAt;
-    return e ? i`
+    return e ? s`
       <div class="cache-bar">
         <span>${this.localize.term("evaluatePage_lastEvaluated")} ${this._formatCachedAt(e)}</span>
       </div>
     ` : n;
   }
 };
-d.styles = z`
+h.styles = z`
     .progress-container {
       display: flex;
       flex-direction: column;
@@ -853,21 +862,21 @@ d.styles = z`
     }
   `;
 v([
-  g()
-], d.prototype, "_modalState", 2);
+  m()
+], h.prototype, "_modalState", 2);
 v([
-  g()
-], d.prototype, "_progressKey", 2);
+  m()
+], h.prototype, "_progressKey", 2);
 v([
-  g()
-], d.prototype, "_report", 2);
+  m()
+], h.prototype, "_report", 2);
 v([
-  g()
-], d.prototype, "_errorDetail", 2);
-d = v([
+  m()
+], h.prototype, "_errorDetail", 2);
+h = v([
   $("page-evaluator-modal")
-], d);
+], h);
 export {
-  d as EvaluationModalElement
+  h as EvaluationModalElement
 };
-//# sourceMappingURL=evaluation-modal.element-CBvLgchE.js.map
+//# sourceMappingURL=evaluation-modal.element-BP-alj9N.js.map
