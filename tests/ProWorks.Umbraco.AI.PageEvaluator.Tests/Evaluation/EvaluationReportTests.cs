@@ -208,4 +208,54 @@ public class EvaluationReportTests
         var score = new EvaluationScore(3, 5);
         Assert.Equal("3/5 checks passed", score.DisplayText);
     }
+
+    // ---------------------------------------------------------------------------
+    // WithRecommendationsEnabled
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public void Parsed_DefaultsRecommendationsEnabledToTrue()
+    {
+        var report = EvaluationReport.Parsed(new EvaluationScore(1, 1), [], null);
+        Assert.True(report.RecommendationsEnabled);
+    }
+
+    [Fact]
+    public void Failed_DefaultsRecommendationsEnabledToTrue()
+    {
+        var report = EvaluationReport.Failed("raw");
+        Assert.True(report.RecommendationsEnabled);
+    }
+
+    [Fact]
+    public void WithRecommendationsEnabled_ReturnsCopyWithValueSet()
+    {
+        var original = EvaluationReport.Parsed(new EvaluationScore(1, 1), [], null);
+
+        var disabled = original.WithRecommendationsEnabled(false);
+
+        Assert.False(disabled.RecommendationsEnabled);
+        Assert.True(original.RecommendationsEnabled); // original unchanged
+    }
+
+    [Fact]
+    public void WithRecommendationsEnabled_DoesNotMutateOriginal()
+    {
+        var original = EvaluationReport.Parsed(new EvaluationScore(1, 1), [], null);
+
+        _ = original.WithRecommendationsEnabled(false);
+
+        Assert.True(original.RecommendationsEnabled);
+    }
+
+    [Fact]
+    public void WithCachedAt_PreservesRecommendationsEnabled()
+    {
+        var original = EvaluationReport.Parsed(new EvaluationScore(1, 1), [], null)
+            .WithRecommendationsEnabled(false);
+
+        var copy = original.WithCachedAt(DateTime.UtcNow);
+
+        Assert.False(copy.RecommendationsEnabled);
+    }
 }

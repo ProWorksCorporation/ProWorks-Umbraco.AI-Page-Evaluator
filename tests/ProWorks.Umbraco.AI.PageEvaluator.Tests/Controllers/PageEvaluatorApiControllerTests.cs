@@ -1430,6 +1430,124 @@ public class PageEvaluatorApiControllerTests
     }
 
     // ---------------------------------------------------------------------------
+    // POST /evaluate and GET /evaluate/cached — RecommendationsEnabled threading
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public async Task EvaluateAsync_AttachesRecommendationsEnabled_TrueWhenConfigEnabled()
+    {
+        var nodeId = Guid.NewGuid();
+        _evaluationService.EvaluateAsync(nodeId, "blogPost", Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<CancellationToken>())
+            .Returns(EvaluationReport.Parsed(new EvaluationScore(1, 1), [], null));
+
+        var config = BuildConfig("blogPost");
+        config.RecommendationsEnabled = true;
+        _configService.GetActiveForDocumentTypeAsync("blogPost", Arg.Any<CancellationToken>())
+            .Returns(config);
+
+        var result = await _sut.EvaluateAsync(new EvaluatePageRequest { NodeId = nodeId, DocumentTypeAlias = "blogPost", Properties = new() });
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var report = Assert.IsAssignableFrom<EvaluationReport>(ok.Value);
+        Assert.True(report.RecommendationsEnabled);
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_AttachesRecommendationsEnabled_FalseWhenConfigDisabled()
+    {
+        var nodeId = Guid.NewGuid();
+        _evaluationService.EvaluateAsync(nodeId, "blogPost", Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<CancellationToken>())
+            .Returns(EvaluationReport.Parsed(new EvaluationScore(1, 1), [], null));
+
+        var config = BuildConfig("blogPost");
+        config.RecommendationsEnabled = false;
+        _configService.GetActiveForDocumentTypeAsync("blogPost", Arg.Any<CancellationToken>())
+            .Returns(config);
+
+        var result = await _sut.EvaluateAsync(new EvaluatePageRequest { NodeId = nodeId, DocumentTypeAlias = "blogPost", Properties = new() });
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var report = Assert.IsAssignableFrom<EvaluationReport>(ok.Value);
+        Assert.False(report.RecommendationsEnabled);
+    }
+
+    [Fact]
+    public async Task GetCachedEvaluationAsync_AttachesRecommendationsEnabled_TrueWhenConfigEnabled()
+    {
+        var nodeId = Guid.NewGuid();
+        _cacheRepository.GetAsync(nodeId, Arg.Any<CancellationToken>())
+            .Returns(new EvaluationCacheEntry
+            {
+                NodeId = nodeId,
+                DocumentTypeAlias = "blogPost",
+                Report = EvaluationReport.Parsed(new EvaluationScore(1, 1), [], null),
+                CachedAt = DateTime.UtcNow,
+            });
+
+        var config = BuildConfig("blogPost");
+        config.RecommendationsEnabled = true;
+        _configService.GetActiveForDocumentTypeAsync("blogPost", Arg.Any<CancellationToken>())
+            .Returns(config);
+
+        var result = await _sut.GetCachedEvaluationAsync(nodeId);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var report = Assert.IsAssignableFrom<EvaluationReport>(ok.Value);
+        Assert.True(report.RecommendationsEnabled);
+    }
+
+    [Fact]
+    public async Task GetCachedEvaluationAsync_AttachesRecommendationsEnabled_FalseWhenConfigDisabled()
+    {
+        var nodeId = Guid.NewGuid();
+        _cacheRepository.GetAsync(nodeId, Arg.Any<CancellationToken>())
+            .Returns(new EvaluationCacheEntry
+            {
+                NodeId = nodeId,
+                DocumentTypeAlias = "blogPost",
+                Report = EvaluationReport.Parsed(new EvaluationScore(1, 1), [], null),
+                CachedAt = DateTime.UtcNow,
+            });
+
+        var config = BuildConfig("blogPost");
+        config.RecommendationsEnabled = false;
+        _configService.GetActiveForDocumentTypeAsync("blogPost", Arg.Any<CancellationToken>())
+            .Returns(config);
+
+        var result = await _sut.GetCachedEvaluationAsync(nodeId);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var report = Assert.IsAssignableFrom<EvaluationReport>(ok.Value);
+        Assert.False(report.RecommendationsEnabled);
+    }
+
+    [Fact]
+    public async Task RecommendAsync_WhenRecommendationsDisabled_Returns403()
+    {
+        var config = BuildConfig("blogPost");
+        config.RecommendationsEnabled = false;
+        _configService.GetActiveForDocumentTypeAsync("blogPost", Arg.Any<CancellationToken>())
+            .Returns(config);
+
+        var ct = Substitute.For<IContentType>();
+        var prop = Substitute.For<IPropertyType>();
+        prop.Alias.Returns("metaDescription");
+        prop.PropertyEditorAlias.Returns("Umbraco.TextBox");
+        ct.CompositionPropertyTypes.Returns(new[] { prop });
+        _contentTypeService.Get(Arg.Any<string>()).Returns(ct);
+
+        var result = await _sut.RecommendAsync(new RecommendRequest
+        {
+            NodeId = Guid.NewGuid(),
+            PropertyAlias = "metaDescription",
+            CheckLabel = "Meta description missing",
+        });
+
+        var obj = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(403, obj.StatusCode);
+    }
+
+    // ---------------------------------------------------------------------------
     // POST /recommend
     // ---------------------------------------------------------------------------
 
