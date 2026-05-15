@@ -32,7 +32,15 @@ const e = {
     guardrailBlockedMessage: "The evaluation was blocked by an Umbraco.AI guardrail policy. Review the guardrail rules configured on the AI profile.",
     // Modal: dimensional scoring
     overallScore: "Overall Score",
-    axisScores: "Score Breakdown"
+    axisScores: "Score Breakdown",
+    // Recommendations
+    recGenerate: "Generate recommendation",
+    recGenerating: "Generating recommendation…",
+    recSuggested: "Suggested value",
+    recApply: "Apply to field",
+    recApplied: "Applied to field",
+    recRegenerate: "Regenerate",
+    recCopy: "Copy"
   },
   evaluatorConfig: {
     // Workspace: list
@@ -131,4 +139,4 @@ const e = {
 export {
   e as default
 };
-//# sourceMappingURL=en-CUX7Xhn3.js.map
+//# sourceMappingURL=en-y2j59TQ3.js.map
