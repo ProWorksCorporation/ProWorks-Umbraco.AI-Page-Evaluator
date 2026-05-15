@@ -7,23 +7,21 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Umbraco.AI.Agent" Version="1.9.0" />
-    <PackageReference Include="Umbraco.AI.Agent.Copilot" Version="1.0.0-alpha7" />
-    <PackageReference Include="Umbraco.AI.Anthropic" Version="1.3.0" />
-    <PackageReference Include="Umbraco.AI.OpenAI" Version="1.2.0" />
-    <PackageReference Include="Umbraco.AI.Prompt" Version="1.8.2" />
-    <PackageReference Include="Umbraco.AI.Startup" Version="1.10.1" />
+    <PackageReference Include="Umbraco.AI.Agent" Version="1.10.0" />
+    <PackageReference Include="Umbraco.AI.Agent.Copilot" Version="1.0.0" />
+    <PackageReference Include="Umbraco.AI.Anthropic" Version="1.3.2" />
+    <PackageReference Include="Umbraco.AI.OpenAI" Version="1.2.2" />
+    <PackageReference Include="Umbraco.AI.Prompt" Version="1.8.4" />
+    <PackageReference Include="Umbraco.AI.Startup" Version="1.11.0" />
     <PackageReference Include="Umbraco.Cms" Version="17.4.0" />
     <PackageReference Include="Umbraco.Cms.DevelopmentMode.Backoffice" Version="17.4.0" />
-    <PackageReference Include="Umbraco.AI" Version="1.10.1" />
+    <PackageReference Include="Umbraco.AI" Version="1.11.0" />
     <PackageReference Include="uSync" Version="17.3.1" />
-    <!-- Pin Microsoft.Extensions.AI packages to 10.3.0 to match Umbraco.AI 1.8 compatibility.
-         M.E.AI.OpenAI also at 10.3.0 to keep OpenAI SDK 2.8.0 (Umbraco.AI.OpenAI 1.2.0 calls
-         GetResponsesClient(string) which was removed in OpenAI 2.9.1 pulled by M.E.AI.OpenAI 10.4.1).
-         Do NOT upgrade to 10.4.1 — it breaks McpServerToolCallContent.set_Arguments at runtime. -->
-    <PackageReference Include="Microsoft.Extensions.AI" Version="10.3.0" />
-    <PackageReference Include="Microsoft.Extensions.AI.Abstractions" Version="10.3.0" />
-    <PackageReference Include="Microsoft.Extensions.AI.OpenAI" Version="10.3.0" />
+    <!-- Pin Microsoft.Extensions.AI packages to 10.6.0 — required by Umbraco.AI.Core 1.11.0
+         and Anthropic 12.20.1. All three packages must be the same version. -->
+    <PackageReference Include="Microsoft.Extensions.AI" Version="10.6.0" />
+    <PackageReference Include="Microsoft.Extensions.AI.Abstractions" Version="10.6.0" />
+    <PackageReference Include="Microsoft.Extensions.AI.OpenAI" Version="10.6.0" />
   </ItemGroup>
 
   <ItemGroup>
