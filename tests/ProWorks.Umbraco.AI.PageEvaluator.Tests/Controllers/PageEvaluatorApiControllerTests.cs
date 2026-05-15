@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
@@ -12,9 +13,11 @@ using ProWorks.Umbraco.AI.PageEvaluator.Controllers;
 using ProWorks.Umbraco.AI.PageEvaluator.Evaluation;
 using ProWorks.Umbraco.AI.PageEvaluator.Evaluators;
 using ProWorks.Umbraco.AI.PageEvaluator.Services;
+using Umbraco.AI.Core.Chat;
 using Umbraco.AI.Core.Contexts;
 using Umbraco.AI.Core.Guardrails;
 using Umbraco.AI.Core.Guardrails.Evaluators;
+using Umbraco.AI.Core.InlineChat;
 using Umbraco.AI.Core.Profiles;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Services;
@@ -37,6 +40,8 @@ public class PageEvaluatorApiControllerTests
     private readonly ILogger<PageEvaluatorApiController> _logger = Substitute.For<ILogger<PageEvaluatorApiController>>();
     private readonly IContentService _contentService = Substitute.For<IContentService>();
     private readonly IAuthorizationService _authorizationService = Substitute.For<IAuthorizationService>();
+    private readonly IAIChatService _chatService = Substitute.For<IAIChatService>();
+    private readonly IPropertyEditorSchemaService _propertyEditorSchemaService = Substitute.For<IPropertyEditorSchemaService>();
     private readonly PageEvaluatorApiController _sut;
 
     public PageEvaluatorApiControllerTests()
@@ -52,7 +57,8 @@ public class PageEvaluatorApiControllerTests
         _sut = new PageEvaluatorApiController(
             _evaluationService, _configService, _profileService, _contextService,
             _contentTypeService, _cacheRepository, _logger,
-            _contentService, _authorizationService);
+            _contentService, _authorizationService,
+            _chatService, _propertyEditorSchemaService);
         _sut.ControllerContext = new ControllerContext
         {
             HttpContext = new DefaultHttpContext(),
@@ -1206,5 +1212,200 @@ public class PageEvaluatorApiControllerTests
         var firstProp = propertiesList[0];
         var label = (string)firstProp.GetType().GetProperty("label")!.GetValue(firstProp)!;
         Assert.Equal("bodyText", label);
+    }
+
+    // ---------------------------------------------------------------------------
+    // POST /recommend
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public async Task RecommendAsync_NodeNotFound_Returns404()
+    {
+        _contentService.GetById(Arg.Any<Guid>()).Returns((IContent?)null);
+
+        var result = await _sut.RecommendAsync(
+            new RecommendRequest { NodeId = Guid.NewGuid(), PropertyAlias = "metaDescription" });
+
+        Assert.IsType<NotFoundObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task RecommendAsync_Unauthorized_Returns403()
+    {
+        _authorizationService
+            .AuthorizeAsync(Arg.Any<ClaimsPrincipal>(), Arg.Any<object?>(), Arg.Any<string>())
+            .Returns(AuthorizationResult.Failed());
+
+        var result = await _sut.RecommendAsync(
+            new RecommendRequest { NodeId = Guid.NewGuid(), PropertyAlias = "metaDescription" });
+
+        var obj = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(403, obj.StatusCode);
+    }
+
+    [Fact]
+    public async Task RecommendAsync_NoActiveConfig_Returns404()
+    {
+        _configService.GetActiveForDocumentTypeAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns((AIEvaluatorConfig?)null);
+
+        var result = await _sut.RecommendAsync(
+            new RecommendRequest { NodeId = Guid.NewGuid(), PropertyAlias = "metaDescription" });
+
+        Assert.IsType<NotFoundObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task RecommendAsync_PropertyNotOnContentType_Returns400()
+    {
+        _configService.GetActiveForDocumentTypeAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(BuildConfig("blogPost"));
+
+        var ct = Substitute.For<IContentType>();
+        ct.CompositionPropertyTypes.Returns(Enumerable.Empty<IPropertyType>());
+        _contentTypeService.Get(Arg.Any<string>()).Returns(ct);
+
+        var result = await _sut.RecommendAsync(new RecommendRequest
+        {
+            NodeId = Guid.NewGuid(),
+            PropertyAlias = "nonexistent",
+            CheckLabel = "Test",
+        });
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task RecommendAsync_HappyPath_NoSchema_Returns200WithRecommendation()
+    {
+        _configService.GetActiveForDocumentTypeAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(BuildConfig("blogPost"));
+
+        var propType = Substitute.For<IPropertyType>();
+        propType.Alias.Returns("metaDescription");
+        propType.PropertyEditorAlias.Returns("Umbraco.TextBox");
+
+        var ct = Substitute.For<IContentType>();
+        ct.CompositionPropertyTypes.Returns(new[] { propType });
+        _contentTypeService.Get(Arg.Any<string>()).Returns(ct);
+
+        _propertyEditorSchemaService.SupportsSchema("Umbraco.TextBox").Returns(false);
+
+        var chatResponse = new ChatResponse(new ChatMessage(ChatRole.Assistant, "{\"recommendedValue\": \"A great meta description.\"}"));
+        _chatService.GetChatResponseAsync(
+            Arg.Any<Action<AIChatBuilder>>(),
+            Arg.Any<IEnumerable<ChatMessage>>(),
+            Arg.Any<CancellationToken>())
+            .Returns(chatResponse);
+
+        var result = await _sut.RecommendAsync(new RecommendRequest
+        {
+            NodeId = Guid.NewGuid(),
+            PropertyAlias = "metaDescription",
+            CheckLabel = "Meta description is missing",
+            Properties = new Dictionary<string, string> { ["pageTitle"] = "Home" },
+        });
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var response = Assert.IsType<RecommendResponse>(ok.Value);
+        Assert.Equal("A great meta description.", response.RecommendedValue);
+    }
+
+    [Fact]
+    public async Task RecommendAsync_GuardrailBlocked_Returns422()
+    {
+        _configService.GetActiveForDocumentTypeAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(BuildConfig("blogPost"));
+
+        var propType = Substitute.For<IPropertyType>();
+        propType.Alias.Returns("metaDescription");
+        propType.PropertyEditorAlias.Returns("Umbraco.TextBox");
+        var ct = Substitute.For<IContentType>();
+        ct.CompositionPropertyTypes.Returns(new[] { propType });
+        _contentTypeService.Get(Arg.Any<string>()).Returns(ct);
+        _propertyEditorSchemaService.SupportsSchema(Arg.Any<string>()).Returns(false);
+
+        var evaluationResult = new AIGuardrailEvaluationResult
+        {
+            Action = AIGuardrailAction.Block,
+            Phase = AIGuardrailPhase.PostGenerate,
+            RuleResults = [],
+        };
+        _chatService.GetChatResponseAsync(
+            Arg.Any<Action<AIChatBuilder>>(),
+            Arg.Any<IEnumerable<ChatMessage>>(),
+            Arg.Any<CancellationToken>())
+            .ThrowsAsync(new AIGuardrailBlockedException(evaluationResult));
+
+        var result = await _sut.RecommendAsync(new RecommendRequest
+        {
+            NodeId = Guid.NewGuid(),
+            PropertyAlias = "metaDescription",
+            CheckLabel = "Meta description is missing",
+        });
+
+        Assert.IsType<UnprocessableEntityObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task RecommendAsync_HttpRequestException_Returns502()
+    {
+        _configService.GetActiveForDocumentTypeAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(BuildConfig("blogPost"));
+
+        var propType = Substitute.For<IPropertyType>();
+        propType.Alias.Returns("metaDescription");
+        propType.PropertyEditorAlias.Returns("Umbraco.TextBox");
+        var ct = Substitute.For<IContentType>();
+        ct.CompositionPropertyTypes.Returns(new[] { propType });
+        _contentTypeService.Get(Arg.Any<string>()).Returns(ct);
+        _propertyEditorSchemaService.SupportsSchema(Arg.Any<string>()).Returns(false);
+
+        _chatService.GetChatResponseAsync(
+            Arg.Any<Action<AIChatBuilder>>(),
+            Arg.Any<IEnumerable<ChatMessage>>(),
+            Arg.Any<CancellationToken>())
+            .ThrowsAsync(new HttpRequestException("Upstream error"));
+
+        var result = await _sut.RecommendAsync(new RecommendRequest
+        {
+            NodeId = Guid.NewGuid(),
+            PropertyAlias = "metaDescription",
+            CheckLabel = "Meta description is missing",
+        });
+
+        var obj = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(502, obj.StatusCode);
+    }
+
+    [Fact]
+    public async Task RecommendAsync_Fake5xxException_Returns503()
+    {
+        _configService.GetActiveForDocumentTypeAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(BuildConfig("blogPost"));
+
+        var propType = Substitute.For<IPropertyType>();
+        propType.Alias.Returns("metaDescription");
+        propType.PropertyEditorAlias.Returns("Umbraco.TextBox");
+        var ct = Substitute.For<IContentType>();
+        ct.CompositionPropertyTypes.Returns(new[] { propType });
+        _contentTypeService.Get(Arg.Any<string>()).Returns(ct);
+        _propertyEditorSchemaService.SupportsSchema(Arg.Any<string>()).Returns(false);
+
+        _chatService.GetChatResponseAsync(
+            Arg.Any<Action<AIChatBuilder>>(),
+            Arg.Any<IEnumerable<ChatMessage>>(),
+            Arg.Any<CancellationToken>())
+            .ThrowsAsync(new Fake5xxException("Status Code: 529 Too Many Requests"));
+
+        var result = await _sut.RecommendAsync(new RecommendRequest
+        {
+            NodeId = Guid.NewGuid(),
+            PropertyAlias = "metaDescription",
+            CheckLabel = "Meta description is missing",
+        });
+
+        var obj = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(503, obj.StatusCode);
     }
 }

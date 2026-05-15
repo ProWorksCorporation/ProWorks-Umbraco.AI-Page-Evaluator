@@ -55,8 +55,8 @@
     <PackageReference Include="Microsoft.Extensions.AI" Version="10.3.0" />
     <PackageReference Include="Microsoft.Extensions.AI.Abstractions" Version="10.3.0" />
     <!-- EF Core providers: bundled DLLs need these at runtime in the consuming app -->
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.4" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.4" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.6" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.6" />
   </ItemGroup>
 
   <!-- TargetsForTfmSpecificBuildOutput is the official NuGet extensibility point for adding extra DLLs to lib/ -->
