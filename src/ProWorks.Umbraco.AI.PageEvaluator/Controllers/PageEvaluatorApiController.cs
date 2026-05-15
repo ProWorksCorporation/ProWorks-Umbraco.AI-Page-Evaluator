@@ -139,6 +139,7 @@ public sealed class PageEvaluatorApiController : ControllerBase
             PromptText = request.PromptText,
             PropertyAliases = request.PropertyAliases,
             ScoringEnabled = request.ScoringEnabled,
+            RecommendationsEnabled = request.RecommendationsEnabled,
         };
 
         try
@@ -183,6 +184,7 @@ public sealed class PageEvaluatorApiController : ControllerBase
             PromptText = request.PromptText,
             PropertyAliases = request.PropertyAliases,
             ScoringEnabled = request.ScoringEnabled,
+            RecommendationsEnabled = request.RecommendationsEnabled,
             Version = request.Version,
         };
 
@@ -284,9 +286,14 @@ public sealed class PageEvaluatorApiController : ControllerBase
         if (entry is null)
             return NotFound(new { title = $"No cached evaluation for node '{nodeId}'." });
 
+        AIEvaluatorConfig? activeConfig = await _configService.GetActiveForDocumentTypeAsync(entry.DocumentTypeAlias, cancellationToken);
+        bool recommendationsEnabled = activeConfig?.RecommendationsEnabled ?? true;
         IReadOnlyDictionary<string, string> editorAliases = BuildPropertyEditorAliases(entry.DocumentTypeAlias);
         IReadOnlyDictionary<string, string> propertyNames = BuildPropertyNames(entry.DocumentTypeAlias);
-        return Ok(entry.Report.WithCachedAt(entry.CachedAt).WithPropertyEditorAliases(editorAliases).WithPropertyNames(propertyNames));
+        return Ok(entry.Report.WithCachedAt(entry.CachedAt)
+            .WithPropertyEditorAliases(editorAliases)
+            .WithPropertyNames(propertyNames)
+            .WithRecommendationsEnabled(recommendationsEnabled));
     }
 
     // ---------------------------------------------------------------------------
@@ -341,9 +348,14 @@ public sealed class PageEvaluatorApiController : ControllerBase
                 CachedAt = cachedAt,
             }, cancellationToken);
 
+            AIEvaluatorConfig? activeConfig = await _configService.GetActiveForDocumentTypeAsync(documentTypeAlias, cancellationToken);
+            bool recommendationsEnabled = activeConfig?.RecommendationsEnabled ?? true;
             IReadOnlyDictionary<string, string> editorAliases = BuildPropertyEditorAliases(documentTypeAlias);
             IReadOnlyDictionary<string, string> propertyNames = BuildPropertyNames(documentTypeAlias);
-            return Ok(report.WithCachedAt(cachedAt).WithPropertyEditorAliases(editorAliases).WithPropertyNames(propertyNames));
+            return Ok(report.WithCachedAt(cachedAt)
+                .WithPropertyEditorAliases(editorAliases)
+                .WithPropertyNames(propertyNames)
+                .WithRecommendationsEnabled(recommendationsEnabled));
         }
         catch (InvalidOperationException ex)
         {
@@ -399,6 +411,10 @@ public sealed class PageEvaluatorApiController : ControllerBase
             content.ContentType.Alias, cancellationToken);
         if (config is null)
             return NotFound(new { title = $"No active evaluator configuration for document type '{content.ContentType.Alias}'." });
+
+        if (!config.RecommendationsEnabled)
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new { title = "Recommendations are not enabled for this evaluator configuration." });
 
         IContentType? contentType = _contentTypeService.Get(content.ContentType.Alias);
         IPropertyType? propertyType = contentType?.CompositionPropertyTypes
@@ -702,6 +718,7 @@ public sealed class PageEvaluatorApiController : ControllerBase
             DateModified = config.DateModified,
             PropertyAliases = config.PropertyAliases,
             ScoringEnabled = config.ScoringEnabled,
+            RecommendationsEnabled = config.RecommendationsEnabled,
             Version = config.Version,
         };
     }
@@ -743,6 +760,7 @@ public sealed class PageEvaluatorApiController : ControllerBase
             DateModified = config.DateModified,
             PropertyAliases = config.PropertyAliases,
             ScoringEnabled = config.ScoringEnabled,
+            RecommendationsEnabled = config.RecommendationsEnabled,
             Version = config.Version,
         };
     }
@@ -779,6 +797,7 @@ public sealed class CreateEvaluatorConfigRequest
     public string PromptText { get; set; } = string.Empty;
     public List<string>? PropertyAliases { get; set; }
     public bool ScoringEnabled { get; set; }
+    public bool RecommendationsEnabled { get; set; } = true;
 }
 
 /// <summary>Request body for <c>PUT /configurations/{id}</c>.</summary>
@@ -792,6 +811,7 @@ public sealed class UpdateEvaluatorConfigRequest
     public string PromptText { get; set; } = string.Empty;
     public List<string>? PropertyAliases { get; set; }
     public bool ScoringEnabled { get; set; }
+    public bool RecommendationsEnabled { get; set; } = true;
 
     /// <summary>
     /// The version of the config the client last read.
@@ -819,5 +839,6 @@ public sealed class EvaluatorConfigResponse
     public DateTime DateModified { get; init; }
     public List<string>? PropertyAliases { get; init; }
     public bool ScoringEnabled { get; init; }
+    public bool RecommendationsEnabled { get; init; }
     public int Version { get; init; }
 }
