@@ -1,6 +1,6 @@
 ﻿# ProWorks-Umbraco-AI-Page-Evaluator Development Guidelines
 
-Last updated: 2026-05-15 (rev 9)
+Last updated: 2026-05-15 (rev 10)
 
 ## Active Technologies
 - C# .NET 10, TypeScript 5.x (strict: true) + Umbraco CMS 17.4.0, Umbraco.AI 1.11.0 (Anthropic 1.3.2, OpenAI 1.2.2), EF Core 10.0.6, Microsoft.Extensions.AI 10.6.0, Lit 3.x via @umbraco-cms/backoffice/external/lit
@@ -133,6 +133,7 @@ dotnet ef migrations add <Name> \
 - Cache is **invalidated automatically** (all rows for the affected `DocumentTypeAlias`) whenever a config is created, updated, activated, or deleted — call `_cacheRepository.DeleteByDocumentTypeAliasAsync(alias, ct)` in any controller action that mutates a config
 - Cache is also **invalidated on content publish** via `ContentPublishedNotificationHandler` — deletes cache entries for each published node
 - `EvaluationReport.WithCachedAt(DateTime)` returns a copy with `CachedAt` set — used by the controller before returning the response so the frontend knows when the result was cached
+- `EvaluationReport.WithPropertyEditorAliases(IReadOnlyDictionary<string, string>)` returns a copy with `PropertyEditorAliases` set — called by the controller **after** the cache write so the map is never persisted to the cache; always derived fresh from `IContentTypeService` at response time
 - The modal checks `GET /evaluate/cached/{nodeId}` on open; falls through to `POST /evaluate` only when no cache entry exists or when the user clicks **Re-run Evaluation**
 
 ### Package Version Constraints
@@ -175,6 +176,14 @@ dotnet ef migrations add <Name> \
 - `GetCurrentUserKey()` uses `HttpContext.User.Identity?.GetUserKey()` (from `Umbraco.Extensions`) — throws `InvalidOperationException` if the identity is missing (all controller actions that call it are protected by `[Authorize]`, so this is an unexpected edge case). In controller unit tests, inject `new Claim("sub", Guid.NewGuid().ToString())` into the `HttpContext.User` — `GetUserKey()` reads the `"sub"` claim (`Constants.Security.OpenIdDictSubClaimType`)
 - **Activation uses `SetActiveAsync`** (`IAIEvaluatorConfigService.SetActiveAsync(id, ct)`) — **never** route activation through `UpdateAsync`. `SetActiveAsync` only toggles the `IsActive` flag and does not bump `Version` or `DateModified`, which is intentional (toggling active is an administrative action, not a content change)
 - **`UpdateAsync` preserves `IsActive`** — it copies the existing record's `IsActive` state onto the incoming config before saving. Do **not** add `config.IsActive = true` in `UpdateAsync`; that would silently activate inactive configs on edit
+
+### Recommendations (POST /recommend)
+- `BuildPropertyEditorAliases(string documentTypeAlias)` — private controller helper; calls `_contentTypeService.Get(alias).CompositionPropertyTypes.ToDictionary(p => p.Alias, p => p.PropertyEditorAlias)`; returns empty dict when content type is not found
+- `BuildRecommendSystemPrompt` branches on editor type: schema-based → schema JSON prompt; `IsTagsEditor` → JSON array prompt (`{"recommendedValue": [...]}` with natural-language strings); `IsRichTextEditor` → clean HTML prompt; all others → plain text prompt
+- `IsTagsEditor(string)` — matches `"Umbraco.Tags"` (case-insensitive)
+- `IsRichTextEditor(string)` — matches `"Umbraco.RichText"` and `"Umbraco.TinyMCE"` (case-insensitive)
+- Frontend `EvaluationReportElement` uses two static sets to classify properties: `_FULL_RECOMMEND_EDITORS` (`TextBox`, `TextArea`, `Markdown`, `Tags` — full recommend + apply) and `_COPY_ONLY_EDITORS` (`RichText`, `TinyMCE` — recommend + copy only, no Apply button)
+- `_canRecommend(alias)` and `_canApply(alias)` consult `propertyEditorAliases` first; fall back to a value-content heuristic (values starting with `{`, `[`, or `umb://` are treated as complex) when the map is unavailable
 
 ### Rate Limiter Registration
 - `PageEvaluatorComposer` registers the `"PageEvaluatorEvaluate"` fixed-window rate limiter policy (10 requests per user per minute) via `builder.Services.AddRateLimiter`
