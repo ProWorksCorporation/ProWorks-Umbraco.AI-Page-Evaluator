@@ -1,55 +1,55 @@
-import { css as z, property as f, state as g, customElement as $, nothing as n, html as r } from "@umbraco-cms/backoffice/external/lit";
-import { UmbModalBaseElement as C } from "@umbraco-cms/backoffice/modal";
+import { css as z, property as m, state as g, customElement as $, nothing as n, html as i } from "@umbraco-cms/backoffice/external/lit";
+import { UmbModalBaseElement as k } from "@umbraco-cms/backoffice/modal";
 import { UMB_DOCUMENT_WORKSPACE_CONTEXT as S } from "@umbraco-cms/backoffice/document";
-import { r as A, g as R, e as E } from "./entry-point-BEeRIEls.js";
-import { resolveEntityAdapterByType as F } from "@umbraco-ai/core";
+import { r as E, g as A, e as R } from "./entry-point-a0cPUw86.js";
+import { resolveEntityAdapterByType as O } from "@umbraco-ai/core";
 import { UmbLitElement as P } from "@umbraco-cms/backoffice/lit-element";
-var B = Object.defineProperty, O = Object.getOwnPropertyDescriptor, h = (e, t, a, i) => {
-  for (var s = i > 1 ? void 0 : i ? O(t, a) : t, l = e.length - 1, c; l >= 0; l--)
-    (c = e[l]) && (s = (i ? c(t, a, s) : c(s)) || s);
-  return i && s && B(t, a, s), s;
+var F = Object.defineProperty, D = Object.getOwnPropertyDescriptor, h = (e, t, r, a) => {
+  for (var s = a > 1 ? void 0 : a ? D(t, r) : t, l = e.length - 1, c; l >= 0; l--)
+    (c = e[l]) && (s = (a ? c(t, r, s) : c(s)) || s);
+  return a && s && F(t, r, s), s;
 };
 let p = class extends P {
   constructor() {
-    super(...arguments), this.nodeId = "", this.properties = {}, this._recStates = /* @__PURE__ */ new Map();
+    super(...arguments), this.nodeId = "", this.properties = {}, this.propertyEditorAliases = {}, this._recStates = /* @__PURE__ */ new Map(), this._copiedChecks = /* @__PURE__ */ new Set();
   }
   render() {
     if (!this.report) return n;
-    const { checks: e, suggestions: t, overallScore: a, axisScores: i } = this.report, s = a !== null || i !== null && i.length > 0, l = e.filter((u) => u.status === "Pass").length, c = e.filter((u) => u.status === "Warn").length, o = e.filter((u) => u.status === "Fail").length, w = e.length, _ = e.filter((u) => u.status === "Fail" || u.status === "Warn"), b = e.filter((u) => u.status === "Pass");
-    return r`
-      ${s ? this._renderScoring(a, i) : n}
+    const { checks: e, suggestions: t, overallScore: r, axisScores: a } = this.report, s = r !== null || a !== null && a.length > 0, l = e.filter((u) => u.status === "Pass").length, c = e.filter((u) => u.status === "Warn").length, o = e.filter((u) => u.status === "Fail").length, w = e.length, _ = e.filter((u) => u.status === "Fail" || u.status === "Warn"), b = e.filter((u) => u.status === "Pass");
+    return i`
+      ${s ? this._renderScoring(r, a) : n}
 
-      ${w > 0 ? r`
+      ${w > 0 ? i`
             <div class="score-row">
               <span class="score-total">${w} ${this.localize.term("evaluatePage_reportChecks")}</span>
               <span class="score-pill score-pill--pass">
                 <uui-icon name="icon-check"></uui-icon>${l} ${this.localize.term("evaluatePage_reportPassed")}
               </span>
-              ${c > 0 ? r`
+              ${c > 0 ? i`
                 <span class="score-pill score-pill--warn">
                   <uui-icon name="icon-alert"></uui-icon>${c} ${c !== 1 ? this.localize.term("evaluatePage_reportWarnings") : this.localize.term("evaluatePage_reportWarning")}
                 </span>` : n}
-              ${o > 0 ? r`
+              ${o > 0 ? i`
                 <span class="score-pill score-pill--fail">
                   <uui-icon name="icon-wrong"></uui-icon>${o} ${this.localize.term("evaluatePage_reportFailed")}
                 </span>` : n}
             </div>
           ` : n}
 
-      ${t ? r`
+      ${t ? i`
             <uui-box headline=${this.localize.term("evaluatePage_reportSuggestions")} class="suggestions-box">
               ${this._renderSuggestions(t)}
             </uui-box>
           ` : n}
 
-      ${_.length > 0 ? r`
+      ${_.length > 0 ? i`
             <p class="section-title">${this.localize.term("evaluatePage_reportAttentionItems")} (${_.length})</p>
             <ul class="check-list">
               ${_.map((u) => this._renderCheck(u))}
             </ul>
           ` : n}
 
-      ${b.length > 0 ? r`
+      ${b.length > 0 ? i`
             <p class="section-title">${this.localize.term("evaluatePage_reportPassingItems")} (${b.length})</p>
             <ul class="check-list">
               ${b.map((u) => this._renderCheck(u))}
@@ -58,20 +58,20 @@ let p = class extends P {
     `;
   }
   _renderSuggestions(e) {
-    const t = M(e);
+    const t = L(e);
     if (t.length === 1)
-      return r`<p style="margin:0; font-size: var(--uui-type-small-size, 0.875rem); line-height: 1.5;">${y(t[0] ?? "")}</p>`;
-    const a = t[0] ?? "", i = a.endsWith(":"), s = i ? t.slice(1) : t;
-    return r`
-      ${i ? r`<p style="margin:0 0 var(--uui-size-space-2, 8px); font-size: var(--uui-type-small-size, 0.875rem); line-height: 1.5;">${y(a)}</p>` : n}
+      return i`<p style="margin:0; font-size: var(--uui-type-small-size, 0.875rem); line-height: 1.5;">${y(t[0] ?? "")}</p>`;
+    const r = t[0] ?? "", a = r.endsWith(":"), s = a ? t.slice(1) : t;
+    return i`
+      ${a ? i`<p style="margin:0 0 var(--uui-size-space-2, 8px); font-size: var(--uui-type-small-size, 0.875rem); line-height: 1.5;">${y(r)}</p>` : n}
       <ol class="suggestions-list">
-        ${s.map((l) => r`<li>${y(l)}</li>`)}
+        ${s.map((l) => i`<li>${y(l)}</li>`)}
       </ol>
     `;
   }
   _renderScoring(e, t) {
-    return r`
-      ${e !== null ? r`
+    return i`
+      ${e !== null ? i`
             <div class="overall-score-row">
               <span class="overall-score-label">${this.localize.term("evaluatePage_overallScore")}</span>
               <uui-tag color=${I(e)} look="primary">
@@ -79,39 +79,66 @@ let p = class extends P {
               </uui-tag>
             </div>
           ` : n}
-      ${t && t.length > 0 ? r`
+      ${t && t.length > 0 ? i`
             <div class="axis-scores-section">
               <p class="section-title">${this.localize.term("evaluatePage_axisScores")}</p>
               <ul class="axis-list">
-                ${t.map((a) => this._renderAxis(a))}
+                ${t.map((r) => this._renderAxis(r))}
               </ul>
             </div>
           ` : n}
     `;
   }
   _renderAxis(e) {
-    return r`
+    return i`
       <li class="axis-item">
-        <uui-tag color=${j(e.score)} look="primary">${e.score} / 5</uui-tag>
+        <uui-tag color=${T(e.score)} look="primary">${e.score} / 5</uui-tag>
         <div class="axis-body">
-          <div class="axis-name">${D(e.name)}</div>
-          ${e.feedback ? r`<div class="axis-feedback">${e.feedback}</div>` : n}
+          <div class="axis-name">${B(e.name)}</div>
+          ${e.feedback ? i`<div class="axis-feedback">${e.feedback}</div>` : n}
         </div>
       </li>
     `;
   }
+  /**
+   * Returns true when a recommendation can be shown for the given property alias.
+   * Checks the known editor alias first; falls back to a value heuristic when no
+   * editor info is available (e.g. the backoffice did not supply propertyEditorAliases).
+   */
+  _canRecommend(e) {
+    const t = this.propertyEditorAliases[e];
+    if (t !== void 0)
+      return p._FULL_RECOMMEND_EDITORS.has(t) || p._COPY_ONLY_EDITORS.has(t);
+    const r = this.properties[e];
+    if (typeof r != "string") return !1;
+    const a = r.trimStart();
+    return a.length === 0 ? !0 : a[0] !== "{" && a[0] !== "[" && !a.startsWith("umb://");
+  }
+  /**
+   * Returns true when the Apply button should be shown for the given property alias.
+   * Only plain-text editors support direct apply; RTE / TinyMCE are copy-only.
+   */
+  _canApply(e) {
+    const t = this.propertyEditorAliases[e];
+    if (t !== void 0)
+      return p._FULL_RECOMMEND_EDITORS.has(t);
+    const r = this.properties[e];
+    if (typeof r != "string") return !1;
+    const a = r.trimStart();
+    return a.length === 0 ? !0 : a[0] !== "{" && a[0] !== "[" && !a.startsWith("umb://");
+  }
   _renderCheck(e) {
-    const t = this._recStates.get(e.checkNumber) ?? { kind: "idle" }, a = (e.status === "Fail" || e.status === "Warn") && e.propertyAlias !== null;
-    return r`
+    const t = this._recStates.get(e.checkNumber) ?? { kind: "idle" }, r = (e.status === "Fail" || e.status === "Warn") && e.propertyAlias !== null && this._canRecommend(e.propertyAlias);
+    return i`
       <li class="check-item">
         <uui-icon
           class="check-icon"
           data-status="${e.status}"
-          name="${W(e.status)}"></uui-icon>
+          name="${M(e.status)}"></uui-icon>
         <div class="check-body">
           <div class="check-label">${e.label}</div>
-          ${e.explanation ? r`<div class="check-explanation">${e.explanation}</div>` : n}
-          ${a ? this._renderRecState(e, t) : n}
+          ${e.explanation ? i`<div class="check-explanation">${e.explanation}</div>` : n}
+          ${r ? this._renderRecState(e, t) : n}
         </div>
       </li>
     `;
@@ -119,11 +146,10 @@ let p = class extends P {
   _renderRecState(e, t) {
     switch (t.kind) {
       case "idle":
-        return r`
+        return i`
           <uui-button
-            style="margin-top: var(--uui-size-space-2, 8px);"
-            look="secondary"
-            compact
+            class="rec-generate-link"
+            look="default"
             label=${this.localize.term("evaluatePage_recGenerate")}
             @click=${() => {
           this._handleGenerate(e);
@@ -133,18 +159,23 @@ let p = class extends P {
           </uui-button>
         `;
       case "generating":
-        return r`
+        return i`
           <div class="rec-generating">
             <uui-loader></uui-loader>
             <span>${this.localize.term("evaluatePage_recGenerating")}</span>
           </div>
         `;
       case "result":
-        return this._renderRecBox(e, t.value, !1);
+        return this._renderRecBox(
+          e,
+          t.value,
+          !1,
+          e.propertyAlias !== null && this._canApply(e.propertyAlias)
+        );
       case "applied":
-        return this._renderRecBox(e, t.value, !0);
+        return this._renderRecBox(e, t.value, !0, !1);
       case "error":
-        return r`
+        return i`
           <div style="display:flex;align-items:center;gap:var(--uui-size-space-2,8px);margin-top:var(--uui-size-space-2,8px);">
             <uui-icon name="icon-alert" style="color:var(--uui-color-danger-standalone,#b91c1c);"></uui-icon>
             <span style="color:var(--uui-color-danger-standalone,#b91c1c);font-size:0.85rem;">
@@ -163,16 +194,17 @@ let p = class extends P {
         `;
     }
   }
-  _renderRecBox(e, t, a) {
-    return r`
-      <div class="rec-box ${a ? "applied" : ""}">
-        <div class="rec-label ${a ? "applied" : ""}">
-          <uui-icon name="${a ? "icon-check" : "icon-wand"}"></uui-icon>
-          ${a ? this.localize.term("evaluatePage_recApplied") : this.localize.term("evaluatePage_recSuggested")}
+  _renderRecBox(e, t, r, a) {
+    const s = this._copiedChecks.has(e.checkNumber);
+    return i`
+      <div class="rec-box ${r ? "applied" : ""}">
+        <div class="rec-label ${r ? "applied" : ""}">
+          <uui-icon name="${r ? "icon-check" : "icon-wand"}"></uui-icon>
+          ${r ? this.localize.term("evaluatePage_recApplied") : this.localize.term("evaluatePage_recSuggested")}
         </div>
         <div class="rec-text">${t ?? ""}</div>
-        <uui-action-bar>
-          ${a ? n : r`
+        <div class="rec-actions">
+          ${a && !r ? i`
                 <uui-button
                   look="primary"
                   color="positive"
@@ -181,7 +213,18 @@ let p = class extends P {
                   @click=${() => this._handleApply(e, t)}>
                   ${this.localize.term("evaluatePage_recApply")}
                 </uui-button>
-              `}
+              ` : n}
+          <uui-button
+            look="secondary"
+            compact
+            label=${s ? this.localize.term("evaluatePage_recCopied") : this.localize.term("evaluatePage_recCopy")}
+            ?disabled=${s}
+            @click=${() => {
+      this._handleCopy(e.checkNumber, t);
+    }}>
+            <uui-icon name="${s ? "icon-check" : "icon-clipboard-copy"}" slot="icon"></uui-icon>
+            ${s ? this.localize.term("evaluatePage_recCopied") : this.localize.term("evaluatePage_recCopy")}
+          </uui-button>
           <uui-button
             look="secondary"
             compact
@@ -192,17 +235,7 @@ let p = class extends P {
             <uui-icon name="icon-sync" slot="icon"></uui-icon>
             ${this.localize.term("evaluatePage_recRegenerate")}
           </uui-button>
-          <uui-button
-            look="secondary"
-            compact
-            label=${this.localize.term("evaluatePage_recCopy")}
-            @click=${() => {
-      this._handleCopy(t);
-    }}>
-            <uui-icon name="icon-clipboard-copy" slot="icon"></uui-icon>
-            ${this.localize.term("evaluatePage_recCopy")}
-          </uui-button>
-        </uui-action-bar>
+        </div>
       </div>
     `;
   }
@@ -218,13 +251,13 @@ let p = class extends P {
       checkLabel: e.label,
       checkExplanation: e.explanation ?? null,
       properties: Object.fromEntries(
-        Object.entries(this.properties).map(([a, i]) => [a, String(i ?? "")])
+        Object.entries(this.properties).map(([r, a]) => [r, String(a ?? "")])
       )
     };
     try {
-      const a = await A(t);
+      const r = await E(t);
       if (!this.isConnected) return;
-      this._setRecState(e.checkNumber, { kind: "result", value: a.recommendedValue });
+      this._setRecState(e.checkNumber, { kind: "result", value: r.recommendedValue });
     } catch {
       if (!this.isConnected) return;
       this._setRecState(e.checkNumber, { kind: "error" });
@@ -239,8 +272,12 @@ let p = class extends P {
       })
     ), this._setRecState(e.checkNumber, { kind: "applied", value: t }));
   }
-  async _handleCopy(e) {
-    e !== null && await navigator.clipboard.writeText(e);
+  async _handleCopy(e, t) {
+    t !== null && (await navigator.clipboard.writeText(t), this.isConnected && (this._copiedChecks = new Set(this._copiedChecks).add(e), setTimeout(() => {
+      if (!this.isConnected) return;
+      const r = new Set(this._copiedChecks);
+      r.delete(e), this._copiedChecks = r;
+    }, 2e3)));
   }
 };
 p.styles = z`
@@ -410,6 +447,30 @@ p.styles = z`
       word-break: break-word;
     }
 
+    .rec-generate-link {
+      --uui-button-background-color: transparent;
+      --uui-button-background-color-hover: transparent;
+      --uui-button-border-color: transparent;
+      --uui-button-border-color-hover: transparent;
+      --uui-button-contrast: var(--uui-color-interactive, #1b264f);
+      --uui-button-contrast-hover: var(--uui-color-interactive-emphasis, #283a97);
+      padding: 0;
+      height: auto;
+      min-height: auto;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+      font-size: var(--uui-type-small-size, 0.875rem);
+      margin-top: var(--uui-size-space-2, 8px);
+      display: inline-flex;
+    }
+
+    .rec-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--uui-size-space-2, 8px);
+      align-items: center;
+    }
+
     .overall-score-row {
       display: flex;
       align-items: center;
@@ -462,31 +523,47 @@ p.styles = z`
       line-height: 1.4;
     }
   `;
+p._FULL_RECOMMEND_EDITORS = /* @__PURE__ */ new Set([
+  "Umbraco.TextBox",
+  "Umbraco.TextArea",
+  "Umbraco.Markdown",
+  "Umbraco.Tags"
+]);
+p._COPY_ONLY_EDITORS = /* @__PURE__ */ new Set([
+  "Umbraco.RichText",
+  "Umbraco.TinyMCE"
+]);
 h([
-  f({ attribute: !1 })
+  m({ attribute: !1 })
 ], p.prototype, "report", 2);
 h([
-  f({ attribute: !1 })
+  m({ attribute: !1 })
 ], p.prototype, "nodeId", 2);
 h([
-  f({ attribute: !1 })
+  m({ attribute: !1 })
 ], p.prototype, "properties", 2);
+h([
+  m({ attribute: !1 })
+], p.prototype, "propertyEditorAliases", 2);
 h([
   g()
 ], p.prototype, "_recStates", 2);
+h([
+  g()
+], p.prototype, "_copiedChecks", 2);
 p = h([
   $("page-evaluator-report")
 ], p);
-function D(e) {
+function B(e) {
   return e.replace(/_/g, " ").replace(/\b\w/g, (t) => t.toUpperCase());
 }
 function I(e) {
   return e >= 4 ? "positive" : e >= 2.5 ? "warning" : "danger";
 }
-function j(e) {
+function T(e) {
   return e >= 4 ? "positive" : e >= 3 ? "warning" : "danger";
 }
-function W(e) {
+function M(e) {
   switch (e) {
     case "Pass":
       return "icon-check";
@@ -496,14 +573,14 @@ function W(e) {
       return "icon-alert";
   }
 }
-function M(e) {
+function L(e) {
   const t = e.split(`
-`).map((o) => o.trim()).filter(Boolean), a = t.filter((o) => /^\d+\.\s+/.test(o));
+`).map((o) => o.trim()).filter(Boolean), r = t.filter((o) => /^\d+\.\s+/.test(o));
+  if (r.length > 1)
+    return r.map((o) => o.replace(/^\d+\.\s+/, "").trim());
+  const a = t.filter((o) => /^\(\d+\)\s+/.test(o));
   if (a.length > 1)
-    return a.map((o) => o.replace(/^\d+\.\s+/, "").trim());
-  const i = t.filter((o) => /^\(\d+\)\s+/.test(o));
-  if (i.length > 1)
-    return i.map((o) => o.replace(/^\(\d+\)\s+/, "").trim());
+    return a.map((o) => o.replace(/^\(\d+\)\s+/, "").trim());
   const s = t.filter((o) => /^\d+\)\s+/.test(o));
   if (s.length > 1)
     return s.map((o) => o.replace(/^\d+\)\s+/, "").trim());
@@ -515,19 +592,19 @@ function M(e) {
 }
 function y(e) {
   const t = e.split(/\*\*([^*]+)\*\*/g);
-  return r`${t.map((a, i) => i % 2 === 1 ? r`<strong>${a}</strong>` : a)}`;
+  return i`${t.map((r, a) => a % 2 === 1 ? i`<strong>${r}</strong>` : r)}`;
 }
-var G = Object.defineProperty, T = Object.getOwnPropertyDescriptor, k = (e, t, a, i) => {
-  for (var s = i > 1 ? void 0 : i ? T(t, a) : t, l = e.length - 1, c; l >= 0; l--)
-    (c = e[l]) && (s = (i ? c(t, a, s) : c(s)) || s);
-  return i && s && G(t, a, s), s;
+var U = Object.defineProperty, W = Object.getOwnPropertyDescriptor, C = (e, t, r, a) => {
+  for (var s = a > 1 ? void 0 : a ? W(t, r) : t, l = e.length - 1, c; l >= 0; l--)
+    (c = e[l]) && (s = (a ? c(t, r, s) : c(s)) || s);
+  return a && s && U(t, r, s), s;
 };
-let v = class extends P {
+let f = class extends P {
   constructor() {
     super(...arguments), this.rawResponse = null;
   }
   render() {
-    return r`
+    return i`
       <div class="warning-banner">
         <p>
           <uui-icon name="icon-alert"></uui-icon>
@@ -538,11 +615,11 @@ let v = class extends P {
           ${this.localize.term("evaluatePage_parseFailedSuffix")}
         </p>
       </div>
-      ${this.rawResponse ? r`<pre class="raw-response">${this.rawResponse}</pre>` : ""}
+      ${this.rawResponse ? i`<pre class="raw-response">${this.rawResponse}</pre>` : ""}
     `;
   }
 };
-v.styles = z`
+f.styles = z`
     :host {
       display: block;
     }
@@ -570,23 +647,23 @@ v.styles = z`
       font-size: var(--uui-type-small-size, 0.875rem);
     }
   `;
-k([
-  f({ type: String })
-], v.prototype, "rawResponse", 2);
-v = k([
+C([
+  m({ type: String })
+], f.prototype, "rawResponse", 2);
+f = C([
   $("page-evaluator-warning")
-], v);
-var K = Object.defineProperty, L = Object.getOwnPropertyDescriptor, m = (e, t, a, i) => {
-  for (var s = i > 1 ? void 0 : i ? L(t, a) : t, l = e.length - 1, c; l >= 0; l--)
-    (c = e[l]) && (s = (i ? c(t, a, s) : c(s)) || s);
-  return i && s && K(t, a, s), s;
+], f);
+var j = Object.defineProperty, N = Object.getOwnPropertyDescriptor, v = (e, t, r, a) => {
+  for (var s = a > 1 ? void 0 : a ? N(t, r) : t, l = e.length - 1, c; l >= 0; l--)
+    (c = e[l]) && (s = (a ? c(t, r, s) : c(s)) || s);
+  return a && s && j(t, r, s), s;
 };
 const x = {
   sending: "evaluatePage_progressSendingData",
   waiting: "evaluatePage_progressWaitingForAI",
   rendering: "evaluatePage_progressRendering"
 };
-let d = class extends C {
+let d = class extends k {
   constructor() {
     super(...arguments), this._modalState = "idle", this._progressKey = "", this._report = null, this._errorDetail = null, this._inFlight = !1, this._onRecApply = async (e) => {
       const t = e.detail;
@@ -605,7 +682,7 @@ let d = class extends C {
     const e = this.data;
     if (e) {
       try {
-        const t = await R(e.nodeId);
+        const t = await A(e.nodeId);
         if (t) {
           if (!this.isConnected) return;
           this._report = t, this._modalState = t.parseFailed ? "parse-failed" : "success";
@@ -627,13 +704,13 @@ let d = class extends C {
     try {
       if (this._modalState = "loading", this._progressKey = x.sending, await this._tick(), !this.isConnected) return;
       this._progressKey = x.waiting;
-      const t = await E(e);
+      const t = await R(e);
       if (!this.isConnected || (this._progressKey = x.rendering, await this._tick(), !this.isConnected)) return;
       this._report = t, this._modalState = t.parseFailed ? "parse-failed" : "success";
     } catch (t) {
       if (!this.isConnected) return;
-      const a = t !== null && typeof t == "object" && "status" in t ? t.status : null, i = t !== null && typeof t == "object" && "detail" in t ? String(t.detail) : null;
-      a === 422 ? (this._modalState = "guardrail-blocked", this._errorDetail = i) : (this._modalState = "error", this._errorDetail = i);
+      const r = t !== null && typeof t == "object" && "status" in t ? t.status : null, a = t !== null && typeof t == "object" && "detail" in t ? String(t.detail) : null;
+      r === 422 ? (this._modalState = "guardrail-blocked", this._errorDetail = a) : (this._modalState = "error", this._errorDetail = a);
     } finally {
       this._inFlight = !1;
     }
@@ -661,15 +738,15 @@ let d = class extends C {
   }
   async _applyRecommendation(e, t) {
     if (!this._workspaceContext) return;
-    const a = await F("document");
-    this.isConnected && a != null && a.applyValueChange && await a.applyValueChange(this._workspaceContext, { path: e, value: t });
+    const r = await O("document");
+    this.isConnected && r != null && r.applyValueChange && await r.applyValueChange(this._workspaceContext, { path: e, value: t });
   }
   render() {
-    return r`
+    return i`
       <umb-body-layout headline=${this.localize.term("evaluatePage_modalHeadline")}>
         ${this._renderBody()}
         <div slot="actions">
-          ${this._modalState === "success" || this._modalState === "parse-failed" ? r`
+          ${this._modalState === "success" || this._modalState === "parse-failed" ? i`
                 <uui-button
                   look="secondary"
                   label=${this.localize.term("evaluatePage_rerunButton")}
@@ -687,41 +764,42 @@ let d = class extends C {
     `;
   }
   _renderBody() {
-    var e, t, a;
+    var e, t, r, a;
     switch (this._modalState) {
       case "idle":
         return n;
       case "loading":
-        return r`
+        return i`
           <div class="progress-container">
             <uui-loader></uui-loader>
             <p aria-live="polite" aria-atomic="true">${this.localize.term(this._progressKey)}</p>
           </div>
         `;
       case "success":
-        return r`
+        return i`
           ${this._renderCacheBar()}
           <page-evaluator-report
             .report="${this._report}"
             .nodeId="${((e = this.data) == null ? void 0 : e.nodeId) ?? ""}"
-            .properties="${((t = this.data) == null ? void 0 : t.properties) ?? {}}">
+            .properties="${((t = this.data) == null ? void 0 : t.properties) ?? {}}"
+            .propertyEditorAliases="${((r = this._report) == null ? void 0 : r.propertyEditorAliases) ?? {}}">
           </page-evaluator-report>
         `;
       case "parse-failed":
-        return r`
+        return i`
           ${this._renderCacheBar()}
           <page-evaluator-warning
             .rawResponse="${((a = this._report) == null ? void 0 : a.rawResponse) ?? null}"></page-evaluator-warning>
         `;
       case "guardrail-blocked":
-        return r`
+        return i`
           <div class="error-container" role="alert">
             <p>${this.localize.term("evaluatePage_guardrailBlockedMessage")}</p>
-            ${this._errorDetail ? r`<p><em>${this._errorDetail}</em></p>` : n}
+            ${this._errorDetail ? i`<p><em>${this._errorDetail}</em></p>` : n}
           </div>
         `;
       case "error":
-        return r`
+        return i`
           <div class="error-container" role="alert">
             <p>${this._errorDetail ?? this.localize.term("evaluatePage_aiErrorMessage")}</p>
             <uui-button
@@ -738,7 +816,7 @@ let d = class extends C {
   _renderCacheBar() {
     var t;
     const e = (t = this._report) == null ? void 0 : t.cachedAt;
-    return e ? r`
+    return e ? i`
       <div class="cache-bar">
         <span>${this.localize.term("evaluatePage_lastEvaluated")} ${this._formatCachedAt(e)}</span>
       </div>
@@ -774,22 +852,22 @@ d.styles = z`
       color: var(--uui-color-danger-contrast, #fff);
     }
   `;
-m([
+v([
   g()
 ], d.prototype, "_modalState", 2);
-m([
+v([
   g()
 ], d.prototype, "_progressKey", 2);
-m([
+v([
   g()
 ], d.prototype, "_report", 2);
-m([
+v([
   g()
 ], d.prototype, "_errorDetail", 2);
-d = m([
+d = v([
   $("page-evaluator-modal")
 ], d);
 export {
   d as EvaluationModalElement
 };
-//# sourceMappingURL=evaluation-modal.element-BUgHfdue.js.map
+//# sourceMappingURL=evaluation-modal.element-CBvLgchE.js.map
