@@ -404,13 +404,49 @@ export class EvaluationReportElement extends UmbLitElement {
     `;
   }
 
+  private static readonly _FULL_RECOMMEND_EDITORS = new Set([
+    'Umbraco.TextBox',
+    'Umbraco.TextArea',
+    'Umbraco.Markdown',
+    'Umbraco.Tags',
+  ]);
+
+  private static readonly _COPY_ONLY_EDITORS = new Set([
+    'Umbraco.RichText',
+    'Umbraco.TinyMCE',
+  ]);
+
   /**
-   * Returns true only when the property stores a plain-text value that a recommendation
-   * can meaningfully replace. Mirrors IsSimpleTextDraft on the server — skips media
-   * pickers, content pickers, MNTP, MultiUrlPicker, RTE, and any other property whose
-   * backoffice value is JSON or a UDI reference.
+   * Returns true when a recommendation can be shown for the given property alias.
+   * Checks the known editor alias first; falls back to a value heuristic when no
+   * editor info is available (e.g. the backoffice did not supply propertyEditorAliases).
    */
-  private _isTextProperty(alias: string): boolean {
+  private _canRecommend(alias: string): boolean {
+    const editorAlias = this.propertyEditorAliases[alias];
+    if (editorAlias !== undefined) {
+      return (
+        EvaluationReportElement._FULL_RECOMMEND_EDITORS.has(editorAlias) ||
+        EvaluationReportElement._COPY_ONLY_EDITORS.has(editorAlias)
+      );
+    }
+    // Fallback: raw value heuristic when no editor info is available.
+    const value = this.properties[alias];
+    if (typeof value !== 'string') return false;
+    const trimmed = value.trimStart();
+    if (trimmed.length === 0) return true;
+    return trimmed[0] !== '{' && trimmed[0] !== '[' && !trimmed.startsWith('umb://');
+  }
+
+  /**
+   * Returns true when the Apply button should be shown for the given property alias.
+   * Only plain-text editors support direct apply; RTE / TinyMCE are copy-only.
+   */
+  private _canApply(alias: string): boolean {
+    const editorAlias = this.propertyEditorAliases[alias];
+    if (editorAlias !== undefined) {
+      return EvaluationReportElement._FULL_RECOMMEND_EDITORS.has(editorAlias);
+    }
+    // Fallback: only allow apply when the value looks like plain text.
     const value = this.properties[alias];
     if (typeof value !== 'string') return false;
     const trimmed = value.trimStart();
@@ -423,7 +459,7 @@ export class EvaluationReportElement extends UmbLitElement {
     const showRec =
       (check.status === 'Fail' || check.status === 'Warn') &&
       check.propertyAlias !== null &&
-      this._isTextProperty(check.propertyAlias);
+      this._canRecommend(check.propertyAlias);
 
     return html`
       <li class="check-item">
@@ -463,9 +499,14 @@ export class EvaluationReportElement extends UmbLitElement {
           </div>
         `;
       case 'result':
-        return this._renderRecBox(check, state.value, false);
+        return this._renderRecBox(
+          check,
+          state.value,
+          false,
+          check.propertyAlias !== null && this._canApply(check.propertyAlias),
+        );
       case 'applied':
-        return this._renderRecBox(check, state.value, true);
+        return this._renderRecBox(check, state.value, true, false);
       case 'error':
         return html`
           <div style="display:flex;align-items:center;gap:var(--uui-size-space-2,8px);margin-top:var(--uui-size-space-2,8px);">
@@ -485,7 +526,12 @@ export class EvaluationReportElement extends UmbLitElement {
     }
   }
 
-  private _renderRecBox(check: CheckResult, value: string | null, applied: boolean): TemplateResult {
+  private _renderRecBox(
+    check: CheckResult,
+    value: string | null,
+    applied: boolean,
+    canApply: boolean,
+  ): TemplateResult {
     const copied = this._copiedChecks.has(check.checkNumber);
     return html`
       <div class="rec-box ${applied ? 'applied' : ''}">
@@ -497,7 +543,7 @@ export class EvaluationReportElement extends UmbLitElement {
         </div>
         <div class="rec-text">${value ?? ''}</div>
         <div class="rec-actions">
-          ${!applied
+          ${canApply && !applied
             ? html`
                 <uui-button
                   look="primary"
