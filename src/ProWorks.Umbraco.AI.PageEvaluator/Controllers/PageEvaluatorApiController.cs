@@ -574,6 +574,19 @@ public sealed class PageEvaluatorApiController : ControllerBase
             sb.AppendLine();
             sb.AppendLine("Return a single JSON object: {\"recommendedValue\": <value conforming to schema>}");
         }
+        else if (IsTagsEditor(propertyType.PropertyEditorAlias))
+        {
+            sb.AppendLine("The field is a Tags property. Generate a list of relevant tag strings.");
+            sb.AppendLine("Return a single JSON object where recommendedValue is a JSON array of tag strings:");
+            sb.AppendLine("{\"recommendedValue\": [\"tag-one\", \"tag-two\", \"tag-three\"]}");
+        }
+        else if (IsRichTextEditor(propertyType.PropertyEditorAlias))
+        {
+            sb.AppendLine("The field is a Rich Text (HTML) property. Generate clean, semantic HTML markup.");
+            sb.AppendLine("Use standard block elements only: <p>, <h2>, <h3>, <ul>, <ol>, <li>, <strong>, <em>.");
+            sb.AppendLine("Do not include block editor references, data attributes, or umb:// UDI references.");
+            sb.AppendLine("Return a single JSON object: {\"recommendedValue\": \"<p>your html here</p>\"}");
+        }
         else
         {
             sb.AppendLine($"The field uses the \"{propertyType.PropertyEditorAlias}\" property editor. Generate appropriate plain text.");
@@ -587,6 +600,13 @@ public sealed class PageEvaluatorApiController : ControllerBase
 
         return sb.ToString().TrimEnd();
     }
+
+    private static bool IsTagsEditor(string editorAlias) =>
+        editorAlias.Equals("Umbraco.Tags", StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsRichTextEditor(string editorAlias) =>
+        editorAlias.Equals("Umbraco.RichText", StringComparison.OrdinalIgnoreCase)
+        || editorAlias.Equals("Umbraco.TinyMCE", StringComparison.OrdinalIgnoreCase);
 
     private static string BuildRecommendUserMessage(RecommendRequest request)
     {

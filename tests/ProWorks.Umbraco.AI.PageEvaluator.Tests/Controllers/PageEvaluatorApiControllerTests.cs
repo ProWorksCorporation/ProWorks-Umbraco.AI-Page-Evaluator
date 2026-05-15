@@ -1542,4 +1542,85 @@ public class PageEvaluatorApiControllerTests
         string json = System.Text.Json.JsonSerializer.Serialize(obj.Value);
         Assert.DoesNotContain("Unexpected internal failure", json);
     }
+
+    [Fact]
+    public async Task RecommendAsync_ForTagsProperty_PromptRequestsJsonArray()
+    {
+        // Use the default content node from the constructor (alias = "blogPost")
+        _configService.GetActiveForDocumentTypeAsync("blogPost", Arg.Any<CancellationToken>())
+            .Returns(BuildConfig("blogPost"));
+
+        // Set up the content type with a Tags property
+        var propType = Substitute.For<IPropertyType>();
+        propType.Alias.Returns("tags");
+        propType.PropertyEditorAlias.Returns("Umbraco.Tags");
+        var ct = Substitute.For<IContentType>();
+        ct.CompositionPropertyTypes.Returns(new[] { propType });
+        _contentTypeService.Get("blogPost").Returns(ct);
+
+        _propertyEditorSchemaService.SupportsSchema("Umbraco.Tags").Returns(false);
+
+        string capturedSystemPrompt = string.Empty;
+        _chatService.GetChatResponseAsync(
+            Arg.Any<Action<AIChatBuilder>>(),
+            Arg.Do<IEnumerable<ChatMessage>>(msgs =>
+            {
+                var systemMsg = msgs.FirstOrDefault(m => m.Role == ChatRole.System);
+                if (systemMsg is not null)
+                    capturedSystemPrompt = systemMsg.Text ?? "";
+            }),
+            Arg.Any<CancellationToken>())
+            .Returns(new ChatResponse([new ChatMessage(ChatRole.Assistant, "{\"recommendedValue\":[\"seo\",\"content\"]}")]) );
+
+        await _sut.RecommendAsync(new RecommendRequest
+        {
+            NodeId = Guid.NewGuid(),
+            PropertyAlias = "tags",
+            CheckLabel = "Tags are missing",
+            Properties = new Dictionary<string, string>(),
+        });
+
+        Assert.Contains("JSON array", capturedSystemPrompt, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("recommendedValue", capturedSystemPrompt, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task RecommendAsync_ForRichTextProperty_PromptRequestsHtml()
+    {
+        // Use the default content node from the constructor (alias = "blogPost")
+        _configService.GetActiveForDocumentTypeAsync("blogPost", Arg.Any<CancellationToken>())
+            .Returns(BuildConfig("blogPost"));
+
+        var propType = Substitute.For<IPropertyType>();
+        propType.Alias.Returns("bodyText");
+        propType.PropertyEditorAlias.Returns("Umbraco.RichText");
+        var ct = Substitute.For<IContentType>();
+        ct.CompositionPropertyTypes.Returns(new[] { propType });
+        _contentTypeService.Get("blogPost").Returns(ct);
+
+        _propertyEditorSchemaService.SupportsSchema("Umbraco.RichText").Returns(false);
+
+        string capturedSystemPrompt = string.Empty;
+        _chatService.GetChatResponseAsync(
+            Arg.Any<Action<AIChatBuilder>>(),
+            Arg.Do<IEnumerable<ChatMessage>>(msgs =>
+            {
+                var systemMsg = msgs.FirstOrDefault(m => m.Role == ChatRole.System);
+                if (systemMsg is not null)
+                    capturedSystemPrompt = systemMsg.Text ?? "";
+            }),
+            Arg.Any<CancellationToken>())
+            .Returns(new ChatResponse([new ChatMessage(ChatRole.Assistant, "{\"recommendedValue\":\"<p>Better content</p>\"}")]) );
+
+        await _sut.RecommendAsync(new RecommendRequest
+        {
+            NodeId = Guid.NewGuid(),
+            PropertyAlias = "bodyText",
+            CheckLabel = "Body content is thin",
+            Properties = new Dictionary<string, string>(),
+        });
+
+        Assert.Contains("HTML", capturedSystemPrompt, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("recommendedValue", capturedSystemPrompt, StringComparison.OrdinalIgnoreCase);
+    }
 }
