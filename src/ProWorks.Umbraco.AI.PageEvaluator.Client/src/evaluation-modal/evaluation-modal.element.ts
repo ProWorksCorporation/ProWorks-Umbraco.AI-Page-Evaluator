@@ -1,8 +1,10 @@
 import { html, css, nothing, type TemplateResult, customElement, state } from '@umbraco-cms/backoffice/external/lit';
 import { UmbModalBaseElement } from '@umbraco-cms/backoffice/modal';
+import { UMB_DOCUMENT_WORKSPACE_CONTEXT } from '@umbraco-cms/backoffice/document';
 import { getCachedEvaluation, evaluatePage } from '../shared/api-client.js';
 import type { EvaluationReportResponse } from '../shared/types.js';
 import type { EvaluationModalData, EvaluationModalValue } from './evaluation-modal.token.js';
+import { resolveEntityAdapterByType } from '@umbraco-ai/core';
 import './evaluation-report.element.js';
 import './evaluation-warning.element.js';
 
@@ -57,10 +59,25 @@ export class EvaluationModalElement extends UmbModalBaseElement<EvaluationModalD
   @state() private _report: EvaluationReportResponse | null = null;
   @state() private _errorDetail: string | null = null;
   private _inFlight = false;
+  private _workspaceContext: typeof UMB_DOCUMENT_WORKSPACE_CONTEXT.TYPE | undefined;
+
+  private readonly _onRecApply = async (e: Event): Promise<void> => {
+    const detail = (e as CustomEvent<{ propertyAlias: string; value: unknown }>).detail;
+    await this._applyRecommendation(detail.propertyAlias, detail.value);
+  };
 
   override connectedCallback(): void {
     super.connectedCallback();
+    this.consumeContext(UMB_DOCUMENT_WORKSPACE_CONTEXT, (ctx) => {
+      this._workspaceContext = ctx;
+    });
+    this.addEventListener('page-evaluator-rec-apply', this._onRecApply);
     void this._checkCacheAndLoad();
+  }
+
+  override disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this.removeEventListener('page-evaluator-rec-apply', this._onRecApply);
   }
 
   private async _checkCacheAndLoad(): Promise<void> {
@@ -153,6 +170,13 @@ export class EvaluationModalElement extends UmbModalBaseElement<EvaluationModalD
     }
   }
 
+  private async _applyRecommendation(propertyAlias: string, value: unknown): Promise<void> {
+    if (!this._workspaceContext) return;
+    const adapter = await resolveEntityAdapterByType('document');
+    if (!adapter?.applyValueChange) return;
+    await adapter.applyValueChange(this._workspaceContext, { path: propertyAlias, value });
+  }
+
   override render(): TemplateResult {
     return html`
       <umb-body-layout headline=${this.localize.term('evaluatePage_modalHeadline')}>
@@ -195,7 +219,10 @@ export class EvaluationModalElement extends UmbModalBaseElement<EvaluationModalD
         return html`
           ${this._renderCacheBar()}
           <page-evaluator-report
-            .report="${this._report!}"></page-evaluator-report>
+            .report="${this._report!}"
+            .nodeId="${this.data?.nodeId ?? ''}"
+            .properties="${(this.data?.properties ?? {}) as Record<string, unknown>}">
+          </page-evaluator-report>
         `;
 
       case 'parse-failed':
