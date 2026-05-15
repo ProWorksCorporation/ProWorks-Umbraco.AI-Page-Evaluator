@@ -1580,6 +1580,7 @@ public class PageEvaluatorApiControllerTests
             Properties = new Dictionary<string, string>(),
         });
 
+        Assert.NotEmpty(capturedSystemPrompt);
         Assert.Contains("JSON array", capturedSystemPrompt, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("recommendedValue", capturedSystemPrompt, StringComparison.OrdinalIgnoreCase);
     }
@@ -1620,6 +1621,49 @@ public class PageEvaluatorApiControllerTests
             Properties = new Dictionary<string, string>(),
         });
 
+        Assert.NotEmpty(capturedSystemPrompt);
+        Assert.Contains("HTML", capturedSystemPrompt, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("recommendedValue", capturedSystemPrompt, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task RecommendAsync_ForTinyMceProperty_PromptRequestsHtml()
+    {
+        // Use the default content node from the constructor (alias = "blogPost")
+        _configService.GetActiveForDocumentTypeAsync("blogPost", Arg.Any<CancellationToken>())
+            .Returns(BuildConfig("blogPost"));
+
+        var propType = Substitute.For<IPropertyType>();
+        propType.Alias.Returns("bodyText");
+        propType.PropertyEditorAlias.Returns("Umbraco.TinyMCE");
+        var ct = Substitute.For<IContentType>();
+        ct.CompositionPropertyTypes.Returns(new[] { propType });
+        _contentTypeService.Get("blogPost").Returns(ct);
+
+        _propertyEditorSchemaService.SupportsSchema("Umbraco.TinyMCE").Returns(false);
+
+        string capturedSystemPrompt = string.Empty;
+        _chatService.GetChatResponseAsync(
+            Arg.Any<Action<AIChatBuilder>>(),
+            Arg.Do<IEnumerable<ChatMessage>>(msgs =>
+            {
+                var systemMsg = msgs.FirstOrDefault(m => m.Role == ChatRole.System);
+                if (systemMsg is not null)
+                    capturedSystemPrompt = systemMsg.Text ?? "";
+            }),
+            Arg.Any<CancellationToken>())
+            .Returns(new ChatResponse([new ChatMessage(ChatRole.Assistant, "{\"recommendedValue\":\"<p>Better content</p>\"}")]) );
+
+        await _sut.RecommendAsync(new RecommendRequest
+        {
+            NodeId = Guid.NewGuid(),
+            PropertyAlias = "bodyText",
+            CheckLabel = "Body content is thin",
+            CheckExplanation = null,
+            Properties = new Dictionary<string, string>(),
+        });
+
+        Assert.NotEmpty(capturedSystemPrompt);
         Assert.Contains("HTML", capturedSystemPrompt, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("recommendedValue", capturedSystemPrompt, StringComparison.OrdinalIgnoreCase);
     }

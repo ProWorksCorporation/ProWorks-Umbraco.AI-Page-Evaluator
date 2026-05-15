@@ -578,7 +578,7 @@ public sealed class PageEvaluatorApiController : ControllerBase
         {
             sb.AppendLine("The field is a Tags property. Generate a list of relevant tag strings.");
             sb.AppendLine("Return a single JSON object where recommendedValue is a JSON array of tag strings:");
-            sb.AppendLine("{\"recommendedValue\": [\"tag-one\", \"tag-two\", \"tag-three\"]}");
+            sb.AppendLine("{\"recommendedValue\": [\"tag one\", \"tag two\", \"tag three\"]}");
         }
         else if (IsRichTextEditor(propertyType.PropertyEditorAlias))
         {
