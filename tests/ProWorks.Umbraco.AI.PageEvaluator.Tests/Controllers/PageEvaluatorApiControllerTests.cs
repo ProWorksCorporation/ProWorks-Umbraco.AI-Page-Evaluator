@@ -1408,4 +1408,37 @@ public class PageEvaluatorApiControllerTests
         var obj = Assert.IsType<ObjectResult>(result);
         Assert.Equal(503, obj.StatusCode);
     }
+
+    [Fact]
+    public async Task RecommendAsync_UnexpectedException_Returns500()
+    {
+        _configService.GetActiveForDocumentTypeAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(BuildConfig("blogPost"));
+
+        var propType = Substitute.For<IPropertyType>();
+        propType.Alias.Returns("metaDescription");
+        propType.PropertyEditorAlias.Returns("Umbraco.TextBox");
+        var ct = Substitute.For<IContentType>();
+        ct.CompositionPropertyTypes.Returns(new[] { propType });
+        _contentTypeService.Get(Arg.Any<string>()).Returns(ct);
+        _propertyEditorSchemaService.SupportsSchema(Arg.Any<string>()).Returns(false);
+
+        _chatService.GetChatResponseAsync(
+            Arg.Any<Action<AIChatBuilder>>(),
+            Arg.Any<IEnumerable<ChatMessage>>(),
+            Arg.Any<CancellationToken>())
+            .ThrowsAsync(new NullReferenceException("Unexpected internal failure"));
+
+        var result = await _sut.RecommendAsync(new RecommendRequest
+        {
+            NodeId = Guid.NewGuid(),
+            PropertyAlias = "metaDescription",
+            CheckLabel = "Meta description is missing",
+        });
+
+        var obj = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(500, obj.StatusCode);
+        string json = System.Text.Json.JsonSerializer.Serialize(obj.Value);
+        Assert.DoesNotContain("Unexpected internal failure", json);
+    }
 }

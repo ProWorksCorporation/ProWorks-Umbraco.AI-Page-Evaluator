@@ -1,7 +1,7 @@
 import { css as z, property as f, state as g, customElement as $, nothing as n, html as r } from "@umbraco-cms/backoffice/external/lit";
 import { UmbModalBaseElement as C } from "@umbraco-cms/backoffice/modal";
 import { UMB_DOCUMENT_WORKSPACE_CONTEXT as S } from "@umbraco-cms/backoffice/document";
-import { r as A, g as R, e as E } from "./entry-point-D9pIolU_.js";
+import { r as A, g as R, e as E } from "./entry-point-BEeRIEls.js";
 import { resolveEntityAdapterByType as F } from "@umbraco-ai/core";
 import { UmbLitElement as P } from "@umbraco-cms/backoffice/lit-element";
 var B = Object.defineProperty, O = Object.getOwnPropertyDescriptor, h = (e, t, a, i) => {
@@ -60,12 +60,12 @@ let p = class extends P {
   _renderSuggestions(e) {
     const t = M(e);
     if (t.length === 1)
-      return r`<p style="margin:0; font-size: var(--uui-type-small-size, 0.875rem); line-height: 1.5;">${x(t[0] ?? "")}</p>`;
+      return r`<p style="margin:0; font-size: var(--uui-type-small-size, 0.875rem); line-height: 1.5;">${y(t[0] ?? "")}</p>`;
     const a = t[0] ?? "", i = a.endsWith(":"), s = i ? t.slice(1) : t;
     return r`
-      ${i ? r`<p style="margin:0 0 var(--uui-size-space-2, 8px); font-size: var(--uui-type-small-size, 0.875rem); line-height: 1.5;">${x(a)}</p>` : n}
+      ${i ? r`<p style="margin:0 0 var(--uui-size-space-2, 8px); font-size: var(--uui-type-small-size, 0.875rem); line-height: 1.5;">${y(a)}</p>` : n}
       <ol class="suggestions-list">
-        ${s.map((l) => r`<li>${x(l)}</li>`)}
+        ${s.map((l) => r`<li>${y(l)}</li>`)}
       </ol>
     `;
   }
@@ -143,6 +143,24 @@ let p = class extends P {
         return this._renderRecBox(e, t.value, !1);
       case "applied":
         return this._renderRecBox(e, t.value, !0);
+      case "error":
+        return r`
+          <div style="display:flex;align-items:center;gap:var(--uui-size-space-2,8px);margin-top:var(--uui-size-space-2,8px);">
+            <uui-icon name="icon-alert" style="color:var(--uui-color-danger-standalone,#b91c1c);"></uui-icon>
+            <span style="color:var(--uui-color-danger-standalone,#b91c1c);font-size:0.85rem;">
+              ${this.localize.term("evaluatePage_recError")}
+            </span>
+            <uui-button
+              look="secondary"
+              compact
+              label=${this.localize.term("evaluatePage_recGenerate")}
+              @click=${() => {
+          this._handleGenerate(e);
+        }}>
+              ${this.localize.term("evaluatePage_recRegenerate")}
+            </uui-button>
+          </div>
+        `;
     }
   }
   _renderRecBox(e, t, a) {
@@ -209,7 +227,7 @@ let p = class extends P {
       this._setRecState(e.checkNumber, { kind: "result", value: a.recommendedValue });
     } catch {
       if (!this.isConnected) return;
-      this._setRecState(e.checkNumber, { kind: "idle" });
+      this._setRecState(e.checkNumber, { kind: "error" });
     }
   }
   _handleApply(e, t) {
@@ -495,14 +513,14 @@ function M(e) {
   const c = e.split(/\d+\)\s+/).map((o) => o.trim()).filter(Boolean);
   return c.length > 1 ? c : [e.trim()];
 }
-function x(e) {
+function y(e) {
   const t = e.split(/\*\*([^*]+)\*\*/g);
   return r`${t.map((a, i) => i % 2 === 1 ? r`<strong>${a}</strong>` : a)}`;
 }
-var T = Object.defineProperty, K = Object.getOwnPropertyDescriptor, k = (e, t, a, i) => {
-  for (var s = i > 1 ? void 0 : i ? K(t, a) : t, l = e.length - 1, c; l >= 0; l--)
+var G = Object.defineProperty, T = Object.getOwnPropertyDescriptor, k = (e, t, a, i) => {
+  for (var s = i > 1 ? void 0 : i ? T(t, a) : t, l = e.length - 1, c; l >= 0; l--)
     (c = e[l]) && (s = (i ? c(t, a, s) : c(s)) || s);
-  return i && s && T(t, a, s), s;
+  return i && s && G(t, a, s), s;
 };
 let v = class extends P {
   constructor() {
@@ -558,12 +576,12 @@ k([
 v = k([
   $("page-evaluator-warning")
 ], v);
-var L = Object.defineProperty, G = Object.getOwnPropertyDescriptor, m = (e, t, a, i) => {
-  for (var s = i > 1 ? void 0 : i ? G(t, a) : t, l = e.length - 1, c; l >= 0; l--)
+var K = Object.defineProperty, L = Object.getOwnPropertyDescriptor, m = (e, t, a, i) => {
+  for (var s = i > 1 ? void 0 : i ? L(t, a) : t, l = e.length - 1, c; l >= 0; l--)
     (c = e[l]) && (s = (i ? c(t, a, s) : c(s)) || s);
-  return i && s && L(t, a, s), s;
+  return i && s && K(t, a, s), s;
 };
-const y = {
+const x = {
   sending: "evaluatePage_progressSendingData",
   waiting: "evaluatePage_progressWaitingForAI",
   rendering: "evaluatePage_progressRendering"
@@ -607,10 +625,10 @@ let d = class extends C {
       return;
     }
     try {
-      if (this._modalState = "loading", this._progressKey = y.sending, await this._tick(), !this.isConnected) return;
-      this._progressKey = y.waiting;
+      if (this._modalState = "loading", this._progressKey = x.sending, await this._tick(), !this.isConnected) return;
+      this._progressKey = x.waiting;
       const t = await E(e);
-      if (!this.isConnected || (this._progressKey = y.rendering, await this._tick(), !this.isConnected)) return;
+      if (!this.isConnected || (this._progressKey = x.rendering, await this._tick(), !this.isConnected)) return;
       this._report = t, this._modalState = t.parseFailed ? "parse-failed" : "success";
     } catch (t) {
       if (!this.isConnected) return;
@@ -644,7 +662,7 @@ let d = class extends C {
   async _applyRecommendation(e, t) {
     if (!this._workspaceContext) return;
     const a = await F("document");
-    a != null && a.applyValueChange && await a.applyValueChange(this._workspaceContext, { path: e, value: t });
+    this.isConnected && a != null && a.applyValueChange && await a.applyValueChange(this._workspaceContext, { path: e, value: t });
   }
   render() {
     return r`
@@ -774,4 +792,4 @@ d = m([
 export {
   d as EvaluationModalElement
 };
-//# sourceMappingURL=evaluation-modal.element-D9NViSBf.js.map
+//# sourceMappingURL=evaluation-modal.element-BUgHfdue.js.map

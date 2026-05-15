@@ -421,6 +421,22 @@ export class EvaluationReportElement extends UmbLitElement {
         return this._renderRecBox(check, state.value, false);
       case 'applied':
         return this._renderRecBox(check, state.value, true);
+      case 'error':
+        return html`
+          <div style="display:flex;align-items:center;gap:var(--uui-size-space-2,8px);margin-top:var(--uui-size-space-2,8px);">
+            <uui-icon name="icon-alert" style="color:var(--uui-color-danger-standalone,#b91c1c);"></uui-icon>
+            <span style="color:var(--uui-color-danger-standalone,#b91c1c);font-size:0.85rem;">
+              ${this.localize.term('evaluatePage_recError')}
+            </span>
+            <uui-button
+              look="secondary"
+              compact
+              label=${this.localize.term('evaluatePage_recGenerate')}
+              @click=${() => { void this._handleGenerate(check); }}>
+              ${this.localize.term('evaluatePage_recRegenerate')}
+            </uui-button>
+          </div>
+        `;
     }
   }
 
@@ -492,7 +508,7 @@ export class EvaluationReportElement extends UmbLitElement {
       this._setRecState(check.checkNumber, { kind: 'result', value: response.recommendedValue });
     } catch {
       if (!this.isConnected) return;
-      this._setRecState(check.checkNumber, { kind: 'idle' });
+      this._setRecState(check.checkNumber, { kind: 'error' });
     }
   }
 

@@ -52,6 +52,7 @@ export default {
     recApplied: 'Applied to field',
     recRegenerate: 'Regenerate',
     recCopy: 'Copy',
+    recError: 'Could not generate a recommendation. Try again.',
   },
 
   evaluatorConfig: {

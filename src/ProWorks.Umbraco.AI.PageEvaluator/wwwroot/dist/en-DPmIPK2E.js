@@ -40,7 +40,8 @@ const e = {
     recApply: "Apply to field",
     recApplied: "Applied to field",
     recRegenerate: "Regenerate",
-    recCopy: "Copy"
+    recCopy: "Copy",
+    recError: "Could not generate a recommendation. Try again."
   },
   evaluatorConfig: {
     // Workspace: list
@@ -139,4 +140,4 @@ const e = {
 export {
   e as default
 };
-//# sourceMappingURL=en-y2j59TQ3.js.map
+//# sourceMappingURL=en-DPmIPK2E.js.map

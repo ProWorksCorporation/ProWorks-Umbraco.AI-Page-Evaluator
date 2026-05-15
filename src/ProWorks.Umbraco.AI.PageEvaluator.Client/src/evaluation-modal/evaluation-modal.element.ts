@@ -173,6 +173,7 @@ export class EvaluationModalElement extends UmbModalBaseElement<EvaluationModalD
   private async _applyRecommendation(propertyAlias: string, value: unknown): Promise<void> {
     if (!this._workspaceContext) return;
     const adapter = await resolveEntityAdapterByType('document');
+    if (!this.isConnected) return;
     if (!adapter?.applyValueChange) return;
     await adapter.applyValueChange(this._workspaceContext, { path: propertyAlias, value });
   }
