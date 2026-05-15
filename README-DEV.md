@@ -77,7 +77,7 @@ After a fresh clone, import the demo content via **Settings → uSync → Import
 dotnet test
 ```
 
-The test suite covers controller error handling, service behavior, persistence mapping, cache invalidation, notification handling, and the Umbraco.AI test feature integration (161 tests, xUnit + NSubstitute).
+The test suite covers controller error handling, service behavior, persistence mapping, cache invalidation, notification handling, and the Umbraco.AI test feature integration (173 tests, xUnit + NSubstitute).
 
 ### Build the NuGet package
 
@@ -211,6 +211,16 @@ The system prompt instructs the model to respond with a strict JSON schema:
 ```
 
 `propertyAlias` links a check to a specific Umbraco property so the UI can offer an AI text recommendation for that field. It is `null` for structural or computed checks (e.g. "page has no H1 tag") that do not map to a single editable property. `overallScore` and `axisScores` are only present when dimensional scoring is enabled on the evaluator configuration.
+
+Both the evaluate and cached-evaluate responses also include a `propertyEditorAliases` map (`{ [alias]: editorAlias }`) populated by the controller at response time using `IContentTypeService`. This map is **never stored in the cache** — it is always derived fresh so it stays current if content types change. The frontend uses it to classify each property:
+
+| Editor alias | Recommendation | Apply to field |
+|---|---|---|
+| `Umbraco.TextBox`, `Umbraco.TextArea`, `Umbraco.Markdown`, `Umbraco.Tags` | Yes | Yes |
+| `Umbraco.RichText`, `Umbraco.TinyMCE` | Yes (copy only) | No |
+| All others (media pickers, block editors, pickers, etc.) | No | No |
+
+When `propertyEditorAliases` is unavailable (e.g. the document type was deleted), the frontend falls back to a value-content heuristic: properties whose raw value starts with `{`, `[`, or `umb://` are treated as complex and excluded.
 
 The response parser tries JSON first, then a Markdown numbered-list fallback, then stores the raw text for display if both fail.
 
