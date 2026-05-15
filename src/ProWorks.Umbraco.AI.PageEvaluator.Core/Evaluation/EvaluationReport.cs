@@ -93,9 +93,23 @@ public sealed record EvaluationReport
         this with { PropertyEditorAliases = aliases };
 
     /// <summary>
+    /// Whether recommendations are enabled for the active evaluator configuration.
+    /// Populated by the API controller at response time — never stored in the evaluation cache.
+    /// Defaults to true (recommendations shown) when the config is unavailable.
+    /// </summary>
+    public bool RecommendationsEnabled { get; init; } = true;
+
+    /// <summary>
     /// Returns a copy of this report with the specified <see cref="PropertyNames"/> map attached.
     /// Call this in the controller just before returning — do not store the map in the cache.
     /// </summary>
     public EvaluationReport WithPropertyNames(IReadOnlyDictionary<string, string> names) =>
         this with { PropertyNames = names };
+
+    /// <summary>
+    /// Returns a copy of this report with <see cref="RecommendationsEnabled"/> set to the given value.
+    /// Call this in the controller just before returning — do not store in the cache.
+    /// </summary>
+    public EvaluationReport WithRecommendationsEnabled(bool enabled) =>
+        this with { RecommendationsEnabled = enabled };
 }

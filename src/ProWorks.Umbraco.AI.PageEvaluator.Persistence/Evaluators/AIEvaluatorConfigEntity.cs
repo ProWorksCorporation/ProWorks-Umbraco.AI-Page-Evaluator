@@ -57,4 +57,10 @@ public sealed class AIEvaluatorConfigEntity
     /// Default false; pre-existing rows are backfilled with false by the migration default.
     /// </summary>
     public bool ScoringEnabled { get; set; }
+
+    /// <summary>
+    /// Whether the evaluation report shows recommendation buttons.
+    /// Default true; pre-existing rows are backfilled with true by the migration default.
+    /// </summary>
+    public bool RecommendationsEnabled { get; set; } = true;
 }
