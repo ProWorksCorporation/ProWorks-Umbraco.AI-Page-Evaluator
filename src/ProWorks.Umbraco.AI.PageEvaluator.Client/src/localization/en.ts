@@ -43,6 +43,15 @@ export default {
     // Modal: dimensional scoring
     overallScore: 'Overall Score',
     axisScores: 'Score Breakdown',
+
+    // Recommendations
+    recGenerate: 'Generate recommendation',
+    recGenerating: 'Generating recommendation…',
+    recSuggested: 'Suggested value',
+    recApply: 'Apply to field',
+    recApplied: 'Applied to field',
+    recRegenerate: 'Regenerate',
+    recCopy: 'Copy',
   },
 
   evaluatorConfig: {
