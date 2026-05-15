@@ -188,6 +188,30 @@ export class EvaluationReportElement extends UmbLitElement {
       word-break: break-word;
     }
 
+    .rec-generate-link {
+      --uui-button-background-color: transparent;
+      --uui-button-background-color-hover: transparent;
+      --uui-button-border-color: transparent;
+      --uui-button-border-color-hover: transparent;
+      --uui-button-contrast: var(--uui-color-interactive, #1b264f);
+      --uui-button-contrast-hover: var(--uui-color-interactive-emphasis, #283a97);
+      padding: 0;
+      height: auto;
+      min-height: auto;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+      font-size: var(--uui-type-small-size, 0.875rem);
+      margin-top: var(--uui-size-space-2, 8px);
+      display: inline-flex;
+    }
+
+    .rec-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--uui-size-space-2, 8px);
+      align-items: center;
+    }
+
     .overall-score-row {
       display: flex;
       align-items: center;
@@ -250,8 +274,14 @@ export class EvaluationReportElement extends UmbLitElement {
   @property({ attribute: false })
   properties: Record<string, unknown> = {};
 
+  @property({ attribute: false })
+  propertyEditorAliases: Record<string, string> = {};
+
   @state()
   private _recStates = new Map<number, RecommendationState>();
+
+  @state()
+  private _copiedChecks = new Set<number>();
 
   override render(): TemplateResult | typeof nothing {
     if (!this.report) return nothing;
@@ -374,10 +404,26 @@ export class EvaluationReportElement extends UmbLitElement {
     `;
   }
 
+  /**
+   * Returns true only when the property stores a plain-text value that a recommendation
+   * can meaningfully replace. Mirrors IsSimpleTextDraft on the server — skips media
+   * pickers, content pickers, MNTP, MultiUrlPicker, RTE, and any other property whose
+   * backoffice value is JSON or a UDI reference.
+   */
+  private _isTextProperty(alias: string): boolean {
+    const value = this.properties[alias];
+    if (typeof value !== 'string') return false;
+    const trimmed = value.trimStart();
+    if (trimmed.length === 0) return true;
+    return trimmed[0] !== '{' && trimmed[0] !== '[' && !trimmed.startsWith('umb://');
+  }
+
   private _renderCheck(check: CheckResult): TemplateResult {
     const state: RecommendationState = this._recStates.get(check.checkNumber) ?? { kind: 'idle' };
     const showRec =
-      (check.status === 'Fail' || check.status === 'Warn') && check.propertyAlias !== null;
+      (check.status === 'Fail' || check.status === 'Warn') &&
+      check.propertyAlias !== null &&
+      this._isTextProperty(check.propertyAlias);
 
     return html`
       <li class="check-item">
@@ -401,9 +447,8 @@ export class EvaluationReportElement extends UmbLitElement {
       case 'idle':
         return html`
           <uui-button
-            style="margin-top: var(--uui-size-space-2, 8px);"
-            look="secondary"
-            compact
+            class="rec-generate-link"
+            look="default"
             label=${this.localize.term('evaluatePage_recGenerate')}
             @click=${() => { void this._handleGenerate(check); }}>
             <uui-icon name="icon-wand" slot="icon"></uui-icon>
@@ -441,6 +486,7 @@ export class EvaluationReportElement extends UmbLitElement {
   }
 
   private _renderRecBox(check: CheckResult, value: string | null, applied: boolean): TemplateResult {
+    const copied = this._copiedChecks.has(check.checkNumber);
     return html`
       <div class="rec-box ${applied ? 'applied' : ''}">
         <div class="rec-label ${applied ? 'applied' : ''}">
@@ -450,7 +496,7 @@ export class EvaluationReportElement extends UmbLitElement {
             : this.localize.term('evaluatePage_recSuggested')}
         </div>
         <div class="rec-text">${value ?? ''}</div>
-        <uui-action-bar>
+        <div class="rec-actions">
           ${!applied
             ? html`
                 <uui-button
@@ -466,20 +512,21 @@ export class EvaluationReportElement extends UmbLitElement {
           <uui-button
             look="secondary"
             compact
+            label=${copied ? this.localize.term('evaluatePage_recCopied') : this.localize.term('evaluatePage_recCopy')}
+            ?disabled=${copied}
+            @click=${() => { void this._handleCopy(check.checkNumber, value); }}>
+            <uui-icon name="${copied ? 'icon-check' : 'icon-clipboard-copy'}" slot="icon"></uui-icon>
+            ${copied ? this.localize.term('evaluatePage_recCopied') : this.localize.term('evaluatePage_recCopy')}
+          </uui-button>
+          <uui-button
+            look="secondary"
+            compact
             label=${this.localize.term('evaluatePage_recRegenerate')}
             @click=${() => { void this._handleGenerate(check); }}>
             <uui-icon name="icon-sync" slot="icon"></uui-icon>
             ${this.localize.term('evaluatePage_recRegenerate')}
           </uui-button>
-          <uui-button
-            look="secondary"
-            compact
-            label=${this.localize.term('evaluatePage_recCopy')}
-            @click=${() => { void this._handleCopy(value); }}>
-            <uui-icon name="icon-clipboard-copy" slot="icon"></uui-icon>
-            ${this.localize.term('evaluatePage_recCopy')}
-          </uui-button>
-        </uui-action-bar>
+        </div>
       </div>
     `;
   }
@@ -524,9 +571,17 @@ export class EvaluationReportElement extends UmbLitElement {
     this._setRecState(check.checkNumber, { kind: 'applied', value });
   }
 
-  private async _handleCopy(value: string | null): Promise<void> {
+  private async _handleCopy(checkNumber: number, value: string | null): Promise<void> {
     if (value === null) return;
     await navigator.clipboard.writeText(value);
+    if (!this.isConnected) return;
+    this._copiedChecks = new Set(this._copiedChecks).add(checkNumber);
+    setTimeout(() => {
+      if (!this.isConnected) return;
+      const next = new Set(this._copiedChecks);
+      next.delete(checkNumber);
+      this._copiedChecks = next;
+    }, 2000);
   }
 }
 
