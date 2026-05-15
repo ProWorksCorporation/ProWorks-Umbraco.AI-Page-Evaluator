@@ -1214,9 +1214,7 @@ public class PageEvaluatorApiControllerTests
         Assert.Equal("bodyText", label);
     }
 
-    // ---------------------------------------------------------------------------
-    // POST /recommend
-    // ---------------------------------------------------------------------------
+    // POST /evaluate and GET /evaluate/cached — PropertyEditorAliases population
 
     [Fact]
     public async Task EvaluateAsync_AttachesPropertyEditorAliases_FromContentType()
@@ -1291,6 +1289,30 @@ public class PageEvaluatorApiControllerTests
         var report = Assert.IsAssignableFrom<EvaluationReport>(ok.Value);
         Assert.NotNull(report.PropertyEditorAliases);
         Assert.Equal("Umbraco.MediaPicker3", report.PropertyEditorAliases["heroImage"]);
+    }
+
+    [Fact]
+    public async Task GetCachedEvaluationAsync_WhenContentTypeNotFound_AttachesEmptyAliases()
+    {
+        var nodeId = Guid.NewGuid();
+        const string alias = "blogPost";
+        var cachedReport = EvaluationReport.Parsed(new EvaluationScore(1, 1), [], null);
+        var entry = new EvaluationCacheEntry
+        {
+            NodeId = nodeId,
+            DocumentTypeAlias = alias,
+            Report = cachedReport,
+            CachedAt = DateTime.UtcNow,
+        };
+        _cacheRepository.GetAsync(nodeId, Arg.Any<CancellationToken>()).Returns(entry);
+        _contentTypeService.Get(alias).Returns((IContentType?)null);
+
+        IActionResult result = await _sut.GetCachedEvaluationAsync(nodeId);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var report = Assert.IsAssignableFrom<EvaluationReport>(ok.Value);
+        Assert.NotNull(report.PropertyEditorAliases);
+        Assert.Empty(report.PropertyEditorAliases);
     }
 
     // ---------------------------------------------------------------------------
