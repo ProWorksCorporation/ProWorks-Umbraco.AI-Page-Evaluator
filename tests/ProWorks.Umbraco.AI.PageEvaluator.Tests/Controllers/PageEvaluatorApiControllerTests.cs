@@ -1262,6 +1262,34 @@ public class PageEvaluatorApiControllerTests
     }
 
     [Fact]
+    public async Task EvaluateAsync_DoesNotCachePropertyEditorAliases()
+    {
+        var nodeId = Guid.NewGuid();
+        const string alias = "blogPost";
+        var request = new EvaluatePageRequest { NodeId = nodeId, DocumentTypeAlias = alias, Properties = new() };
+
+        _evaluationService.EvaluateAsync(nodeId, alias, Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<CancellationToken>())
+            .Returns(EvaluationReport.Parsed(new EvaluationScore(1, 1), [], null));
+
+        var contentType = Substitute.For<IContentType>();
+        var propType = Substitute.For<IPropertyType>();
+        propType.Alias.Returns("title");
+        propType.PropertyEditorAlias.Returns("Umbraco.TextBox");
+        contentType.CompositionPropertyTypes.Returns([propType]);
+        _contentTypeService.Get(alias).Returns(contentType);
+
+        EvaluationCacheEntry? capturedEntry = null;
+        _cacheRepository
+            .SaveAsync(Arg.Do<EvaluationCacheEntry>(e => capturedEntry = e), Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+
+        await _sut.EvaluateAsync(request);
+
+        Assert.NotNull(capturedEntry);
+        Assert.Null(capturedEntry.Report.PropertyEditorAliases);
+    }
+
+    [Fact]
     public async Task GetCachedEvaluationAsync_AttachesPropertyEditorAliases_FromContentType()
     {
         var nodeId = Guid.NewGuid();
@@ -1665,6 +1693,49 @@ public class PageEvaluatorApiControllerTests
 
         Assert.NotEmpty(capturedSystemPrompt);
         Assert.Contains("HTML", capturedSystemPrompt, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("recommendedValue", capturedSystemPrompt, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task RecommendAsync_ForPlainTextProperty_PromptIsGenericText()
+    {
+        // Use the default content node from the constructor (alias = "blogPost")
+        _configService.GetActiveForDocumentTypeAsync("blogPost", Arg.Any<CancellationToken>())
+            .Returns(BuildConfig("blogPost"));
+
+        var propType = Substitute.For<IPropertyType>();
+        propType.Alias.Returns("metaDescription");
+        propType.PropertyEditorAlias.Returns("Umbraco.TextBox");
+        var ct = Substitute.For<IContentType>();
+        ct.CompositionPropertyTypes.Returns(new[] { propType });
+        _contentTypeService.Get("blogPost").Returns(ct);
+
+        _propertyEditorSchemaService.SupportsSchema("Umbraco.TextBox").Returns(false);
+
+        string capturedSystemPrompt = string.Empty;
+        _chatService.GetChatResponseAsync(
+            Arg.Any<Action<AIChatBuilder>>(),
+            Arg.Do<IEnumerable<ChatMessage>>(msgs =>
+            {
+                var systemMsg = msgs.FirstOrDefault(m => m.Role == ChatRole.System);
+                if (systemMsg is not null)
+                    capturedSystemPrompt = systemMsg.Text ?? "";
+            }),
+            Arg.Any<CancellationToken>())
+            .Returns(new ChatResponse([new ChatMessage(ChatRole.Assistant, "{\"recommendedValue\":\"A great meta description.\"}")]));
+
+        await _sut.RecommendAsync(new RecommendRequest
+        {
+            NodeId = Guid.NewGuid(),
+            PropertyAlias = "metaDescription",
+            CheckLabel = "Meta description is missing",
+            CheckExplanation = null,
+            Properties = new Dictionary<string, string>(),
+        });
+
+        Assert.NotEmpty(capturedSystemPrompt);
+        Assert.DoesNotContain("JSON array", capturedSystemPrompt, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("HTML", capturedSystemPrompt, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("recommendedValue", capturedSystemPrompt, StringComparison.OrdinalIgnoreCase);
     }
 }
