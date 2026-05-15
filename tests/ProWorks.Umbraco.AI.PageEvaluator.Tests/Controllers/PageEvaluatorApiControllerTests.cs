@@ -88,8 +88,8 @@ public class PageEvaluatorApiControllerTests
         var score = new EvaluationScore(14, 17);
         var checks = new List<CheckResult>
         {
-            new(1, CheckStatus.Pass, "Title", null),
-            new(2, CheckStatus.Fail, "Meta Description", "Empty."),
+            new(1, CheckStatus.Pass, "Title", null, null),
+            new(2, CheckStatus.Fail, "Meta Description", "Empty.", null),
         };
         var expectedReport = EvaluationReport.Parsed(score, checks, "Add meta description.");
 

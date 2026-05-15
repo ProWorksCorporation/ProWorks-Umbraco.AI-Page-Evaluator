@@ -858,6 +858,68 @@ public class PageEvaluationServiceTests
     }
 
     // ---------------------------------------------------------------------------
+    // Task 1: propertyAlias parsing
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public async Task EvaluateAsync_WhenJsonIncludesPropertyAlias_ParsesAliasIntoCheckResult()
+    {
+        const string documentTypeAlias = "blogPost";
+        var nodeId = Guid.NewGuid();
+        var activeConfig = BuildConfig(documentTypeAlias);
+        _configService.GetActiveForDocumentTypeAsync(documentTypeAlias, Arg.Any<CancellationToken>())
+            .Returns(activeConfig);
+
+        var jsonResponse = """
+            {
+              "score": { "passed": 1, "total": 2 },
+              "checks": [
+                { "checkNumber": 1, "status": "Fail", "label": "Meta description is missing", "explanation": "No meta description found.", "propertyAlias": "metaDescription" },
+                { "checkNumber": 2, "status": "Pass", "label": "H1 is present", "explanation": null, "propertyAlias": null }
+              ],
+              "suggestions": null
+            }
+            """;
+        MockChatResponse(jsonResponse);
+
+        EvaluationReport report = await _sut.EvaluateAsync(
+            nodeId, documentTypeAlias, new Dictionary<string, object?>(), CancellationToken.None);
+
+        Assert.False(report.ParseFailed);
+        Assert.Equal(2, report.Checks.Count);
+        Assert.Equal("metaDescription", report.Checks[0].PropertyAlias);
+        Assert.Null(report.Checks[1].PropertyAlias);
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_WhenJsonLacksPropertyAlias_PropertyAliasIsNull()
+    {
+        const string documentTypeAlias = "blogPost";
+        var nodeId = Guid.NewGuid();
+        var activeConfig = BuildConfig(documentTypeAlias);
+        _configService.GetActiveForDocumentTypeAsync(documentTypeAlias, Arg.Any<CancellationToken>())
+            .Returns(activeConfig);
+
+        var jsonResponse = """
+            {
+              "score": { "passed": 0, "total": 1 },
+              "checks": [
+                { "checkNumber": 1, "status": "Fail", "label": "Missing title", "explanation": "No title." }
+              ],
+              "suggestions": null
+            }
+            """;
+        MockChatResponse(jsonResponse);
+
+        EvaluationReport report = await _sut.EvaluateAsync(
+            nodeId, documentTypeAlias, new Dictionary<string, object?>(), CancellationToken.None);
+
+        Assert.False(report.ParseFailed);
+        Assert.Single(report.Checks);
+        Assert.Null(report.Checks[0].PropertyAlias);
+    }
+
+    // ---------------------------------------------------------------------------
     // Helpers
     // ---------------------------------------------------------------------------
 

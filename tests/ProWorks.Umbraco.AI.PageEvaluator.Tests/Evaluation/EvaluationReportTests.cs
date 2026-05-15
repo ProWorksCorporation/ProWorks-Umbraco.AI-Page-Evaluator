@@ -13,7 +13,7 @@ public class EvaluationReportTests
     public void WithCachedAt_ReturnsCopyWithCachedAtSet()
     {
         var score = new EvaluationScore(3, 4);
-        var checks = new List<CheckResult> { new(1, CheckStatus.Pass, "Title", null) };
+        var checks = new List<CheckResult> { new(1, CheckStatus.Pass, "Title", null, null) };
         var original = EvaluationReport.Parsed(score, checks, "Good job.");
 
         var cachedAt = new DateTime(2026, 4, 2, 12, 0, 0, DateTimeKind.Utc);
