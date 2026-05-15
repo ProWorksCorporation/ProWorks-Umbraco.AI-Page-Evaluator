@@ -48,6 +48,13 @@ public sealed record EvaluationReport
     /// </summary>
     public IReadOnlyList<AxisScore>? AxisScores { get; init; }
 
+    /// <summary>
+    /// Maps each property alias to its Umbraco property editor alias (e.g. "Umbraco.TextBox").
+    /// Populated by the API controller at response time — never stored in the evaluation cache.
+    /// Null when unavailable (e.g. the document type was deleted after evaluation).
+    /// </summary>
+    public IReadOnlyDictionary<string, string>? PropertyEditorAliases { get; init; }
+
     /// <summary>Creates a successfully parsed report.</summary>
     public static EvaluationReport Parsed(
         EvaluationScore? score,
@@ -70,4 +77,11 @@ public sealed record EvaluationReport
 
     /// <summary>Returns a copy of this report with the specified <see cref="CachedAt"/> timestamp.</summary>
     public EvaluationReport WithCachedAt(DateTime cachedAt) => this with { CachedAt = cachedAt };
+
+    /// <summary>
+    /// Returns a copy of this report with the specified property editor alias map attached.
+    /// Call this in the controller just before returning — do not store the map in the cache.
+    /// </summary>
+    public EvaluationReport WithPropertyEditorAliases(IReadOnlyDictionary<string, string> aliases) =>
+        this with { PropertyEditorAliases = aliases };
 }
