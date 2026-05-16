@@ -138,4 +138,6 @@ specs/
 
 # Superpowers AI planning artifacts
 docs/superpowers/
+docs/design/
+docs/plans/
 .superpowers/
