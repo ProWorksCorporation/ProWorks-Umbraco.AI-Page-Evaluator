@@ -280,6 +280,9 @@ export class EvaluationReportElement extends UmbLitElement {
   @property({ attribute: false })
   propertyNames: Record<string, string> = {};
 
+  @property({ attribute: false })
+  recommendationsEnabled = true;
+
   @state()
   private _recStates = new Map<number, RecommendationState>();
 
@@ -468,6 +471,7 @@ export class EvaluationReportElement extends UmbLitElement {
   private _renderCheck(check: CheckResult): TemplateResult {
     const state: RecommendationState = this._recStates.get(check.checkNumber) ?? { kind: 'idle' };
     const showRec =
+      this.recommendationsEnabled &&
       (check.status === 'Fail' || check.status === 'Warn') &&
       check.propertyAlias !== null &&
       this._canRecommend(check.propertyAlias);

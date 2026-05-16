@@ -110,7 +110,9 @@ const e = {
     validationRequired: "This field is required.",
     // Form: dimensional scoring
     scoringLabel: "Enable Scoring",
-    scoringHelp: "Ask the AI to rate the page on a 1-5 scale across the dimensions named in your prompt."
+    scoringHelp: "Ask the AI to rate the page on a 1-5 scale across the dimensions named in your prompt.",
+    recommendationsLabel: "Enable Recommendations",
+    recommendationsHelp: "Show AI-generated recommendation buttons alongside check results that have a mapped property."
   },
   promoNotice: {
     headline: "See How AI Interprets Your Brand Messaging",
@@ -142,4 +144,4 @@ const e = {
 export {
   e as default
 };
-//# sourceMappingURL=en-BupNVGSl.js.map
+//# sourceMappingURL=en-5NvUAGa7.js.map

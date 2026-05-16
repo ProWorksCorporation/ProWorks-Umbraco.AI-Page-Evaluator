@@ -1,6 +1,6 @@
 import { property as m, state as a, customElement as f, html as o, nothing as n, css as x } from "@umbraco-cms/backoffice/external/lit";
 import { UmbLitElement as v } from "@umbraco-cms/backoffice/lit-element";
-import { f as b, c as $, h as g, B as y, u as T, i as C } from "./entry-point-7v-9sL9q.js";
+import { f as b, c as $, h as g, B as y, u as T, i as C } from "./entry-point-CuPhei5-.js";
 const _ = [
   {
     id: "required-fields",
@@ -194,14 +194,14 @@ d([
 u = d([
   f("page-evaluator-prompt-builder")
 ], u);
-var S = Object.defineProperty, E = Object.getOwnPropertyDescriptor, p = (e, t, i, l) => {
-  for (var r = l > 1 ? void 0 : l ? E(t, i) : t, c = e.length - 1, h; c >= 0; c--)
+var E = Object.defineProperty, S = Object.getOwnPropertyDescriptor, p = (e, t, i, l) => {
+  for (var r = l > 1 ? void 0 : l ? S(t, i) : t, c = e.length - 1, h; c >= 0; c--)
     (h = e[c]) && (r = (l ? h(t, i, r) : h(r)) || r);
-  return l && r && S(t, i, r), r;
+  return l && r && E(t, i, r), r;
 };
 let s = class extends v {
   constructor() {
-    super(...arguments), this.configId = null, this._name = "", this._description = "", this._documentTypeAlias = "", this._profileId = "", this._contextId = "", this._promptText = "", this._scoringEnabled = !1, this._version = 0, this._errors = {}, this._saving = !1, this._loadError = null, this._promptBuilderOpen = !1, this._propertyAliases = [], this._availableProperties = [], this._docTypeDisplayName = "", this._docTypeSuggestions = [], this._docTypeShowSuggestions = !1, this._docTypeSearchTimer = null;
+    super(...arguments), this.configId = null, this._name = "", this._description = "", this._documentTypeAlias = "", this._profileId = "", this._contextId = "", this._promptText = "", this._scoringEnabled = !1, this._recommendationsEnabled = !0, this._version = 0, this._errors = {}, this._saving = !1, this._loadError = null, this._promptBuilderOpen = !1, this._propertyAliases = [], this._availableProperties = [], this._docTypeDisplayName = "", this._docTypeSuggestions = [], this._docTypeShowSuggestions = !1, this._docTypeSearchTimer = null;
   }
   updated(e) {
     super.updated(e), e.has("configId") && (this.configId ? this._loadConfig(this.configId) : this._resetFields());
@@ -210,14 +210,14 @@ let s = class extends v {
     super.disconnectedCallback(), this._docTypeSearchTimer !== null && (clearTimeout(this._docTypeSearchTimer), this._docTypeSearchTimer = null);
   }
   _resetFields() {
-    this._loadError = null, this._name = "", this._description = "", this._documentTypeAlias = "", this._docTypeDisplayName = "", this._docTypeSuggestions = [], this._docTypeShowSuggestions = !1, this._profileId = "", this._contextId = "", this._promptText = "", this._scoringEnabled = !1, this._version = 0, this._propertyAliases = [], this._availableProperties = [], this._errors = {}, this._promptBuilderOpen = !1;
+    this._loadError = null, this._name = "", this._description = "", this._documentTypeAlias = "", this._docTypeDisplayName = "", this._docTypeSuggestions = [], this._docTypeShowSuggestions = !1, this._profileId = "", this._contextId = "", this._promptText = "", this._scoringEnabled = !1, this._recommendationsEnabled = !0, this._version = 0, this._propertyAliases = [], this._availableProperties = [], this._errors = {}, this._promptBuilderOpen = !1;
   }
   async _loadConfig(e) {
     this._loadError = null;
     try {
       const t = await $(e);
       if (!this.isConnected || this.configId !== e) return;
-      this._name = t.name, this._description = t.description ?? "", this._documentTypeAlias = t.documentTypeAlias, this._profileId = t.profileId, this._contextId = t.contextId ?? "", this._promptText = t.promptText, this._scoringEnabled = t.scoringEnabled, this._version = t.version, this._propertyAliases = t.propertyAliases ?? [], this._errors = {}, this._loadDocTypeInfo(t.documentTypeAlias);
+      this._name = t.name, this._description = t.description ?? "", this._documentTypeAlias = t.documentTypeAlias, this._profileId = t.profileId, this._contextId = t.contextId ?? "", this._promptText = t.promptText, this._scoringEnabled = t.scoringEnabled, this._recommendationsEnabled = t.recommendationsEnabled, this._version = t.version, this._propertyAliases = t.propertyAliases ?? [], this._errors = {}, this._loadDocTypeInfo(t.documentTypeAlias);
     } catch {
       if (!this.isConnected || this.configId !== e) return;
       this._loadError = this.localize.term("evaluatorConfig_formLoadError");
@@ -293,6 +293,7 @@ let s = class extends v {
           promptText: this._promptText,
           propertyAliases: this._propertyAliases.length > 0 ? this._propertyAliases : null,
           scoringEnabled: this._scoringEnabled,
+          recommendationsEnabled: this._recommendationsEnabled,
           version: this._version
         }) : await C({
           name: this._name,
@@ -302,7 +303,8 @@ let s = class extends v {
           contextId: this._contextId || null,
           promptText: this._promptText,
           propertyAliases: this._propertyAliases.length > 0 ? this._propertyAliases : null,
-          scoringEnabled: this._scoringEnabled
+          scoringEnabled: this._scoringEnabled,
+          recommendationsEnabled: this._recommendationsEnabled
         });
         if (!this.isConnected) return;
         this.dispatchEvent(
@@ -489,6 +491,20 @@ let s = class extends v {
               ?checked=${this._scoringEnabled}
               @change=${(e) => {
       this._scoringEnabled = e.target.checked;
+    }}>
+            </uui-toggle>
+          </div>
+        </umb-property-layout>
+
+        <umb-property-layout
+          label=${this.localize.term("evaluatorConfig_recommendationsLabel")}
+          description=${this.localize.term("evaluatorConfig_recommendationsHelp")}>
+          <div slot="editor">
+            <uui-toggle
+              label=${this.localize.term("evaluatorConfig_recommendationsLabel")}
+              ?checked=${this._recommendationsEnabled}
+              @change=${(e) => {
+      this._recommendationsEnabled = e.target.checked;
     }}>
             </uui-toggle>
           </div>
@@ -713,6 +729,9 @@ p([
 ], s.prototype, "_scoringEnabled", 2);
 p([
   a()
+], s.prototype, "_recommendationsEnabled", 2);
+p([
+  a()
 ], s.prototype, "_version", 2);
 p([
   a()
@@ -747,4 +766,4 @@ s = p([
 export {
   s as EvaluatorFormElement
 };
-//# sourceMappingURL=evaluator-form.element-Dc374VVk.js.map
+//# sourceMappingURL=evaluator-form.element-B2YvtM5z.js.map
