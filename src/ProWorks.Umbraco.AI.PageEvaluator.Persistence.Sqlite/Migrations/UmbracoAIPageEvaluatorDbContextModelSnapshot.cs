@@ -88,6 +88,9 @@ namespace ProWorks.Umbraco.AI.PageEvaluator.Persistence.Sqlite.Migrations
                     b.Property<string>("PropertyAliases")
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("RecommendationsEnabled")
+                        .HasColumnType("INTEGER");
+
                     b.Property<bool>("ScoringEnabled")
                         .HasColumnType("INTEGER");
 

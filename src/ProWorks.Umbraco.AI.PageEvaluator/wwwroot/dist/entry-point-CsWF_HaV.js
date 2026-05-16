@@ -84,6 +84,14 @@ async function _(e) {
   return i(t);
 }
 async function T(e) {
+  const t = await n.post({
+    security: s,
+    url: `${r}/recommend`,
+    body: e
+  });
+  return i(t);
+}
+async function O(e) {
   const t = await n.get({
     security: s,
     url: `${r}/document-type/${encodeURIComponent(e)}/properties`
@@ -112,12 +120,12 @@ class P extends f {
         this.permitted = !1;
         return;
       }
-      const c = ((l = o.structure.getOwnerContentType()) == null ? void 0 : l.alias) ?? "";
-      if (!c) {
+      const u = ((l = o.structure.getOwnerContentType()) == null ? void 0 : l.alias) ?? "";
+      if (!u) {
         this.permitted = !1;
         return;
       }
-      v(c).then((g) => {
+      v(u).then((g) => {
         this.permitted = g !== null;
       }).catch(() => {
         this.permitted = !1;
@@ -125,7 +133,7 @@ class P extends f {
     });
   }
 }
-const A = "Uai.Menu.Addons", u = [
+const A = "Uai.Menu.Addons", c = [
   // ---------------------------------------------------------------------------
   // Localization: English default translations for all package UI strings.
   // ---------------------------------------------------------------------------
@@ -136,7 +144,7 @@ const A = "Uai.Menu.Addons", u = [
     meta: {
       culture: "en"
     },
-    js: () => import("./en-CUX7Xhn3.js")
+    js: () => import("./en-dMWi_toJ.js")
   },
   // ---------------------------------------------------------------------------
   // US1 — Content Editor Evaluates a Page
@@ -155,7 +163,7 @@ const A = "Uai.Menu.Addons", u = [
     kind: "default",
     alias: "ProWorks.AI.PageEvaluator.WorkspaceAction",
     name: "Page Evaluator Workspace Action",
-    api: () => import("./page-evaluator-action.api-_P8W7Noa.js"),
+    api: () => import("./page-evaluator-action.api-B6EVcvTD.js"),
     meta: {
       label: "Evaluate Page",
       look: "secondary"
@@ -174,7 +182,7 @@ const A = "Uai.Menu.Addons", u = [
     type: "modal",
     alias: "ProWorks.AI.PageEvaluator.Modal.Evaluation",
     name: "Page Evaluator Evaluation Modal",
-    element: () => import("./evaluation-modal.element-RT9nFNEL.js").then((e) => ({
+    element: () => import("./evaluation-modal.element--rBlnw8P.js").then((e) => ({
       element: e.EvaluationModalElement
     }))
   },
@@ -199,7 +207,7 @@ const A = "Uai.Menu.Addons", u = [
     meta: {
       entityType: "evaluator-config"
     },
-    element: () => import("./evaluator-config-workspace.element-CQQgZjol.js").then((e) => ({
+    element: () => import("./evaluator-config-workspace.element-C0Ara4AT.js").then((e) => ({
       element: e.EvaluatorConfigWorkspaceElement
     }))
   },
@@ -217,7 +225,7 @@ const A = "Uai.Menu.Addons", u = [
     meta: {
       feature: "proworks-page-evaluator"
     },
-    api: () => import("./page-evaluator-test-entity.repository-BrDLeY62.js")
+    api: () => import("./page-evaluator-test-entity.repository-1aXW7cWR.js")
   },
   {
     type: "workspaceView",
@@ -234,14 +242,14 @@ const A = "Uai.Menu.Addons", u = [
         match: "ProWorks.AI.PageEvaluator.Workspace"
       }
     ],
-    element: () => import("./evaluator-form.element-B2uwL51a.js").then((e) => ({
+    element: () => import("./evaluator-form.element-BaqyCQHP.js").then((e) => ({
       element: e.EvaluatorFormElement
     }))
   }
-], O = (e) => {
-  console.log("[ProWorks.AI.PageEvaluator] onInit called — registering", u.length, "extensions"), m.registerMany(u);
-}, x = (e, t) => {
-  for (const a of u)
+], x = (e) => {
+  console.log("[ProWorks.AI.PageEvaluator] onInit called — registering", c.length, "extensions"), m.registerMany(c);
+}, M = (e, t) => {
+  for (const a of c)
     m.unregister(a.alias);
 };
 export {
@@ -251,12 +259,13 @@ export {
   w as c,
   U as d,
   _ as e,
-  T as f,
+  O as f,
   R as g,
   n as h,
   $ as i,
-  x as j,
-  O as o,
+  M as j,
+  x as o,
+  T as r,
   W as u
 };
-//# sourceMappingURL=entry-point-fq8H4LAY.js.map
+//# sourceMappingURL=entry-point-CsWF_HaV.js.map

@@ -1,12 +1,15 @@
 import { UmbWorkspaceActionBase } from '@umbraco-cms/backoffice/workspace';
 import { UMB_DOCUMENT_WORKSPACE_CONTEXT } from '@umbraco-cms/backoffice/document';
-import { UMB_MODAL_MANAGER_CONTEXT } from '@umbraco-cms/backoffice/modal';
+import { umbOpenModal } from '@umbraco-cms/backoffice/modal';
 import { EVALUATION_MODAL } from '../evaluation-modal/evaluation-modal.token.js';
 
 /**
  * Api class for the "Evaluate Page" workspace action.
  * Visibility is controlled by PageEvaluatorActiveConfigCondition — this class
  * only runs execute() when the condition has already confirmed a config exists.
+ *
+ * umbOpenModal is used (not modalManagerCtx.open) so the modal host chain is
+ * threaded through, allowing evaluation-modal.element to consumeContext(UMB_DOCUMENT_WORKSPACE_CONTEXT).
  */
 export class PageEvaluatorWorkspaceActionApi extends UmbWorkspaceActionBase {
   override async execute(): Promise<void> {
@@ -28,15 +31,15 @@ export class PageEvaluatorWorkspaceActionApi extends UmbWorkspaceActionBase {
       }
     }
 
-    const modalManagerCtx = await this.getContext(UMB_MODAL_MANAGER_CONTEXT);
-    if (!modalManagerCtx) return;
-
-    modalManagerCtx.open(this, EVALUATION_MODAL, {
-      data: { nodeId, documentTypeAlias: alias, properties },
-    });
+    try {
+      await umbOpenModal(this, EVALUATION_MODAL, {
+        data: { nodeId, documentTypeAlias: alias, properties },
+      });
+    } catch {
+      // Modal was rejected/closed — nothing to do.
+    }
   }
 }
 
-// Named export consumed by the extension loader ('api' key is the convention)
 export { PageEvaluatorWorkspaceActionApi as api };
 export default PageEvaluatorWorkspaceActionApi;

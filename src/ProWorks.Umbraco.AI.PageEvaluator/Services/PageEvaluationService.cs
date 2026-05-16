@@ -329,6 +329,8 @@ public sealed partial class PageEvaluationService : IPageEvaluationService
 
         // Enforce structured JSON output regardless of the evaluation criteria above.
         sb.AppendLine();
+        sb.AppendLine("For each check, set propertyAlias to the Umbraco property alias that this check is about (e.g., \"metaDescription\", \"pageTitle\"). Set propertyAlias to null for structural or computed checks that do not map to a single editable property (e.g., 'Page has no H1 tag').");
+        sb.AppendLine();
         sb.AppendLine("--- REQUIRED OUTPUT FORMAT ---");
         sb.AppendLine("You MUST respond with ONLY a valid JSON object. Do not include any text, explanation, or markdown outside the JSON object.");
         if (config.ScoringEnabled)
@@ -337,7 +339,7 @@ public sealed partial class PageEvaluationService : IPageEvaluationService
                 {
                   "score": { "passed": <number>, "total": <number> },
                   "checks": [
-                    { "checkNumber": 1, "status": "Pass|Fail|Warn", "label": "<label>", "explanation": "<explanation or null>" }
+                    { "checkNumber": 1, "status": "Pass|Fail|Warn", "label": "<label>", "explanation": "<explanation or null>", "propertyAlias": "<property alias or null>" }
                   ],
                   "suggestions": "<overall suggestions or null>",
                   "overallScore": <number 1-5, decimal allowed>,
@@ -353,7 +355,7 @@ public sealed partial class PageEvaluationService : IPageEvaluationService
                 {
                   "score": { "passed": <number>, "total": <number> },
                   "checks": [
-                    { "checkNumber": 1, "status": "Pass|Fail|Warn", "label": "<label>", "explanation": "<explanation or null>" }
+                    { "checkNumber": 1, "status": "Pass|Fail|Warn", "label": "<label>", "explanation": "<explanation or null>", "propertyAlias": "<property alias or null>" }
                   ],
                   "suggestions": "<overall suggestions or null>"
                 }
@@ -434,7 +436,12 @@ public sealed partial class PageEvaluationService : IPageEvaluationService
 
                 CheckStatus status = ParseCheckStatus(statusStr);
 
-                checks.Add(new CheckResult(checkNumber, status, label, explanation));
+                string? propertyAlias = checkEl.TryGetProperty("propertyAlias", out JsonElement pa)
+                    && pa.ValueKind == JsonValueKind.String
+                    ? pa.GetString()
+                    : null;
+
+                checks.Add(new CheckResult(checkNumber, status, label, explanation, propertyAlias));
             }
 
             string? suggestions = null;
@@ -583,7 +590,7 @@ public sealed partial class PageEvaluationService : IPageEvaluationService
             string label = parts[1];
             string? explanation = parts.Length >= 3 ? parts[2] : null;
 
-            checks.Add(new CheckResult(checkNumber, status, label, explanation));
+            checks.Add(new CheckResult(checkNumber, status, label, explanation, null));
         }
 
         if (checks.Count == 0)

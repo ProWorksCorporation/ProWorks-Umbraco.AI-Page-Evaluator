@@ -10,8 +10,8 @@ Adds an **Evaluate Page** workspace action to the Umbraco content editor. Clicki
 
 | Dependency | Version |
 |---|---|
-| Umbraco CMS | 17.2+ |
-| Umbraco.AI | 1.7+ |
+| Umbraco CMS | 17.4+ |
+| Umbraco.AI | 1.11+ |
 | .NET | 10 |
 
 ## Quick Start
@@ -27,6 +27,7 @@ Adds an **Evaluate Page** workspace action to the Umbraco content editor. Clicki
 - Supports any AI provider configured in Umbraco.AI (Anthropic, OpenAI, etc.)
 - Cached results with timestamp and one-click re-evaluation
 - Workspace action hidden automatically on unconfigured document types
+- AI text recommendations for Fail and Warn checks — the recommendation panel shows the current field value alongside the AI suggestion so you can compare before applying or copying it to the clipboard
 
 ## About ProWorks
 

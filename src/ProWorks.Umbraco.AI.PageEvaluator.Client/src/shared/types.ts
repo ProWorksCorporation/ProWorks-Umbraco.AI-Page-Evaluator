@@ -26,6 +26,7 @@ export interface EvaluatorConfigItem {
   readonly dateModified: string; // ISO 8601
   readonly propertyAliases: string[] | null;
   readonly scoringEnabled: boolean;
+  readonly recommendationsEnabled: boolean;
   readonly version: number;
 }
 
@@ -45,6 +46,7 @@ export interface CreateEvaluatorConfigRequest {
   readonly description?: string | null;
   readonly propertyAliases?: string[] | null;
   readonly scoringEnabled: boolean;
+  readonly recommendationsEnabled: boolean;
 }
 
 /** Request body for PUT /configurations/{id}. */
@@ -57,6 +59,7 @@ export interface UpdateEvaluatorConfigRequest {
   readonly description?: string | null;
   readonly propertyAliases?: string[] | null;
   readonly scoringEnabled: boolean;
+  readonly recommendationsEnabled: boolean;
   readonly version: number;
 }
 
@@ -72,6 +75,7 @@ export interface CheckResult {
   readonly status: CheckStatus;
   readonly label: string;
   readonly explanation: string | null;
+  readonly propertyAlias: string | null;
 }
 
 /** Overall pass/total score. */
@@ -104,6 +108,12 @@ export interface EvaluationReportResponse {
   readonly cachedAt: string | null;
   readonly overallScore: number | null;
   readonly axisScores: readonly AxisScore[] | null;
+  /** Maps each property alias to its Umbraco property editor alias. Empty when unavailable. */
+  readonly propertyEditorAliases: Record<string, string>;
+  /** Maps each property alias to its human-readable Umbraco property name. Empty when unavailable. */
+  readonly propertyNames: Record<string, string>;
+  /** Whether the active evaluator config has recommendations enabled. */
+  readonly recommendationsEnabled: boolean;
 }
 
 /** Request body for POST /evaluate. */
@@ -111,6 +121,20 @@ export interface EvaluatePageRequest {
   readonly nodeId: string;
   readonly documentTypeAlias: string;
   readonly properties: Record<string, unknown>;
+}
+
+/** Request body for POST /recommend. */
+export interface RecommendRequest {
+  readonly nodeId: string;
+  readonly propertyAlias: string;
+  readonly checkLabel: string;
+  readonly checkExplanation: string | null;
+  readonly properties: Record<string, string>;
+}
+
+/** Response body for POST /recommend. */
+export interface RecommendResponse {
+  readonly recommendedValue: string | null;
 }
 
 // ---------------------------------------------------------------------------

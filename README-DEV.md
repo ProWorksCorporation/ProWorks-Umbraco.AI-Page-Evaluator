@@ -77,7 +77,7 @@ After a fresh clone, import the demo content via **Settings → uSync → Import
 dotnet test
 ```
 
-The test suite covers controller error handling, service behavior, persistence mapping, cache invalidation, notification handling, and the Umbraco.AI test feature integration (146 tests, xUnit + NSubstitute).
+The test suite covers controller error handling, service behavior, persistence mapping, cache invalidation, notification handling, and the Umbraco.AI test feature integration (190 tests, xUnit + NSubstitute).
 
 ### Build the NuGet package
 
@@ -162,6 +162,13 @@ Modal opens → GET /evaluate/cached/{nodeId}
                         │
                         ▼
                 Modal renders: score pills · suggestions · attention items · passing items
+                        │
+                        └─ For each attention item linked to a property →
+                                "Generate recommendation" link → POST /recommend
+                                        │
+                                        ▼
+                                Shows current field value + AI suggestion side-by-side
+                                Apply (plain text / Tags) or Copy (RichText / TinyMCE)
 ```
 
 > Cache is automatically cleared for all nodes of a document type whenever its evaluator configuration is created, updated, activated, or deleted. Cache entries for individual nodes are also cleared when content is published.
@@ -194,11 +201,33 @@ The system prompt instructs the model to respond with a strict JSON schema:
 {
   "score": { "passed": 22, "total": 34 },
   "checks": [
-    { "checkNumber": 1, "status": "Pass|Fail|Warn", "label": "…", "explanation": "…" }
+    {
+      "checkNumber": 1,
+      "status": "Pass|Fail|Warn",
+      "label": "…",
+      "explanation": "…",
+      "propertyAlias": "metaDescription"
+    }
   ],
-  "suggestions": "…"
+  "suggestions": "…",
+  "overallScore": 3.8,
+  "axisScores": [
+    { "name": "Clarity", "score": 4, "feedback": "…" }
+  ]
 }
 ```
+
+`propertyAlias` links a check to a specific Umbraco property so the UI can offer an AI text recommendation for that field. It is `null` for structural or computed checks (e.g. "page has no H1 tag") that do not map to a single editable property. `overallScore` and `axisScores` are only present when dimensional scoring is enabled on the evaluator configuration.
+
+Both the evaluate and cached-evaluate responses also include a `propertyEditorAliases` map (`{ [alias]: editorAlias }`) populated by the controller at response time using `IContentTypeService`. This map is **never stored in the cache** — it is always derived fresh so it stays current if content types change. The frontend uses it to classify each property:
+
+| Editor alias | Recommendation | Apply to field |
+|---|---|---|
+| `Umbraco.TextBox`, `Umbraco.TextArea`, `Umbraco.Markdown`, `Umbraco.Tags` | Yes | Yes |
+| `Umbraco.RichText`, `Umbraco.TinyMCE` | Yes (copy only) | No |
+| All others (media pickers, block editors, pickers, etc.) | No | No |
+
+When `propertyEditorAliases` is unavailable (e.g. the document type was deleted), the frontend falls back to a value-content heuristic: properties whose raw value starts with `{`, `[`, or `umb://` are treated as complex and excluded.
 
 The response parser tries JSON first, then a Markdown numbered-list fallback, then stores the raw text for display if both fail.
 
@@ -221,6 +250,8 @@ This means you can create a dedicated AI profile for page evaluation that omits 
 
 ### Error response mapping
 
+#### POST /evaluate
+
 | Condition | HTTP status | Client behavior |
 |---|---|---|
 | No active config for document type | 404 | Modal shows "no configuration" message |
@@ -228,5 +259,17 @@ This means you can create a dedicated AI profile for page evaluation that omits 
 | AI provider HTTP error | 502 | Modal shows generic error + Retry button |
 | AI provider temporarily overloaded (e.g. Anthropic 529) | 503 | Modal shows "temporarily unavailable" + Retry button |
 | Unexpected server error | 500 | Modal shows generic error + Retry button |
+
+#### POST /recommend
+
+| Condition | HTTP status | Client behavior |
+|---|---|---|
+| Content node not found | 404 | Recommendation button shows error state |
+| No active config for document type | 404 | Recommendation button shows error state |
+| Property alias not found on document type | 400 | Recommendation button shows error state |
+| Guardrail policy blocked content | 422 | Recommendation button shows error state |
+| AI provider HTTP error | 502 | Recommendation button shows error state |
+| AI provider temporarily overloaded | 503 | Recommendation button shows error state |
+| Unexpected server error | 500 | Recommendation button shows error state |
 
 Provider error details are never forwarded to the client to avoid leaking API key or account information.

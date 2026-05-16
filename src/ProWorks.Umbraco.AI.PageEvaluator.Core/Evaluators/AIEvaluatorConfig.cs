@@ -65,4 +65,11 @@ public sealed class AIEvaluatorConfig
     /// existing behavior for pre-existing configurations.
     /// </summary>
     public bool ScoringEnabled { get; set; }
+
+    /// <summary>
+    /// When true (the default), the evaluation report shows AI-generated recommendation buttons
+    /// for failed and warning checks that have a mapped property alias.
+    /// Set to false to hide all recommendation UI for this evaluator configuration.
+    /// </summary>
+    public bool RecommendationsEnabled { get; set; } = true;
 }

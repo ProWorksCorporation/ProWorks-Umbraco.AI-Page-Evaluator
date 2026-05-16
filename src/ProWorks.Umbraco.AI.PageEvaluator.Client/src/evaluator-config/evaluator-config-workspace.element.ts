@@ -46,16 +46,21 @@ export class EvaluatorConfigWorkspaceElement extends UmbLitElement {
       margin-bottom: var(--uui-size-layout-1);
     }
 
-    .form-header {
+    #form-header {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      margin-bottom: var(--uui-size-layout-1);
+      width: 100%;
+      height: var(--umb-header-layout-height);
+      background-color: var(--uui-color-surface);
+      border-bottom: 1px solid var(--uui-color-border);
+      box-sizing: border-box;
+      flex-shrink: 0;
+      padding: 0 var(--uui-size-layout-1);
+      gap: var(--uui-size-space-3);
     }
 
-    .form-header h3 {
-      margin: 0;
-      font-size: var(--uui-type-h3-size, 1.25rem);
+    #header-name {
+      flex: 1 1 auto;
     }
 
     .promo-notice {
@@ -93,6 +98,23 @@ export class EvaluatorConfigWorkspaceElement extends UmbLitElement {
     .promo-notice-content uui-button {
       margin-top: var(--uui-size-space-2);
     }
+
+    .footer-breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: var(--uui-size-space-2);
+      padding: 0 var(--uui-size-layout-1);
+    }
+
+    .footer-breadcrumb-link {
+      color: var(--uui-color-interactive);
+      cursor: pointer;
+    }
+
+    .footer-breadcrumb-link:hover {
+      color: var(--uui-color-interactive-emphasis);
+      text-decoration: underline;
+    }
   `;
 
   @state() _configs: EvaluatorConfigItem[] = [];
@@ -101,6 +123,9 @@ export class EvaluatorConfigWorkspaceElement extends UmbLitElement {
   @state() private _error: string | null = null;
   @state() private _view: 'list' | 'form' = 'list';
   @state() private _editId: string | null = null;
+  @state() private _saving = false;
+  @state() private _formName = '';
+  @state() private _formNameError = false;
 
   override connectedCallback(): void {
     super.connectedCallback();
@@ -170,11 +195,15 @@ export class EvaluatorConfigWorkspaceElement extends UmbLitElement {
 
   private _handleEdit(id: string): void {
     this._editId = id;
+    this._formName = this._configs.find((c) => c.id === id)?.name ?? '';
+    this._formNameError = false;
     this._view = 'form';
   }
 
   private _handleCreate(): void {
     this._editId = null;
+    this._formName = '';
+    this._formNameError = false;
     this._view = 'form';
   }
 
@@ -187,26 +216,74 @@ export class EvaluatorConfigWorkspaceElement extends UmbLitElement {
   private _handleBack(): void {
     this._view = 'list';
     this._editId = null;
+    this._formName = '';
+    this._formNameError = false;
+  }
+
+  private _handleSave(): void {
+    if (!this._formName.trim()) {
+      this._formNameError = true;
+      return;
+    }
+    const form = this.shadowRoot?.querySelector('evaluator-form') as { submit(): Promise<void> } | null;
+    void form?.submit();
+  }
+
+  private get _breadcrumbName(): string {
+    if (this._formName) return this._formName;
+    return this.localize.term(this._editId ? 'evaluatorConfig_editHeadline' : 'evaluatorConfig_createHeadline');
   }
 
   override render(): TemplateResult {
     if (this._view === 'form') {
       return html`
+        <div id="form-header">
+          <uui-button
+            compact
+            label=${this.localize.term('evaluatorConfig_backLabel')}
+            @click=${() => this._handleBack()}>
+            <uui-icon name="icon-arrow-left"></uui-icon>
+          </uui-button>
+          <uui-input
+            id="header-name"
+            .value=${this._formName}
+            ?invalid=${this._formNameError}
+            label=${this.localize.term('evaluatorConfig_nameLabel')}
+            placeholder=${this.localize.term('evaluatorConfig_namePlaceholder')}
+            @input=${(e: InputEvent) => {
+              this._formName = (e.target as HTMLInputElement).value;
+              if (this._formName) this._formNameError = false;
+            }}>
+          </uui-input>
+        </div>
         <div id="content">
-          <div class="form-header">
-            <h3>${this._editId ? this.localize.term('evaluatorConfig_editHeadline') : this.localize.term('evaluatorConfig_createHeadline')}</h3>
-            <uui-button
-              look="secondary"
-              label=${this.localize.term('evaluatorConfig_backLabel')}
-              @click=${() => this._handleBack()}>
-              &larr; ${this.localize.term('evaluatorConfig_backButton')}
-            </uui-button>
-          </div>
           <evaluator-form
             .configId=${this._editId}
-            @evaluator-saved=${() => this._handleSaved()}>
+            .name=${this._formName}
+            @evaluator-name-loaded=${(e: CustomEvent<{ name: string }>) => { this._formName = e.detail.name; }}
+            @evaluator-saved=${() => this._handleSaved()}
+            @evaluator-save-start=${() => { this._saving = true; }}
+            @evaluator-save-end=${() => { this._saving = false; }}>
           </evaluator-form>
         </div>
+        <umb-footer-layout>
+          <div class="footer-breadcrumb">
+            <span class="footer-breadcrumb-link" @click=${() => this._handleBack()}>
+              ${this.localize.term('evaluatorConfig_sectionLabel')}
+            </span>
+            <span>/</span>
+            <span>${this._breadcrumbName}</span>
+          </div>
+          <uui-button
+            slot="actions"
+            look="primary"
+            color="positive"
+            label=${this.localize.term('evaluatorConfig_saveButton')}
+            ?disabled=${this._saving}
+            @click=${() => this._handleSave()}>
+            ${this._saving ? this.localize.term('evaluatorConfig_savingButton') : this.localize.term('evaluatorConfig_saveButton')}
+          </uui-button>
+        </umb-footer-layout>
       `;
     }
 

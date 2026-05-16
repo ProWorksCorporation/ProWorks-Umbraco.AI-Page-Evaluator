@@ -32,7 +32,20 @@ const e = {
     guardrailBlockedMessage: "The evaluation was blocked by an Umbraco.AI guardrail policy. Review the guardrail rules configured on the AI profile.",
     // Modal: dimensional scoring
     overallScore: "Overall Score",
-    axisScores: "Score Breakdown"
+    axisScores: "Score Breakdown",
+    // Recommendations
+    recGenerate: "Generate recommendation",
+    recGenerating: "Generating recommendation…",
+    recCurrent: "Current value",
+    recCurrentFor: "Current value for",
+    recSuggested: "Suggested value",
+    recSuggestedFor: "Suggested value for",
+    recApply: "Apply to field",
+    recApplied: "Applied to field",
+    recRegenerate: "Regenerate",
+    recCopy: "Copy",
+    recCopied: "Copied",
+    recError: "Could not generate a recommendation. Try again."
   },
   evaluatorConfig: {
     // Workspace: list
@@ -68,6 +81,7 @@ const e = {
     promptSection: "Prompt",
     // Form: fields
     nameLabel: "Name",
+    namePlaceholder: "Enter a name…",
     nameRequired: "Name is required.",
     descriptionLabel: "Description",
     descriptionHelp: "Optional summary shown in the configuration list.",
@@ -99,7 +113,9 @@ const e = {
     validationRequired: "This field is required.",
     // Form: dimensional scoring
     scoringLabel: "Enable Scoring",
-    scoringHelp: "Ask the AI to rate the page on a 1-5 scale across the dimensions named in your prompt."
+    scoringHelp: "Ask the AI to rate the page on a 1-5 scale across the dimensions named in your prompt.",
+    recommendationsLabel: "Enable Recommendations",
+    recommendationsHelp: "Show AI-generated recommendation buttons alongside check results that have a mapped property."
   },
   promoNotice: {
     headline: "See How AI Interprets Your Brand Messaging",
@@ -131,4 +147,4 @@ const e = {
 export {
   e as default
 };
-//# sourceMappingURL=en-CUX7Xhn3.js.map
+//# sourceMappingURL=en-dMWi_toJ.js.map

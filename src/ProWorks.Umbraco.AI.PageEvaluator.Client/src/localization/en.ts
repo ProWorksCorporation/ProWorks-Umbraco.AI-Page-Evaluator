@@ -43,6 +43,20 @@ export default {
     // Modal: dimensional scoring
     overallScore: 'Overall Score',
     axisScores: 'Score Breakdown',
+
+    // Recommendations
+    recGenerate: 'Generate recommendation',
+    recGenerating: 'Generating recommendation…',
+    recCurrent: 'Current value',
+    recCurrentFor: 'Current value for',
+    recSuggested: 'Suggested value',
+    recSuggestedFor: 'Suggested value for',
+    recApply: 'Apply to field',
+    recApplied: 'Applied to field',
+    recRegenerate: 'Regenerate',
+    recCopy: 'Copy',
+    recCopied: 'Copied',
+    recError: 'Could not generate a recommendation. Try again.',
   },
 
   evaluatorConfig: {
@@ -83,6 +97,7 @@ export default {
 
     // Form: fields
     nameLabel: 'Name',
+    namePlaceholder: 'Enter a name…',
     nameRequired: 'Name is required.',
     descriptionLabel: 'Description',
     descriptionHelp: 'Optional summary shown in the configuration list.',
@@ -116,6 +131,8 @@ export default {
     // Form: dimensional scoring
     scoringLabel: 'Enable Scoring',
     scoringHelp: 'Ask the AI to rate the page on a 1-5 scale across the dimensions named in your prompt.',
+    recommendationsLabel: 'Enable Recommendations',
+    recommendationsHelp: 'Show AI-generated recommendation buttons alongside check results that have a mapped property.',
   },
 
   promoNotice: {

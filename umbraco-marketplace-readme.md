@@ -20,3 +20,4 @@ Adds an **Evaluate Page** workspace action to the Umbraco content editor. Clicki
 - Cached results with timestamp and one-click re-evaluation
 - Workspace action hidden automatically on unconfigured document types
 - Prompt builder in configuration to help with setup
+- AI text recommendations for Fail and Warn checks — shows the current field value alongside the suggestion; apply directly to plain text and Tags fields, or copy to clipboard for Rich Text

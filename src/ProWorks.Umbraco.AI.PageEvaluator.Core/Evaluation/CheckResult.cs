@@ -18,4 +18,5 @@ public sealed record CheckResult(
     int CheckNumber,
     CheckStatus Status,
     string Label,
-    string? Explanation);
+    string? Explanation,
+    string? PropertyAlias);

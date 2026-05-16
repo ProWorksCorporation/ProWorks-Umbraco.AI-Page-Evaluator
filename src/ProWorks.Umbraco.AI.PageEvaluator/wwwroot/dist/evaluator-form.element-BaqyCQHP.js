@@ -1,7 +1,7 @@
 import { property as m, state as a, customElement as f, html as o, nothing as n, css as x } from "@umbraco-cms/backoffice/external/lit";
 import { UmbLitElement as v } from "@umbraco-cms/backoffice/lit-element";
-import { f as b, c as $, h as g, B as y, u as T, i as C } from "./entry-point-fq8H4LAY.js";
-const _ = [
+import { f as b, c as $, h as _, B as y, u as T, i as C } from "./entry-point-CsWF_HaV.js";
+const g = [
   {
     id: "required-fields",
     labelKey: "promptBuilder_categoryRequiredFields",
@@ -40,7 +40,7 @@ var z = Object.defineProperty, A = Object.getOwnPropertyDescriptor, d = (e, t, i
 };
 let u = class extends v {
   constructor() {
-    super(...arguments), this.documentTypeAlias = "", this.selectedPropertyAliases = [], this.scoringEnabled = !1, this._properties = [], this._selectedCategories = new Set(_.map((e) => e.id)), this._siteContext = "", this._draft = "", this._loading = !1, this._error = null, this._onCategoryToggle = (e) => {
+    super(...arguments), this.documentTypeAlias = "", this.selectedPropertyAliases = [], this.scoringEnabled = !1, this._properties = [], this._selectedCategories = new Set(g.map((e) => e.id)), this._siteContext = "", this._draft = "", this._loading = !1, this._error = null, this._onCategoryToggle = (e) => {
       const { id: t, selected: i } = e.detail;
       this._toggleCategory(t, i);
     }, this._onUsePrompt = () => this.usePrompt();
@@ -70,7 +70,7 @@ let u = class extends v {
   }
   /** Assembles the prompt draft from selected categories, properties, and site context. */
   generateDraft() {
-    const t = (this.selectedPropertyAliases.length > 0 ? this._properties.filter((r) => this.selectedPropertyAliases.includes(r.alias)) : this._properties).map((r) => r.alias).join(", "), i = _.filter((r) => this._selectedCategories.has(r.id)).map(
+    const t = (this.selectedPropertyAliases.length > 0 ? this._properties.filter((r) => this.selectedPropertyAliases.includes(r.alias)) : this._properties).map((r) => r.alias).join(", "), i = g.filter((r) => this._selectedCategories.has(r.id)).map(
       (r) => r.promptFragment.replace("{{propertyAliases}}", t).replace("{{siteContext}}", this._siteContext)
     ), l = this.scoringEnabled ? `
 
@@ -110,7 +110,7 @@ Site context: ${this._siteContext}` + l).trim();
             ${this.localize.term("promptBuilder_categoriesHelpText")}
           </p>
           <div style="display: flex; flex-direction: column; gap: var(--uui-size-space-3); padding: var(--uui-size-space-3) 0;">
-            ${_.map(
+            ${g.map(
       (e) => o`
                 <uui-checkbox
                   label=${this.localize.term(e.labelKey)}
@@ -194,14 +194,14 @@ d([
 u = d([
   f("page-evaluator-prompt-builder")
 ], u);
-var S = Object.defineProperty, E = Object.getOwnPropertyDescriptor, p = (e, t, i, l) => {
-  for (var r = l > 1 ? void 0 : l ? E(t, i) : t, c = e.length - 1, h; c >= 0; c--)
+var E = Object.defineProperty, S = Object.getOwnPropertyDescriptor, p = (e, t, i, l) => {
+  for (var r = l > 1 ? void 0 : l ? S(t, i) : t, c = e.length - 1, h; c >= 0; c--)
     (h = e[c]) && (r = (l ? h(t, i, r) : h(r)) || r);
-  return l && r && S(t, i, r), r;
+  return l && r && E(t, i, r), r;
 };
 let s = class extends v {
   constructor() {
-    super(...arguments), this.configId = null, this._name = "", this._description = "", this._documentTypeAlias = "", this._profileId = "", this._contextId = "", this._promptText = "", this._scoringEnabled = !1, this._version = 0, this._errors = {}, this._saving = !1, this._loadError = null, this._promptBuilderOpen = !1, this._propertyAliases = [], this._availableProperties = [], this._docTypeDisplayName = "", this._docTypeSuggestions = [], this._docTypeShowSuggestions = !1, this._docTypeSearchTimer = null;
+    super(...arguments), this.configId = null, this.name = "", this._description = "", this._documentTypeAlias = "", this._profileId = "", this._contextId = "", this._promptText = "", this._scoringEnabled = !1, this._recommendationsEnabled = !0, this._version = 0, this._errors = {}, this._saving = !1, this._loadError = null, this._promptBuilderOpen = !1, this._propertyAliases = [], this._availableProperties = [], this._docTypeDisplayName = "", this._docTypeSuggestions = [], this._docTypeShowSuggestions = !1, this._docTypeSearchTimer = null;
   }
   updated(e) {
     super.updated(e), e.has("configId") && (this.configId ? this._loadConfig(this.configId) : this._resetFields());
@@ -210,14 +210,22 @@ let s = class extends v {
     super.disconnectedCallback(), this._docTypeSearchTimer !== null && (clearTimeout(this._docTypeSearchTimer), this._docTypeSearchTimer = null);
   }
   _resetFields() {
-    this._loadError = null, this._name = "", this._description = "", this._documentTypeAlias = "", this._docTypeDisplayName = "", this._docTypeSuggestions = [], this._docTypeShowSuggestions = !1, this._profileId = "", this._contextId = "", this._promptText = "", this._scoringEnabled = !1, this._version = 0, this._propertyAliases = [], this._availableProperties = [], this._errors = {}, this._promptBuilderOpen = !1;
+    this._loadError = null, this._description = "", this._documentTypeAlias = "", this._docTypeDisplayName = "", this._docTypeSuggestions = [], this._docTypeShowSuggestions = !1, this._profileId = "", this._contextId = "", this._promptText = "", this._scoringEnabled = !1, this._recommendationsEnabled = !0, this._version = 0, this._propertyAliases = [], this._availableProperties = [], this._errors = {}, this._promptBuilderOpen = !1, this.dispatchEvent(new CustomEvent("evaluator-name-loaded", {
+      detail: { name: "" },
+      bubbles: !0,
+      composed: !0
+    }));
   }
   async _loadConfig(e) {
     this._loadError = null;
     try {
       const t = await $(e);
       if (!this.isConnected || this.configId !== e) return;
-      this._name = t.name, this._description = t.description ?? "", this._documentTypeAlias = t.documentTypeAlias, this._profileId = t.profileId, this._contextId = t.contextId ?? "", this._promptText = t.promptText, this._scoringEnabled = t.scoringEnabled, this._version = t.version, this._propertyAliases = t.propertyAliases ?? [], this._errors = {}, this._loadDocTypeInfo(t.documentTypeAlias);
+      this.dispatchEvent(new CustomEvent("evaluator-name-loaded", {
+        detail: { name: t.name },
+        bubbles: !0,
+        composed: !0
+      })), this._description = t.description ?? "", this._documentTypeAlias = t.documentTypeAlias, this._profileId = t.profileId, this._contextId = t.contextId ?? "", this._promptText = t.promptText, this._scoringEnabled = t.scoringEnabled, this._recommendationsEnabled = t.recommendationsEnabled, this._version = t.version, this._propertyAliases = t.propertyAliases ?? [], this._errors = {}, this._loadDocTypeInfo(t.documentTypeAlias);
     } catch {
       if (!this.isConnected || this.configId !== e) return;
       this._loadError = this.localize.term("evaluatorConfig_formLoadError");
@@ -244,7 +252,7 @@ let s = class extends v {
   }
   async _searchDocTypes(e) {
     try {
-      const t = await g.get({
+      const t = await _.get({
         security: y,
         url: "/umbraco/management/api/v1/item/document-type/search",
         query: { query: e, isElement: !1, skip: 0, take: 20 }
@@ -260,7 +268,7 @@ let s = class extends v {
   async _selectDocType(e, t) {
     this._docTypeShowSuggestions = !1, this._docTypeSuggestions = [], this._docTypeDisplayName = t;
     try {
-      const i = await g.get({
+      const i = await _.get({
         security: y,
         url: `/umbraco/management/api/v1/document-type/${encodeURIComponent(e)}`
       });
@@ -281,11 +289,11 @@ let s = class extends v {
    * Validates and submits the form. Called by tests and by the submit button.
    */
   async submit() {
-    if (this._errors = {}, this._name.trim() || (this._errors.name = this.localize.term("evaluatorConfig_nameRequired")), this._documentTypeAlias.trim() || (this._errors.documentTypeAlias = this.localize.term("evaluatorConfig_documentTypeRequired")), this._profileId.trim() || (this._errors.profileId = this.localize.term("evaluatorConfig_profileRequired")), this._promptText.trim() || (this._errors.promptText = this.localize.term("evaluatorConfig_promptRequired")), !(Object.keys(this._errors).length > 0)) {
-      this._saving = !0;
+    if (this._errors = {}, this._documentTypeAlias.trim() || (this._errors.documentTypeAlias = this.localize.term("evaluatorConfig_documentTypeRequired")), this._profileId.trim() || (this._errors.profileId = this.localize.term("evaluatorConfig_profileRequired")), this._promptText.trim() || (this._errors.promptText = this.localize.term("evaluatorConfig_promptRequired")), !(Object.keys(this._errors).length > 0)) {
+      this._saving = !0, this.dispatchEvent(new CustomEvent("evaluator-save-start", { bubbles: !0, composed: !0 }));
       try {
         const e = this.configId ? await T(this.configId, {
-          name: this._name,
+          name: this.name,
           description: this._description || null,
           documentTypeAlias: this._documentTypeAlias,
           profileId: this._profileId,
@@ -293,16 +301,18 @@ let s = class extends v {
           promptText: this._promptText,
           propertyAliases: this._propertyAliases.length > 0 ? this._propertyAliases : null,
           scoringEnabled: this._scoringEnabled,
+          recommendationsEnabled: this._recommendationsEnabled,
           version: this._version
         }) : await C({
-          name: this._name,
+          name: this.name,
           description: this._description || null,
           documentTypeAlias: this._documentTypeAlias,
           profileId: this._profileId,
           contextId: this._contextId || null,
           promptText: this._promptText,
           propertyAliases: this._propertyAliases.length > 0 ? this._propertyAliases : null,
-          scoringEnabled: this._scoringEnabled
+          scoringEnabled: this._scoringEnabled,
+          recommendationsEnabled: this._recommendationsEnabled
         });
         if (!this.isConnected) return;
         this.dispatchEvent(
@@ -316,7 +326,7 @@ let s = class extends v {
         if (!this.isConnected) return;
         e instanceof Error && (this._errors._form = e.message);
       } finally {
-        this._saving = !1;
+        this._saving = !1, this.dispatchEvent(new CustomEvent("evaluator-save-end", { bubbles: !0, composed: !0 }));
       }
     }
   }
@@ -359,20 +369,6 @@ let s = class extends v {
       ${this._errors._form ? o`<uui-box><uui-tag color="danger">${this._errors._form}</uui-tag></uui-box>` : n}
 
       <uui-box headline=${this.localize.term("evaluatorConfig_generalSection")}>
-        <umb-property-layout label=${this.localize.term("evaluatorConfig_nameLabel")} mandatory>
-          <div slot="editor">
-            <uui-input
-              label=${this.localize.term("evaluatorConfig_nameLabel")}
-              .value=${this._name}
-              ?invalid=${!!this._errors.name}
-              @input=${(e) => {
-      this._name = e.target.value;
-    }}>
-            </uui-input>
-            ${this._errors.name ? o`<uui-form-validation-message>${this._errors.name}</uui-form-validation-message>` : n}
-          </div>
-        </umb-property-layout>
-
         <umb-property-layout label=${this.localize.term("evaluatorConfig_descriptionLabel")} description=${this.localize.term("evaluatorConfig_descriptionHelp")}>
           <div slot="editor">
             <uui-textarea
@@ -494,6 +490,20 @@ let s = class extends v {
           </div>
         </umb-property-layout>
 
+        <umb-property-layout
+          label=${this.localize.term("evaluatorConfig_recommendationsLabel")}
+          description=${this.localize.term("evaluatorConfig_recommendationsHelp")}>
+          <div slot="editor">
+            <uui-toggle
+              label=${this.localize.term("evaluatorConfig_recommendationsLabel")}
+              ?checked=${this._recommendationsEnabled}
+              @change=${(e) => {
+      this._recommendationsEnabled = e.target.checked;
+    }}>
+            </uui-toggle>
+          </div>
+        </umb-property-layout>
+
         <umb-property-layout label=${this.localize.term("evaluatorConfig_promptLabel")} mandatory
           description=${this.localize.term("evaluatorConfig_promptHelp")}>
           <div slot="editor">
@@ -552,16 +562,6 @@ let s = class extends v {
         </uui-box>
       ` : n}
 
-      <div class="form-actions">
-        <uui-button
-          look="primary"
-          color="positive"
-          label=${this.localize.term("evaluatorConfig_saveButton")}
-          ?disabled=${this._saving}
-          @click=${() => void this.submit()}>
-          ${this._saving ? this.localize.term("evaluatorConfig_savingButton") : this.localize.term("evaluatorConfig_saveButton")}
-        </uui-button>
-      </div>
     `;
   }
 };
@@ -573,6 +573,10 @@ s.styles = x`
     uui-box {
       --uui-box-default-padding: 0 var(--uui-size-space-5);
       margin-top: var(--uui-size-layout-1);
+    }
+
+    uui-box:first-of-type {
+      margin-top: 0;
     }
 
     uui-input,
@@ -681,18 +685,13 @@ s.styles = x`
       font-family: monospace;
     }
 
-    .form-actions {
-      display: flex;
-      justify-content: flex-end;
-      padding: var(--uui-size-space-4) 0 var(--uui-size-space-2);
-    }
   `;
 p([
   m({ type: String, attribute: "config-id" })
 ], s.prototype, "configId", 2);
 p([
-  a()
-], s.prototype, "_name", 2);
+  m({ attribute: !1 })
+], s.prototype, "name", 2);
 p([
   a()
 ], s.prototype, "_description", 2);
@@ -711,6 +710,9 @@ p([
 p([
   a()
 ], s.prototype, "_scoringEnabled", 2);
+p([
+  a()
+], s.prototype, "_recommendationsEnabled", 2);
 p([
   a()
 ], s.prototype, "_version", 2);
@@ -747,4 +749,4 @@ s = p([
 export {
   s as EvaluatorFormElement
 };
-//# sourceMappingURL=evaluator-form.element-B2uwL51a.js.map
+//# sourceMappingURL=evaluator-form.element-BaqyCQHP.js.map

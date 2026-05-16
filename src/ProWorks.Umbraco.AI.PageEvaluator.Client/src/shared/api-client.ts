@@ -19,6 +19,8 @@ import type {
   EvaluationReportResponse,
   EvaluatorConfigItem,
   EvaluatorConfigListResponse,
+  RecommendRequest,
+  RecommendResponse,
   UpdateEvaluatorConfigRequest,
 } from './types.js';
 
@@ -159,6 +161,18 @@ export async function evaluatePage(
     body: request,
   });
   return checkResult<EvaluationReportResponse>(result);
+}
+
+/** Requests an AI-generated text recommendation for a specific property check. */
+export async function recommend(
+  request: RecommendRequest,
+): Promise<RecommendResponse> {
+  const result = await apiClient.post({
+    security: BEARER,
+    url: `${BASE}/recommend`,
+    body: request,
+  });
+  return checkResult<RecommendResponse>(result);
 }
 
 // ---------------------------------------------------------------------------
