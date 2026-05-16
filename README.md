@@ -87,6 +87,11 @@ When dimensional scoring is enabled, the report also shows an overall score and 
 
 ![Dimensional scoring report showing overall score and axis breakdown](images/Dimensional-Scoring-Report.png)
 
+When recommendations are enabled, the report allows the user to ask AI for a recommendation of the property value and apply it directly to the page.
+
+![Evaluation report recommended property values where a user can apply it immediately](images/Recommendations-Section.png)
+
+
 ---
 
 ## Contributing
