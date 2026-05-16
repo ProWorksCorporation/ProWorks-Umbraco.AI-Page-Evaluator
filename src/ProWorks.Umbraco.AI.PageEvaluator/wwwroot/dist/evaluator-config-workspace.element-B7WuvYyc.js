@@ -1,16 +1,16 @@
-import { html as a, nothing as d, css as h, state as n, customElement as m } from "@umbraco-cms/backoffice/external/lit";
-import { UmbLitElement as p } from "@umbraco-cms/backoffice/lit-element";
-import { umbConfirmModal as g } from "@umbraco-cms/backoffice/modal";
-import { a as f, b as v, d as _ } from "./entry-point-CuPhei5-.js";
-import "./evaluator-form.element-B2YvtM5z.js";
+import { html as a, nothing as d, css as h, state as s, customElement as m } from "@umbraco-cms/backoffice/external/lit";
+import { UmbLitElement as v } from "@umbraco-cms/backoffice/lit-element";
+import { umbConfirmModal as p } from "@umbraco-cms/backoffice/modal";
+import { a as g, b as _, d as f } from "./entry-point-BCGZ6bYz.js";
+import "./evaluator-form.element-Cw7NmVzo.js";
 var b = Object.defineProperty, y = Object.getOwnPropertyDescriptor, u = (e, i, o, t) => {
-  for (var l = t > 1 ? void 0 : t ? y(i, o) : i, s = e.length - 1, c; s >= 0; s--)
-    (c = e[s]) && (l = (t ? c(i, o, l) : c(l)) || l);
+  for (var l = t > 1 ? void 0 : t ? y(i, o) : i, n = e.length - 1, c; n >= 0; n--)
+    (c = e[n]) && (l = (t ? c(i, o, l) : c(l)) || l);
   return t && l && b(i, o, l), l;
 };
-let r = class extends p {
+let r = class extends v {
   constructor() {
-    super(...arguments), this._configs = [], this._groupedConfigs = /* @__PURE__ */ new Map(), this._loading = !1, this._error = null, this._view = "list", this._editId = null;
+    super(...arguments), this._configs = [], this._groupedConfigs = /* @__PURE__ */ new Map(), this._loading = !1, this._error = null, this._view = "list", this._editId = null, this._saving = !1;
   }
   connectedCallback() {
     super.connectedCallback(), this._loadConfigs();
@@ -18,7 +18,7 @@ let r = class extends p {
   async _loadConfigs() {
     this._loading = !0, this._error = null;
     try {
-      const e = await f();
+      const e = await g();
       this._configs = [...e.items], this._groupedConfigs = this._groupByDocType();
     } catch {
       this._error = this.localize.term("evaluatorConfig_loadError");
@@ -38,14 +38,14 @@ let r = class extends p {
   }
   async _handleActivate(e) {
     try {
-      await v(e), await this._loadConfigs();
+      await _(e), await this._loadConfigs();
     } catch {
       this._error = this.localize.term("evaluatorConfig_activateError");
     }
   }
   async _handleDelete(e) {
     try {
-      await g(this, {
+      await p(this, {
         headline: this.localize.term("evaluatorConfig_deleteConfirmHeadline"),
         content: this.localize.term("evaluatorConfig_deleteConfirmContent"),
         color: "danger",
@@ -55,7 +55,7 @@ let r = class extends p {
       return;
     }
     try {
-      await _(e), this._configs = this._configs.filter((i) => i.id !== e), this._groupedConfigs = this._groupByDocType();
+      await f(e), this._configs = this._configs.filter((i) => i.id !== e), this._groupedConfigs = this._groupByDocType();
     } catch {
       this._error = this.localize.term("evaluatorConfig_deleteError");
     }
@@ -72,6 +72,11 @@ let r = class extends p {
   _handleBack() {
     this._view = "list", this._editId = null;
   }
+  _handleSave() {
+    var i;
+    const e = (i = this.shadowRoot) == null ? void 0 : i.querySelector("evaluator-form");
+    e == null || e.submit();
+  }
   render() {
     return this._view === "form" ? a`
         <div id="content">
@@ -86,9 +91,26 @@ let r = class extends p {
           </div>
           <evaluator-form
             .configId=${this._editId}
-            @evaluator-saved=${() => this._handleSaved()}>
+            @evaluator-saved=${() => this._handleSaved()}
+            @evaluator-save-start=${() => {
+      this._saving = !0;
+    }}
+            @evaluator-save-end=${() => {
+      this._saving = !1;
+    }}>
           </evaluator-form>
         </div>
+        <umb-footer-layout>
+          <uui-button
+            slot="actions"
+            look="primary"
+            color="positive"
+            label=${this.localize.term("evaluatorConfig_saveButton")}
+            ?disabled=${this._saving}
+            @click=${() => this._handleSave()}>
+            ${this._saving ? this.localize.term("evaluatorConfig_savingButton") : this.localize.term("evaluatorConfig_saveButton")}
+          </uui-button>
+        </umb-footer-layout>
       ` : this._loading ? a`<div id="content"><uui-loader></uui-loader></div>` : a`
       <div id="content">
         <div class="promo-notice">
@@ -256,27 +278,30 @@ r.styles = h`
     }
   `;
 u([
-  n()
+  s()
 ], r.prototype, "_configs", 2);
 u([
-  n()
+  s()
 ], r.prototype, "_groupedConfigs", 2);
 u([
-  n()
+  s()
 ], r.prototype, "_loading", 2);
 u([
-  n()
+  s()
 ], r.prototype, "_error", 2);
 u([
-  n()
+  s()
 ], r.prototype, "_view", 2);
 u([
-  n()
+  s()
 ], r.prototype, "_editId", 2);
+u([
+  s()
+], r.prototype, "_saving", 2);
 r = u([
   m("evaluator-config-workspace")
 ], r);
 export {
   r as EvaluatorConfigWorkspaceElement
 };
-//# sourceMappingURL=evaluator-config-workspace.element-DkHnPzHY.js.map
+//# sourceMappingURL=evaluator-config-workspace.element-B7WuvYyc.js.map

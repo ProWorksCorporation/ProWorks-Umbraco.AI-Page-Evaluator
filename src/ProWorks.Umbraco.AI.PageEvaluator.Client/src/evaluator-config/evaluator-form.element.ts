@@ -170,11 +170,6 @@ export class EvaluatorFormElement extends UmbLitElement {
       font-family: monospace;
     }
 
-    .form-actions {
-      display: flex;
-      justify-content: flex-end;
-      padding: var(--uui-size-space-4) 0 var(--uui-size-space-2);
-    }
   `;
 
   override updated(changed: PropertyValues): void {
@@ -334,6 +329,7 @@ export class EvaluatorFormElement extends UmbLitElement {
     if (Object.keys(this._errors).length > 0) return;
 
     this._saving = true;
+    this.dispatchEvent(new CustomEvent('evaluator-save-start', { bubbles: true, composed: true }));
     try {
       const saved: EvaluatorConfigItem = this.configId
         ? await updateConfiguration(this.configId, {
@@ -375,6 +371,7 @@ export class EvaluatorFormElement extends UmbLitElement {
       }
     } finally {
       this._saving = false;
+      this.dispatchEvent(new CustomEvent('evaluator-save-end', { bubbles: true, composed: true }));
     }
   }
 
@@ -611,16 +608,6 @@ export class EvaluatorFormElement extends UmbLitElement {
         </uui-box>
       ` : nothing}
 
-      <div class="form-actions">
-        <uui-button
-          look="primary"
-          color="positive"
-          label=${this.localize.term('evaluatorConfig_saveButton')}
-          ?disabled=${this._saving}
-          @click=${() => void this.submit()}>
-          ${this._saving ? this.localize.term('evaluatorConfig_savingButton') : this.localize.term('evaluatorConfig_saveButton')}
-        </uui-button>
-      </div>
     `;
   }
 }

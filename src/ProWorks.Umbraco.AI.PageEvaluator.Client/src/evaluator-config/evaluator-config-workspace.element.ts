@@ -101,6 +101,7 @@ export class EvaluatorConfigWorkspaceElement extends UmbLitElement {
   @state() private _error: string | null = null;
   @state() private _view: 'list' | 'form' = 'list';
   @state() private _editId: string | null = null;
+  @state() private _saving = false;
 
   override connectedCallback(): void {
     super.connectedCallback();
@@ -189,6 +190,11 @@ export class EvaluatorConfigWorkspaceElement extends UmbLitElement {
     this._editId = null;
   }
 
+  private _handleSave(): void {
+    const form = this.shadowRoot?.querySelector('evaluator-form') as { submit(): Promise<void> } | null;
+    void form?.submit();
+  }
+
   override render(): TemplateResult {
     if (this._view === 'form') {
       return html`
@@ -204,9 +210,22 @@ export class EvaluatorConfigWorkspaceElement extends UmbLitElement {
           </div>
           <evaluator-form
             .configId=${this._editId}
-            @evaluator-saved=${() => this._handleSaved()}>
+            @evaluator-saved=${() => this._handleSaved()}
+            @evaluator-save-start=${() => { this._saving = true; }}
+            @evaluator-save-end=${() => { this._saving = false; }}>
           </evaluator-form>
         </div>
+        <umb-footer-layout>
+          <uui-button
+            slot="actions"
+            look="primary"
+            color="positive"
+            label=${this.localize.term('evaluatorConfig_saveButton')}
+            ?disabled=${this._saving}
+            @click=${() => this._handleSave()}>
+            ${this._saving ? this.localize.term('evaluatorConfig_savingButton') : this.localize.term('evaluatorConfig_saveButton')}
+          </uui-button>
+        </umb-footer-layout>
       `;
     }
 

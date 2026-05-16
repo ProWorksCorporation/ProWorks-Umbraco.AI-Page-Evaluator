@@ -1,6 +1,6 @@
 import { property as m, state as a, customElement as f, html as o, nothing as n, css as x } from "@umbraco-cms/backoffice/external/lit";
 import { UmbLitElement as v } from "@umbraco-cms/backoffice/lit-element";
-import { f as b, c as $, h as g, B as y, u as T, i as C } from "./entry-point-CuPhei5-.js";
+import { f as b, c as $, h as g, B as y, u as T, i as C } from "./entry-point-BCGZ6bYz.js";
 const _ = [
   {
     id: "required-fields",
@@ -282,7 +282,7 @@ let s = class extends v {
    */
   async submit() {
     if (this._errors = {}, this._name.trim() || (this._errors.name = this.localize.term("evaluatorConfig_nameRequired")), this._documentTypeAlias.trim() || (this._errors.documentTypeAlias = this.localize.term("evaluatorConfig_documentTypeRequired")), this._profileId.trim() || (this._errors.profileId = this.localize.term("evaluatorConfig_profileRequired")), this._promptText.trim() || (this._errors.promptText = this.localize.term("evaluatorConfig_promptRequired")), !(Object.keys(this._errors).length > 0)) {
-      this._saving = !0;
+      this._saving = !0, this.dispatchEvent(new CustomEvent("evaluator-save-start", { bubbles: !0, composed: !0 }));
       try {
         const e = this.configId ? await T(this.configId, {
           name: this._name,
@@ -318,7 +318,7 @@ let s = class extends v {
         if (!this.isConnected) return;
         e instanceof Error && (this._errors._form = e.message);
       } finally {
-        this._saving = !1;
+        this._saving = !1, this.dispatchEvent(new CustomEvent("evaluator-save-end", { bubbles: !0, composed: !0 }));
       }
     }
   }
@@ -568,16 +568,6 @@ let s = class extends v {
         </uui-box>
       ` : n}
 
-      <div class="form-actions">
-        <uui-button
-          look="primary"
-          color="positive"
-          label=${this.localize.term("evaluatorConfig_saveButton")}
-          ?disabled=${this._saving}
-          @click=${() => void this.submit()}>
-          ${this._saving ? this.localize.term("evaluatorConfig_savingButton") : this.localize.term("evaluatorConfig_saveButton")}
-        </uui-button>
-      </div>
     `;
   }
 };
@@ -697,11 +687,6 @@ s.styles = x`
       font-family: monospace;
     }
 
-    .form-actions {
-      display: flex;
-      justify-content: flex-end;
-      padding: var(--uui-size-space-4) 0 var(--uui-size-space-2);
-    }
   `;
 p([
   m({ type: String, attribute: "config-id" })
@@ -766,4 +751,4 @@ s = p([
 export {
   s as EvaluatorFormElement
 };
-//# sourceMappingURL=evaluator-form.element-B2YvtM5z.js.map
+//# sourceMappingURL=evaluator-form.element-Cw7NmVzo.js.map
