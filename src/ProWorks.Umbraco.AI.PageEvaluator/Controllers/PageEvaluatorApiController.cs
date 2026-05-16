@@ -839,6 +839,6 @@ public sealed class EvaluatorConfigResponse
     public DateTime DateModified { get; init; }
     public List<string>? PropertyAliases { get; init; }
     public bool ScoringEnabled { get; init; }
-    public bool RecommendationsEnabled { get; init; }
+    public bool RecommendationsEnabled { get; init; } = true;
     public int Version { get; init; }
 }

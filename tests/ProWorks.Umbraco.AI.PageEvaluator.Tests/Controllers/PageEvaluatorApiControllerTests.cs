@@ -1072,6 +1072,30 @@ public class PageEvaluatorApiControllerTests
     }
 
     [Fact]
+    public async Task EvaluatorConfigResponse_RoundTripsRecommendationsEnabled_False()
+    {
+        var config = BuildConfig("blogPost");
+        config.RecommendationsEnabled = false;
+        _configService.CreateAsync(Arg.Any<AIEvaluatorConfig>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(config);
+
+        var request = new CreateEvaluatorConfigRequest
+        {
+            Name = config.Name,
+            DocumentTypeAlias = config.DocumentTypeAlias,
+            ProfileId = config.ProfileId,
+            PromptText = config.PromptText,
+            RecommendationsEnabled = false,
+        };
+
+        var result = await _sut.CreateConfigurationAsync(request);
+
+        var created = Assert.IsType<CreatedAtActionResult>(result);
+        var response = Assert.IsType<EvaluatorConfigResponse>(created.Value);
+        Assert.False(response.RecommendationsEnabled);
+    }
+
+    [Fact]
     public async Task CreateConfiguration_WithScoringEnabled_AndPromptLacksDimensions_Returns2xx_WithNoValidationError()
     {
         // FR-015: no validation warning or block when scoring is on but prompt names no dimensions
