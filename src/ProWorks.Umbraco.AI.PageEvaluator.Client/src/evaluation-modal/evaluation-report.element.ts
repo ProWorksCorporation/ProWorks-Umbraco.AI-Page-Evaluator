@@ -188,6 +188,32 @@ export class EvaluationReportElement extends UmbLitElement {
       word-break: break-word;
     }
 
+    .rec-current-label {
+      display: flex;
+      align-items: center;
+      gap: var(--uui-size-space-1, 3px);
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--uui-color-text-alt, #666);
+      margin-bottom: var(--uui-size-space-2, 8px);
+    }
+
+    .rec-current-text {
+      font-size: var(--uui-type-small-size, 0.875rem);
+      line-height: 1.5;
+      color: var(--uui-color-text-alt, #666);
+      margin-bottom: 0;
+      word-break: break-word;
+    }
+
+    .rec-section-divider {
+      border: none;
+      border-top: 1px solid var(--uui-color-divider, #e0e0e0);
+      margin: var(--uui-size-space-3, 12px) 0;
+    }
+
     .rec-generate-link {
       --uui-button-background-color: transparent;
       --uui-button-background-color-hover: transparent;
@@ -460,6 +486,23 @@ export class EvaluationReportElement extends UmbLitElement {
     return trimmed[0] !== '{' && trimmed[0] !== '[' && !trimmed.startsWith('umb://');
   }
 
+  private _resolveCurrentValue(propertyAlias: string | null): string {
+    if (propertyAlias === null) return '';
+    const raw = this.properties[propertyAlias];
+    if (raw === null || raw === undefined) return '';
+    if (typeof raw === 'string') return raw;
+    if (Array.isArray(raw)) return raw.join(', ');
+    return '';
+  }
+
+  private _recCurrentLabel(propertyAlias: string | null): string {
+    if (propertyAlias === null) return this.localize.term('evaluatePage_recCurrent');
+    const name = this.propertyNames[propertyAlias];
+    return name !== undefined
+      ? `${this.localize.term('evaluatePage_recCurrentFor')} ${name}`
+      : this.localize.term('evaluatePage_recCurrent');
+  }
+
   private _recSuggestedLabel(propertyAlias: string | null): string {
     if (propertyAlias === null) return this.localize.term('evaluatePage_recSuggested');
     const name = this.propertyNames[propertyAlias];
@@ -548,8 +591,19 @@ export class EvaluationReportElement extends UmbLitElement {
     canApply: boolean,
   ): TemplateResult {
     const copied = this._copiedChecks.has(check.checkNumber);
+    const currentValue = this._resolveCurrentValue(check.propertyAlias);
     return html`
       <div class="rec-box ${applied ? 'applied' : ''}">
+        ${currentValue
+          ? html`
+              <div class="rec-current-label">
+                <uui-icon name="icon-edit"></uui-icon>
+                ${this._recCurrentLabel(check.propertyAlias)}
+              </div>
+              <div class="rec-current-text">${currentValue}</div>
+              <hr class="rec-section-divider" />
+            `
+          : nothing}
         <div class="rec-label ${applied ? 'applied' : ''}">
           <uui-icon name="${applied ? 'icon-check' : 'icon-wand'}"></uui-icon>
           ${applied

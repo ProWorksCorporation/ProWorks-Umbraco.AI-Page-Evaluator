@@ -1,21 +1,21 @@
-import { css as z, property as g, state as m, customElement as $, nothing as l, html as s } from "@umbraco-cms/backoffice/external/lit";
+import { css as z, property as m, state as g, customElement as $, nothing as l, html as s } from "@umbraco-cms/backoffice/external/lit";
 import { UmbModalBaseElement as k } from "@umbraco-cms/backoffice/modal";
 import { UMB_DOCUMENT_WORKSPACE_CONTEXT as S } from "@umbraco-cms/backoffice/document";
-import { r as E, g as A, e as R } from "./entry-point-DyelNDtU.js";
+import { r as E, g as A, e as R } from "./entry-point-CsWF_HaV.js";
 import { resolveEntityAdapterByType as O } from "@umbraco-ai/core";
 import { UmbLitElement as P } from "@umbraco-cms/backoffice/lit-element";
 var F = Object.defineProperty, D = Object.getOwnPropertyDescriptor, d = (e, t, r, a) => {
-  for (var i = a > 1 ? void 0 : a ? D(t, r) : t, o = e.length - 1, c; o >= 0; o--)
-    (c = e[o]) && (i = (a ? c(t, r, i) : c(i)) || i);
+  for (var i = a > 1 ? void 0 : a ? D(t, r) : t, o = e.length - 1, u; o >= 0; o--)
+    (u = e[o]) && (i = (a ? u(t, r, i) : u(i)) || i);
   return a && i && F(t, r, i), i;
 };
-let u = class extends P {
+let c = class extends P {
   constructor() {
     super(...arguments), this.nodeId = "", this.properties = {}, this.propertyEditorAliases = {}, this.propertyNames = {}, this.recommendationsEnabled = !0, this._recStates = /* @__PURE__ */ new Map(), this._copiedChecks = /* @__PURE__ */ new Set();
   }
   render() {
     if (!this.report) return l;
-    const { checks: e, suggestions: t, overallScore: r, axisScores: a } = this.report, i = r !== null || a !== null && a.length > 0, o = e.filter((p) => p.status === "Pass").length, c = e.filter((p) => p.status === "Warn").length, n = e.filter((p) => p.status === "Fail").length, w = e.length, _ = e.filter((p) => p.status === "Fail" || p.status === "Warn"), b = e.filter((p) => p.status === "Pass");
+    const { checks: e, suggestions: t, overallScore: r, axisScores: a } = this.report, i = r !== null || a !== null && a.length > 0, o = e.filter((p) => p.status === "Pass").length, u = e.filter((p) => p.status === "Warn").length, n = e.filter((p) => p.status === "Fail").length, w = e.length, _ = e.filter((p) => p.status === "Fail" || p.status === "Warn"), b = e.filter((p) => p.status === "Pass");
     return s`
       ${i ? this._renderScoring(r, a) : l}
 
@@ -25,9 +25,9 @@ let u = class extends P {
               <span class="score-pill score-pill--pass">
                 <uui-icon name="icon-check"></uui-icon>${o} ${this.localize.term("evaluatePage_reportPassed")}
               </span>
-              ${c > 0 ? s`
+              ${u > 0 ? s`
                 <span class="score-pill score-pill--warn">
-                  <uui-icon name="icon-alert"></uui-icon>${c} ${c !== 1 ? this.localize.term("evaluatePage_reportWarnings") : this.localize.term("evaluatePage_reportWarning")}
+                  <uui-icon name="icon-alert"></uui-icon>${u} ${u !== 1 ? this.localize.term("evaluatePage_reportWarnings") : this.localize.term("evaluatePage_reportWarning")}
                 </span>` : l}
               ${n > 0 ? s`
                 <span class="score-pill score-pill--fail">
@@ -58,7 +58,7 @@ let u = class extends P {
     `;
   }
   _renderSuggestions(e) {
-    const t = M(e);
+    const t = N(e);
     if (t.length === 1)
       return s`<p style="margin:0; font-size: var(--uui-type-small-size, 0.875rem); line-height: 1.5;">${y(t[0] ?? "")}</p>`;
     const r = t[0] ?? "", a = r.endsWith(":"), i = a ? t.slice(1) : t;
@@ -92,7 +92,7 @@ let u = class extends P {
   _renderAxis(e) {
     return s`
       <li class="axis-item">
-        <uui-tag color=${T(e.score)} look="primary">${e.score} / 5</uui-tag>
+        <uui-tag color=${L(e.score)} look="primary">${e.score} / 5</uui-tag>
         <div class="axis-body">
           <div class="axis-name">${B(e.name)}</div>
           ${e.feedback ? s`<div class="axis-feedback">${e.feedback}</div>` : l}
@@ -108,7 +108,7 @@ let u = class extends P {
   _canRecommend(e) {
     const t = this.propertyEditorAliases[e];
     if (t !== void 0)
-      return u._FULL_RECOMMEND_EDITORS.has(t) || u._COPY_ONLY_EDITORS.has(t);
+      return c._FULL_RECOMMEND_EDITORS.has(t) || c._COPY_ONLY_EDITORS.has(t);
     const r = this.properties[e];
     if (typeof r != "string") return !1;
     const a = r.trimStart();
@@ -121,11 +121,21 @@ let u = class extends P {
   _canApply(e) {
     const t = this.propertyEditorAliases[e];
     if (t !== void 0)
-      return u._FULL_RECOMMEND_EDITORS.has(t);
+      return c._FULL_RECOMMEND_EDITORS.has(t);
     const r = this.properties[e];
     if (typeof r != "string") return !1;
     const a = r.trimStart();
     return a.length === 0 ? !0 : a[0] !== "{" && a[0] !== "[" && !a.startsWith("umb://");
+  }
+  _resolveCurrentValue(e) {
+    if (e === null) return "";
+    const t = this.properties[e];
+    return t == null ? "" : typeof t == "string" ? t : Array.isArray(t) ? t.join(", ") : "";
+  }
+  _recCurrentLabel(e) {
+    if (e === null) return this.localize.term("evaluatePage_recCurrent");
+    const t = this.propertyNames[e];
+    return t !== void 0 ? `${this.localize.term("evaluatePage_recCurrentFor")} ${t}` : this.localize.term("evaluatePage_recCurrent");
   }
   _recSuggestedLabel(e) {
     if (e === null) return this.localize.term("evaluatePage_recSuggested");
@@ -139,7 +149,7 @@ let u = class extends P {
         <uui-icon
           class="check-icon"
           data-status="${e.status}"
-          name="${L(e.status)}"></uui-icon>
+          name="${T(e.status)}"></uui-icon>
         <div class="check-body">
           <div class="check-label">${e.label}</div>
           ${e.explanation ? s`<div class="check-explanation">${e.explanation}</div>` : l}
@@ -200,9 +210,17 @@ let u = class extends P {
     }
   }
   _renderRecBox(e, t, r, a) {
-    const i = this._copiedChecks.has(e.checkNumber);
+    const i = this._copiedChecks.has(e.checkNumber), o = this._resolveCurrentValue(e.propertyAlias);
     return s`
       <div class="rec-box ${r ? "applied" : ""}">
+        ${o ? s`
+              <div class="rec-current-label">
+                <uui-icon name="icon-edit"></uui-icon>
+                ${this._recCurrentLabel(e.propertyAlias)}
+              </div>
+              <div class="rec-current-text">${o}</div>
+              <hr class="rec-section-divider" />
+            ` : l}
         <div class="rec-label ${r ? "applied" : ""}">
           <uui-icon name="${r ? "icon-check" : "icon-wand"}"></uui-icon>
           ${r ? this.localize.term("evaluatePage_recApplied") : this._recSuggestedLabel(e.propertyAlias)}
@@ -285,7 +303,7 @@ let u = class extends P {
     }, 2e3)));
   }
 };
-u.styles = z`
+c.styles = z`
     :host {
       display: block;
       padding: var(--uui-size-space-4, 16px);
@@ -452,6 +470,32 @@ u.styles = z`
       word-break: break-word;
     }
 
+    .rec-current-label {
+      display: flex;
+      align-items: center;
+      gap: var(--uui-size-space-1, 3px);
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--uui-color-text-alt, #666);
+      margin-bottom: var(--uui-size-space-2, 8px);
+    }
+
+    .rec-current-text {
+      font-size: var(--uui-type-small-size, 0.875rem);
+      line-height: 1.5;
+      color: var(--uui-color-text-alt, #666);
+      margin-bottom: 0;
+      word-break: break-word;
+    }
+
+    .rec-section-divider {
+      border: none;
+      border-top: 1px solid var(--uui-color-divider, #e0e0e0);
+      margin: var(--uui-size-space-3, 12px) 0;
+    }
+
     .rec-generate-link {
       --uui-button-background-color: transparent;
       --uui-button-background-color-hover: transparent;
@@ -528,53 +572,53 @@ u.styles = z`
       line-height: 1.4;
     }
   `;
-u._FULL_RECOMMEND_EDITORS = /* @__PURE__ */ new Set([
+c._FULL_RECOMMEND_EDITORS = /* @__PURE__ */ new Set([
   "Umbraco.TextBox",
   "Umbraco.TextArea",
   "Umbraco.Markdown",
   "Umbraco.Tags"
 ]);
-u._COPY_ONLY_EDITORS = /* @__PURE__ */ new Set([
+c._COPY_ONLY_EDITORS = /* @__PURE__ */ new Set([
   "Umbraco.RichText",
   "Umbraco.TinyMCE"
 ]);
 d([
-  g({ attribute: !1 })
-], u.prototype, "report", 2);
+  m({ attribute: !1 })
+], c.prototype, "report", 2);
 d([
-  g({ attribute: !1 })
-], u.prototype, "nodeId", 2);
+  m({ attribute: !1 })
+], c.prototype, "nodeId", 2);
 d([
-  g({ attribute: !1 })
-], u.prototype, "properties", 2);
+  m({ attribute: !1 })
+], c.prototype, "properties", 2);
 d([
-  g({ attribute: !1 })
-], u.prototype, "propertyEditorAliases", 2);
+  m({ attribute: !1 })
+], c.prototype, "propertyEditorAliases", 2);
 d([
-  g({ attribute: !1 })
-], u.prototype, "propertyNames", 2);
+  m({ attribute: !1 })
+], c.prototype, "propertyNames", 2);
 d([
-  g({ attribute: !1 })
-], u.prototype, "recommendationsEnabled", 2);
+  m({ attribute: !1 })
+], c.prototype, "recommendationsEnabled", 2);
 d([
-  m()
-], u.prototype, "_recStates", 2);
+  g()
+], c.prototype, "_recStates", 2);
 d([
-  m()
-], u.prototype, "_copiedChecks", 2);
-u = d([
+  g()
+], c.prototype, "_copiedChecks", 2);
+c = d([
   $("page-evaluator-report")
-], u);
+], c);
 function B(e) {
   return e.replace(/_/g, " ").replace(/\b\w/g, (t) => t.toUpperCase());
 }
 function I(e) {
   return e >= 4 ? "positive" : e >= 2.5 ? "warning" : "danger";
 }
-function T(e) {
+function L(e) {
   return e >= 4 ? "positive" : e >= 3 ? "warning" : "danger";
 }
-function L(e) {
+function T(e) {
   switch (e) {
     case "Pass":
       return "icon-check";
@@ -584,7 +628,7 @@ function L(e) {
       return "icon-alert";
   }
 }
-function M(e) {
+function N(e) {
   const t = e.split(`
 `).map((n) => n.trim()).filter(Boolean), r = t.filter((n) => /^\d+\.\s+/.test(n));
   if (r.length > 1)
@@ -598,17 +642,17 @@ function M(e) {
   const o = e.split(/\(\d+\)\s*/).map((n) => n.trim()).filter(Boolean);
   if (o.length > 1)
     return o;
-  const c = e.split(/\d+\)\s+/).map((n) => n.trim()).filter(Boolean);
-  return c.length > 1 ? c : [e.trim()];
+  const u = e.split(/\d+\)\s+/).map((n) => n.trim()).filter(Boolean);
+  return u.length > 1 ? u : [e.trim()];
 }
 function y(e) {
   const t = e.split(/\*\*([^*]+)\*\*/g);
   return s`${t.map((r, a) => a % 2 === 1 ? s`<strong>${r}</strong>` : r)}`;
 }
-var N = Object.defineProperty, U = Object.getOwnPropertyDescriptor, C = (e, t, r, a) => {
-  for (var i = a > 1 ? void 0 : a ? U(t, r) : t, o = e.length - 1, c; o >= 0; o--)
-    (c = e[o]) && (i = (a ? c(t, r, i) : c(i)) || i);
-  return a && i && N(t, r, i), i;
+var M = Object.defineProperty, j = Object.getOwnPropertyDescriptor, C = (e, t, r, a) => {
+  for (var i = a > 1 ? void 0 : a ? j(t, r) : t, o = e.length - 1, u; o >= 0; o--)
+    (u = e[o]) && (i = (a ? u(t, r, i) : u(i)) || i);
+  return a && i && M(t, r, i), i;
 };
 let f = class extends P {
   constructor() {
@@ -659,15 +703,15 @@ f.styles = z`
     }
   `;
 C([
-  g({ type: String })
+  m({ type: String })
 ], f.prototype, "rawResponse", 2);
 f = C([
   $("page-evaluator-warning")
 ], f);
-var W = Object.defineProperty, j = Object.getOwnPropertyDescriptor, v = (e, t, r, a) => {
-  for (var i = a > 1 ? void 0 : a ? j(t, r) : t, o = e.length - 1, c; o >= 0; o--)
-    (c = e[o]) && (i = (a ? c(t, r, i) : c(i)) || i);
-  return a && i && W(t, r, i), i;
+var U = Object.defineProperty, W = Object.getOwnPropertyDescriptor, v = (e, t, r, a) => {
+  for (var i = a > 1 ? void 0 : a ? W(t, r) : t, o = e.length - 1, u; o >= 0; o--)
+    (u = e[o]) && (i = (a ? u(t, r, i) : u(i)) || i);
+  return a && i && U(t, r, i), i;
 };
 const x = {
   sending: "evaluatePage_progressSendingData",
@@ -866,16 +910,16 @@ h.styles = z`
     }
   `;
 v([
-  m()
+  g()
 ], h.prototype, "_modalState", 2);
 v([
-  m()
+  g()
 ], h.prototype, "_progressKey", 2);
 v([
-  m()
+  g()
 ], h.prototype, "_report", 2);
 v([
-  m()
+  g()
 ], h.prototype, "_errorDetail", 2);
 h = v([
   $("page-evaluator-modal")
@@ -883,4 +927,4 @@ h = v([
 export {
   h as EvaluationModalElement
 };
-//# sourceMappingURL=evaluation-modal.element-CRvlbVE6.js.map
+//# sourceMappingURL=evaluation-modal.element--rBlnw8P.js.map

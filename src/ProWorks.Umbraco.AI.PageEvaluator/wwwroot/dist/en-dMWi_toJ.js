@@ -36,6 +36,8 @@ const e = {
     // Recommendations
     recGenerate: "Generate recommendation",
     recGenerating: "Generating recommendation…",
+    recCurrent: "Current value",
+    recCurrentFor: "Current value for",
     recSuggested: "Suggested value",
     recSuggestedFor: "Suggested value for",
     recApply: "Apply to field",
@@ -79,6 +81,7 @@ const e = {
     promptSection: "Prompt",
     // Form: fields
     nameLabel: "Name",
+    namePlaceholder: "Enter a name…",
     nameRequired: "Name is required.",
     descriptionLabel: "Description",
     descriptionHelp: "Optional summary shown in the configuration list.",
@@ -144,4 +147,4 @@ const e = {
 export {
   e as default
 };
-//# sourceMappingURL=en-5NvUAGa7.js.map
+//# sourceMappingURL=en-dMWi_toJ.js.map

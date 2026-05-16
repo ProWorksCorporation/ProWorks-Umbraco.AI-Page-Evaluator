@@ -26,8 +26,11 @@ export class EvaluatorFormElement extends UmbLitElement {
   @property({ type: String, attribute: 'config-id' })
   configId: string | null = null;
 
+  /** Configuration name — controlled by the workspace header input. */
+  @property({ attribute: false })
+  name = '';
+
   // Form field state
-  @state() _name = '';
   @state() _description = '';
   @state() _documentTypeAlias = '';
   @state() _profileId = '';
@@ -62,6 +65,10 @@ export class EvaluatorFormElement extends UmbLitElement {
     uui-box {
       --uui-box-default-padding: 0 var(--uui-size-space-5);
       margin-top: var(--uui-size-layout-1);
+    }
+
+    uui-box:first-of-type {
+      margin-top: 0;
     }
 
     uui-input,
@@ -193,7 +200,6 @@ export class EvaluatorFormElement extends UmbLitElement {
 
   private _resetFields(): void {
     this._loadError = null;
-    this._name = '';
     this._description = '';
     this._documentTypeAlias = '';
     this._docTypeDisplayName = '';
@@ -209,6 +215,11 @@ export class EvaluatorFormElement extends UmbLitElement {
     this._availableProperties = [];
     this._errors = {};
     this._promptBuilderOpen = false;
+    this.dispatchEvent(new CustomEvent('evaluator-name-loaded', {
+      detail: { name: '' },
+      bubbles: true,
+      composed: true,
+    }));
   }
 
   private async _loadConfig(id: string): Promise<void> {
@@ -217,7 +228,11 @@ export class EvaluatorFormElement extends UmbLitElement {
       const config: EvaluatorConfigItem = await getConfiguration(id);
       if (!this.isConnected) return;
       if (this.configId !== id) return;
-      this._name = config.name;
+      this.dispatchEvent(new CustomEvent('evaluator-name-loaded', {
+        detail: { name: config.name },
+        bubbles: true,
+        composed: true,
+      }));
       this._description = config.description ?? '';
       this._documentTypeAlias = config.documentTypeAlias;
       this._profileId = config.profileId;
@@ -321,7 +336,6 @@ export class EvaluatorFormElement extends UmbLitElement {
     this._errors = {};
 
     // Client-side validation
-    if (!this._name.trim()) this._errors['name'] = this.localize.term('evaluatorConfig_nameRequired');
     if (!this._documentTypeAlias.trim()) this._errors['documentTypeAlias'] = this.localize.term('evaluatorConfig_documentTypeRequired');
     if (!this._profileId.trim()) this._errors['profileId'] = this.localize.term('evaluatorConfig_profileRequired');
     if (!this._promptText.trim()) this._errors['promptText'] = this.localize.term('evaluatorConfig_promptRequired');
@@ -333,7 +347,7 @@ export class EvaluatorFormElement extends UmbLitElement {
     try {
       const saved: EvaluatorConfigItem = this.configId
         ? await updateConfiguration(this.configId, {
-            name: this._name,
+            name: this.name,
             description: this._description || null,
             documentTypeAlias: this._documentTypeAlias,
             profileId: this._profileId,
@@ -345,7 +359,7 @@ export class EvaluatorFormElement extends UmbLitElement {
             version: this._version,
           })
         : await createConfiguration({
-            name: this._name,
+            name: this.name,
             description: this._description || null,
             documentTypeAlias: this._documentTypeAlias,
             profileId: this._profileId,
@@ -420,18 +434,6 @@ export class EvaluatorFormElement extends UmbLitElement {
         : nothing}
 
       <uui-box headline=${this.localize.term('evaluatorConfig_generalSection')}>
-        <umb-property-layout label=${this.localize.term('evaluatorConfig_nameLabel')} mandatory>
-          <div slot="editor">
-            <uui-input
-              label=${this.localize.term('evaluatorConfig_nameLabel')}
-              .value=${this._name}
-              ?invalid=${!!this._errors['name']}
-              @input=${(e: InputEvent) => { this._name = (e.target as HTMLInputElement).value; }}>
-            </uui-input>
-            ${this._errors['name'] ? html`<uui-form-validation-message>${this._errors['name']}</uui-form-validation-message>` : nothing}
-          </div>
-        </umb-property-layout>
-
         <umb-property-layout label=${this.localize.term('evaluatorConfig_descriptionLabel')} description=${this.localize.term('evaluatorConfig_descriptionHelp')}>
           <div slot="editor">
             <uui-textarea

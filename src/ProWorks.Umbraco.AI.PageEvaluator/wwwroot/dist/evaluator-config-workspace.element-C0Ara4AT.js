@@ -1,16 +1,16 @@
-import { html as a, nothing as d, css as h, state as s, customElement as m } from "@umbraco-cms/backoffice/external/lit";
-import { UmbLitElement as v } from "@umbraco-cms/backoffice/lit-element";
+import { html as r, nothing as d, css as h, state as s, customElement as m } from "@umbraco-cms/backoffice/external/lit";
+import { UmbLitElement as f } from "@umbraco-cms/backoffice/lit-element";
 import { umbConfirmModal as p } from "@umbraco-cms/backoffice/modal";
-import { a as g, b as f, d as _ } from "./entry-point-DyelNDtU.js";
-import "./evaluator-form.element-DQ5ZLQ8r.js";
+import { a as v, b as _, d as g } from "./entry-point-CsWF_HaV.js";
+import "./evaluator-form.element-BaqyCQHP.js";
 var b = Object.defineProperty, y = Object.getOwnPropertyDescriptor, u = (e, t, o, i) => {
-  for (var r = i > 1 ? void 0 : i ? y(t, o) : t, n = e.length - 1, c; n >= 0; n--)
-    (c = e[n]) && (r = (i ? c(t, o, r) : c(r)) || r);
-  return i && r && b(t, o, r), r;
+  for (var l = i > 1 ? void 0 : i ? y(t, o) : t, n = e.length - 1, c; n >= 0; n--)
+    (c = e[n]) && (l = (i ? c(t, o, l) : c(l)) || l);
+  return i && l && b(t, o, l), l;
 };
-let l = class extends v {
+let a = class extends f {
   constructor() {
-    super(...arguments), this._configs = [], this._groupedConfigs = /* @__PURE__ */ new Map(), this._loading = !1, this._error = null, this._view = "list", this._editId = null, this._saving = !1;
+    super(...arguments), this._configs = [], this._groupedConfigs = /* @__PURE__ */ new Map(), this._loading = !1, this._error = null, this._view = "list", this._editId = null, this._saving = !1, this._formName = "", this._formNameError = !1;
   }
   connectedCallback() {
     super.connectedCallback(), this._loadConfigs();
@@ -18,7 +18,7 @@ let l = class extends v {
   async _loadConfigs() {
     this._loading = !0, this._error = null;
     try {
-      const e = await g();
+      const e = await v();
       this._configs = [...e.items], this._groupedConfigs = this._groupByDocType();
     } catch {
       this._error = this.localize.term("evaluatorConfig_loadError");
@@ -33,12 +33,12 @@ let l = class extends v {
       o.push(t), e.set(t.documentTypeAlias, o);
     }
     for (const [t, o] of e)
-      o.sort((i, r) => i.isActive !== r.isActive ? i.isActive ? -1 : 1 : r.dateModified.localeCompare(i.dateModified)), e.set(t, o);
+      o.sort((i, l) => i.isActive !== l.isActive ? i.isActive ? -1 : 1 : l.dateModified.localeCompare(i.dateModified)), e.set(t, o);
     return e;
   }
   async _handleActivate(e) {
     try {
-      await f(e), await this._loadConfigs();
+      await _(e), await this._loadConfigs();
     } catch {
       this._error = this.localize.term("evaluatorConfig_activateError");
     }
@@ -55,46 +55,63 @@ let l = class extends v {
       return;
     }
     try {
-      await _(e), this._configs = this._configs.filter((t) => t.id !== e), this._groupedConfigs = this._groupByDocType();
+      await g(e), this._configs = this._configs.filter((t) => t.id !== e), this._groupedConfigs = this._groupByDocType();
     } catch {
       this._error = this.localize.term("evaluatorConfig_deleteError");
     }
   }
   _handleEdit(e) {
-    this._editId = e, this._view = "form";
+    var t;
+    this._editId = e, this._formName = ((t = this._configs.find((o) => o.id === e)) == null ? void 0 : t.name) ?? "", this._formNameError = !1, this._view = "form";
   }
   _handleCreate() {
-    this._editId = null, this._view = "form";
+    this._editId = null, this._formName = "", this._formNameError = !1, this._view = "form";
   }
   _handleSaved() {
     this._view = "list", this._editId = null, this._loadConfigs();
   }
   _handleBack() {
-    this._view = "list", this._editId = null;
+    this._view = "list", this._editId = null, this._formName = "", this._formNameError = !1;
   }
   _handleSave() {
     var t;
+    if (!this._formName.trim()) {
+      this._formNameError = !0;
+      return;
+    }
     const e = (t = this.shadowRoot) == null ? void 0 : t.querySelector("evaluator-form");
     e == null || e.submit();
   }
   get _breadcrumbName() {
-    var e;
-    return this._editId ? ((e = this._configs.find((t) => t.id === this._editId)) == null ? void 0 : e.name) ?? this.localize.term("evaluatorConfig_editHeadline") : this.localize.term("evaluatorConfig_createHeadline");
+    return this._formName ? this._formName : this.localize.term(this._editId ? "evaluatorConfig_editHeadline" : "evaluatorConfig_createHeadline");
   }
   render() {
-    return this._view === "form" ? a`
+    return this._view === "form" ? r`
+        <div id="form-header">
+          <uui-button
+            compact
+            label=${this.localize.term("evaluatorConfig_backLabel")}
+            @click=${() => this._handleBack()}>
+            <uui-icon name="icon-arrow-left"></uui-icon>
+          </uui-button>
+          <uui-input
+            id="header-name"
+            .value=${this._formName}
+            ?invalid=${this._formNameError}
+            label=${this.localize.term("evaluatorConfig_nameLabel")}
+            placeholder=${this.localize.term("evaluatorConfig_namePlaceholder")}
+            @input=${(e) => {
+      this._formName = e.target.value, this._formName && (this._formNameError = !1);
+    }}>
+          </uui-input>
+        </div>
         <div id="content">
-          <div class="form-header">
-            <h3>${this._editId ? this.localize.term("evaluatorConfig_editHeadline") : this.localize.term("evaluatorConfig_createHeadline")}</h3>
-            <uui-button
-              look="secondary"
-              label=${this.localize.term("evaluatorConfig_backLabel")}
-              @click=${() => this._handleBack()}>
-              &larr; ${this.localize.term("evaluatorConfig_backButton")}
-            </uui-button>
-          </div>
           <evaluator-form
             .configId=${this._editId}
+            .name=${this._formName}
+            @evaluator-name-loaded=${(e) => {
+      this._formName = e.detail.name;
+    }}
             @evaluator-saved=${() => this._handleSaved()}
             @evaluator-save-start=${() => {
       this._saving = !0;
@@ -122,7 +139,7 @@ let l = class extends v {
             ${this._saving ? this.localize.term("evaluatorConfig_savingButton") : this.localize.term("evaluatorConfig_saveButton")}
           </uui-button>
         </umb-footer-layout>
-      ` : this._loading ? a`<div id="content"><uui-loader></uui-loader></div>` : a`
+      ` : this._loading ? r`<div id="content"><uui-loader></uui-loader></div>` : r`
       <div id="content">
         <div class="promo-notice">
           <img class="promo-logo" src="/App_Plugins/ProWorks.AI.PageEvaluator/proworks-logo.png" alt="ProWorks" />
@@ -150,12 +167,12 @@ let l = class extends v {
           </uui-button>
         </div>
 
-        ${this._error ? a`<uui-tag color="danger">${this._error}</uui-tag>` : d}
+        ${this._error ? r`<uui-tag color="danger">${this._error}</uui-tag>` : d}
 
-        ${this._groupedConfigs.size === 0 ? a`<p>${this.localize.term("evaluatorConfig_emptyState")}</p>` : Array.from(this._groupedConfigs.entries()).map(
+        ${this._groupedConfigs.size === 0 ? r`<p>${this.localize.term("evaluatorConfig_emptyState")}</p>` : Array.from(this._groupedConfigs.entries()).map(
       ([e, t]) => {
         var o;
-        return a`
+        return r`
                 <uui-box headline=${((o = t[0]) == null ? void 0 : o.documentTypeName) ?? e}>
                   <uui-table>
                     <uui-table-head>
@@ -165,18 +182,18 @@ let l = class extends v {
                       <uui-table-head-cell>${this.localize.term("evaluatorConfig_tableHeaderActions")}</uui-table-head-cell>
                     </uui-table-head>
                     ${t.map(
-          (i) => a`
+          (i) => r`
                         <uui-table-row>
                           <uui-table-cell>
                             <strong>${i.name}</strong>
-                            ${i.description ? a`<br /><small>${i.description}</small>` : d}
+                            ${i.description ? r`<br /><small>${i.description}</small>` : d}
                           </uui-table-cell>
                           <uui-table-cell>${i.profileName ?? i.profileId}</uui-table-cell>
                           <uui-table-cell>
-                            ${i.isActive ? a`<uui-tag color="positive" look="primary">${this.localize.term("evaluatorConfig_activeLabel")}</uui-tag>` : a`<uui-tag look="secondary">${this.localize.term("evaluatorConfig_inactiveLabel")}</uui-tag>`}
+                            ${i.isActive ? r`<uui-tag color="positive" look="primary">${this.localize.term("evaluatorConfig_activeLabel")}</uui-tag>` : r`<uui-tag look="secondary">${this.localize.term("evaluatorConfig_inactiveLabel")}</uui-tag>`}
                           </uui-table-cell>
                           <uui-table-cell>
-                            ${i.isActive ? d : a`<uui-button
+                            ${i.isActive ? d : r`<uui-button
                                   look="secondary"
                                   label=${this.localize.term("evaluatorConfig_activateButton")}
                                   @click=${() => this._handleActivate(i.id)}>
@@ -208,7 +225,7 @@ let l = class extends v {
     `;
   }
 };
-l.styles = h`
+a.styles = h`
     :host {
       display: flex;
       flex-direction: column;
@@ -240,16 +257,21 @@ l.styles = h`
       margin-bottom: var(--uui-size-layout-1);
     }
 
-    .form-header {
+    #form-header {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      margin-bottom: var(--uui-size-layout-1);
+      width: 100%;
+      height: var(--umb-header-layout-height);
+      background-color: var(--uui-color-surface);
+      border-bottom: 1px solid var(--uui-color-border);
+      box-sizing: border-box;
+      flex-shrink: 0;
+      padding: 0 var(--uui-size-layout-1);
+      gap: var(--uui-size-space-3);
     }
 
-    .form-header h3 {
-      margin: 0;
-      font-size: var(--uui-type-h3-size, 1.25rem);
+    #header-name {
+      flex: 1 1 auto;
     }
 
     .promo-notice {
@@ -307,29 +329,35 @@ l.styles = h`
   `;
 u([
   s()
-], l.prototype, "_configs", 2);
+], a.prototype, "_configs", 2);
 u([
   s()
-], l.prototype, "_groupedConfigs", 2);
+], a.prototype, "_groupedConfigs", 2);
 u([
   s()
-], l.prototype, "_loading", 2);
+], a.prototype, "_loading", 2);
 u([
   s()
-], l.prototype, "_error", 2);
+], a.prototype, "_error", 2);
 u([
   s()
-], l.prototype, "_view", 2);
+], a.prototype, "_view", 2);
 u([
   s()
-], l.prototype, "_editId", 2);
+], a.prototype, "_editId", 2);
 u([
   s()
-], l.prototype, "_saving", 2);
-l = u([
+], a.prototype, "_saving", 2);
+u([
+  s()
+], a.prototype, "_formName", 2);
+u([
+  s()
+], a.prototype, "_formNameError", 2);
+a = u([
   m("evaluator-config-workspace")
-], l);
+], a);
 export {
-  l as EvaluatorConfigWorkspaceElement
+  a as EvaluatorConfigWorkspaceElement
 };
-//# sourceMappingURL=evaluator-config-workspace.element-CqDJKoHc.js.map
+//# sourceMappingURL=evaluator-config-workspace.element-C0Ara4AT.js.map

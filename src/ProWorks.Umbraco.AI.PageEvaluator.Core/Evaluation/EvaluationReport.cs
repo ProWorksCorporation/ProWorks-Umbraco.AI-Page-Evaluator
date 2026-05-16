@@ -62,6 +62,13 @@ public sealed record EvaluationReport
     /// </summary>
     public IReadOnlyDictionary<string, string>? PropertyNames { get; init; }
 
+    /// <summary>
+    /// Whether recommendations are enabled for the active evaluator configuration.
+    /// Populated by the API controller at response time — never stored in the evaluation cache.
+    /// Defaults to true (recommendations shown) when the config is unavailable.
+    /// </summary>
+    public bool RecommendationsEnabled { get; init; } = true;
+
     /// <summary>Creates a successfully parsed report.</summary>
     public static EvaluationReport Parsed(
         EvaluationScore? score,
@@ -91,13 +98,6 @@ public sealed record EvaluationReport
     /// </summary>
     public EvaluationReport WithPropertyEditorAliases(IReadOnlyDictionary<string, string> aliases) =>
         this with { PropertyEditorAliases = aliases };
-
-    /// <summary>
-    /// Whether recommendations are enabled for the active evaluator configuration.
-    /// Populated by the API controller at response time — never stored in the evaluation cache.
-    /// Defaults to true (recommendations shown) when the config is unavailable.
-    /// </summary>
-    public bool RecommendationsEnabled { get; init; } = true;
 
     /// <summary>
     /// Returns a copy of this report with the specified <see cref="PropertyNames"/> map attached.

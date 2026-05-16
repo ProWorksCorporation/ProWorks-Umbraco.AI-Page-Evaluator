@@ -47,6 +47,8 @@ export default {
     // Recommendations
     recGenerate: 'Generate recommendation',
     recGenerating: 'Generating recommendation…',
+    recCurrent: 'Current value',
+    recCurrentFor: 'Current value for',
     recSuggested: 'Suggested value',
     recSuggestedFor: 'Suggested value for',
     recApply: 'Apply to field',
@@ -95,6 +97,7 @@ export default {
 
     // Form: fields
     nameLabel: 'Name',
+    namePlaceholder: 'Enter a name…',
     nameRequired: 'Name is required.',
     descriptionLabel: 'Description',
     descriptionHelp: 'Optional summary shown in the configuration list.',
