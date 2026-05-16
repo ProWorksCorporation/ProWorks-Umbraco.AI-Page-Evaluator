@@ -182,7 +182,7 @@ const A = "Uai.Menu.Addons", c = [
     type: "modal",
     alias: "ProWorks.AI.PageEvaluator.Modal.Evaluation",
     name: "Page Evaluator Evaluation Modal",
-    element: () => import("./evaluation-modal.element-De2rmKS4.js").then((e) => ({
+    element: () => import("./evaluation-modal.element-CRvlbVE6.js").then((e) => ({
       element: e.EvaluationModalElement
     }))
   },
@@ -207,7 +207,7 @@ const A = "Uai.Menu.Addons", c = [
     meta: {
       entityType: "evaluator-config"
     },
-    element: () => import("./evaluator-config-workspace.element-B7WuvYyc.js").then((e) => ({
+    element: () => import("./evaluator-config-workspace.element-CqDJKoHc.js").then((e) => ({
       element: e.EvaluatorConfigWorkspaceElement
     }))
   },
@@ -225,7 +225,7 @@ const A = "Uai.Menu.Addons", c = [
     meta: {
       feature: "proworks-page-evaluator"
     },
-    api: () => import("./page-evaluator-test-entity.repository-Cy_DgSsf.js")
+    api: () => import("./page-evaluator-test-entity.repository-BBtYq9dR.js")
   },
   {
     type: "workspaceView",
@@ -242,7 +242,7 @@ const A = "Uai.Menu.Addons", c = [
         match: "ProWorks.AI.PageEvaluator.Workspace"
       }
     ],
-    element: () => import("./evaluator-form.element-Cw7NmVzo.js").then((e) => ({
+    element: () => import("./evaluator-form.element-DQ5ZLQ8r.js").then((e) => ({
       element: e.EvaluatorFormElement
     }))
   }
@@ -268,4 +268,4 @@ export {
   T as r,
   W as u
 };
-//# sourceMappingURL=entry-point-BCGZ6bYz.js.map
+//# sourceMappingURL=entry-point-DyelNDtU.js.map

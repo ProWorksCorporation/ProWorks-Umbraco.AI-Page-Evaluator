@@ -1,14 +1,14 @@
 import { html as a, nothing as d, css as h, state as s, customElement as m } from "@umbraco-cms/backoffice/external/lit";
 import { UmbLitElement as v } from "@umbraco-cms/backoffice/lit-element";
 import { umbConfirmModal as p } from "@umbraco-cms/backoffice/modal";
-import { a as g, b as _, d as f } from "./entry-point-BCGZ6bYz.js";
-import "./evaluator-form.element-Cw7NmVzo.js";
-var b = Object.defineProperty, y = Object.getOwnPropertyDescriptor, u = (e, i, o, t) => {
-  for (var l = t > 1 ? void 0 : t ? y(i, o) : i, n = e.length - 1, c; n >= 0; n--)
-    (c = e[n]) && (l = (t ? c(i, o, l) : c(l)) || l);
-  return t && l && b(i, o, l), l;
+import { a as g, b as f, d as _ } from "./entry-point-DyelNDtU.js";
+import "./evaluator-form.element-DQ5ZLQ8r.js";
+var b = Object.defineProperty, y = Object.getOwnPropertyDescriptor, u = (e, t, o, i) => {
+  for (var r = i > 1 ? void 0 : i ? y(t, o) : t, n = e.length - 1, c; n >= 0; n--)
+    (c = e[n]) && (r = (i ? c(t, o, r) : c(r)) || r);
+  return i && r && b(t, o, r), r;
 };
-let r = class extends v {
+let l = class extends v {
   constructor() {
     super(...arguments), this._configs = [], this._groupedConfigs = /* @__PURE__ */ new Map(), this._loading = !1, this._error = null, this._view = "list", this._editId = null, this._saving = !1;
   }
@@ -28,17 +28,17 @@ let r = class extends v {
   }
   _groupByDocType() {
     const e = /* @__PURE__ */ new Map();
-    for (const i of this._configs) {
-      const o = e.get(i.documentTypeAlias) ?? [];
-      o.push(i), e.set(i.documentTypeAlias, o);
+    for (const t of this._configs) {
+      const o = e.get(t.documentTypeAlias) ?? [];
+      o.push(t), e.set(t.documentTypeAlias, o);
     }
-    for (const [i, o] of e)
-      o.sort((t, l) => t.isActive !== l.isActive ? t.isActive ? -1 : 1 : l.dateModified.localeCompare(t.dateModified)), e.set(i, o);
+    for (const [t, o] of e)
+      o.sort((i, r) => i.isActive !== r.isActive ? i.isActive ? -1 : 1 : r.dateModified.localeCompare(i.dateModified)), e.set(t, o);
     return e;
   }
   async _handleActivate(e) {
     try {
-      await _(e), await this._loadConfigs();
+      await f(e), await this._loadConfigs();
     } catch {
       this._error = this.localize.term("evaluatorConfig_activateError");
     }
@@ -55,7 +55,7 @@ let r = class extends v {
       return;
     }
     try {
-      await f(e), this._configs = this._configs.filter((i) => i.id !== e), this._groupedConfigs = this._groupByDocType();
+      await _(e), this._configs = this._configs.filter((t) => t.id !== e), this._groupedConfigs = this._groupByDocType();
     } catch {
       this._error = this.localize.term("evaluatorConfig_deleteError");
     }
@@ -73,9 +73,13 @@ let r = class extends v {
     this._view = "list", this._editId = null;
   }
   _handleSave() {
-    var i;
-    const e = (i = this.shadowRoot) == null ? void 0 : i.querySelector("evaluator-form");
+    var t;
+    const e = (t = this.shadowRoot) == null ? void 0 : t.querySelector("evaluator-form");
     e == null || e.submit();
+  }
+  get _breadcrumbName() {
+    var e;
+    return this._editId ? ((e = this._configs.find((t) => t.id === this._editId)) == null ? void 0 : e.name) ?? this.localize.term("evaluatorConfig_editHeadline") : this.localize.term("evaluatorConfig_createHeadline");
   }
   render() {
     return this._view === "form" ? a`
@@ -101,6 +105,13 @@ let r = class extends v {
           </evaluator-form>
         </div>
         <umb-footer-layout>
+          <div class="footer-breadcrumb">
+            <span class="footer-breadcrumb-link" @click=${() => this._handleBack()}>
+              ${this.localize.term("evaluatorConfig_sectionLabel")}
+            </span>
+            <span>/</span>
+            <span>${this._breadcrumbName}</span>
+          </div>
           <uui-button
             slot="actions"
             look="primary"
@@ -142,10 +153,10 @@ let r = class extends v {
         ${this._error ? a`<uui-tag color="danger">${this._error}</uui-tag>` : d}
 
         ${this._groupedConfigs.size === 0 ? a`<p>${this.localize.term("evaluatorConfig_emptyState")}</p>` : Array.from(this._groupedConfigs.entries()).map(
-      ([e, i]) => {
+      ([e, t]) => {
         var o;
         return a`
-                <uui-box headline=${((o = i[0]) == null ? void 0 : o.documentTypeName) ?? e}>
+                <uui-box headline=${((o = t[0]) == null ? void 0 : o.documentTypeName) ?? e}>
                   <uui-table>
                     <uui-table-head>
                       <uui-table-head-cell>${this.localize.term("evaluatorConfig_tableHeaderName")}</uui-table-head-cell>
@@ -153,34 +164,34 @@ let r = class extends v {
                       <uui-table-head-cell>${this.localize.term("evaluatorConfig_tableHeaderStatus")}</uui-table-head-cell>
                       <uui-table-head-cell>${this.localize.term("evaluatorConfig_tableHeaderActions")}</uui-table-head-cell>
                     </uui-table-head>
-                    ${i.map(
-          (t) => a`
+                    ${t.map(
+          (i) => a`
                         <uui-table-row>
                           <uui-table-cell>
-                            <strong>${t.name}</strong>
-                            ${t.description ? a`<br /><small>${t.description}</small>` : d}
+                            <strong>${i.name}</strong>
+                            ${i.description ? a`<br /><small>${i.description}</small>` : d}
                           </uui-table-cell>
-                          <uui-table-cell>${t.profileName ?? t.profileId}</uui-table-cell>
+                          <uui-table-cell>${i.profileName ?? i.profileId}</uui-table-cell>
                           <uui-table-cell>
-                            ${t.isActive ? a`<uui-tag color="positive" look="primary">${this.localize.term("evaluatorConfig_activeLabel")}</uui-tag>` : a`<uui-tag look="secondary">${this.localize.term("evaluatorConfig_inactiveLabel")}</uui-tag>`}
+                            ${i.isActive ? a`<uui-tag color="positive" look="primary">${this.localize.term("evaluatorConfig_activeLabel")}</uui-tag>` : a`<uui-tag look="secondary">${this.localize.term("evaluatorConfig_inactiveLabel")}</uui-tag>`}
                           </uui-table-cell>
                           <uui-table-cell>
-                            ${t.isActive ? d : a`<uui-button
+                            ${i.isActive ? d : a`<uui-button
                                   look="secondary"
                                   label=${this.localize.term("evaluatorConfig_activateButton")}
-                                  @click=${() => this._handleActivate(t.id)}>
+                                  @click=${() => this._handleActivate(i.id)}>
                                   ${this.localize.term("evaluatorConfig_activateButton")}
                                 </uui-button>`}
                             <uui-button
                               look="secondary"
                               label=${this.localize.term("evaluatorConfig_editButton")}
-                              @click=${() => this._handleEdit(t.id)}>
+                              @click=${() => this._handleEdit(i.id)}>
                               ${this.localize.term("evaluatorConfig_editButton")}
                             </uui-button>
                             <uui-button
                               look="danger"
                               label=${this.localize.term("evaluatorConfig_deleteButton")}
-                              @click=${() => this._handleDelete(t.id)}>
+                              @click=${() => this._handleDelete(i.id)}>
                               ${this.localize.term("evaluatorConfig_deleteButton")}
                             </uui-button>
                           </uui-table-cell>
@@ -197,7 +208,7 @@ let r = class extends v {
     `;
   }
 };
-r.styles = h`
+l.styles = h`
     :host {
       display: flex;
       flex-direction: column;
@@ -276,32 +287,49 @@ r.styles = h`
     .promo-notice-content uui-button {
       margin-top: var(--uui-size-space-2);
     }
+
+    .footer-breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: var(--uui-size-space-2);
+      padding: 0 var(--uui-size-layout-1);
+    }
+
+    .footer-breadcrumb-link {
+      color: var(--uui-color-interactive);
+      cursor: pointer;
+    }
+
+    .footer-breadcrumb-link:hover {
+      color: var(--uui-color-interactive-emphasis);
+      text-decoration: underline;
+    }
   `;
 u([
   s()
-], r.prototype, "_configs", 2);
+], l.prototype, "_configs", 2);
 u([
   s()
-], r.prototype, "_groupedConfigs", 2);
+], l.prototype, "_groupedConfigs", 2);
 u([
   s()
-], r.prototype, "_loading", 2);
+], l.prototype, "_loading", 2);
 u([
   s()
-], r.prototype, "_error", 2);
+], l.prototype, "_error", 2);
 u([
   s()
-], r.prototype, "_view", 2);
+], l.prototype, "_view", 2);
 u([
   s()
-], r.prototype, "_editId", 2);
+], l.prototype, "_editId", 2);
 u([
   s()
-], r.prototype, "_saving", 2);
-r = u([
+], l.prototype, "_saving", 2);
+l = u([
   m("evaluator-config-workspace")
-], r);
+], l);
 export {
-  r as EvaluatorConfigWorkspaceElement
+  l as EvaluatorConfigWorkspaceElement
 };
-//# sourceMappingURL=evaluator-config-workspace.element-B7WuvYyc.js.map
+//# sourceMappingURL=evaluator-config-workspace.element-CqDJKoHc.js.map

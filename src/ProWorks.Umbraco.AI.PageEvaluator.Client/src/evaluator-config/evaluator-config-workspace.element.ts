@@ -93,6 +93,23 @@ export class EvaluatorConfigWorkspaceElement extends UmbLitElement {
     .promo-notice-content uui-button {
       margin-top: var(--uui-size-space-2);
     }
+
+    .footer-breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: var(--uui-size-space-2);
+      padding: 0 var(--uui-size-layout-1);
+    }
+
+    .footer-breadcrumb-link {
+      color: var(--uui-color-interactive);
+      cursor: pointer;
+    }
+
+    .footer-breadcrumb-link:hover {
+      color: var(--uui-color-interactive-emphasis);
+      text-decoration: underline;
+    }
   `;
 
   @state() _configs: EvaluatorConfigItem[] = [];
@@ -195,6 +212,12 @@ export class EvaluatorConfigWorkspaceElement extends UmbLitElement {
     void form?.submit();
   }
 
+  private get _breadcrumbName(): string {
+    if (!this._editId) return this.localize.term('evaluatorConfig_createHeadline');
+    return this._configs.find((c) => c.id === this._editId)?.name
+      ?? this.localize.term('evaluatorConfig_editHeadline');
+  }
+
   override render(): TemplateResult {
     if (this._view === 'form') {
       return html`
@@ -216,6 +239,13 @@ export class EvaluatorConfigWorkspaceElement extends UmbLitElement {
           </evaluator-form>
         </div>
         <umb-footer-layout>
+          <div class="footer-breadcrumb">
+            <span class="footer-breadcrumb-link" @click=${() => this._handleBack()}>
+              ${this.localize.term('evaluatorConfig_sectionLabel')}
+            </span>
+            <span>/</span>
+            <span>${this._breadcrumbName}</span>
+          </div>
           <uui-button
             slot="actions"
             look="primary"
