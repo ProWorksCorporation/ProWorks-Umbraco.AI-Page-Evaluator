@@ -10,7 +10,7 @@ Adds an **Evaluate Page** workspace action to the Umbraco content editor. Clicki
 
 1. Install this package
 2. Run your Umbraco site (migrations apply automatically on startup)
-3. Go to **Settings → Umbraco.AI Add-ons → Page Evaluator** and create an evaluator configuration
+3. Go to **AI → Add-ons → Page Evaluator** and create an evaluator configuration
 4. Open any content node of that document type and the **Evaluate Page** button appears in the toolbar
 
 ## Key Features
