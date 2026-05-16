@@ -34,6 +34,7 @@ export class EvaluatorFormElement extends UmbLitElement {
   @state() _contextId = '';
   @state() _promptText = '';
   @state() private _scoringEnabled = false;
+  @state() private _recommendationsEnabled = true;
   @state() private _version = 0;
 
   // Validation errors keyed by field name
@@ -207,6 +208,7 @@ export class EvaluatorFormElement extends UmbLitElement {
     this._contextId = '';
     this._promptText = '';
     this._scoringEnabled = false;
+    this._recommendationsEnabled = true;
     this._version = 0;
     this._propertyAliases = [];
     this._availableProperties = [];
@@ -227,6 +229,7 @@ export class EvaluatorFormElement extends UmbLitElement {
       this._contextId = config.contextId ?? '';
       this._promptText = config.promptText;
       this._scoringEnabled = config.scoringEnabled;
+      this._recommendationsEnabled = config.recommendationsEnabled;
       this._version = config.version;
       this._propertyAliases = config.propertyAliases ?? [];
       this._errors = {};
@@ -342,6 +345,7 @@ export class EvaluatorFormElement extends UmbLitElement {
             promptText: this._promptText,
             propertyAliases: this._propertyAliases.length > 0 ? this._propertyAliases : null,
             scoringEnabled: this._scoringEnabled,
+            recommendationsEnabled: this._recommendationsEnabled,
             version: this._version,
           })
         : await createConfiguration({
@@ -353,6 +357,7 @@ export class EvaluatorFormElement extends UmbLitElement {
             promptText: this._promptText,
             propertyAliases: this._propertyAliases.length > 0 ? this._propertyAliases : null,
             scoringEnabled: this._scoringEnabled,
+            recommendationsEnabled: this._recommendationsEnabled,
           });
 
       if (!this.isConnected) return;
@@ -533,6 +538,18 @@ export class EvaluatorFormElement extends UmbLitElement {
               label=${this.localize.term('evaluatorConfig_scoringLabel')}
               ?checked=${this._scoringEnabled}
               @change=${(e: Event) => { this._scoringEnabled = (e.target as HTMLInputElement).checked; }}>
+            </uui-toggle>
+          </div>
+        </umb-property-layout>
+
+        <umb-property-layout
+          label=${this.localize.term('evaluatorConfig_recommendationsLabel')}
+          description=${this.localize.term('evaluatorConfig_recommendationsHelp')}>
+          <div slot="editor">
+            <uui-toggle
+              label=${this.localize.term('evaluatorConfig_recommendationsLabel')}
+              ?checked=${this._recommendationsEnabled}
+              @change=${(e: Event) => { this._recommendationsEnabled = (e.target as HTMLInputElement).checked; }}>
             </uui-toggle>
           </div>
         </umb-property-layout>

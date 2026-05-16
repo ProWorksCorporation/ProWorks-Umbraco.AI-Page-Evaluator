@@ -26,6 +26,7 @@ export interface EvaluatorConfigItem {
   readonly dateModified: string; // ISO 8601
   readonly propertyAliases: string[] | null;
   readonly scoringEnabled: boolean;
+  readonly recommendationsEnabled: boolean;
   readonly version: number;
 }
 
@@ -45,6 +46,7 @@ export interface CreateEvaluatorConfigRequest {
   readonly description?: string | null;
   readonly propertyAliases?: string[] | null;
   readonly scoringEnabled: boolean;
+  readonly recommendationsEnabled: boolean;
 }
 
 /** Request body for PUT /configurations/{id}. */
@@ -57,6 +59,7 @@ export interface UpdateEvaluatorConfigRequest {
   readonly description?: string | null;
   readonly propertyAliases?: string[] | null;
   readonly scoringEnabled: boolean;
+  readonly recommendationsEnabled: boolean;
   readonly version: number;
 }
 
@@ -109,6 +112,8 @@ export interface EvaluationReportResponse {
   readonly propertyEditorAliases: Record<string, string>;
   /** Maps each property alias to its human-readable Umbraco property name. Empty when unavailable. */
   readonly propertyNames: Record<string, string>;
+  /** Whether the active evaluator config has recommendations enabled. */
+  readonly recommendationsEnabled: boolean;
 }
 
 /** Request body for POST /evaluate. */
