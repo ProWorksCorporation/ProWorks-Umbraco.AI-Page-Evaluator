@@ -27,7 +27,7 @@ Adds an **Evaluate Page** workspace action to the Umbraco content editor. Clicki
 - Supports any AI provider configured in Umbraco.AI (Anthropic, OpenAI, etc.)
 - Cached results with timestamp and one-click re-evaluation
 - Workspace action hidden automatically on unconfigured document types
-- AI text recommendations for failing checks — apply suggestions directly to content fields
+- AI text recommendations for Fail and Warn checks — the recommendation panel shows the current field value alongside the AI suggestion so you can compare before applying or copying it to the clipboard
 
 ## About ProWorks
 

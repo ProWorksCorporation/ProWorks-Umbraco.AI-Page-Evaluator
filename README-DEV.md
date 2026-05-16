@@ -162,6 +162,13 @@ Modal opens → GET /evaluate/cached/{nodeId}
                         │
                         ▼
                 Modal renders: score pills · suggestions · attention items · passing items
+                        │
+                        └─ For each attention item linked to a property →
+                                "Generate recommendation" link → POST /recommend
+                                        │
+                                        ▼
+                                Shows current field value + AI suggestion side-by-side
+                                Apply (plain text / Tags) or Copy (RichText / TinyMCE)
 ```
 
 > Cache is automatically cleared for all nodes of a document type whenever its evaluator configuration is created, updated, activated, or deleted. Cache entries for individual nodes are also cleared when content is published.
