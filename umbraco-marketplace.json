@@ -3,7 +3,7 @@
   "AlternateCategory": "Editor Tools",
   "AuthorDetails": {
     "Name": "ProWorks Corporation",
-    "Description": "ProWorks Corporation is an Umbraco Platinum Partner based in the USA. We have been building and maintaining Umbraco implementations since the early versions of the platform, certified across Umbraco 7 through 17, and we have three Umbraco MVPs on staff. We work with organizations across many industries including credit unions, insurers, public agencies, travel, higher education, and manufacturers. Our approach is consultative: we will meet you where you are and recommend the right next step, even if that means doing less.",
+    "Description": "ProWorks Corporation is an Umbraco Platinum Partner based in the USA. We have been building and maintaining Umbraco implementations since the early versions of the platform, certified across Umbraco 4 through 17, and we have three Umbraco MVPs on staff. We work with organizations across many industries including credit unions, insurers, public agencies (federal, state, and local), travel, healthcare, higher education, and manufacturers. Our approach is consultative: we will meet you where you are and recommend the right next step, even if that means doing less.",
     "Url": "https://www.proworks.com/",
     "ImageUrl": "https://github.com/ProWorksCorporation.png",
     "Contributors": [],
@@ -34,6 +34,14 @@
     {
       "ImageUrl": "https://raw.githubusercontent.com/ProWorksCorporation/ProWorks-Umbraco.AI-Page-Evaluator/refs/heads/main/images/Items-Needing-Attention-SchemaRecs.png",
       "Caption": "Evaluation Detail with Items Needing Attention"
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/ProWorksCorporation/ProWorks-Umbraco.AI-Page-Evaluator/refs/heads/main/images/Dimensional-Scoring-Report.png",
+      "Caption": "Evaluation Detail with Scoring Enabled"
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/ProWorksCorporation/ProWorks-Umbraco.AI-Page-Evaluator/refs/heads/main/images/Recommendations-Section.png",
+      "Caption": "Inline Property-level Recommendations in the Evaluation Report"
     }
   ],
   "Tags": [
