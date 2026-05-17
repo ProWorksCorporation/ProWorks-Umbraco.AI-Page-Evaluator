@@ -316,7 +316,10 @@ export class EvaluationReportElement extends UmbLitElement {
   private _recStates = new Map<number, RecommendationState>();
 
   @state()
-  private _copiedChecks = new Set<number>();
+  private _appliedAliases = new Map<number, Set<string>>();
+
+  @state()
+  private _copiedAliases = new Map<number, Set<string>>();
 
   override render(): TemplateResult | typeof nothing {
     if (!this.report) return nothing;
@@ -500,26 +503,23 @@ export class EvaluationReportElement extends UmbLitElement {
     );
   }
 
-  private _resolveCurrentValue(propertyAlias: string | null): string {
-    if (propertyAlias === null) return '';
-    const raw = this.properties[propertyAlias];
+  private _resolveCurrentValue(alias: string): string {
+    const raw = this.properties[alias];
     if (raw === null || raw === undefined) return '';
     if (typeof raw === 'string') return raw;
     if (Array.isArray(raw)) return raw.join(', ');
     return '';
   }
 
-  private _recCurrentLabel(propertyAlias: string | null): string {
-    if (propertyAlias === null) return this.localize.term('evaluatePage_recCurrent');
-    const name = this.propertyNames[propertyAlias];
+  private _recCurrentLabel(alias: string): string {
+    const name = this.propertyNames[alias];
     return name !== undefined
       ? `${this.localize.term('evaluatePage_recCurrentFor')} ${name}`
       : this.localize.term('evaluatePage_recCurrent');
   }
 
-  private _recSuggestedLabel(propertyAlias: string | null): string {
-    if (propertyAlias === null) return this.localize.term('evaluatePage_recSuggested');
-    const name = this.propertyNames[propertyAlias];
+  private _recSuggestedLabel(alias: string): string {
+    const name = this.propertyNames[alias];
     return name !== undefined
       ? `${this.localize.term('evaluatePage_recSuggestedFor')} ${name}`
       : this.localize.term('evaluatePage_recSuggested');
@@ -527,11 +527,11 @@ export class EvaluationReportElement extends UmbLitElement {
 
   private _renderCheck(check: CheckResult): TemplateResult {
     const state: RecommendationState = this._recStates.get(check.checkNumber) ?? { kind: 'idle' };
-    const showRec =
-      this.recommendationsEnabled &&
-      (check.status === 'Fail' || check.status === 'Warn') &&
-      check.propertyAlias !== null &&
-      this._canRecommend(check.propertyAlias);
+    const recommendableAliases =
+      this.recommendationsEnabled && (check.status === 'Fail' || check.status === 'Warn')
+        ? (check.propertyAliases ?? []).filter((a) => this._canRecommend(a))
+        : [];
+    const showRec = recommendableAliases.length > 0;
 
     return html`
       <li class="check-item">
@@ -544,13 +544,17 @@ export class EvaluationReportElement extends UmbLitElement {
           ${check.explanation
             ? html`<div class="check-explanation">${check.explanation}</div>`
             : nothing}
-          ${showRec ? this._renderRecState(check, state) : nothing}
+          ${showRec ? this._renderRecState(check, state, recommendableAliases) : nothing}
         </div>
       </li>
     `;
   }
 
-  private _renderRecState(check: CheckResult, state: RecommendationState): TemplateResult {
+  private _renderRecState(
+    check: CheckResult,
+    state: RecommendationState,
+    recommendableAliases: readonly string[],
+  ): TemplateResult {
     switch (state.kind) {
       case 'idle':
         return html`
@@ -571,14 +575,11 @@ export class EvaluationReportElement extends UmbLitElement {
           </div>
         `;
       case 'result':
-        return this._renderRecBox(
-          check,
-          state.value,
-          false,
-          check.propertyAlias !== null && this._canApply(check.propertyAlias),
-        );
-      case 'applied':
-        return this._renderRecBox(check, state.value, true, false);
+        return html`${recommendableAliases.map((alias) => {
+          const applied = this._appliedAliases.get(check.checkNumber)?.has(alias) ?? false;
+          const value = state.values[alias] ?? null;
+          return this._renderRecBox(check, alias, value, applied, this._canApply(alias));
+        })}`;
       case 'error':
         return html`
           <div style="display:flex;align-items:center;gap:var(--uui-size-space-2,8px);margin-top:var(--uui-size-space-2,8px);">
@@ -600,19 +601,20 @@ export class EvaluationReportElement extends UmbLitElement {
 
   private _renderRecBox(
     check: CheckResult,
+    alias: string,
     value: string | null,
     applied: boolean,
     canApply: boolean,
   ): TemplateResult {
-    const copied = this._copiedChecks.has(check.checkNumber);
-    const currentValue = this._resolveCurrentValue(check.propertyAlias);
+    const copied = this._copiedAliases.get(check.checkNumber)?.has(alias) ?? false;
+    const currentValue = this._resolveCurrentValue(alias);
     return html`
       <div class="rec-box ${applied ? 'applied' : ''}">
         ${currentValue
           ? html`
               <div class="rec-current-label">
                 <uui-icon name="icon-edit"></uui-icon>
-                ${this._recCurrentLabel(check.propertyAlias)}
+                ${this._recCurrentLabel(alias)}
               </div>
               <div class="rec-current-text">${currentValue}</div>
               <hr class="rec-section-divider" />
@@ -622,7 +624,7 @@ export class EvaluationReportElement extends UmbLitElement {
           <uui-icon name="${applied ? 'icon-check' : 'icon-wand'}"></uui-icon>
           ${applied
             ? this.localize.term('evaluatePage_recApplied')
-            : this._recSuggestedLabel(check.propertyAlias)}
+            : this._recSuggestedLabel(alias)}
         </div>
         <div class="rec-text">${value ?? ''}</div>
         <div class="rec-actions">
@@ -633,7 +635,7 @@ export class EvaluationReportElement extends UmbLitElement {
                   color="positive"
                   compact
                   label=${this.localize.term('evaluatePage_recApply')}
-                  @click=${() => this._handleApply(check, value)}>
+                  @click=${() => this._handleApply(check, alias, value)}>
                   ${this.localize.term('evaluatePage_recApply')}
                 </uui-button>
               `
@@ -641,11 +643,17 @@ export class EvaluationReportElement extends UmbLitElement {
           <uui-button
             look="secondary"
             compact
-            label=${copied ? this.localize.term('evaluatePage_recCopied') : this.localize.term('evaluatePage_recCopy')}
+            label=${copied
+              ? this.localize.term('evaluatePage_recCopied')
+              : this.localize.term('evaluatePage_recCopy')}
             ?disabled=${copied}
-            @click=${() => { void this._handleCopy(check.checkNumber, value); }}>
-            <uui-icon name="${copied ? 'icon-check' : 'icon-clipboard-copy'}" slot="icon"></uui-icon>
-            ${copied ? this.localize.term('evaluatePage_recCopied') : this.localize.term('evaluatePage_recCopy')}
+            @click=${() => { void this._handleCopy(check.checkNumber, alias, value); }}>
+            <uui-icon
+              name="${copied ? 'icon-check' : 'icon-clipboard-copy'}"
+              slot="icon"></uui-icon>
+            ${copied
+              ? this.localize.term('evaluatePage_recCopied')
+              : this.localize.term('evaluatePage_recCopy')}
           </uui-button>
           <uui-button
             look="secondary"
@@ -665,12 +673,12 @@ export class EvaluationReportElement extends UmbLitElement {
   }
 
   private async _handleGenerate(check: CheckResult): Promise<void> {
-    if (!check.propertyAlias) return;
+    if (!check.propertyAliases?.length) return;
     this._setRecState(check.checkNumber, { kind: 'generating' });
 
     const request: RecommendRequest = {
       nodeId: this.nodeId,
-      propertyAlias: check.propertyAlias,
+      propertyAliases: check.propertyAliases as string[],
       checkLabel: check.label,
       checkExplanation: check.explanation ?? null,
       properties: Object.fromEntries(
@@ -681,35 +689,45 @@ export class EvaluationReportElement extends UmbLitElement {
     try {
       const response = await recommend(request);
       if (!this.isConnected) return;
-      this._setRecState(check.checkNumber, { kind: 'result', value: response.recommendedValue });
+      this._setRecState(check.checkNumber, { kind: 'result', values: response.recommendedValues });
     } catch {
       if (!this.isConnected) return;
       this._setRecState(check.checkNumber, { kind: 'error' });
     }
   }
 
-  private _handleApply(check: CheckResult, value: string | null): void {
-    if (!check.propertyAlias || value === null) return;
+  private _handleApply(check: CheckResult, alias: string, value: string | null): void {
+    if (!alias || value === null) return;
     this.dispatchEvent(
       new CustomEvent('page-evaluator-rec-apply', {
         bubbles: true,
         composed: true,
-        detail: { propertyAlias: check.propertyAlias, value },
+        detail: { propertyAlias: alias, value },
       }),
     );
-    this._setRecState(check.checkNumber, { kind: 'applied', value });
+    const applied = new Map(this._appliedAliases);
+    const set = new Set(applied.get(check.checkNumber) ?? []);
+    set.add(alias);
+    applied.set(check.checkNumber, set);
+    this._appliedAliases = applied;
   }
 
-  private async _handleCopy(checkNumber: number, value: string | null): Promise<void> {
+  private async _handleCopy(checkNumber: number, alias: string, value: string | null): Promise<void> {
     if (value === null) return;
     await navigator.clipboard.writeText(value);
     if (!this.isConnected) return;
-    this._copiedChecks = new Set(this._copiedChecks).add(checkNumber);
+    const copied = new Map(this._copiedAliases);
+    const set = new Set(copied.get(checkNumber) ?? []);
+    set.add(alias);
+    copied.set(checkNumber, set);
+    this._copiedAliases = copied;
     setTimeout(() => {
       if (!this.isConnected) return;
-      const next = new Set(this._copiedChecks);
-      next.delete(checkNumber);
-      this._copiedChecks = next;
+      const c = new Map(this._copiedAliases);
+      const s = new Set(c.get(checkNumber) ?? []);
+      s.delete(alias);
+      c.set(checkNumber, s);
+      this._copiedAliases = c;
     }, 2000);
   }
 }
