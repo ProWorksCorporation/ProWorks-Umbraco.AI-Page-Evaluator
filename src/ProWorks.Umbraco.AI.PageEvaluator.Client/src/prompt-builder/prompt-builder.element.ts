@@ -210,12 +210,19 @@ export class PromptBuilderElement extends UmbLitElement {
         ${this._draft
           ? html`
               <uui-box headline=${this.localize.term('promptBuilder_generatedDraftLabel')}>
-                <pre data-draft style="white-space: pre-wrap;">${this._draft}</pre>
                 <uui-button
                   slot="header-actions"
                   look="primary"
                   label=${this.localize.term('promptBuilder_usePromptButton')}
                   @click=${() => this.usePrompt()}>
+                  ${this.localize.term('promptBuilder_usePromptButton')}
+                </uui-button>
+                <pre data-draft style="white-space: pre-wrap;">${this._draft}</pre>
+                <uui-button
+                  look="primary"
+                  label=${this.localize.term('promptBuilder_usePromptButton')}
+                  @click=${() => this.usePrompt()}
+                  style="margin-top: var(--uui-size-space-3);">
                   ${this.localize.term('promptBuilder_usePromptButton')}
                 </uui-button>
               </uui-box>
