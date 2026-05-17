@@ -307,6 +307,9 @@ export class EvaluationReportElement extends UmbLitElement {
   propertyNames: Record<string, string> = {};
 
   @property({ attribute: false })
+  additionalRecommendableEditorAliases: readonly string[] = [];
+
+  @property({ attribute: false })
   recommendationsEnabled = true;
 
   @state()
@@ -458,7 +461,8 @@ export class EvaluationReportElement extends UmbLitElement {
     if (editorAlias !== undefined) {
       return (
         EvaluationReportElement._FULL_RECOMMEND_EDITORS.has(editorAlias) ||
-        EvaluationReportElement._COPY_ONLY_EDITORS.has(editorAlias)
+        EvaluationReportElement._COPY_ONLY_EDITORS.has(editorAlias) ||
+        this._isAdditionalEditor(editorAlias)
       );
     }
     // Fallback: raw value heuristic when no editor info is available.
@@ -472,11 +476,15 @@ export class EvaluationReportElement extends UmbLitElement {
   /**
    * Returns true when the Apply button should be shown for the given property alias.
    * Only plain-text editors support direct apply; RTE / TinyMCE are copy-only.
+   * Editors listed in additionalRecommendableEditorAliases are treated as full recommend (apply supported).
    */
   private _canApply(alias: string): boolean {
     const editorAlias = this.propertyEditorAliases[alias];
     if (editorAlias !== undefined) {
-      return EvaluationReportElement._FULL_RECOMMEND_EDITORS.has(editorAlias);
+      return (
+        EvaluationReportElement._FULL_RECOMMEND_EDITORS.has(editorAlias) ||
+        this._isAdditionalEditor(editorAlias)
+      );
     }
     // Fallback: only allow apply when the value looks like plain text.
     const value = this.properties[alias];
@@ -484,6 +492,12 @@ export class EvaluationReportElement extends UmbLitElement {
     const trimmed = value.trimStart();
     if (trimmed.length === 0) return true;
     return trimmed[0] !== '{' && trimmed[0] !== '[' && !trimmed.startsWith('umb://');
+  }
+
+  private _isAdditionalEditor(editorAlias: string): boolean {
+    return this.additionalRecommendableEditorAliases.some(
+      (a) => a.toLowerCase() === editorAlias.toLowerCase()
+    );
   }
 
   private _resolveCurrentValue(propertyAlias: string | null): string {

@@ -1,6 +1,6 @@
 ﻿# ProWorks-Umbraco-AI-Page-Evaluator Development Guidelines
 
-Last updated: 2026-05-15 (rev 10)
+Last updated: 2026-05-16 (rev 11)
 
 ## Active Technologies
 - C# .NET 10, TypeScript 5.x (strict: true) + Umbraco CMS 17.4.0, Umbraco.AI 1.11.0 (Anthropic 1.3.2, OpenAI 1.2.2), EF Core 10.0.6, Microsoft.Extensions.AI 10.6.0, Lit 3.x via @umbraco-cms/backoffice/external/lit
@@ -183,7 +183,13 @@ dotnet ef migrations add <Name> \
 - `IsTagsEditor(string)` — matches `"Umbraco.Tags"` (case-insensitive)
 - `IsRichTextEditor(string)` — matches `"Umbraco.RichText"` and `"Umbraco.TinyMCE"` (case-insensitive)
 - Frontend `EvaluationReportElement` uses two static sets to classify properties: `_FULL_RECOMMEND_EDITORS` (`TextBox`, `TextArea`, `Markdown`, `Tags` — full recommend + apply) and `_COPY_ONLY_EDITORS` (`RichText`, `TinyMCE` — recommend + copy only, no Apply button)
-- `_canRecommend(alias)` and `_canApply(alias)` consult `propertyEditorAliases` first; fall back to a value-content heuristic (values starting with `{`, `[`, or `umb://` are treated as complex) when the map is unavailable
+- `_canRecommend(alias)` and `_canApply(alias)` consult `propertyEditorAliases` first, then `_isAdditionalEditor(editorAlias)`, then fall back to a value-content heuristic (values starting with `{`, `[`, or `umb://` are treated as complex) when the map is unavailable
+- `_isAdditionalEditor(editorAlias)` — compares case-insensitively against `this.additionalRecommendableEditorAliases`; editors in this list behave the same as `_FULL_RECOMMEND_EDITORS` (both Recommend and Apply shown)
+- `additionalRecommendableEditorAliases` property on `EvaluationReportElement` is populated from `EvaluationReport.AdditionalRecommendableEditorAliases`, which the controller sets from `IOptions<PageEvaluatorOptions>` at response time — **never stored in the cache**
+
+### Server Configuration (`PageEvaluatorOptions`)
+- `Configuration/PageEvaluatorOptions.cs` — bound from `ProWorks:PageEvaluator` in `appsettings.json`; registered in `PageEvaluatorComposer` via `builder.Services.Configure<PageEvaluatorOptions>(builder.Config.GetSection("ProWorks:PageEvaluator"))`
+- `AdditionalRecommendableEditorAliases: List<string>` — editor aliases from third-party packages that should receive Recommend + Apply buttons; treated as plain text on the backend (same fallback prompt as all other unrecognised editors); injected into the controller via `IOptions<PageEvaluatorOptions>`
 
 ### Rate Limiter Registration
 - `PageEvaluatorComposer` registers the `"PageEvaluatorEvaluate"` fixed-window rate limiter policy (10 requests per user per minute) via `builder.Services.AddRateLimiter`

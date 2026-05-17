@@ -114,6 +114,8 @@ export interface EvaluationReportResponse {
   readonly propertyNames: Record<string, string>;
   /** Whether the active evaluator config has recommendations enabled. */
   readonly recommendationsEnabled: boolean;
+  /** Editor aliases from third-party packages configured to support recommendations. */
+  readonly additionalRecommendableEditorAliases: readonly string[];
 }
 
 /** Request body for POST /evaluate. */

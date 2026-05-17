@@ -16,7 +16,7 @@ An Umbraco 17 backoffice package that adds an **Evaluate Page** button to the co
 - **Rich property resolution**: uses Umbraco's Content Delivery API builder to send properly resolved property values (media alt text, block content, rich text as plain text, MNTP references) rather than raw editor format
 - **Content cleaning**: HTML tags are stripped and long property values are truncated before sending to the AI, reducing token consumption
 - **Draft-aware**: overlays unsaved text edits on top of the published content snapshot so unevaluated changes are included
-- **AI text recommendations**: for any Fail or Warn check that targets a specific property, a **Generate recommendation** button fetches an AI-suggested replacement value. The recommendation box shows the property's current value alongside the suggestion so editors can compare before applying. Recommendations are property-editor-aware: plain text and Tags fields offer full apply + copy; Rich Text fields offer copy-only (since the Umbraco RTE stores a JSON envelope that cannot be replaced by plain text); complex fields such as media pickers and block lists are excluded automatically
+- **AI text recommendations**: for any Fail or Warn check that targets a specific property, a **Generate recommendation** button fetches an AI-suggested replacement value. The recommendation box shows the property's current value alongside the suggestion so editors can compare before applying. Recommendations are property-editor-aware: plain text and Tags fields offer full apply + copy; Rich Text fields offer copy-only (since the Umbraco RTE stores a JSON envelope that cannot be replaced by plain text); complex fields such as media pickers and block lists are excluded automatically. Third-party or custom property editors can be enabled for recommendations via `appsettings.json` (see [Configuration options](#configuration-options))
 - **Guardrail policy support**: when the AI profile has guardrail rules that block an evaluation (pre- or post-generate), the modal shows a specific message identifying which policy fired rather than a generic error; transient AI provider overload errors (e.g. Anthropic 529) are detected and shown as a "temporarily unavailable, please retry" prompt
 - **Security hardened**: admin-only config management, generic error responses (provider details are never leaked to the client), prompt injection defense, and per-user audit trail
 - **Umbraco.AI Test Support**: fully supports multi-run tests and results evaluation to compare evaluations accross models and package releases.
@@ -91,6 +91,29 @@ When recommendations are enabled, the report allows the user to ask AI for a rec
 
 ![Evaluation report recommended property values where a user can apply it immediately](images/Recommendations-Section.png)
 
+
+---
+
+## Configuration options
+
+The package reads optional settings from `appsettings.json` under the `ProWorks:PageEvaluator` section.
+
+### Additional recommendable editor aliases
+
+By default only the built-in Umbraco editors listed above support recommendations. To enable recommendations for editors from third-party or custom packages, list their aliases in `appsettings.json`:
+
+```json
+"ProWorks": {
+  "PageEvaluator": {
+    "AdditionalRecommendableEditorAliases": [
+      "MyPackage.CustomTextEditor",
+      "AnotherPackage.SimpleText"
+    ]
+  }
+}
+```
+
+Editors listed here are treated as plain-text fields and receive both the **Recommend** and **Apply** buttons in the evaluation modal. Alias comparison is case-insensitive. Built-in Umbraco editors (`Umbraco.TextBox`, `Umbraco.TextArea`, `Umbraco.Markdown`, `Umbraco.Tags`, `Umbraco.RichText`, `Umbraco.TinyMCE`) do not need to be listed here.
 
 ---
 

@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using ProWorks.Umbraco.AI.PageEvaluator.Configuration;
 using ProWorks.Umbraco.AI.PageEvaluator.Evaluation;
 using ProWorks.Umbraco.AI.PageEvaluator.Evaluators;
 using ProWorks.Umbraco.AI.PageEvaluator.Services;
@@ -44,6 +46,7 @@ public sealed class PageEvaluatorApiController : ControllerBase
     private readonly IAuthorizationService _authorizationService;
     private readonly IAIChatService _chatService;
     private readonly IPropertyEditorSchemaService _propertyEditorSchemaService;
+    private readonly IOptions<PageEvaluatorOptions> _options;
 
     public PageEvaluatorApiController(
         IPageEvaluationService evaluationService,
@@ -56,7 +59,8 @@ public sealed class PageEvaluatorApiController : ControllerBase
         IContentService contentService,
         IAuthorizationService authorizationService,
         IAIChatService chatService,
-        IPropertyEditorSchemaService propertyEditorSchemaService)
+        IPropertyEditorSchemaService propertyEditorSchemaService,
+        IOptions<PageEvaluatorOptions> options)
     {
         _evaluationService = evaluationService;
         _configService = configService;
@@ -69,6 +73,7 @@ public sealed class PageEvaluatorApiController : ControllerBase
         _authorizationService = authorizationService;
         _chatService = chatService;
         _propertyEditorSchemaService = propertyEditorSchemaService;
+        _options = options;
     }
 
     // ---------------------------------------------------------------------------
@@ -293,7 +298,8 @@ public sealed class PageEvaluatorApiController : ControllerBase
         return Ok(entry.Report.WithCachedAt(entry.CachedAt)
             .WithPropertyEditorAliases(editorAliases)
             .WithPropertyNames(propertyNames)
-            .WithRecommendationsEnabled(recommendationsEnabled));
+            .WithRecommendationsEnabled(recommendationsEnabled)
+            .WithAdditionalRecommendableEditorAliases(_options.Value.AdditionalRecommendableEditorAliases));
     }
 
     // ---------------------------------------------------------------------------
@@ -355,7 +361,8 @@ public sealed class PageEvaluatorApiController : ControllerBase
             return Ok(report.WithCachedAt(cachedAt)
                 .WithPropertyEditorAliases(editorAliases)
                 .WithPropertyNames(propertyNames)
-                .WithRecommendationsEnabled(recommendationsEnabled));
+                .WithRecommendationsEnabled(recommendationsEnabled)
+                .WithAdditionalRecommendableEditorAliases(_options.Value.AdditionalRecommendableEditorAliases));
         }
         catch (InvalidOperationException ex)
         {

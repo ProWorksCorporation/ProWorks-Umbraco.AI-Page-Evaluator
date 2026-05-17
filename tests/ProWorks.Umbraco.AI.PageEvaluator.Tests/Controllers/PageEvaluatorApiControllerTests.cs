@@ -7,8 +7,10 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
+using ProWorks.Umbraco.AI.PageEvaluator.Configuration;
 using ProWorks.Umbraco.AI.PageEvaluator.Controllers;
 using ProWorks.Umbraco.AI.PageEvaluator.Evaluation;
 using ProWorks.Umbraco.AI.PageEvaluator.Evaluators;
@@ -42,6 +44,7 @@ public class PageEvaluatorApiControllerTests
     private readonly IAuthorizationService _authorizationService = Substitute.For<IAuthorizationService>();
     private readonly IAIChatService _chatService = Substitute.For<IAIChatService>();
     private readonly IPropertyEditorSchemaService _propertyEditorSchemaService = Substitute.For<IPropertyEditorSchemaService>();
+    private readonly IOptions<PageEvaluatorOptions> _options = Options.Create(new PageEvaluatorOptions());
     private readonly PageEvaluatorApiController _sut;
 
     public PageEvaluatorApiControllerTests()
@@ -58,7 +61,7 @@ public class PageEvaluatorApiControllerTests
             _evaluationService, _configService, _profileService, _contextService,
             _contentTypeService, _cacheRepository, _logger,
             _contentService, _authorizationService,
-            _chatService, _propertyEditorSchemaService);
+            _chatService, _propertyEditorSchemaService, _options);
         _sut.ControllerContext = new ControllerContext
         {
             HttpContext = new DefaultHttpContext(),
@@ -972,6 +975,17 @@ public class PageEvaluatorApiControllerTests
             DateModified = DateTime.UtcNow,
         };
 
+    private PageEvaluatorApiController BuildSut(IOptions<PageEvaluatorOptions> options)
+    {
+        var sut = new PageEvaluatorApiController(
+            _evaluationService, _configService, _profileService, _contextService,
+            _contentTypeService, _cacheRepository, _logger,
+            _contentService, _authorizationService,
+            _chatService, _propertyEditorSchemaService, options);
+        sut.ControllerContext = _sut.ControllerContext;
+        return sut;
+    }
+
     // ---------------------------------------------------------------------------
     // ScoringEnabled: CRUD + cache invalidation + response round-trip (T015)
     // ---------------------------------------------------------------------------
@@ -1543,6 +1557,117 @@ public class PageEvaluatorApiControllerTests
         var ok = Assert.IsType<OkObjectResult>(result);
         var report = Assert.IsAssignableFrom<EvaluationReport>(ok.Value);
         Assert.False(report.RecommendationsEnabled);
+    }
+
+    // ---------------------------------------------------------------------------
+    // POST /evaluate and GET /evaluate/cached — AdditionalRecommendableEditorAliases
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public async Task EvaluateAsync_AttachesAdditionalRecommendableEditorAliases_FromOptions()
+    {
+        var nodeId = Guid.NewGuid();
+        var optionsWithExtra = Options.Create(new PageEvaluatorOptions
+        {
+            AdditionalRecommendableEditorAliases = ["MyPackage.CustomText", "Another.Editor"],
+        });
+        var sut = BuildSut(optionsWithExtra);
+
+        _evaluationService.EvaluateAsync(nodeId, "blogPost", Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<CancellationToken>())
+            .Returns(EvaluationReport.Parsed(new EvaluationScore(1, 1), [], null));
+
+        var result = await sut.EvaluateAsync(new EvaluatePageRequest { NodeId = nodeId, DocumentTypeAlias = "blogPost", Properties = new() });
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var report = Assert.IsAssignableFrom<EvaluationReport>(ok.Value);
+        Assert.Equal(2, report.AdditionalRecommendableEditorAliases.Count);
+        Assert.Contains("MyPackage.CustomText", report.AdditionalRecommendableEditorAliases);
+        Assert.Contains("Another.Editor", report.AdditionalRecommendableEditorAliases);
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_WhenNoAdditionalEditorAliases_AttachesEmptyList()
+    {
+        var nodeId = Guid.NewGuid();
+        _evaluationService.EvaluateAsync(nodeId, "blogPost", Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<CancellationToken>())
+            .Returns(EvaluationReport.Parsed(new EvaluationScore(1, 1), [], null));
+
+        var result = await _sut.EvaluateAsync(new EvaluatePageRequest { NodeId = nodeId, DocumentTypeAlias = "blogPost", Properties = new() });
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var report = Assert.IsAssignableFrom<EvaluationReport>(ok.Value);
+        Assert.Empty(report.AdditionalRecommendableEditorAliases);
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_DoesNotCacheAdditionalRecommendableEditorAliases()
+    {
+        var nodeId = Guid.NewGuid();
+        var optionsWithExtra = Options.Create(new PageEvaluatorOptions
+        {
+            AdditionalRecommendableEditorAliases = ["MyPackage.CustomText"],
+        });
+        var sut = BuildSut(optionsWithExtra);
+
+        _evaluationService.EvaluateAsync(nodeId, "blogPost", Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<CancellationToken>())
+            .Returns(EvaluationReport.Parsed(new EvaluationScore(1, 1), [], null));
+
+        EvaluationCacheEntry? capturedEntry = null;
+        _cacheRepository
+            .SaveAsync(Arg.Do<EvaluationCacheEntry>(e => capturedEntry = e), Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+
+        await sut.EvaluateAsync(new EvaluatePageRequest { NodeId = nodeId, DocumentTypeAlias = "blogPost", Properties = new() });
+
+        Assert.NotNull(capturedEntry);
+        Assert.Empty(capturedEntry.Report.AdditionalRecommendableEditorAliases);
+    }
+
+    [Fact]
+    public async Task GetCachedEvaluationAsync_AttachesAdditionalRecommendableEditorAliases_FromOptions()
+    {
+        var nodeId = Guid.NewGuid();
+        var optionsWithExtra = Options.Create(new PageEvaluatorOptions
+        {
+            AdditionalRecommendableEditorAliases = ["ThirdParty.Editor"],
+        });
+        var sut = BuildSut(optionsWithExtra);
+
+        _cacheRepository.GetAsync(nodeId, Arg.Any<CancellationToken>())
+            .Returns(new EvaluationCacheEntry
+            {
+                NodeId = nodeId,
+                DocumentTypeAlias = "blogPost",
+                Report = EvaluationReport.Parsed(new EvaluationScore(1, 1), [], null),
+                CachedAt = DateTime.UtcNow,
+            });
+
+        var result = await sut.GetCachedEvaluationAsync(nodeId);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var report = Assert.IsAssignableFrom<EvaluationReport>(ok.Value);
+        Assert.Single(report.AdditionalRecommendableEditorAliases);
+        Assert.Equal("ThirdParty.Editor", report.AdditionalRecommendableEditorAliases[0]);
+    }
+
+    [Fact]
+    public async Task GetCachedEvaluationAsync_WhenNoAdditionalEditorAliases_AttachesEmptyList()
+    {
+        var nodeId = Guid.NewGuid();
+        _cacheRepository.GetAsync(nodeId, Arg.Any<CancellationToken>())
+            .Returns(new EvaluationCacheEntry
+            {
+                NodeId = nodeId,
+                DocumentTypeAlias = "blogPost",
+                Report = EvaluationReport.Parsed(new EvaluationScore(1, 1), [], null),
+                CachedAt = DateTime.UtcNow,
+            });
+
+        var result = await _sut.GetCachedEvaluationAsync(nodeId);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var report = Assert.IsAssignableFrom<EvaluationReport>(ok.Value);
+        Assert.Empty(report.AdditionalRecommendableEditorAliases);
     }
 
     [Fact]

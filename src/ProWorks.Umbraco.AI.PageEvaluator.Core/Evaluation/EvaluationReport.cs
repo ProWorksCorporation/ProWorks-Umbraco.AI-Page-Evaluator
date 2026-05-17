@@ -69,6 +69,13 @@ public sealed record EvaluationReport
     /// </summary>
     public bool RecommendationsEnabled { get; init; } = true;
 
+    /// <summary>
+    /// Additional property editor aliases (from third-party packages) that are configured
+    /// to support recommendations via <c>ProWorks:PageEvaluator:AdditionalRecommendableEditorAliases</c>.
+    /// Populated by the API controller at response time — never stored in the evaluation cache.
+    /// </summary>
+    public IReadOnlyList<string> AdditionalRecommendableEditorAliases { get; init; } = [];
+
     /// <summary>Creates a successfully parsed report.</summary>
     public static EvaluationReport Parsed(
         EvaluationScore? score,
@@ -112,4 +119,11 @@ public sealed record EvaluationReport
     /// </summary>
     public EvaluationReport WithRecommendationsEnabled(bool enabled) =>
         this with { RecommendationsEnabled = enabled };
+
+    /// <summary>
+    /// Returns a copy of this report with <see cref="AdditionalRecommendableEditorAliases"/> set.
+    /// Call this in the controller just before returning — do not store in the cache.
+    /// </summary>
+    public EvaluationReport WithAdditionalRecommendableEditorAliases(IReadOnlyList<string> aliases) =>
+        this with { AdditionalRecommendableEditorAliases = aliases };
 }

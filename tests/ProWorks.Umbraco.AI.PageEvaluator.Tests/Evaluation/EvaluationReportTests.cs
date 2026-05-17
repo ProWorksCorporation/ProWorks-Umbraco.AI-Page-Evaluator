@@ -258,4 +258,74 @@ public class EvaluationReportTests
 
         Assert.False(copy.RecommendationsEnabled);
     }
+
+    // ---------------------------------------------------------------------------
+    // WithAdditionalRecommendableEditorAliases
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public void Parsed_DefaultsAdditionalRecommendableEditorAliasesToEmpty()
+    {
+        var report = EvaluationReport.Parsed(new EvaluationScore(1, 1), [], null);
+        Assert.Empty(report.AdditionalRecommendableEditorAliases);
+    }
+
+    [Fact]
+    public void Failed_DefaultsAdditionalRecommendableEditorAliasesToEmpty()
+    {
+        var report = EvaluationReport.Failed("raw");
+        Assert.Empty(report.AdditionalRecommendableEditorAliases);
+    }
+
+    [Fact]
+    public void WithAdditionalRecommendableEditorAliases_ReturnsCopyWithListSet()
+    {
+        var report = EvaluationReport.Parsed(new EvaluationScore(2, 3), [], null);
+        var aliases = new List<string> { "MyPackage.CustomText", "Another.Editor" };
+
+        var result = report.WithAdditionalRecommendableEditorAliases(aliases);
+
+        Assert.Equal(2, result.AdditionalRecommendableEditorAliases.Count);
+        Assert.Contains("MyPackage.CustomText", result.AdditionalRecommendableEditorAliases);
+        Assert.Contains("Another.Editor", result.AdditionalRecommendableEditorAliases);
+        Assert.Equal(report.Score, result.Score);
+        Assert.Equal(report.Checks, result.Checks);
+    }
+
+    [Fact]
+    public void WithAdditionalRecommendableEditorAliases_DoesNotMutateOriginal()
+    {
+        var report = EvaluationReport.Parsed(new EvaluationScore(1, 1), [], null);
+        var aliases = new List<string> { "MyPackage.CustomText" };
+
+        _ = report.WithAdditionalRecommendableEditorAliases(aliases);
+
+        Assert.Empty(report.AdditionalRecommendableEditorAliases);
+    }
+
+    [Fact]
+    public void WithAdditionalRecommendableEditorAliases_WorksOnFailedReport()
+    {
+        var report = EvaluationReport.Failed("raw output");
+        var aliases = new List<string> { "ThirdParty.Editor" };
+
+        var result = report.WithAdditionalRecommendableEditorAliases(aliases);
+
+        Assert.Single(result.AdditionalRecommendableEditorAliases);
+        Assert.Equal("ThirdParty.Editor", result.AdditionalRecommendableEditorAliases[0]);
+        Assert.True(result.ParseFailed);
+    }
+
+    [Fact]
+    public void WithCachedAt_PreservesAdditionalRecommendableEditorAliases()
+    {
+        var aliases = new List<string> { "MyPackage.CustomText" };
+        var original = EvaluationReport.Parsed(new EvaluationScore(1, 1), [], null)
+            .WithAdditionalRecommendableEditorAliases(aliases);
+
+        var copy = original.WithCachedAt(DateTime.UtcNow);
+
+        Assert.Single(copy.AdditionalRecommendableEditorAliases);
+        Assert.Equal("MyPackage.CustomText", copy.AdditionalRecommendableEditorAliases[0]);
+    }
 }
