@@ -678,7 +678,7 @@ export class EvaluationReportElement extends UmbLitElement {
 
     const request: RecommendRequest = {
       nodeId: this.nodeId,
-      propertyAliases: check.propertyAliases as string[],
+      propertyAliases: check.propertyAliases,
       checkLabel: check.label,
       checkExplanation: check.explanation ?? null,
       properties: Object.fromEntries(
