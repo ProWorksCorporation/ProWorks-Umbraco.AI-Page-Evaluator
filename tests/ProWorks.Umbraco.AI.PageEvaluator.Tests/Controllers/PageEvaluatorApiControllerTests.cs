@@ -1688,7 +1688,7 @@ public class PageEvaluatorApiControllerTests
         var result = await _sut.RecommendAsync(new RecommendRequest
         {
             NodeId = Guid.NewGuid(),
-            PropertyAlias = "metaDescription",
+            PropertyAliases = ["metaDescription"],
             CheckLabel = "Meta description missing",
         });
 
@@ -1706,7 +1706,7 @@ public class PageEvaluatorApiControllerTests
         _contentService.GetById(Arg.Any<Guid>()).Returns((IContent?)null);
 
         var result = await _sut.RecommendAsync(
-            new RecommendRequest { NodeId = Guid.NewGuid(), PropertyAlias = "metaDescription" });
+            new RecommendRequest { NodeId = Guid.NewGuid(), PropertyAliases = ["metaDescription"] });
 
         Assert.IsType<NotFoundObjectResult>(result);
     }
@@ -1719,7 +1719,7 @@ public class PageEvaluatorApiControllerTests
             .Returns(AuthorizationResult.Failed());
 
         var result = await _sut.RecommendAsync(
-            new RecommendRequest { NodeId = Guid.NewGuid(), PropertyAlias = "metaDescription" });
+            new RecommendRequest { NodeId = Guid.NewGuid(), PropertyAliases = ["metaDescription"] });
 
         var obj = Assert.IsType<ObjectResult>(result);
         Assert.Equal(403, obj.StatusCode);
@@ -1732,7 +1732,7 @@ public class PageEvaluatorApiControllerTests
             .Returns((AIEvaluatorConfig?)null);
 
         var result = await _sut.RecommendAsync(
-            new RecommendRequest { NodeId = Guid.NewGuid(), PropertyAlias = "metaDescription" });
+            new RecommendRequest { NodeId = Guid.NewGuid(), PropertyAliases = ["metaDescription"] });
 
         Assert.IsType<NotFoundObjectResult>(result);
     }
@@ -1750,7 +1750,7 @@ public class PageEvaluatorApiControllerTests
         var result = await _sut.RecommendAsync(new RecommendRequest
         {
             NodeId = Guid.NewGuid(),
-            PropertyAlias = "nonexistent",
+            PropertyAliases = ["nonexistent"],
             CheckLabel = "Test",
         });
 
@@ -1783,14 +1783,75 @@ public class PageEvaluatorApiControllerTests
         var result = await _sut.RecommendAsync(new RecommendRequest
         {
             NodeId = Guid.NewGuid(),
-            PropertyAlias = "metaDescription",
+            PropertyAliases = ["metaDescription"],
             CheckLabel = "Meta description is missing",
             Properties = new Dictionary<string, string> { ["pageTitle"] = "Home" },
         });
 
         var ok = Assert.IsType<OkObjectResult>(result);
         var response = Assert.IsType<RecommendResponse>(ok.Value);
-        Assert.Equal("A great meta description.", response.RecommendedValue);
+        Assert.True(response.RecommendedValues.TryGetValue("metaDescription", out string? recValue));
+        Assert.Equal("A great meta description.", recValue);
+    }
+
+    [Fact]
+    public async Task RecommendAsync_EmptyPropertyAliases_Returns400()
+    {
+        _configService.GetActiveForDocumentTypeAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(BuildConfig("blogPost"));
+
+        var result = await _sut.RecommendAsync(new RecommendRequest
+        {
+            NodeId = Guid.NewGuid(),
+            PropertyAliases = [],
+            CheckLabel = "Some check",
+        });
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task RecommendAsync_MultipleAliases_ReturnsMapWithBothValues()
+    {
+        _configService.GetActiveForDocumentTypeAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(BuildConfig("blogPost"));
+
+        var prop1 = Substitute.For<IPropertyType>();
+        prop1.Alias.Returns("metaDescription");
+        prop1.PropertyEditorAlias.Returns("Umbraco.TextBox");
+
+        var prop2 = Substitute.For<IPropertyType>();
+        prop2.Alias.Returns("browserTitle");
+        prop2.PropertyEditorAlias.Returns("Umbraco.TextBox");
+
+        var ct = Substitute.For<IContentType>();
+        ct.CompositionPropertyTypes.Returns(new[] { prop1, prop2 });
+        _contentTypeService.Get(Arg.Any<string>()).Returns(ct);
+
+        _propertyEditorSchemaService.SupportsSchema(Arg.Any<string>()).Returns(false);
+
+        // NSubstitute returns values in sequence for successive calls to the same substitution.
+        _chatService.GetChatResponseAsync(
+            Arg.Any<Action<AIChatBuilder>>(),
+            Arg.Any<IEnumerable<ChatMessage>>(),
+            Arg.Any<CancellationToken>())
+            .Returns(
+                new ChatResponse(new ChatMessage(ChatRole.Assistant, "{\"recommendedValue\": \"Great meta.\"}")),
+                new ChatResponse(new ChatMessage(ChatRole.Assistant, "{\"recommendedValue\": \"Great title.\"}")));
+
+        var result = await _sut.RecommendAsync(new RecommendRequest
+        {
+            NodeId = Guid.NewGuid(),
+            PropertyAliases = ["metaDescription", "browserTitle"],
+            CheckLabel = "SEO fields are weak",
+            Properties = [],
+        });
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var response = Assert.IsType<RecommendResponse>(ok.Value);
+        Assert.Equal(2, response.RecommendedValues.Count);
+        Assert.True(response.RecommendedValues.ContainsKey("metaDescription"));
+        Assert.True(response.RecommendedValues.ContainsKey("browserTitle"));
     }
 
     [Fact]
@@ -1822,7 +1883,7 @@ public class PageEvaluatorApiControllerTests
         var result = await _sut.RecommendAsync(new RecommendRequest
         {
             NodeId = Guid.NewGuid(),
-            PropertyAlias = "metaDescription",
+            PropertyAliases = ["metaDescription"],
             CheckLabel = "Meta description is missing",
         });
 
@@ -1852,7 +1913,7 @@ public class PageEvaluatorApiControllerTests
         var result = await _sut.RecommendAsync(new RecommendRequest
         {
             NodeId = Guid.NewGuid(),
-            PropertyAlias = "metaDescription",
+            PropertyAliases = ["metaDescription"],
             CheckLabel = "Meta description is missing",
         });
 
@@ -1883,7 +1944,7 @@ public class PageEvaluatorApiControllerTests
         var result = await _sut.RecommendAsync(new RecommendRequest
         {
             NodeId = Guid.NewGuid(),
-            PropertyAlias = "metaDescription",
+            PropertyAliases = ["metaDescription"],
             CheckLabel = "Meta description is missing",
         });
 
@@ -1914,7 +1975,7 @@ public class PageEvaluatorApiControllerTests
         var result = await _sut.RecommendAsync(new RecommendRequest
         {
             NodeId = Guid.NewGuid(),
-            PropertyAlias = "metaDescription",
+            PropertyAliases = ["metaDescription"],
             CheckLabel = "Meta description is missing",
         });
 
@@ -1956,7 +2017,7 @@ public class PageEvaluatorApiControllerTests
         await _sut.RecommendAsync(new RecommendRequest
         {
             NodeId = Guid.NewGuid(),
-            PropertyAlias = "tags",
+            PropertyAliases = ["tags"],
             CheckLabel = "Tags are missing",
             Properties = new Dictionary<string, string>(),
         });
@@ -1997,7 +2058,7 @@ public class PageEvaluatorApiControllerTests
         await _sut.RecommendAsync(new RecommendRequest
         {
             NodeId = Guid.NewGuid(),
-            PropertyAlias = "bodyText",
+            PropertyAliases = ["bodyText"],
             CheckLabel = "Body content is thin",
             Properties = new Dictionary<string, string>(),
         });
@@ -2038,7 +2099,7 @@ public class PageEvaluatorApiControllerTests
         await _sut.RecommendAsync(new RecommendRequest
         {
             NodeId = Guid.NewGuid(),
-            PropertyAlias = "bodyText",
+            PropertyAliases = ["bodyText"],
             CheckLabel = "Body content is thin",
             CheckExplanation = null,
             Properties = new Dictionary<string, string>(),
@@ -2080,7 +2141,7 @@ public class PageEvaluatorApiControllerTests
         await _sut.RecommendAsync(new RecommendRequest
         {
             NodeId = Guid.NewGuid(),
-            PropertyAlias = "metaDescription",
+            PropertyAliases = ["metaDescription"],
             CheckLabel = "Meta description is missing",
             CheckExplanation = null,
             Properties = new Dictionary<string, string>(),
