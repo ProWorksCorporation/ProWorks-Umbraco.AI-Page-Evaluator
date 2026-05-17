@@ -329,7 +329,7 @@ public sealed partial class PageEvaluationService : IPageEvaluationService
 
         // Enforce structured JSON output regardless of the evaluation criteria above.
         sb.AppendLine();
-        sb.AppendLine("For each check, set propertyAlias to the Umbraco property alias that this check is about (e.g., \"metaDescription\", \"pageTitle\"). Set propertyAlias to null for structural or computed checks that do not map to a single editable property (e.g., 'Page has no H1 tag').");
+        sb.AppendLine("For each check, set propertyAliases to an array of Umbraco property aliases that this check is about (e.g., [\"metaDescription\"], [\"pageTitle\", \"browserTitle\"]). Set propertyAliases to null or an empty array for structural or computed checks that do not map to any editable property (e.g., 'Page has no H1 tag').");
         sb.AppendLine();
         sb.AppendLine("--- REQUIRED OUTPUT FORMAT ---");
         sb.AppendLine("You MUST respond with ONLY a valid JSON object. Do not include any text, explanation, or markdown outside the JSON object.");
@@ -339,7 +339,7 @@ public sealed partial class PageEvaluationService : IPageEvaluationService
                 {
                   "score": { "passed": <number>, "total": <number> },
                   "checks": [
-                    { "checkNumber": 1, "status": "Pass|Fail|Warn", "label": "<label>", "explanation": "<explanation or null>", "propertyAlias": "<property alias or null>" }
+                    { "checkNumber": 1, "status": "Pass|Fail|Warn", "label": "<label>", "explanation": "<explanation or null>", "propertyAliases": ["<alias>"] }
                   ],
                   "suggestions": "<overall suggestions or null>",
                   "overallScore": <number 1-5, decimal allowed>,
@@ -355,7 +355,7 @@ public sealed partial class PageEvaluationService : IPageEvaluationService
                 {
                   "score": { "passed": <number>, "total": <number> },
                   "checks": [
-                    { "checkNumber": 1, "status": "Pass|Fail|Warn", "label": "<label>", "explanation": "<explanation or null>", "propertyAlias": "<property alias or null>" }
+                    { "checkNumber": 1, "status": "Pass|Fail|Warn", "label": "<label>", "explanation": "<explanation or null>", "propertyAliases": ["<alias>"] }
                   ],
                   "suggestions": "<overall suggestions or null>"
                 }
@@ -436,12 +436,26 @@ public sealed partial class PageEvaluationService : IPageEvaluationService
 
                 CheckStatus status = ParseCheckStatus(statusStr);
 
-                string? propertyAlias = checkEl.TryGetProperty("propertyAlias", out JsonElement pa)
-                    && pa.ValueKind == JsonValueKind.String
-                    ? pa.GetString()
-                    : null;
+                IReadOnlyList<string>? propertyAliases = null;
+                if (checkEl.TryGetProperty("propertyAliases", out JsonElement pasEl)
+                    && pasEl.ValueKind == JsonValueKind.Array)
+                {
+                    var aliases = new List<string>();
+                    foreach (JsonElement aliasEl in pasEl.EnumerateArray())
+                    {
+                        if (aliasEl.ValueKind == JsonValueKind.String && aliasEl.GetString() is string a)
+                            aliases.Add(a);
+                    }
+                    if (aliases.Count > 0) propertyAliases = aliases;
+                }
+                else if (checkEl.TryGetProperty("propertyAlias", out JsonElement paEl)
+                    && paEl.ValueKind == JsonValueKind.String
+                    && paEl.GetString() is string singleAlias)
+                {
+                    propertyAliases = [singleAlias];
+                }
 
-                checks.Add(new CheckResult(checkNumber, status, label, explanation, propertyAlias));
+                checks.Add(new CheckResult(checkNumber, status, label, explanation, propertyAliases));
             }
 
             string? suggestions = null;

@@ -82,6 +82,42 @@ export class PromptBuilderElement extends UmbLitElement {
     this._selectedCategories = next;
   }
 
+  /** Generates the full scoring section when scoringEnabled is true. */
+  private _buildScoringSection(): string {
+    const dims = CHECKLIST_CATEGORIES
+      .filter((c) => this._selectedCategories.has(c.id) && c.scoringDimension !== undefined)
+      .map((c) => c.scoringDimension!);
+
+    if (dims.length === 0) {
+      return '';
+    }
+
+    const dimensionLines = dims
+      .map(
+        (d, i) =>
+          `### ${i + 1}. ${d.name}\n` +
+          `Score 5: ${d.scoreHigh}\n` +
+          `Score 3: ${d.scoreMid}\n` +
+          `Score 1: ${d.scoreLow}`,
+      )
+      .join('\n\n');
+
+    return (
+      '\n\n## Evaluation Dimensions\n\n' +
+      'Evaluate on these axes (1–5):\n\n' +
+      dimensionLines +
+      '\n\n## Verdict Thresholds\n\n' +
+      'ACCEPT: ≥4.2 overallScore, no individual axis below 3\n' +
+      'REVISE: 3.0–4.1 overallScore, OR any axis scored below 3\n' +
+      'REJECT: <3.0 overallScore, OR two or more axes scored 1\n\n' +
+      '## Scoring Instructions\n\n' +
+      'Be surgical: identify the 3–5 highest-impact improvements. For each, point to the exact field and explain the specific fix needed.\n\n' +
+      'Provide:\n' +
+      '- overallScore: decimal average of your axis scores (1–5)\n' +
+      '- axisScores: integer score (1–5) per dimension above, with one-sentence feedback'
+    );
+  }
+
   /** Assembles the prompt draft from selected categories, properties, and site context. */
   generateDraft(): void {
     const effectiveProps = this.selectedPropertyAliases.length > 0
@@ -97,9 +133,7 @@ export class PromptBuilderElement extends UmbLitElement {
           .replace('{{siteContext}}', this._siteContext),
       );
 
-    const scoringSnippet = this.scoringEnabled
-      ? '\n\nRate the page on a scale of 1-5 for each evaluation dimension listed above.\nProvide an overallScore (1-5) and individual axisScores with brief feedback for each.'
-      : '';
+    const scoringSnippet = this.scoringEnabled ? this._buildScoringSection() : '';
 
     if (fragments.length === 0) {
       this._draft =
@@ -176,12 +210,19 @@ export class PromptBuilderElement extends UmbLitElement {
         ${this._draft
           ? html`
               <uui-box headline=${this.localize.term('promptBuilder_generatedDraftLabel')}>
-                <pre data-draft style="white-space: pre-wrap;">${this._draft}</pre>
                 <uui-button
                   slot="header-actions"
                   look="primary"
                   label=${this.localize.term('promptBuilder_usePromptButton')}
                   @click=${() => this.usePrompt()}>
+                  ${this.localize.term('promptBuilder_usePromptButton')}
+                </uui-button>
+                <pre data-draft style="white-space: pre-wrap;">${this._draft}</pre>
+                <uui-button
+                  look="primary"
+                  label=${this.localize.term('promptBuilder_usePromptButton')}
+                  @click=${() => this.usePrompt()}
+                  style="margin-top: var(--uui-size-space-3);">
                   ${this.localize.term('promptBuilder_usePromptButton')}
                 </uui-button>
               </uui-box>

@@ -7,8 +7,10 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
+using ProWorks.Umbraco.AI.PageEvaluator.Configuration;
 using ProWorks.Umbraco.AI.PageEvaluator.Controllers;
 using ProWorks.Umbraco.AI.PageEvaluator.Evaluation;
 using ProWorks.Umbraco.AI.PageEvaluator.Evaluators;
@@ -42,6 +44,7 @@ public class PageEvaluatorApiControllerTests
     private readonly IAuthorizationService _authorizationService = Substitute.For<IAuthorizationService>();
     private readonly IAIChatService _chatService = Substitute.For<IAIChatService>();
     private readonly IPropertyEditorSchemaService _propertyEditorSchemaService = Substitute.For<IPropertyEditorSchemaService>();
+    private readonly IOptions<PageEvaluatorOptions> _options = Options.Create(new PageEvaluatorOptions());
     private readonly PageEvaluatorApiController _sut;
 
     public PageEvaluatorApiControllerTests()
@@ -58,7 +61,7 @@ public class PageEvaluatorApiControllerTests
             _evaluationService, _configService, _profileService, _contextService,
             _contentTypeService, _cacheRepository, _logger,
             _contentService, _authorizationService,
-            _chatService, _propertyEditorSchemaService);
+            _chatService, _propertyEditorSchemaService, _options);
         _sut.ControllerContext = new ControllerContext
         {
             HttpContext = new DefaultHttpContext(),
@@ -972,6 +975,17 @@ public class PageEvaluatorApiControllerTests
             DateModified = DateTime.UtcNow,
         };
 
+    private PageEvaluatorApiController BuildSut(IOptions<PageEvaluatorOptions> options)
+    {
+        var sut = new PageEvaluatorApiController(
+            _evaluationService, _configService, _profileService, _contextService,
+            _contentTypeService, _cacheRepository, _logger,
+            _contentService, _authorizationService,
+            _chatService, _propertyEditorSchemaService, options);
+        sut.ControllerContext = _sut.ControllerContext;
+        return sut;
+    }
+
     // ---------------------------------------------------------------------------
     // ScoringEnabled: CRUD + cache invalidation + response round-trip (T015)
     // ---------------------------------------------------------------------------
@@ -1545,6 +1559,117 @@ public class PageEvaluatorApiControllerTests
         Assert.False(report.RecommendationsEnabled);
     }
 
+    // ---------------------------------------------------------------------------
+    // POST /evaluate and GET /evaluate/cached — AdditionalRecommendableEditorAliases
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public async Task EvaluateAsync_AttachesAdditionalRecommendableEditorAliases_FromOptions()
+    {
+        var nodeId = Guid.NewGuid();
+        var optionsWithExtra = Options.Create(new PageEvaluatorOptions
+        {
+            AdditionalRecommendableEditorAliases = ["MyPackage.CustomText", "Another.Editor"],
+        });
+        var sut = BuildSut(optionsWithExtra);
+
+        _evaluationService.EvaluateAsync(nodeId, "blogPost", Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<CancellationToken>())
+            .Returns(EvaluationReport.Parsed(new EvaluationScore(1, 1), [], null));
+
+        var result = await sut.EvaluateAsync(new EvaluatePageRequest { NodeId = nodeId, DocumentTypeAlias = "blogPost", Properties = new() });
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var report = Assert.IsAssignableFrom<EvaluationReport>(ok.Value);
+        Assert.Equal(2, report.AdditionalRecommendableEditorAliases.Count);
+        Assert.Contains("MyPackage.CustomText", report.AdditionalRecommendableEditorAliases);
+        Assert.Contains("Another.Editor", report.AdditionalRecommendableEditorAliases);
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_WhenNoAdditionalEditorAliases_AttachesEmptyList()
+    {
+        var nodeId = Guid.NewGuid();
+        _evaluationService.EvaluateAsync(nodeId, "blogPost", Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<CancellationToken>())
+            .Returns(EvaluationReport.Parsed(new EvaluationScore(1, 1), [], null));
+
+        var result = await _sut.EvaluateAsync(new EvaluatePageRequest { NodeId = nodeId, DocumentTypeAlias = "blogPost", Properties = new() });
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var report = Assert.IsAssignableFrom<EvaluationReport>(ok.Value);
+        Assert.Empty(report.AdditionalRecommendableEditorAliases);
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_DoesNotCacheAdditionalRecommendableEditorAliases()
+    {
+        var nodeId = Guid.NewGuid();
+        var optionsWithExtra = Options.Create(new PageEvaluatorOptions
+        {
+            AdditionalRecommendableEditorAliases = ["MyPackage.CustomText"],
+        });
+        var sut = BuildSut(optionsWithExtra);
+
+        _evaluationService.EvaluateAsync(nodeId, "blogPost", Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<CancellationToken>())
+            .Returns(EvaluationReport.Parsed(new EvaluationScore(1, 1), [], null));
+
+        EvaluationCacheEntry? capturedEntry = null;
+        _cacheRepository
+            .SaveAsync(Arg.Do<EvaluationCacheEntry>(e => capturedEntry = e), Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+
+        await sut.EvaluateAsync(new EvaluatePageRequest { NodeId = nodeId, DocumentTypeAlias = "blogPost", Properties = new() });
+
+        Assert.NotNull(capturedEntry);
+        Assert.Empty(capturedEntry.Report.AdditionalRecommendableEditorAliases);
+    }
+
+    [Fact]
+    public async Task GetCachedEvaluationAsync_AttachesAdditionalRecommendableEditorAliases_FromOptions()
+    {
+        var nodeId = Guid.NewGuid();
+        var optionsWithExtra = Options.Create(new PageEvaluatorOptions
+        {
+            AdditionalRecommendableEditorAliases = ["ThirdParty.Editor"],
+        });
+        var sut = BuildSut(optionsWithExtra);
+
+        _cacheRepository.GetAsync(nodeId, Arg.Any<CancellationToken>())
+            .Returns(new EvaluationCacheEntry
+            {
+                NodeId = nodeId,
+                DocumentTypeAlias = "blogPost",
+                Report = EvaluationReport.Parsed(new EvaluationScore(1, 1), [], null),
+                CachedAt = DateTime.UtcNow,
+            });
+
+        var result = await sut.GetCachedEvaluationAsync(nodeId);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var report = Assert.IsAssignableFrom<EvaluationReport>(ok.Value);
+        Assert.Single(report.AdditionalRecommendableEditorAliases);
+        Assert.Equal("ThirdParty.Editor", report.AdditionalRecommendableEditorAliases[0]);
+    }
+
+    [Fact]
+    public async Task GetCachedEvaluationAsync_WhenNoAdditionalEditorAliases_AttachesEmptyList()
+    {
+        var nodeId = Guid.NewGuid();
+        _cacheRepository.GetAsync(nodeId, Arg.Any<CancellationToken>())
+            .Returns(new EvaluationCacheEntry
+            {
+                NodeId = nodeId,
+                DocumentTypeAlias = "blogPost",
+                Report = EvaluationReport.Parsed(new EvaluationScore(1, 1), [], null),
+                CachedAt = DateTime.UtcNow,
+            });
+
+        var result = await _sut.GetCachedEvaluationAsync(nodeId);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var report = Assert.IsAssignableFrom<EvaluationReport>(ok.Value);
+        Assert.Empty(report.AdditionalRecommendableEditorAliases);
+    }
+
     [Fact]
     public async Task RecommendAsync_WhenRecommendationsDisabled_Returns403()
     {
@@ -1563,7 +1688,7 @@ public class PageEvaluatorApiControllerTests
         var result = await _sut.RecommendAsync(new RecommendRequest
         {
             NodeId = Guid.NewGuid(),
-            PropertyAlias = "metaDescription",
+            PropertyAliases = ["metaDescription"],
             CheckLabel = "Meta description missing",
         });
 
@@ -1581,7 +1706,7 @@ public class PageEvaluatorApiControllerTests
         _contentService.GetById(Arg.Any<Guid>()).Returns((IContent?)null);
 
         var result = await _sut.RecommendAsync(
-            new RecommendRequest { NodeId = Guid.NewGuid(), PropertyAlias = "metaDescription" });
+            new RecommendRequest { NodeId = Guid.NewGuid(), PropertyAliases = ["metaDescription"] });
 
         Assert.IsType<NotFoundObjectResult>(result);
     }
@@ -1594,7 +1719,7 @@ public class PageEvaluatorApiControllerTests
             .Returns(AuthorizationResult.Failed());
 
         var result = await _sut.RecommendAsync(
-            new RecommendRequest { NodeId = Guid.NewGuid(), PropertyAlias = "metaDescription" });
+            new RecommendRequest { NodeId = Guid.NewGuid(), PropertyAliases = ["metaDescription"] });
 
         var obj = Assert.IsType<ObjectResult>(result);
         Assert.Equal(403, obj.StatusCode);
@@ -1607,7 +1732,7 @@ public class PageEvaluatorApiControllerTests
             .Returns((AIEvaluatorConfig?)null);
 
         var result = await _sut.RecommendAsync(
-            new RecommendRequest { NodeId = Guid.NewGuid(), PropertyAlias = "metaDescription" });
+            new RecommendRequest { NodeId = Guid.NewGuid(), PropertyAliases = ["metaDescription"] });
 
         Assert.IsType<NotFoundObjectResult>(result);
     }
@@ -1625,7 +1750,31 @@ public class PageEvaluatorApiControllerTests
         var result = await _sut.RecommendAsync(new RecommendRequest
         {
             NodeId = Guid.NewGuid(),
-            PropertyAlias = "nonexistent",
+            PropertyAliases = ["nonexistent"],
+            CheckLabel = "Test",
+        });
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task RecommendAsync_SecondOfTwoAliasesNotFound_Returns400()
+    {
+        _configService.GetActiveForDocumentTypeAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(BuildConfig("blogPost"));
+
+        var validProp = Substitute.For<IPropertyType>();
+        validProp.Alias.Returns("metaDescription");
+        validProp.PropertyEditorAlias.Returns("Umbraco.TextBox");
+
+        var ct = Substitute.For<IContentType>();
+        ct.CompositionPropertyTypes.Returns(new[] { validProp });
+        _contentTypeService.Get(Arg.Any<string>()).Returns(ct);
+
+        var result = await _sut.RecommendAsync(new RecommendRequest
+        {
+            NodeId = Guid.NewGuid(),
+            PropertyAliases = ["metaDescription", "nonexistent"],
             CheckLabel = "Test",
         });
 
@@ -1658,14 +1807,77 @@ public class PageEvaluatorApiControllerTests
         var result = await _sut.RecommendAsync(new RecommendRequest
         {
             NodeId = Guid.NewGuid(),
-            PropertyAlias = "metaDescription",
+            PropertyAliases = ["metaDescription"],
             CheckLabel = "Meta description is missing",
             Properties = new Dictionary<string, string> { ["pageTitle"] = "Home" },
         });
 
         var ok = Assert.IsType<OkObjectResult>(result);
         var response = Assert.IsType<RecommendResponse>(ok.Value);
-        Assert.Equal("A great meta description.", response.RecommendedValue);
+        Assert.True(response.RecommendedValues.TryGetValue("metaDescription", out string? recValue));
+        Assert.Equal("A great meta description.", recValue);
+    }
+
+    [Fact]
+    public async Task RecommendAsync_EmptyPropertyAliases_Returns400()
+    {
+        _configService.GetActiveForDocumentTypeAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(BuildConfig("blogPost"));
+
+        var result = await _sut.RecommendAsync(new RecommendRequest
+        {
+            NodeId = Guid.NewGuid(),
+            PropertyAliases = [],
+            CheckLabel = "Some check",
+        });
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task RecommendAsync_MultipleAliases_ReturnsMapWithBothValues()
+    {
+        _configService.GetActiveForDocumentTypeAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(BuildConfig("blogPost"));
+
+        var prop1 = Substitute.For<IPropertyType>();
+        prop1.Alias.Returns("metaDescription");
+        prop1.PropertyEditorAlias.Returns("Umbraco.TextBox");
+
+        var prop2 = Substitute.For<IPropertyType>();
+        prop2.Alias.Returns("browserTitle");
+        prop2.PropertyEditorAlias.Returns("Umbraco.TextBox");
+
+        var ct = Substitute.For<IContentType>();
+        ct.CompositionPropertyTypes.Returns(new[] { prop1, prop2 });
+        _contentTypeService.Get(Arg.Any<string>()).Returns(ct);
+
+        _propertyEditorSchemaService.SupportsSchema(Arg.Any<string>()).Returns(false);
+
+        // NSubstitute returns values in sequence for successive calls to the same substitution.
+        _chatService.GetChatResponseAsync(
+            Arg.Any<Action<AIChatBuilder>>(),
+            Arg.Any<IEnumerable<ChatMessage>>(),
+            Arg.Any<CancellationToken>())
+            .Returns(
+                new ChatResponse(new ChatMessage(ChatRole.Assistant, "{\"recommendedValue\": \"Great meta.\"}")),
+                new ChatResponse(new ChatMessage(ChatRole.Assistant, "{\"recommendedValue\": \"Great title.\"}")));
+
+        var result = await _sut.RecommendAsync(new RecommendRequest
+        {
+            NodeId = Guid.NewGuid(),
+            PropertyAliases = ["metaDescription", "browserTitle"],
+            CheckLabel = "SEO fields are weak",
+            Properties = [],
+        });
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var response = Assert.IsType<RecommendResponse>(ok.Value);
+        Assert.Equal(2, response.RecommendedValues.Count);
+        Assert.True(response.RecommendedValues.TryGetValue("metaDescription", out string? metaValue));
+        Assert.Equal("Great meta.", metaValue);
+        Assert.True(response.RecommendedValues.TryGetValue("browserTitle", out string? titleValue));
+        Assert.Equal("Great title.", titleValue);
     }
 
     [Fact]
@@ -1697,7 +1909,7 @@ public class PageEvaluatorApiControllerTests
         var result = await _sut.RecommendAsync(new RecommendRequest
         {
             NodeId = Guid.NewGuid(),
-            PropertyAlias = "metaDescription",
+            PropertyAliases = ["metaDescription"],
             CheckLabel = "Meta description is missing",
         });
 
@@ -1727,7 +1939,7 @@ public class PageEvaluatorApiControllerTests
         var result = await _sut.RecommendAsync(new RecommendRequest
         {
             NodeId = Guid.NewGuid(),
-            PropertyAlias = "metaDescription",
+            PropertyAliases = ["metaDescription"],
             CheckLabel = "Meta description is missing",
         });
 
@@ -1758,7 +1970,7 @@ public class PageEvaluatorApiControllerTests
         var result = await _sut.RecommendAsync(new RecommendRequest
         {
             NodeId = Guid.NewGuid(),
-            PropertyAlias = "metaDescription",
+            PropertyAliases = ["metaDescription"],
             CheckLabel = "Meta description is missing",
         });
 
@@ -1789,7 +2001,7 @@ public class PageEvaluatorApiControllerTests
         var result = await _sut.RecommendAsync(new RecommendRequest
         {
             NodeId = Guid.NewGuid(),
-            PropertyAlias = "metaDescription",
+            PropertyAliases = ["metaDescription"],
             CheckLabel = "Meta description is missing",
         });
 
@@ -1831,12 +2043,13 @@ public class PageEvaluatorApiControllerTests
         await _sut.RecommendAsync(new RecommendRequest
         {
             NodeId = Guid.NewGuid(),
-            PropertyAlias = "tags",
+            PropertyAliases = ["tags"],
             CheckLabel = "Tags are missing",
             Properties = new Dictionary<string, string>(),
         });
 
         Assert.NotEmpty(capturedSystemPrompt);
+        Assert.Contains("tags", capturedSystemPrompt);
         Assert.Contains("JSON array", capturedSystemPrompt, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("recommendedValue", capturedSystemPrompt, StringComparison.OrdinalIgnoreCase);
     }
@@ -1872,12 +2085,13 @@ public class PageEvaluatorApiControllerTests
         await _sut.RecommendAsync(new RecommendRequest
         {
             NodeId = Guid.NewGuid(),
-            PropertyAlias = "bodyText",
+            PropertyAliases = ["bodyText"],
             CheckLabel = "Body content is thin",
             Properties = new Dictionary<string, string>(),
         });
 
         Assert.NotEmpty(capturedSystemPrompt);
+        Assert.Contains("bodyText", capturedSystemPrompt);
         Assert.Contains("HTML", capturedSystemPrompt, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("recommendedValue", capturedSystemPrompt, StringComparison.OrdinalIgnoreCase);
     }
@@ -1913,13 +2127,14 @@ public class PageEvaluatorApiControllerTests
         await _sut.RecommendAsync(new RecommendRequest
         {
             NodeId = Guid.NewGuid(),
-            PropertyAlias = "bodyText",
+            PropertyAliases = ["bodyText"],
             CheckLabel = "Body content is thin",
             CheckExplanation = null,
             Properties = new Dictionary<string, string>(),
         });
 
         Assert.NotEmpty(capturedSystemPrompt);
+        Assert.Contains("bodyText", capturedSystemPrompt);
         Assert.Contains("HTML", capturedSystemPrompt, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("recommendedValue", capturedSystemPrompt, StringComparison.OrdinalIgnoreCase);
     }
@@ -1955,15 +2170,18 @@ public class PageEvaluatorApiControllerTests
         await _sut.RecommendAsync(new RecommendRequest
         {
             NodeId = Guid.NewGuid(),
-            PropertyAlias = "metaDescription",
+            PropertyAliases = ["metaDescription"],
             CheckLabel = "Meta description is missing",
             CheckExplanation = null,
             Properties = new Dictionary<string, string>(),
         });
 
         Assert.NotEmpty(capturedSystemPrompt);
+        Assert.Contains("metaDescription", capturedSystemPrompt);
+        Assert.Contains("plain text", capturedSystemPrompt, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Do not include HTML tags", capturedSystemPrompt);
         Assert.DoesNotContain("JSON array", capturedSystemPrompt, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("HTML", capturedSystemPrompt, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Rich Text", capturedSystemPrompt, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("recommendedValue", capturedSystemPrompt, StringComparison.OrdinalIgnoreCase);
     }
 }

@@ -887,8 +887,89 @@ public class PageEvaluationServiceTests
 
         Assert.False(report.ParseFailed);
         Assert.Equal(2, report.Checks.Count);
-        Assert.Equal("metaDescription", report.Checks[0].PropertyAlias);
-        Assert.Null(report.Checks[1].PropertyAlias);
+        Assert.NotNull(report.Checks[0].PropertyAliases);
+        Assert.Single(report.Checks[0].PropertyAliases!);
+        Assert.Equal("metaDescription", report.Checks[0].PropertyAliases![0]);
+        Assert.Null(report.Checks[1].PropertyAliases);
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_WhenJsonIncludesPropertyAliasesArray_ParsesAllAliases()
+    {
+        const string documentTypeAlias = "blogPost";
+        var nodeId = Guid.NewGuid();
+        _configService.GetActiveForDocumentTypeAsync(documentTypeAlias, Arg.Any<CancellationToken>())
+            .Returns(BuildConfig(documentTypeAlias));
+        var json = """
+            {
+              "score": { "passed": 0, "total": 1 },
+              "checks": [
+                { "checkNumber": 1, "status": "Fail", "label": "Two fields missing", "explanation": null, "propertyAliases": ["browserTitle", "metaDescription"] }
+              ],
+              "suggestions": null
+            }
+            """;
+        MockChatResponse(json);
+
+        var report = await _sut.EvaluateAsync(nodeId, documentTypeAlias, new Dictionary<string, object?>(), default);
+
+        Assert.False(report.ParseFailed);
+        Assert.Single(report.Checks);
+        Assert.NotNull(report.Checks[0].PropertyAliases);
+        Assert.Equal(2, report.Checks[0].PropertyAliases!.Count);
+        Assert.Contains("browserTitle", report.Checks[0].PropertyAliases!);
+        Assert.Contains("metaDescription", report.Checks[0].PropertyAliases!);
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_WhenJsonIncludesLegacyPropertyAliasString_FallsBackToSingleElementList()
+    {
+        const string documentTypeAlias = "blogPost";
+        var nodeId = Guid.NewGuid();
+        _configService.GetActiveForDocumentTypeAsync(documentTypeAlias, Arg.Any<CancellationToken>())
+            .Returns(BuildConfig(documentTypeAlias));
+        var json = """
+            {
+              "score": { "passed": 1, "total": 1 },
+              "checks": [
+                { "checkNumber": 1, "status": "Pass", "label": "Title present", "explanation": null, "propertyAlias": "pageTitle" }
+              ],
+              "suggestions": null
+            }
+            """;
+        MockChatResponse(json);
+
+        var report = await _sut.EvaluateAsync(nodeId, documentTypeAlias, new Dictionary<string, object?>(), default);
+
+        Assert.False(report.ParseFailed);
+        Assert.Single(report.Checks);
+        Assert.NotNull(report.Checks[0].PropertyAliases);
+        Assert.Single(report.Checks[0].PropertyAliases!);
+        Assert.Equal("pageTitle", report.Checks[0].PropertyAliases![0]);
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_WhenJsonIncludesEmptyPropertyAliasesArray_PropertyAliasesIsNull()
+    {
+        const string documentTypeAlias = "blogPost";
+        var nodeId = Guid.NewGuid();
+        _configService.GetActiveForDocumentTypeAsync(documentTypeAlias, Arg.Any<CancellationToken>())
+            .Returns(BuildConfig(documentTypeAlias));
+        var json = """
+            {
+              "score": { "passed": 1, "total": 1 },
+              "checks": [
+                { "checkNumber": 1, "status": "Pass", "label": "Structural check", "explanation": null, "propertyAliases": [] }
+              ],
+              "suggestions": null
+            }
+            """;
+        MockChatResponse(json);
+
+        var report = await _sut.EvaluateAsync(nodeId, documentTypeAlias, new Dictionary<string, object?>(), default);
+
+        Assert.False(report.ParseFailed);
+        Assert.Null(report.Checks[0].PropertyAliases);
     }
 
     [Fact]
@@ -916,7 +997,7 @@ public class PageEvaluationServiceTests
 
         Assert.False(report.ParseFailed);
         Assert.Single(report.Checks);
-        Assert.Null(report.Checks[0].PropertyAlias);
+        Assert.Null(report.Checks[0].PropertyAliases);
     }
 
     // ---------------------------------------------------------------------------
@@ -1076,6 +1157,29 @@ public class PageEvaluationServiceTests
         var systemMsg = capturedMessages!.First(m => m.Role == ChatRole.System);
         Assert.DoesNotContain("overallScore", systemMsg.Text!);
         Assert.DoesNotContain("axisScores", systemMsg.Text!);
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_SystemPromptInstructsPropertyAliasesArray()
+    {
+        const string documentTypeAlias = "blogPost";
+        _configService.GetActiveForDocumentTypeAsync(documentTypeAlias, Arg.Any<CancellationToken>())
+            .Returns(BuildConfig(documentTypeAlias));
+
+        IEnumerable<ChatMessage>? capturedMessages = null;
+        _chatService.GetChatResponseAsync(
+                Arg.Any<Action<AIChatBuilder>>(),
+                Arg.Do<IEnumerable<ChatMessage>>(msgs => capturedMessages = msgs.ToList()),
+                Arg.Any<CancellationToken>())
+            .Returns(new ChatResponse(new ChatMessage(ChatRole.Assistant,
+                """{"score":{"passed":1,"total":1},"checks":[{"checkNumber":1,"status":"Pass","label":"T","explanation":null}],"suggestions":null}""")));
+
+        await _sut.EvaluateAsync(Guid.NewGuid(), documentTypeAlias, new Dictionary<string, object?>());
+
+        Assert.NotNull(capturedMessages);
+        var systemMsg = capturedMessages!.First(m => m.Role == ChatRole.System);
+        // Schema must instruct the AI to produce an array, not the legacy singular string.
+        Assert.Contains("propertyAliases", systemMsg.Text!);
     }
 
     // ---------------------------------------------------------------------------

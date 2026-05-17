@@ -4,8 +4,8 @@ namespace ProWorks.Umbraco.AI.PageEvaluator.Controllers;
 public sealed class RecommendResponse
 {
     /// <summary>
-    /// The AI-generated recommended value for the field, or null if a value could not be generated.
-    /// For simple text property editors this is a plain string.
+    /// AI-generated recommended values, keyed by property alias.
+    /// A null value for an alias means the AI could not generate a recommendation for that field.
     /// </summary>
-    public string? RecommendedValue { get; set; }
+    public Dictionary<string, string?> RecommendedValues { get; set; } = [];
 }

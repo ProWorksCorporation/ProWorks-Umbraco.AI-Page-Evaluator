@@ -206,7 +206,7 @@ The system prompt instructs the model to respond with a strict JSON schema:
       "status": "Pass|Fail|Warn",
       "label": "…",
       "explanation": "…",
-      "propertyAlias": "metaDescription"
+      "propertyAliases": ["metaDescription"]
     }
   ],
   "suggestions": "…",
@@ -217,7 +217,7 @@ The system prompt instructs the model to respond with a strict JSON schema:
 }
 ```
 
-`propertyAlias` links a check to a specific Umbraco property so the UI can offer an AI text recommendation for that field. It is `null` for structural or computed checks (e.g. "page has no H1 tag") that do not map to a single editable property. `overallScore` and `axisScores` are only present when dimensional scoring is enabled on the evaluator configuration.
+`propertyAliases` links a check to one or more Umbraco properties so the UI can offer AI text recommendations for those fields. When present, the modal renders a separate recommendation box per alias. It is `null` for structural or computed checks (e.g. "page has no H1 tag") that do not map to any editable property. `overallScore` and `axisScores` are only present when dimensional scoring is enabled on the evaluator configuration.
 
 Both the evaluate and cached-evaluate responses also include a `propertyEditorAliases` map (`{ [alias]: editorAlias }`) populated by the controller at response time using `IContentTypeService`. This map is **never stored in the cache** — it is always derived fresh so it stays current if content types change. The frontend uses it to classify each property:
 
@@ -225,7 +225,10 @@ Both the evaluate and cached-evaluate responses also include a `propertyEditorAl
 |---|---|---|
 | `Umbraco.TextBox`, `Umbraco.TextArea`, `Umbraco.Markdown`, `Umbraco.Tags` | Yes | Yes |
 | `Umbraco.RichText`, `Umbraco.TinyMCE` | Yes (copy only) | No |
+| Editors in `AdditionalRecommendableEditorAliases` (see [Server configuration](#server-configuration)) | Yes | Yes |
 | All others (media pickers, block editors, pickers, etc.) | No | No |
+
+The response also includes `additionalRecommendableEditorAliases` — the list from `PageEvaluatorOptions` — which the frontend uses to show Recommend and Apply buttons for configured third-party editors.
 
 When `propertyEditorAliases` is unavailable (e.g. the document type was deleted), the frontend falls back to a value-content heuristic: properties whose raw value starts with `{`, `[`, or `umb://` are treated as complex and excluded.
 
@@ -266,10 +269,34 @@ This means you can create a dedicated AI profile for page evaluation that omits 
 |---|---|---|
 | Content node not found | 404 | Recommendation button shows error state |
 | No active config for document type | 404 | Recommendation button shows error state |
-| Property alias not found on document type | 400 | Recommendation button shows error state |
+| `propertyAliases` array is empty | 400 | Recommendation button shows error state |
+| Any alias not found on document type | 400 | Recommendation button shows error state |
 | Guardrail policy blocked content | 422 | Recommendation button shows error state |
 | AI provider HTTP error | 502 | Recommendation button shows error state |
 | AI provider temporarily overloaded | 503 | Recommendation button shows error state |
 | Unexpected server error | 500 | Recommendation button shows error state |
 
 Provider error details are never forwarded to the client to avoid leaking API key or account information.
+
+---
+
+## Server configuration
+
+Package-level settings are read from `appsettings.json` under `ProWorks:PageEvaluator` and bound to `PageEvaluatorOptions` (`Configuration/PageEvaluatorOptions.cs`). Registration happens in `PageEvaluatorComposer`.
+
+### `AdditionalRecommendableEditorAliases`
+
+A list of property editor aliases from third-party or custom packages that should receive Recommend and Apply buttons in the evaluation modal. Editors listed here are treated as plain-text fields by `POST /recommend`.
+
+```json
+"ProWorks": {
+  "PageEvaluator": {
+    "AdditionalRecommendableEditorAliases": [
+      "MyPackage.CustomTextEditor",
+      "AnotherPackage.SimpleText"
+    ]
+  }
+}
+```
+
+The list is propagated from `PageEvaluatorOptions` → `EvaluationReport.AdditionalRecommendableEditorAliases` → response JSON → `additionalRecommendableEditorAliases` on the `<page-evaluator-report>` element. The frontend's `_isAdditionalEditor()` method does a case-insensitive match. Built-in Umbraco editors do not need to be listed here.

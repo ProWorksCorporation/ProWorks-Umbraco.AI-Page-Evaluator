@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using ProWorks.Umbraco.AI.PageEvaluator.Configuration;
 using ProWorks.Umbraco.AI.PageEvaluator.Evaluation;
 using ProWorks.Umbraco.AI.PageEvaluator.Evaluators;
 using ProWorks.Umbraco.AI.PageEvaluator.Services;
@@ -44,6 +46,7 @@ public sealed class PageEvaluatorApiController : ControllerBase
     private readonly IAuthorizationService _authorizationService;
     private readonly IAIChatService _chatService;
     private readonly IPropertyEditorSchemaService _propertyEditorSchemaService;
+    private readonly IOptions<PageEvaluatorOptions> _options;
 
     public PageEvaluatorApiController(
         IPageEvaluationService evaluationService,
@@ -56,7 +59,8 @@ public sealed class PageEvaluatorApiController : ControllerBase
         IContentService contentService,
         IAuthorizationService authorizationService,
         IAIChatService chatService,
-        IPropertyEditorSchemaService propertyEditorSchemaService)
+        IPropertyEditorSchemaService propertyEditorSchemaService,
+        IOptions<PageEvaluatorOptions> options)
     {
         _evaluationService = evaluationService;
         _configService = configService;
@@ -69,6 +73,7 @@ public sealed class PageEvaluatorApiController : ControllerBase
         _authorizationService = authorizationService;
         _chatService = chatService;
         _propertyEditorSchemaService = propertyEditorSchemaService;
+        _options = options;
     }
 
     // ---------------------------------------------------------------------------
@@ -293,7 +298,8 @@ public sealed class PageEvaluatorApiController : ControllerBase
         return Ok(entry.Report.WithCachedAt(entry.CachedAt)
             .WithPropertyEditorAliases(editorAliases)
             .WithPropertyNames(propertyNames)
-            .WithRecommendationsEnabled(recommendationsEnabled));
+            .WithRecommendationsEnabled(recommendationsEnabled)
+            .WithAdditionalRecommendableEditorAliases(_options.Value.AdditionalRecommendableEditorAliases));
     }
 
     // ---------------------------------------------------------------------------
@@ -355,7 +361,8 @@ public sealed class PageEvaluatorApiController : ControllerBase
             return Ok(report.WithCachedAt(cachedAt)
                 .WithPropertyEditorAliases(editorAliases)
                 .WithPropertyNames(propertyNames)
-                .WithRecommendationsEnabled(recommendationsEnabled));
+                .WithRecommendationsEnabled(recommendationsEnabled)
+                .WithAdditionalRecommendableEditorAliases(_options.Value.AdditionalRecommendableEditorAliases));
         }
         catch (InvalidOperationException ex)
         {
@@ -416,25 +423,46 @@ public sealed class PageEvaluatorApiController : ControllerBase
             return StatusCode(StatusCodes.Status403Forbidden,
                 new { title = "Recommendations are not enabled for this evaluator configuration." });
 
-        IContentType? contentType = _contentTypeService.Get(content.ContentType.Alias);
-        IPropertyType? propertyType = contentType?.CompositionPropertyTypes
-            .FirstOrDefault(p => p.Alias == request.PropertyAlias);
-        if (propertyType is null)
-            return BadRequest(new { title = $"Property '{request.PropertyAlias}' not found on document type '{content.ContentType.Alias}'." });
+        if (request.PropertyAliases.Count == 0)
+            return BadRequest(new { title = "PropertyAliases must contain at least one alias." });
 
-        JsonObject? schema = null;
-        if (_propertyEditorSchemaService.SupportsSchema(propertyType.PropertyEditorAlias))
+        IContentType? contentType = _contentTypeService.Get(content.ContentType.Alias);
+
+        // Validate all requested aliases exist before making any AI calls.
+        var propertyTypes = new Dictionary<string, IPropertyType>(request.PropertyAliases.Count);
+        foreach (string alias in request.PropertyAliases)
         {
-            var attempt = await _propertyEditorSchemaService.GetSchemaAsync(propertyType.DataTypeKey);
-            if (attempt.Success)
-                schema = attempt.Result!.JsonSchema;
+            IPropertyType? propType = contentType?.CompositionPropertyTypes
+                .FirstOrDefault(p => p.Alias == alias);
+            if (propType is null)
+                return BadRequest(new { title = $"Property '{alias}' not found on document type '{content.ContentType.Alias}'." });
+            propertyTypes[alias] = propType;
+        }
+
+        // Resolve JSON schemas.
+        var schemas = new Dictionary<string, JsonObject?>(propertyTypes.Count);
+        foreach ((string alias, IPropertyType propType) in propertyTypes)
+        {
+            JsonObject? schema = null;
+            if (_propertyEditorSchemaService.SupportsSchema(propType.PropertyEditorAlias))
+            {
+                var attempt = await _propertyEditorSchemaService.GetSchemaAsync(propType.DataTypeKey);
+                if (attempt.Success)
+                    schema = attempt.Result!.JsonSchema;
+            }
+            schemas[alias] = schema;
         }
 
         try
         {
-            string? recommended = await GetRecommendationAsync(
-                config, request, propertyType, schema, cancellationToken);
-            return Ok(new RecommendResponse { RecommendedValue = recommended });
+            var recommendedValues = new Dictionary<string, string?>(propertyTypes.Count);
+            foreach ((string alias, IPropertyType propType) in propertyTypes)
+            {
+                string? recommended = await GetRecommendationAsync(
+                    config, request, propType, schemas[alias], cancellationToken);
+                recommendedValues[alias] = recommended;
+            }
+            return Ok(new RecommendResponse { RecommendedValues = recommendedValues });
         }
         catch (AIGuardrailBlockedException ex)
         {
@@ -592,7 +620,9 @@ public sealed class PageEvaluatorApiController : ControllerBase
         JsonObject? schema)
     {
         var sb = new System.Text.StringBuilder();
-        sb.AppendLine("You are an SEO and content assistant. Generate a replacement value for the field described below.");
+        sb.AppendLine("You are an SEO and content assistant.");
+        sb.AppendLine($"Your task: generate a replacement value for one specific field: \"{propertyType.Alias}\".");
+        sb.AppendLine("Return ONLY the value for this field. Do not list, label, or generate values for any other fields.");
         sb.AppendLine();
 
         if (schema is not null)
@@ -617,14 +647,16 @@ public sealed class PageEvaluatorApiController : ControllerBase
         }
         else
         {
-            sb.AppendLine($"The field uses the \"{propertyType.PropertyEditorAlias}\" property editor. Generate appropriate plain text.");
+            sb.AppendLine("The field is a plain text property. Generate a concise plain-text value.");
+            sb.AppendLine("Do not include HTML tags, markdown formatting, or labels for other fields.");
             sb.AppendLine("Return a single JSON object: {\"recommendedValue\": \"<your recommended text>\"}");
         }
 
         sb.AppendLine();
-        sb.AppendLine($"Field to improve: {request.CheckLabel}");
+        sb.AppendLine("Context (background only — do not copy field labels or values from this section into your answer):");
+        sb.AppendLine($"Check: {request.CheckLabel}");
         if (!string.IsNullOrWhiteSpace(request.CheckExplanation))
-            sb.AppendLine($"Issue description: {request.CheckExplanation}");
+            sb.AppendLine($"Issue: {request.CheckExplanation}");
 
         return sb.ToString().TrimEnd();
     }

@@ -2,6 +2,7 @@ using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.DependencyInjection;
+using ProWorks.Umbraco.AI.PageEvaluator.Configuration;
 using ProWorks.Umbraco.AI.PageEvaluator.Evaluation;
 using ProWorks.Umbraco.AI.PageEvaluator.Evaluators;
 using ProWorks.Umbraco.AI.PageEvaluator.Notifications;
@@ -26,6 +27,10 @@ public sealed class PageEvaluatorComposer : IComposer
 {
     public void Compose(IUmbracoBuilder builder)
     {
+        // Global options (e.g. AdditionalRecommendableEditorAliases).
+        builder.Services.Configure<PageEvaluatorOptions>(
+            builder.Config.GetSection("ProWorks:PageEvaluator"));
+
         // Persistence layer: EFCore repository + migration handler.
         builder.AddUmbracoAIPageEvaluatorPersistence();
 

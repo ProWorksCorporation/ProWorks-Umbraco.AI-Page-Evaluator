@@ -65,6 +65,7 @@ type PromptBuilderElement = HTMLElement & {
   _draft?: string;
   _properties?: Array<{ alias: string; label: string; groupName: string }>;
   generateDraft?: () => void;
+  scoringEnabled?: boolean;
 };
 
 function renderBuilder(alias: string): PromptBuilderElement {
@@ -214,5 +215,133 @@ describe('prompt-builder.element — draft generation', () => {
     expect(
       events.length > 0 || typeof (el as { usePrompt?: () => void }).usePrompt === 'function',
     ).toBe(true);
+  });
+});
+
+describe('prompt-builder.element — scoring prompt', () => {
+  it('draft without scoringEnabled does not contain "Evaluation Dimensions"', async () => {
+    server.use(
+      http.get(`${DOC_TYPE_BASE}/by-alias/blogPost`, () =>
+        HttpResponse.json(mockDocType('blogPost', 3)),
+      ),
+    );
+
+    const el = renderBuilder('blogPost') as PromptBuilderElement;
+    el.scoringEnabled = false;
+    await new Promise<void>((r) => setTimeout(r, 50));
+
+    if ((el as PromptBuilderElement)._selectedCategories) {
+      (el as PromptBuilderElement)._selectedCategories!.add('content-quality');
+    }
+    (el as PromptBuilderElement).generateDraft?.();
+    await new Promise<void>((r) => setTimeout(r, 10));
+
+    expect((el as PromptBuilderElement)._draft ?? '').not.toContain('Evaluation Dimensions');
+  });
+
+  it('draft with scoringEnabled and a category selected contains "Evaluation Dimensions"', async () => {
+    server.use(
+      http.get(`${DOC_TYPE_BASE}/by-alias/blogPost`, () =>
+        HttpResponse.json(mockDocType('blogPost', 3)),
+      ),
+    );
+
+    const el = renderBuilder('blogPost') as PromptBuilderElement;
+    el.scoringEnabled = true;
+    await new Promise<void>((r) => setTimeout(r, 50));
+
+    if ((el as PromptBuilderElement)._selectedCategories) {
+      (el as PromptBuilderElement)._selectedCategories!.add('content-quality');
+    }
+    (el as PromptBuilderElement).generateDraft?.();
+    await new Promise<void>((r) => setTimeout(r, 10));
+
+    expect((el as PromptBuilderElement)._draft ?? '').toContain('Evaluation Dimensions');
+  });
+
+  it('scoring draft uses camelCase "overallScore" (not "overall_score")', async () => {
+    server.use(
+      http.get(`${DOC_TYPE_BASE}/by-alias/blogPost`, () =>
+        HttpResponse.json(mockDocType('blogPost', 3)),
+      ),
+    );
+
+    const el = renderBuilder('blogPost') as PromptBuilderElement;
+    el.scoringEnabled = true;
+    await new Promise<void>((r) => setTimeout(r, 50));
+
+    if ((el as PromptBuilderElement)._selectedCategories) {
+      (el as PromptBuilderElement)._selectedCategories!.add('metadata-seo');
+    }
+    (el as PromptBuilderElement).generateDraft?.();
+    await new Promise<void>((r) => setTimeout(r, 10));
+
+    const draft = (el as PromptBuilderElement)._draft ?? '';
+    expect(draft).toContain('overallScore');
+    expect(draft).not.toContain('overall_score');
+  });
+
+  it('scoring draft uses camelCase "axisScores" (not "axis_scores")', async () => {
+    server.use(
+      http.get(`${DOC_TYPE_BASE}/by-alias/blogPost`, () =>
+        HttpResponse.json(mockDocType('blogPost', 3)),
+      ),
+    );
+
+    const el = renderBuilder('blogPost') as PromptBuilderElement;
+    el.scoringEnabled = true;
+    await new Promise<void>((r) => setTimeout(r, 50));
+
+    if ((el as PromptBuilderElement)._selectedCategories) {
+      (el as PromptBuilderElement)._selectedCategories!.add('metadata-seo');
+    }
+    (el as PromptBuilderElement).generateDraft?.();
+    await new Promise<void>((r) => setTimeout(r, 10));
+
+    const draft = (el as PromptBuilderElement)._draft ?? '';
+    expect(draft).toContain('axisScores');
+    expect(draft).not.toContain('axis_scores');
+  });
+
+  it('scoring draft contains "Verdict Thresholds"', async () => {
+    server.use(
+      http.get(`${DOC_TYPE_BASE}/by-alias/blogPost`, () =>
+        HttpResponse.json(mockDocType('blogPost', 3)),
+      ),
+    );
+
+    const el = renderBuilder('blogPost') as PromptBuilderElement;
+    el.scoringEnabled = true;
+    await new Promise<void>((r) => setTimeout(r, 50));
+
+    if ((el as PromptBuilderElement)._selectedCategories) {
+      (el as PromptBuilderElement)._selectedCategories!.add('content-quality');
+    }
+    (el as PromptBuilderElement).generateDraft?.();
+    await new Promise<void>((r) => setTimeout(r, 10));
+
+    expect((el as PromptBuilderElement)._draft ?? '').toContain('Verdict Thresholds');
+  });
+
+  it('scoring draft contains the dimension name of the selected category', async () => {
+    server.use(
+      http.get(`${DOC_TYPE_BASE}/by-alias/blogPost`, () =>
+        HttpResponse.json(mockDocType('blogPost', 3)),
+      ),
+    );
+
+    const el = renderBuilder('blogPost') as PromptBuilderElement;
+    el.scoringEnabled = true;
+    await new Promise<void>((r) => setTimeout(r, 50));
+
+    // Only select calls-to-action so we can check its specific dimension name
+    if ((el as PromptBuilderElement)._selectedCategories) {
+      (el as PromptBuilderElement)._selectedCategories!.clear();
+      (el as PromptBuilderElement)._selectedCategories!.add('calls-to-action');
+    }
+    (el as PromptBuilderElement).generateDraft?.();
+    await new Promise<void>((r) => setTimeout(r, 10));
+
+    expect((el as PromptBuilderElement)._draft ?? '').toContain('CTA Effectiveness');
   });
 });

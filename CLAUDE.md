@@ -1,6 +1,6 @@
 ﻿# ProWorks-Umbraco-AI-Page-Evaluator Development Guidelines
 
-Last updated: 2026-05-15 (rev 10)
+Last updated: 2026-05-16 (rev 11)
 
 ## Active Technologies
 - C# .NET 10, TypeScript 5.x (strict: true) + Umbraco CMS 17.4.0, Umbraco.AI 1.11.0 (Anthropic 1.3.2, OpenAI 1.2.2), EF Core 10.0.6, Microsoft.Extensions.AI 10.6.0, Lit 3.x via @umbraco-cms/backoffice/external/lit
@@ -72,6 +72,7 @@ dotnet ef migrations add <Name> \
 - Filters properties by `config.PropertyAliases` when set; strips HTML tags and truncates at 2000 chars
 - Scoring JSON fields use **camelCase**: `"overallScore"` and `"axisScores"` — these match the C# property names. **Never** use `"overall_score"` / `"axis_scores"` (snake_case); the prompt template, parser, and `PromptBuilderElement` scoring snippet must all use the same camelCase names
 - `CheckStatus` parsing is **case-insensitive** via the shared `ParseCheckStatus(string)` helper — both `TryParseJson` and `TryParseMarkdown` delegate to it; `"FAIL"`, `"fail"`, and `"Fail"` all map to `CheckStatus.Fail`
+- `CheckResult.PropertyAliases: IReadOnlyList<string>?` — the JSON parser reads `"propertyAliases": [...]` (array, preferred); falls back to legacy `"propertyAlias": "..."` (string) and wraps it in a single-element list for backward compatibility with old cached AI responses. Empty `"propertyAliases": []` arrays are ignored (treated as null)
 
 ### Backoffice Extensions
 - Menu alias for Umbraco.AI Add-ons section: **`"Uai.Menu.Addons"`** (not `"Umb.Menu.Addons"`)
@@ -178,12 +179,22 @@ dotnet ef migrations add <Name> \
 - **`UpdateAsync` preserves `IsActive`** — it copies the existing record's `IsActive` state onto the incoming config before saving. Do **not** add `config.IsActive = true` in `UpdateAsync`; that would silently activate inactive configs on edit
 
 ### Recommendations (POST /recommend)
+- `RecommendRequest.PropertyAliases: IReadOnlyList<string>` — one or more property aliases to generate recommendations for in a single call; 400 returned if the list is empty or any alias is not found on the document type
+- `RecommendResponse.RecommendedValues: Dictionary<string, string?>` — keyed by alias; null value means the AI returned nothing actionable for that field
+- Backend validates all aliases against the document type first (before any AI call), pre-resolves schemas per alias, then loops a separate AI call per alias; empty-aliases 400 guard is placed **after** auth and config checks (not before) so authorization is enforced first
 - `BuildPropertyEditorAliases(string documentTypeAlias)` — private controller helper; calls `_contentTypeService.Get(alias).CompositionPropertyTypes.ToDictionary(p => p.Alias, p => p.PropertyEditorAlias)`; returns empty dict when content type is not found
 - `BuildRecommendSystemPrompt` branches on editor type: schema-based → schema JSON prompt; `IsTagsEditor` → JSON array prompt (`{"recommendedValue": [...]}` with natural-language strings); `IsRichTextEditor` → clean HTML prompt; all others → plain text prompt
 - `IsTagsEditor(string)` — matches `"Umbraco.Tags"` (case-insensitive)
 - `IsRichTextEditor(string)` — matches `"Umbraco.RichText"` and `"Umbraco.TinyMCE"` (case-insensitive)
 - Frontend `EvaluationReportElement` uses two static sets to classify properties: `_FULL_RECOMMEND_EDITORS` (`TextBox`, `TextArea`, `Markdown`, `Tags` — full recommend + apply) and `_COPY_ONLY_EDITORS` (`RichText`, `TinyMCE` — recommend + copy only, no Apply button)
-- `_canRecommend(alias)` and `_canApply(alias)` consult `propertyEditorAliases` first; fall back to a value-content heuristic (values starting with `{`, `[`, or `umb://` are treated as complex) when the map is unavailable
+- `_canRecommend(alias)` and `_canApply(alias)` consult `propertyEditorAliases` first, then `_isAdditionalEditor(editorAlias)`, then fall back to a value-content heuristic (values starting with `{`, `[`, or `umb://` are treated as complex) when the map is unavailable
+- Per-alias applied/copied state tracked in `_appliedAliases: Map<number, Set<string>>` and `_copiedAliases: Map<number, Set<string>>` — both use immutable copy-on-write (`new Map(existing)`, `new Set(existing)`) to trigger Lit reactivity
+- `_isAdditionalEditor(editorAlias)` — compares case-insensitively against `this.additionalRecommendableEditorAliases`; editors in this list behave the same as `_FULL_RECOMMEND_EDITORS` (both Recommend and Apply shown)
+- `additionalRecommendableEditorAliases` property on `EvaluationReportElement` is populated from `EvaluationReport.AdditionalRecommendableEditorAliases`, which the controller sets from `IOptions<PageEvaluatorOptions>` at response time — **never stored in the cache**
+
+### Server Configuration (`PageEvaluatorOptions`)
+- `Configuration/PageEvaluatorOptions.cs` — bound from `ProWorks:PageEvaluator` in `appsettings.json`; registered in `PageEvaluatorComposer` via `builder.Services.Configure<PageEvaluatorOptions>(builder.Config.GetSection("ProWorks:PageEvaluator"))`
+- `AdditionalRecommendableEditorAliases: List<string>` — editor aliases from third-party packages that should receive Recommend + Apply buttons; treated as plain text on the backend (same fallback prompt as all other unrecognised editors); injected into the controller via `IOptions<PageEvaluatorOptions>`
 
 ### Rate Limiter Registration
 - `PageEvaluatorComposer` registers the `"PageEvaluatorEvaluate"` fixed-window rate limiter policy (10 requests per user per minute) via `builder.Services.AddRateLimiter`

@@ -75,7 +75,7 @@ export interface CheckResult {
   readonly status: CheckStatus;
   readonly label: string;
   readonly explanation: string | null;
-  readonly propertyAlias: string | null;
+  readonly propertyAliases: readonly string[] | null;
 }
 
 /** Overall pass/total score. */
@@ -114,6 +114,8 @@ export interface EvaluationReportResponse {
   readonly propertyNames: Record<string, string>;
   /** Whether the active evaluator config has recommendations enabled. */
   readonly recommendationsEnabled: boolean;
+  /** Editor aliases from third-party packages configured to support recommendations. */
+  readonly additionalRecommendableEditorAliases: readonly string[];
 }
 
 /** Request body for POST /evaluate. */
@@ -126,7 +128,7 @@ export interface EvaluatePageRequest {
 /** Request body for POST /recommend. */
 export interface RecommendRequest {
   readonly nodeId: string;
-  readonly propertyAlias: string;
+  readonly propertyAliases: readonly string[];
   readonly checkLabel: string;
   readonly checkExplanation: string | null;
   readonly properties: Record<string, string>;
@@ -134,7 +136,7 @@ export interface RecommendRequest {
 
 /** Response body for POST /recommend. */
 export interface RecommendResponse {
-  readonly recommendedValue: string | null;
+  readonly recommendedValues: Record<string, string | null>;
 }
 
 // ---------------------------------------------------------------------------
@@ -148,8 +150,17 @@ export interface DocumentTypePropertySummary {
   readonly editorAlias: string;
 }
 
+/** Scoring descriptor for one evaluation axis within the prompt builder. */
+export interface ScoringDimension {
+  readonly name: string;
+  readonly scoreHigh: string;  // Score 5 description
+  readonly scoreMid: string;   // Score 3 description
+  readonly scoreLow: string;   // Score 1 description
+}
+
 export interface ChecklistCategory {
   readonly id: string;
   readonly labelKey: string;
   readonly promptFragment: string;
+  readonly scoringDimension?: ScoringDimension;
 }
