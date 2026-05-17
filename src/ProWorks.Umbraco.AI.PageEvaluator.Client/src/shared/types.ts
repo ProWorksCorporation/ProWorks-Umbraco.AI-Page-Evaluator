@@ -148,8 +148,17 @@ export interface DocumentTypePropertySummary {
   readonly editorAlias: string;
 }
 
+/** Scoring descriptor for one evaluation axis within the prompt builder. */
+export interface ScoringDimension {
+  readonly name: string;
+  readonly scoreHigh: string;  // Score 5 description
+  readonly scoreMid: string;   // Score 3 description
+  readonly scoreLow: string;   // Score 1 description
+}
+
 export interface ChecklistCategory {
   readonly id: string;
   readonly labelKey: string;
   readonly promptFragment: string;
+  readonly scoringDimension?: ScoringDimension;
 }
