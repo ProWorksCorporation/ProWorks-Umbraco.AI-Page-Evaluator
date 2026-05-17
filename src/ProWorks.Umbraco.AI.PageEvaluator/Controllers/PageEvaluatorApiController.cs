@@ -620,7 +620,9 @@ public sealed class PageEvaluatorApiController : ControllerBase
         JsonObject? schema)
     {
         var sb = new System.Text.StringBuilder();
-        sb.AppendLine("You are an SEO and content assistant. Generate a replacement value for the field described below.");
+        sb.AppendLine("You are an SEO and content assistant.");
+        sb.AppendLine($"Your task: generate a replacement value for one specific field: \"{propertyType.Alias}\".");
+        sb.AppendLine("Return ONLY the value for this field. Do not list, label, or generate values for any other fields.");
         sb.AppendLine();
 
         if (schema is not null)
@@ -645,14 +647,16 @@ public sealed class PageEvaluatorApiController : ControllerBase
         }
         else
         {
-            sb.AppendLine($"The field uses the \"{propertyType.PropertyEditorAlias}\" property editor. Generate appropriate plain text.");
+            sb.AppendLine("The field is a plain text property. Generate a concise plain-text value.");
+            sb.AppendLine("Do not include HTML tags, markdown formatting, or labels for other fields.");
             sb.AppendLine("Return a single JSON object: {\"recommendedValue\": \"<your recommended text>\"}");
         }
 
         sb.AppendLine();
-        sb.AppendLine($"Field to improve: {request.CheckLabel}");
+        sb.AppendLine("Context (background only — do not copy field labels or values from this section into your answer):");
+        sb.AppendLine($"Check: {request.CheckLabel}");
         if (!string.IsNullOrWhiteSpace(request.CheckExplanation))
-            sb.AppendLine($"Issue description: {request.CheckExplanation}");
+            sb.AppendLine($"Issue: {request.CheckExplanation}");
 
         return sb.ToString().TrimEnd();
     }

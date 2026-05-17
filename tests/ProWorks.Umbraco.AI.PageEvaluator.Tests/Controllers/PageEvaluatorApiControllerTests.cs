@@ -1758,6 +1758,30 @@ public class PageEvaluatorApiControllerTests
     }
 
     [Fact]
+    public async Task RecommendAsync_SecondOfTwoAliasesNotFound_Returns400()
+    {
+        _configService.GetActiveForDocumentTypeAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(BuildConfig("blogPost"));
+
+        var validProp = Substitute.For<IPropertyType>();
+        validProp.Alias.Returns("metaDescription");
+        validProp.PropertyEditorAlias.Returns("Umbraco.TextBox");
+
+        var ct = Substitute.For<IContentType>();
+        ct.CompositionPropertyTypes.Returns(new[] { validProp });
+        _contentTypeService.Get(Arg.Any<string>()).Returns(ct);
+
+        var result = await _sut.RecommendAsync(new RecommendRequest
+        {
+            NodeId = Guid.NewGuid(),
+            PropertyAliases = ["metaDescription", "nonexistent"],
+            CheckLabel = "Test",
+        });
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
     public async Task RecommendAsync_HappyPath_NoSchema_Returns200WithRecommendation()
     {
         _configService.GetActiveForDocumentTypeAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
@@ -1850,8 +1874,10 @@ public class PageEvaluatorApiControllerTests
         var ok = Assert.IsType<OkObjectResult>(result);
         var response = Assert.IsType<RecommendResponse>(ok.Value);
         Assert.Equal(2, response.RecommendedValues.Count);
-        Assert.True(response.RecommendedValues.ContainsKey("metaDescription"));
-        Assert.True(response.RecommendedValues.ContainsKey("browserTitle"));
+        Assert.True(response.RecommendedValues.TryGetValue("metaDescription", out string? metaValue));
+        Assert.Equal("Great meta.", metaValue);
+        Assert.True(response.RecommendedValues.TryGetValue("browserTitle", out string? titleValue));
+        Assert.Equal("Great title.", titleValue);
     }
 
     [Fact]
@@ -2023,6 +2049,7 @@ public class PageEvaluatorApiControllerTests
         });
 
         Assert.NotEmpty(capturedSystemPrompt);
+        Assert.Contains("tags", capturedSystemPrompt);
         Assert.Contains("JSON array", capturedSystemPrompt, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("recommendedValue", capturedSystemPrompt, StringComparison.OrdinalIgnoreCase);
     }
@@ -2064,6 +2091,7 @@ public class PageEvaluatorApiControllerTests
         });
 
         Assert.NotEmpty(capturedSystemPrompt);
+        Assert.Contains("bodyText", capturedSystemPrompt);
         Assert.Contains("HTML", capturedSystemPrompt, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("recommendedValue", capturedSystemPrompt, StringComparison.OrdinalIgnoreCase);
     }
@@ -2106,6 +2134,7 @@ public class PageEvaluatorApiControllerTests
         });
 
         Assert.NotEmpty(capturedSystemPrompt);
+        Assert.Contains("bodyText", capturedSystemPrompt);
         Assert.Contains("HTML", capturedSystemPrompt, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("recommendedValue", capturedSystemPrompt, StringComparison.OrdinalIgnoreCase);
     }
@@ -2148,8 +2177,11 @@ public class PageEvaluatorApiControllerTests
         });
 
         Assert.NotEmpty(capturedSystemPrompt);
+        Assert.Contains("metaDescription", capturedSystemPrompt);
+        Assert.Contains("plain text", capturedSystemPrompt, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Do not include HTML tags", capturedSystemPrompt);
         Assert.DoesNotContain("JSON array", capturedSystemPrompt, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("HTML", capturedSystemPrompt, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Rich Text", capturedSystemPrompt, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("recommendedValue", capturedSystemPrompt, StringComparison.OrdinalIgnoreCase);
     }
 }

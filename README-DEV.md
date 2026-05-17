@@ -206,7 +206,7 @@ The system prompt instructs the model to respond with a strict JSON schema:
       "status": "Pass|Fail|Warn",
       "label": "…",
       "explanation": "…",
-      "propertyAlias": "metaDescription"
+      "propertyAliases": ["metaDescription"]
     }
   ],
   "suggestions": "…",
@@ -217,7 +217,7 @@ The system prompt instructs the model to respond with a strict JSON schema:
 }
 ```
 
-`propertyAlias` links a check to a specific Umbraco property so the UI can offer an AI text recommendation for that field. It is `null` for structural or computed checks (e.g. "page has no H1 tag") that do not map to a single editable property. `overallScore` and `axisScores` are only present when dimensional scoring is enabled on the evaluator configuration.
+`propertyAliases` links a check to one or more Umbraco properties so the UI can offer AI text recommendations for those fields. When present, the modal renders a separate recommendation box per alias. It is `null` for structural or computed checks (e.g. "page has no H1 tag") that do not map to any editable property. `overallScore` and `axisScores` are only present when dimensional scoring is enabled on the evaluator configuration.
 
 Both the evaluate and cached-evaluate responses also include a `propertyEditorAliases` map (`{ [alias]: editorAlias }`) populated by the controller at response time using `IContentTypeService`. This map is **never stored in the cache** — it is always derived fresh so it stays current if content types change. The frontend uses it to classify each property:
 
@@ -269,7 +269,8 @@ This means you can create a dedicated AI profile for page evaluation that omits 
 |---|---|---|
 | Content node not found | 404 | Recommendation button shows error state |
 | No active config for document type | 404 | Recommendation button shows error state |
-| Property alias not found on document type | 400 | Recommendation button shows error state |
+| `propertyAliases` array is empty | 400 | Recommendation button shows error state |
+| Any alias not found on document type | 400 | Recommendation button shows error state |
 | Guardrail policy blocked content | 422 | Recommendation button shows error state |
 | AI provider HTTP error | 502 | Recommendation button shows error state |
 | AI provider temporarily overloaded | 503 | Recommendation button shows error state |

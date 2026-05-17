@@ -1159,6 +1159,29 @@ public class PageEvaluationServiceTests
         Assert.DoesNotContain("axisScores", systemMsg.Text!);
     }
 
+    [Fact]
+    public async Task EvaluateAsync_SystemPromptInstructsPropertyAliasesArray()
+    {
+        const string documentTypeAlias = "blogPost";
+        _configService.GetActiveForDocumentTypeAsync(documentTypeAlias, Arg.Any<CancellationToken>())
+            .Returns(BuildConfig(documentTypeAlias));
+
+        IEnumerable<ChatMessage>? capturedMessages = null;
+        _chatService.GetChatResponseAsync(
+                Arg.Any<Action<AIChatBuilder>>(),
+                Arg.Do<IEnumerable<ChatMessage>>(msgs => capturedMessages = msgs.ToList()),
+                Arg.Any<CancellationToken>())
+            .Returns(new ChatResponse(new ChatMessage(ChatRole.Assistant,
+                """{"score":{"passed":1,"total":1},"checks":[{"checkNumber":1,"status":"Pass","label":"T","explanation":null}],"suggestions":null}""")));
+
+        await _sut.EvaluateAsync(Guid.NewGuid(), documentTypeAlias, new Dictionary<string, object?>());
+
+        Assert.NotNull(capturedMessages);
+        var systemMsg = capturedMessages!.First(m => m.Role == ChatRole.System);
+        // Schema must instruct the AI to produce an array, not the legacy singular string.
+        Assert.Contains("propertyAliases", systemMsg.Text!);
+    }
+
     // ---------------------------------------------------------------------------
     // T023: TryParseJson scoring extraction
     // ---------------------------------------------------------------------------
