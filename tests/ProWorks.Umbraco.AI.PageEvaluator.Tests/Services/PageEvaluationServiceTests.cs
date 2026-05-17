@@ -887,8 +887,10 @@ public class PageEvaluationServiceTests
 
         Assert.False(report.ParseFailed);
         Assert.Equal(2, report.Checks.Count);
-        Assert.Equal("metaDescription", report.Checks[0].PropertyAlias);
-        Assert.Null(report.Checks[1].PropertyAlias);
+        Assert.NotNull(report.Checks[0].PropertyAliases);
+        Assert.Single(report.Checks[0].PropertyAliases!);
+        Assert.Equal("metaDescription", report.Checks[0].PropertyAliases![0]);
+        Assert.Null(report.Checks[1].PropertyAliases);
     }
 
     [Fact]
@@ -915,8 +917,8 @@ public class PageEvaluationServiceTests
         Assert.Single(report.Checks);
         Assert.NotNull(report.Checks[0].PropertyAliases);
         Assert.Equal(2, report.Checks[0].PropertyAliases!.Count);
-        Assert.Contains("browserTitle", report.Checks[0].PropertyAliases);
-        Assert.Contains("metaDescription", report.Checks[0].PropertyAliases);
+        Assert.Contains("browserTitle", report.Checks[0].PropertyAliases!);
+        Assert.Contains("metaDescription", report.Checks[0].PropertyAliases!);
     }
 
     [Fact]
@@ -940,9 +942,34 @@ public class PageEvaluationServiceTests
         var report = await _sut.EvaluateAsync(nodeId, documentTypeAlias, new Dictionary<string, object?>(), default);
 
         Assert.False(report.ParseFailed);
+        Assert.Single(report.Checks);
         Assert.NotNull(report.Checks[0].PropertyAliases);
         Assert.Single(report.Checks[0].PropertyAliases!);
         Assert.Equal("pageTitle", report.Checks[0].PropertyAliases![0]);
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_WhenJsonIncludesEmptyPropertyAliasesArray_PropertyAliasesIsNull()
+    {
+        const string documentTypeAlias = "blogPost";
+        var nodeId = Guid.NewGuid();
+        _configService.GetActiveForDocumentTypeAsync(documentTypeAlias, Arg.Any<CancellationToken>())
+            .Returns(BuildConfig(documentTypeAlias));
+        var json = """
+            {
+              "score": { "passed": 1, "total": 1 },
+              "checks": [
+                { "checkNumber": 1, "status": "Pass", "label": "Structural check", "explanation": null, "propertyAliases": [] }
+              ],
+              "suggestions": null
+            }
+            """;
+        MockChatResponse(json);
+
+        var report = await _sut.EvaluateAsync(nodeId, documentTypeAlias, new Dictionary<string, object?>(), default);
+
+        Assert.False(report.ParseFailed);
+        Assert.Null(report.Checks[0].PropertyAliases);
     }
 
     [Fact]
@@ -970,7 +997,7 @@ public class PageEvaluationServiceTests
 
         Assert.False(report.ParseFailed);
         Assert.Single(report.Checks);
-        Assert.Null(report.Checks[0].PropertyAlias);
+        Assert.Null(report.Checks[0].PropertyAliases);
     }
 
     // ---------------------------------------------------------------------------
