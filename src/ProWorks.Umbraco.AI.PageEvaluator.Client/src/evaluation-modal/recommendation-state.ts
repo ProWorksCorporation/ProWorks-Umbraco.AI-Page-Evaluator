@@ -1,10 +1,9 @@
 /**
  * Per-check-item recommendation UI state.
- * Lit renders the appropriate UI for each state kind.
+ * Applied and copied state is tracked per-alias separately in EvaluationReportElement.
  */
 export type RecommendationState =
   | { readonly kind: 'idle' }
   | { readonly kind: 'generating' }
-  | { readonly kind: 'result'; readonly value: string | null }
-  | { readonly kind: 'applied'; readonly value: string | null }
+  | { readonly kind: 'result'; readonly values: Record<string, string | null> }
   | { readonly kind: 'error' };
