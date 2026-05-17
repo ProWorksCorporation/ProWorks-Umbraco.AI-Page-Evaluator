@@ -19,4 +19,4 @@ public sealed record CheckResult(
     CheckStatus Status,
     string Label,
     string? Explanation,
-    string? PropertyAlias);
+    IReadOnlyList<string>? PropertyAliases);

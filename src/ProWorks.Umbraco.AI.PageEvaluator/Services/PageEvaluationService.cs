@@ -436,12 +436,7 @@ public sealed partial class PageEvaluationService : IPageEvaluationService
 
                 CheckStatus status = ParseCheckStatus(statusStr);
 
-                string? propertyAlias = checkEl.TryGetProperty("propertyAlias", out JsonElement pa)
-                    && pa.ValueKind == JsonValueKind.String
-                    ? pa.GetString()
-                    : null;
-
-                checks.Add(new CheckResult(checkNumber, status, label, explanation, propertyAlias));
+                checks.Add(new CheckResult(checkNumber, status, label, explanation, null));
             }
 
             string? suggestions = null;
