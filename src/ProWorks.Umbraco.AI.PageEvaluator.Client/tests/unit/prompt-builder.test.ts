@@ -65,6 +65,7 @@ type PromptBuilderElement = HTMLElement & {
   _draft?: string;
   _properties?: Array<{ alias: string; label: string; groupName: string }>;
   generateDraft?: () => void;
+  scoringEnabled?: boolean;
 };
 
 function renderBuilder(alias: string): PromptBuilderElement {
@@ -225,7 +226,7 @@ describe('prompt-builder.element — scoring prompt', () => {
       ),
     );
 
-    const el = renderBuilder('blogPost') as PromptBuilderElement & { scoringEnabled?: boolean };
+    const el = renderBuilder('blogPost') as PromptBuilderElement;
     el.scoringEnabled = false;
     await new Promise<void>((r) => setTimeout(r, 50));
 
@@ -245,7 +246,7 @@ describe('prompt-builder.element — scoring prompt', () => {
       ),
     );
 
-    const el = renderBuilder('blogPost') as PromptBuilderElement & { scoringEnabled?: boolean };
+    const el = renderBuilder('blogPost') as PromptBuilderElement;
     el.scoringEnabled = true;
     await new Promise<void>((r) => setTimeout(r, 50));
 
@@ -265,7 +266,7 @@ describe('prompt-builder.element — scoring prompt', () => {
       ),
     );
 
-    const el = renderBuilder('blogPost') as PromptBuilderElement & { scoringEnabled?: boolean };
+    const el = renderBuilder('blogPost') as PromptBuilderElement;
     el.scoringEnabled = true;
     await new Promise<void>((r) => setTimeout(r, 50));
 
@@ -287,7 +288,7 @@ describe('prompt-builder.element — scoring prompt', () => {
       ),
     );
 
-    const el = renderBuilder('blogPost') as PromptBuilderElement & { scoringEnabled?: boolean };
+    const el = renderBuilder('blogPost') as PromptBuilderElement;
     el.scoringEnabled = true;
     await new Promise<void>((r) => setTimeout(r, 50));
 
@@ -309,7 +310,7 @@ describe('prompt-builder.element — scoring prompt', () => {
       ),
     );
 
-    const el = renderBuilder('blogPost') as PromptBuilderElement & { scoringEnabled?: boolean };
+    const el = renderBuilder('blogPost') as PromptBuilderElement;
     el.scoringEnabled = true;
     await new Promise<void>((r) => setTimeout(r, 50));
 
@@ -329,7 +330,7 @@ describe('prompt-builder.element — scoring prompt', () => {
       ),
     );
 
-    const el = renderBuilder('blogPost') as PromptBuilderElement & { scoringEnabled?: boolean };
+    const el = renderBuilder('blogPost') as PromptBuilderElement;
     el.scoringEnabled = true;
     await new Promise<void>((r) => setTimeout(r, 50));
 
