@@ -73,7 +73,7 @@ export const CHECKLIST_CATEGORIES: readonly ChecklistCategory[] = [
       name: 'Structured Data Readiness',
       scoreHigh: 'All relevant properties map cleanly to schema.org types; structured data markup would be complete and valid.',
       scoreMid: 'Some properties suitable for schema markup but key fields are missing or poorly formatted.',
-      scoreLow: 'Content structure makes schema markup impractical; no clear schema.org opportunities identified.',
+      scoreLow: 'Fields lack the specificity or structure needed to map to any schema.org type; no structured data opportunities are identifiable.',
     },
   },
   {
