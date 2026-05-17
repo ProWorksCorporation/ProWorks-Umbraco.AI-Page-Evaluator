@@ -6,8 +6,8 @@ public sealed class RecommendRequest
     /// <summary>The Umbraco content node GUID.</summary>
     public Guid NodeId { get; set; }
 
-    /// <summary>The property alias to generate a recommendation for.</summary>
-    public string PropertyAlias { get; set; } = string.Empty;
+    /// <summary>The property aliases to generate recommendations for (one alias → one AI call).</summary>
+    public IReadOnlyList<string> PropertyAliases { get; set; } = [];
 
     /// <summary>The check label (e.g. "Meta description is missing").</summary>
     public string CheckLabel { get; set; } = string.Empty;
