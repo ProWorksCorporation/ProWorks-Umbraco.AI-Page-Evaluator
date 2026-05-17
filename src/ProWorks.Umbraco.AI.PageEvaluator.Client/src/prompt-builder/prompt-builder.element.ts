@@ -89,10 +89,7 @@ export class PromptBuilderElement extends UmbLitElement {
       .map((c) => c.scoringDimension!);
 
     if (dims.length === 0) {
-      return (
-        '\n\nRate the page on a scale of 1–5 for each evaluation dimension listed above.\n' +
-        'Provide an overallScore (1–5) and individual axisScores with brief feedback for each.'
-      );
+      return '';
     }
 
     const dimensionLines = dims
