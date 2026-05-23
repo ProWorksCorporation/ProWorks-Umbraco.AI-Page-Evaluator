@@ -15,7 +15,7 @@ namespace ProWorks.Umbraco.AI.PageEvaluator.Services;
 /// returns <c>null</c> and logs a warning. Acyclic DAGs are unaffected because each
 /// node's key is removed from the set as soon as <see cref="Build"/> returns.
 /// </summary>
-public sealed class CycleDetectingApiContentBuilder : IApiContentBuilder
+internal sealed class CycleDetectingApiContentBuilder : IApiContentBuilder
 {
     // Null = no traversal in progress on this async call chain.
     // Non-null = a root Build() is in flight; the set contains all node Keys
