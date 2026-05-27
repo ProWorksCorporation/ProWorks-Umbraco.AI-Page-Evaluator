@@ -1420,6 +1420,63 @@ public class PageEvaluationServiceTests
     }
 
     [Fact]
+    public async Task EvaluateAsync_WhenApiContentBuilderReturnsNull_FallsBackToDraftProperties()
+    {
+        // Arrange: node is in the published cache but Build() returns null.
+        // This is the observable outcome when CycleDetectingApiContentBuilder detects a cycle
+        // at the root call level, or when Umbraco itself cannot resolve the content.
+        // The service must not throw and must fall back to the caller-supplied draft values.
+        var contextAccessor = Substitute.For<IUmbracoContextAccessor>();
+        var contentBuilder = Substitute.For<IApiContentBuilder>();
+        var configService = Substitute.For<IAIEvaluatorConfigService>();
+        var chatService = Substitute.For<IAIChatService>();
+        var contextService = Substitute.For<IAIContextService>();
+        var contextProcessor = Substitute.For<IAIContextProcessor>();
+        var logger = Substitute.For<ILogger<PageEvaluationService>>();
+
+        const string documentTypeAlias = "blogPost";
+        var nodeId = Guid.NewGuid();
+        configService.GetActiveForDocumentTypeAsync(documentTypeAlias, Arg.Any<CancellationToken>())
+            .Returns(BuildConfig(documentTypeAlias));
+
+        var publishedContent = Substitute.For<IPublishedContent>();
+        var contentCache = Substitute.For<IPublishedContentCache>();
+        contentCache.GetById(nodeId).Returns(publishedContent);
+
+        var ctx = Substitute.For<IUmbracoContext>();
+        ctx.Content.Returns(contentCache);
+
+        contextAccessor
+            .TryGetUmbracoContext(out Arg.Any<IUmbracoContext?>())
+            .ReturnsForAnyArgs(x => { x[0] = ctx; return true; });
+
+        // Build() returns null — simulates cycle detection or unresolvable content
+        contentBuilder.Build(publishedContent).Returns((IApiContent?)null);
+
+        string? capturedUserMessage = null;
+        chatService.GetChatResponseAsync(
+                Arg.Any<Action<AIChatBuilder>>(),
+                Arg.Do<IEnumerable<ChatMessage>>(msgs =>
+                    capturedUserMessage = msgs.LastOrDefault()?.Text),
+                Arg.Any<CancellationToken>())
+            .Returns(new ChatResponse(new ChatMessage(ChatRole.Assistant,
+                """{"score":{"passed":1,"total":1},"checks":[{"checkNumber":1,"status":"Pass","label":"T","explanation":null}],"suggestions":null}""")));
+
+        var sut = new PageEvaluationService(
+            configService, contextService, contextProcessor, chatService, contextAccessor, contentBuilder, logger);
+
+        var draftProperties = new Dictionary<string, object?> { ["title"] = "Draft Title" };
+
+        // Act
+        EvaluationReport report = await sut.EvaluateAsync(nodeId, documentTypeAlias, draftProperties);
+
+        // Assert: Build() was called (node was found), report parsed, draft value reached the prompt
+        contentBuilder.Received(1).Build(publishedContent);
+        Assert.False(report.ParseFailed);
+        Assert.Contains("Draft Title", capturedUserMessage);
+    }
+
+    [Fact]
     public async Task EvaluateAsync_WhenResponseIsMalformedJson_FallsBackToRawWithNullScoring()
     {
         const string documentTypeAlias = "blogPost";
