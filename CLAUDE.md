@@ -1,6 +1,6 @@
 ﻿# ProWorks-Umbraco-AI-Page-Evaluator Development Guidelines
 
-Last updated: 2026-05-16 (rev 11)
+Last updated: 2026-05-27 (rev 12)
 
 ## Active Technologies
 - C# .NET 10, TypeScript 5.x (strict: true) + Umbraco CMS 17.4.0, Umbraco.AI 1.11.0 (Anthropic 1.3.2, OpenAI 1.2.2), EF Core 10.0.6, Microsoft.Extensions.AI 10.6.0, Lit 3.x via @umbraco-cms/backoffice/external/lit
@@ -62,6 +62,15 @@ dotnet ef migrations add <Name> \
 ```
 
 ## Key Architecture Notes
+
+### CycleDetectingApiContentBuilder
+- `internal sealed` decorator for `IApiContentBuilder` in `Services/CycleDetectingApiContentBuilder.cs`
+- Prevents `StackOverflowException` when a Block List contains a Content Picker referencing an ancestor (or itself), which causes `IApiContentBuilder.Build()` to re-enter recursively through `ContentPickerValueConverter`
+- Uses `AsyncLocal<HashSet<Guid>?>` — null means no root call active; non-null means one is in flight. Self-activating: the root `Build()` initialises the set and clears it on return; callers need no changes
+- Returns `null` + logs a `LogWarning` on cycle detection. `PageEvaluationService` already handles null via `?.Properties ?? new Dictionary<string, object?>()`
+- DAG (non-cyclic re-visits) are correctly allowed: `finally { visited.Remove(content.Key) }` removes each key after processing so sibling paths can revisit the same node
+- **DI registration** in `PageEvaluatorComposer`: locates the existing `IApiContentBuilder` `ServiceDescriptor`, removes it, and re-adds a factory descriptor that wraps the original with `CycleDetectingApiContentBuilder`. Three-branch factory handles `ImplementationInstance`, `ImplementationFactory`, and `ImplementationType` cases; preserves the original `Lifetime` (Singleton)
+- **`AssemblyInfo.cs`** in the main project grants `InternalsVisibleTo` for both the test assembly and `DynamicProxyGenAssembly2` (required by NSubstitute to mock/spy through the `internal` boundary)
 
 ### PageEvaluationService
 - Injects `IAIChatService` (from `Umbraco.AI.Core.Chat`) — **never** inject `IChatClient` or `IAIChatClientFactory` directly
