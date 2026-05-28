@@ -3,16 +3,12 @@
 Last updated: 2026-05-27 (rev 12)
 
 ## Active Technologies
-- C# .NET 10, TypeScript 5.x (strict: true) + Umbraco CMS 17.4.0, Umbraco.AI 1.11.0 (Anthropic 1.3.2, OpenAI 1.2.2), EF Core 10.0.6, Microsoft.Extensions.AI 10.6.0, Lit 3.x via @umbraco-cms/backoffice/external/lit
-- SQLite (dev), SQL Server (prod) via EF Core; evaluation cache in `umbracoAIEvaluationCache` table
-- C# .NET 10 (server) + TypeScript 5.x `strict: true, noUncheckedIndexedAccess: true` (client) + Umbraco CMS 17.4.0; Umbraco.AI 1.11.0 (Anthropic 1.3.2, OpenAI 1.2.2); EF Core 10.0.6; Microsoft.Extensions.AI 10.6.0 (pinned); Lit 3.x via `@umbraco-cms/backoffice/external/lit`; UUI components (`uui-toggle`, `uui-badge`) (feature/scoring)
-- SQLite (dev) / SQL Server (prod) via separate EF Core migration projects. New column `ScoringEnabled bit NOT NULL DEFAULT 0` on `umbracoAIEvaluatorConfig`. Cache table (`umbracoAIEvaluationCache`) unchanged structurally; existing rows remain valid. (feature/scoring)
 
-- **Client**: TypeScript 5.x `strict: true`, Vite build, Lit web components
-- **Server**: C# .NET 10, Umbraco CMS 17.4.0, EF Core 10.0.6
-- **AI**: Umbraco.AI 1.11.0 ecosystem (Anthropic 1.3.2, OpenAI 1.2.2, Prompt 1.8.4, Agent 1.10.0, Agent.Copilot 1.0.0)
-- **Database**: SQLite (dev), SQL Server (prod) via separate EF Core migration projects
-- **Content sync**: uSync 17.0.4
+- **Client**: TypeScript 5.9.x `strict: true, noUncheckedIndexedAccess: true`, Vite 7.x build, Lit 3.x web components
+- **Server**: C# .NET 10, Umbraco CMS 17.4.2, EF Core 10.0.6
+- **AI**: Umbraco.AI 1.12.0 ecosystem (Anthropic 1.3.4, OpenAI 1.2.4, Prompt 1.8.6, Agent 1.10.2, Agent.Copilot 1.0.0)
+- **Database**: SQLite (dev), SQL Server (prod) via separate EF Core migration projects; evaluation cache in `umbracoAIEvaluationCache` table
+- **Content sync**: uSync 17.3.2
 
 ## Project Structure
 
@@ -147,9 +143,9 @@ dotnet ef migrations add <Name> \
 - The modal checks `GET /evaluate/cached/{nodeId}` on open; falls through to `POST /evaluate` only when no cache entry exists or when the user clicks **Re-run Evaluation**
 
 ### Package Version Constraints
-- **All** `Microsoft.Extensions.AI*` packages must be pinned to `10.6.0` — required by `Umbraco.AI.Core 1.11.0` and `Anthropic 12.20.1` (pulled by `Umbraco.AI.Anthropic 1.3.2`). Do NOT downgrade below `10.6.0`.
+- **All** `Microsoft.Extensions.AI*` packages must be pinned to `10.6.0` — required by `Umbraco.AI.Core 1.12.0` and `Anthropic 12.20.1` (pulled by `Umbraco.AI.Anthropic 1.3.4`). Do NOT downgrade below `10.6.0`.
 - `Microsoft.Extensions.AI` and `Microsoft.Extensions.AI.Abstractions` must always be the same version — mismatches cause `TypeLoadException: FunctionApprovalRequestContent`
-- EF Core must be `10.0.6` (required by `Umbraco.Cms.Persistence.EFCore 17.4.0`)
+- EF Core must be `10.0.6` (required by `Umbraco.Cms.Persistence.EFCore 17.4.2`)
 
 ## TestSite
 

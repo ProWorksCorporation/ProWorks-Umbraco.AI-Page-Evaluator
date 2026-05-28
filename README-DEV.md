@@ -77,7 +77,7 @@ After a fresh clone, import the demo content via **Settings → uSync → Import
 dotnet test
 ```
 
-The test suite covers controller error handling, service behavior, persistence mapping, cache invalidation, notification handling, and the Umbraco.AI test feature integration (190 tests, xUnit + NSubstitute).
+The test suite covers controller error handling, service behavior, persistence mapping, cache invalidation, notification handling, and the Umbraco.AI test feature integration (215 tests, xUnit + NSubstitute).
 
 ### Build the NuGet package
 
@@ -183,7 +183,7 @@ Property values are resolved via Umbraco's `IApiContentBuilder` (the same servic
 
 - **Rich text** → HTML stripped to plain text
 - **Media picker** → resolved metadata (name, alt text, dimensions, file type)
-- **Block List / Block Grid** → recursively structured JSON with each block's properties
+- **Block List / Block Grid** → recursively structured JSON with each block's properties; cyclic content picker references (e.g. a block picking an ancestor page) are safely terminated by `CycleDetectingApiContentBuilder`
 - **Multi-node tree picker** → referenced item names and content types
 - **Text / textarea** → draft (unsaved) values override the published snapshot
 
