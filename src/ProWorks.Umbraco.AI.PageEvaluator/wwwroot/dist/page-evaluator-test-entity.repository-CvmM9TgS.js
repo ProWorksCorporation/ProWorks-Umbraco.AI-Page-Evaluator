@@ -1,5 +1,5 @@
 import { UmbControllerBase as o } from "@umbraco-cms/backoffice/class-api";
-import { a as r, c as a } from "./entry-point-B8f0za1V.js";
+import { i as r, h as a } from "./entry-point-DskGGDu6.js";
 class c extends o {
   constructor(t) {
     super(t);
@@ -34,4 +34,4 @@ export {
   c as PageEvaluatorTestFeatureEntityRepository,
   c as api
 };
-//# sourceMappingURL=page-evaluator-test-entity.repository-BuLKWE_g.js.map
+//# sourceMappingURL=page-evaluator-test-entity.repository-CvmM9TgS.js.map

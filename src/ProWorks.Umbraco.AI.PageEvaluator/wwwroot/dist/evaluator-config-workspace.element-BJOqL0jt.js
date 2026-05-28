@@ -1,14 +1,14 @@
-import { html as r, nothing as d, css as h, state as s, customElement as m } from "@umbraco-cms/backoffice/external/lit";
+import { html as a, nothing as d, css as m, state as u, customElement as h } from "@umbraco-cms/backoffice/external/lit";
 import { UmbLitElement as f } from "@umbraco-cms/backoffice/lit-element";
 import { umbConfirmModal as p } from "@umbraco-cms/backoffice/modal";
-import { a as v, b as _, d as g } from "./entry-point-B8f0za1V.js";
-import "./evaluator-form.element-Bf1NfvT3.js";
-var b = Object.defineProperty, y = Object.getOwnPropertyDescriptor, u = (e, t, o, i) => {
-  for (var l = i > 1 ? void 0 : i ? y(t, o) : t, n = e.length - 1, c; n >= 0; n--)
-    (c = e[n]) && (l = (i ? c(t, o, l) : c(l)) || l);
-  return i && l && b(t, o, l), l;
+import { i as v, a as _, d as g } from "./entry-point-DskGGDu6.js";
+import "./evaluator-form.element-DQ239olk.js";
+var b = Object.defineProperty, y = Object.getOwnPropertyDescriptor, l = (e, i, t, s) => {
+  for (var r = s > 1 ? void 0 : s ? y(i, t) : i, n = e.length - 1, c; n >= 0; n--)
+    (c = e[n]) && (r = (s ? c(i, t, r) : c(r)) || r);
+  return s && r && b(i, t, r), r;
 };
-let a = class extends f {
+let o = class extends f {
   constructor() {
     super(...arguments), this._configs = [], this._groupedConfigs = /* @__PURE__ */ new Map(), this._loading = !1, this._error = null, this._view = "list", this._editId = null, this._saving = !1, this._formName = "", this._formNameError = !1;
   }
@@ -28,12 +28,12 @@ let a = class extends f {
   }
   _groupByDocType() {
     const e = /* @__PURE__ */ new Map();
-    for (const t of this._configs) {
-      const o = e.get(t.documentTypeAlias) ?? [];
-      o.push(t), e.set(t.documentTypeAlias, o);
+    for (const i of this._configs) {
+      const t = e.get(i.documentTypeAlias) ?? [];
+      t.push(i), e.set(i.documentTypeAlias, t);
     }
-    for (const [t, o] of e)
-      o.sort((i, l) => i.isActive !== l.isActive ? i.isActive ? -1 : 1 : l.dateModified.localeCompare(i.dateModified)), e.set(t, o);
+    for (const [i, t] of e)
+      t.sort((s, r) => s.isActive !== r.isActive ? s.isActive ? -1 : 1 : r.dateModified.localeCompare(s.dateModified)), e.set(i, t);
     return e;
   }
   async _handleActivate(e) {
@@ -55,14 +55,13 @@ let a = class extends f {
       return;
     }
     try {
-      await g(e), this._configs = this._configs.filter((t) => t.id !== e), this._groupedConfigs = this._groupByDocType();
+      await g(e), this._configs = this._configs.filter((i) => i.id !== e), this._groupedConfigs = this._groupByDocType();
     } catch {
       this._error = this.localize.term("evaluatorConfig_deleteError");
     }
   }
   _handleEdit(e) {
-    var t;
-    this._editId = e, this._formName = ((t = this._configs.find((o) => o.id === e)) == null ? void 0 : t.name) ?? "", this._formNameError = !1, this._view = "form";
+    this._editId = e, this._formName = this._configs.find((i) => i.id === e)?.name ?? "", this._formNameError = !1, this._view = "form";
   }
   _handleCreate() {
     this._editId = null, this._formName = "", this._formNameError = !1, this._view = "form";
@@ -74,19 +73,17 @@ let a = class extends f {
     this._view = "list", this._editId = null, this._formName = "", this._formNameError = !1;
   }
   _handleSave() {
-    var t;
     if (!this._formName.trim()) {
       this._formNameError = !0;
       return;
     }
-    const e = (t = this.shadowRoot) == null ? void 0 : t.querySelector("evaluator-form");
-    e == null || e.submit();
+    this.shadowRoot?.querySelector("evaluator-form")?.submit();
   }
   get _breadcrumbName() {
     return this._formName ? this._formName : this.localize.term(this._editId ? "evaluatorConfig_editHeadline" : "evaluatorConfig_createHeadline");
   }
   render() {
-    return this._view === "form" ? r`
+    return this._view === "form" ? a`
         <div id="form-header">
           <uui-button
             compact
@@ -139,7 +136,7 @@ let a = class extends f {
             ${this._saving ? this.localize.term("evaluatorConfig_savingButton") : this.localize.term("evaluatorConfig_saveButton")}
           </uui-button>
         </umb-footer-layout>
-      ` : this._loading ? r`<div id="content"><uui-loader></uui-loader></div>` : r`
+      ` : this._loading ? a`<div id="content"><uui-loader></uui-loader></div>` : a`
       <div id="content">
         <div class="promo-notice">
           <img class="promo-logo" src="/App_Plugins/ProWorks.AI.PageEvaluator/proworks-logo.png" alt="ProWorks" />
@@ -167,13 +164,11 @@ let a = class extends f {
           </uui-button>
         </div>
 
-        ${this._error ? r`<uui-tag color="danger">${this._error}</uui-tag>` : d}
+        ${this._error ? a`<uui-tag color="danger">${this._error}</uui-tag>` : d}
 
-        ${this._groupedConfigs.size === 0 ? r`<p>${this.localize.term("evaluatorConfig_emptyState")}</p>` : Array.from(this._groupedConfigs.entries()).map(
-      ([e, t]) => {
-        var o;
-        return r`
-                <uui-box headline=${((o = t[0]) == null ? void 0 : o.documentTypeName) ?? e}>
+        ${this._groupedConfigs.size === 0 ? a`<p>${this.localize.term("evaluatorConfig_emptyState")}</p>` : Array.from(this._groupedConfigs.entries()).map(
+      ([e, i]) => a`
+                <uui-box headline=${i[0]?.documentTypeName ?? e}>
                   <uui-table>
                     <uui-table-head>
                       <uui-table-head-cell>${this.localize.term("evaluatorConfig_tableHeaderName")}</uui-table-head-cell>
@@ -181,51 +176,50 @@ let a = class extends f {
                       <uui-table-head-cell>${this.localize.term("evaluatorConfig_tableHeaderStatus")}</uui-table-head-cell>
                       <uui-table-head-cell>${this.localize.term("evaluatorConfig_tableHeaderActions")}</uui-table-head-cell>
                     </uui-table-head>
-                    ${t.map(
-          (i) => r`
+                    ${i.map(
+        (t) => a`
                         <uui-table-row>
                           <uui-table-cell>
-                            <strong>${i.name}</strong>
-                            ${i.description ? r`<br /><small>${i.description}</small>` : d}
+                            <strong>${t.name}</strong>
+                            ${t.description ? a`<br /><small>${t.description}</small>` : d}
                           </uui-table-cell>
-                          <uui-table-cell>${i.profileName ?? i.profileId}</uui-table-cell>
+                          <uui-table-cell>${t.profileName ?? t.profileId}</uui-table-cell>
                           <uui-table-cell>
-                            ${i.isActive ? r`<uui-tag color="positive" look="primary">${this.localize.term("evaluatorConfig_activeLabel")}</uui-tag>` : r`<uui-tag look="secondary">${this.localize.term("evaluatorConfig_inactiveLabel")}</uui-tag>`}
+                            ${t.isActive ? a`<uui-tag color="positive" look="primary">${this.localize.term("evaluatorConfig_activeLabel")}</uui-tag>` : a`<uui-tag look="secondary">${this.localize.term("evaluatorConfig_inactiveLabel")}</uui-tag>`}
                           </uui-table-cell>
                           <uui-table-cell>
-                            ${i.isActive ? d : r`<uui-button
+                            ${t.isActive ? d : a`<uui-button
                                   look="secondary"
                                   label=${this.localize.term("evaluatorConfig_activateButton")}
-                                  @click=${() => this._handleActivate(i.id)}>
+                                  @click=${() => this._handleActivate(t.id)}>
                                   ${this.localize.term("evaluatorConfig_activateButton")}
                                 </uui-button>`}
                             <uui-button
                               look="secondary"
                               label=${this.localize.term("evaluatorConfig_editButton")}
-                              @click=${() => this._handleEdit(i.id)}>
+                              @click=${() => this._handleEdit(t.id)}>
                               ${this.localize.term("evaluatorConfig_editButton")}
                             </uui-button>
                             <uui-button
                               look="danger"
                               label=${this.localize.term("evaluatorConfig_deleteButton")}
-                              @click=${() => this._handleDelete(i.id)}>
+                              @click=${() => this._handleDelete(t.id)}>
                               ${this.localize.term("evaluatorConfig_deleteButton")}
                             </uui-button>
                           </uui-table-cell>
                         </uui-table-row>
                       `
-        )}
+      )}
                   </uui-table>
                 </uui-box>
-              `;
-      }
+              `
     )}
 
       </div>
     `;
   }
 };
-a.styles = h`
+o.styles = m`
     :host {
       display: flex;
       flex-direction: column;
@@ -327,37 +321,37 @@ a.styles = h`
       text-decoration: underline;
     }
   `;
-u([
-  s()
-], a.prototype, "_configs", 2);
-u([
-  s()
-], a.prototype, "_groupedConfigs", 2);
-u([
-  s()
-], a.prototype, "_loading", 2);
-u([
-  s()
-], a.prototype, "_error", 2);
-u([
-  s()
-], a.prototype, "_view", 2);
-u([
-  s()
-], a.prototype, "_editId", 2);
-u([
-  s()
-], a.prototype, "_saving", 2);
-u([
-  s()
-], a.prototype, "_formName", 2);
-u([
-  s()
-], a.prototype, "_formNameError", 2);
-a = u([
-  m("evaluator-config-workspace")
-], a);
+l([
+  u()
+], o.prototype, "_configs", 2);
+l([
+  u()
+], o.prototype, "_groupedConfigs", 2);
+l([
+  u()
+], o.prototype, "_loading", 2);
+l([
+  u()
+], o.prototype, "_error", 2);
+l([
+  u()
+], o.prototype, "_view", 2);
+l([
+  u()
+], o.prototype, "_editId", 2);
+l([
+  u()
+], o.prototype, "_saving", 2);
+l([
+  u()
+], o.prototype, "_formName", 2);
+l([
+  u()
+], o.prototype, "_formNameError", 2);
+o = l([
+  h("evaluator-config-workspace")
+], o);
 export {
-  a as EvaluatorConfigWorkspaceElement
+  o as EvaluatorConfigWorkspaceElement
 };
-//# sourceMappingURL=evaluator-config-workspace.element-XnmGZvPO.js.map
+//# sourceMappingURL=evaluator-config-workspace.element-BJOqL0jt.js.map

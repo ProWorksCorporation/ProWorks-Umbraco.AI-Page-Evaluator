@@ -1,8 +1,8 @@
-import { UmbConditionBase as f, umbExtensionsRegistry as m } from "@umbraco-cms/backoffice/extension-registry";
-import { UMB_DOCUMENT_WORKSPACE_CONTEXT as d } from "@umbraco-cms/backoffice/document";
-import { umbHttpClient as y } from "@umbraco-cms/backoffice/http-client";
-const n = y, r = "/umbraco/management/api/v1/page-evaluator", s = [{ scheme: "bearer", type: "http" }];
-class E extends Error {
+import { UmbConditionBase as g, umbExtensionsRegistry as p } from "@umbraco-cms/backoffice/extension-registry";
+import { UMB_DOCUMENT_WORKSPACE_CONTEXT as f } from "@umbraco-cms/backoffice/document";
+import { umbHttpClient as d } from "@umbraco-cms/backoffice/http-client";
+const n = d, r = "/umbraco/management/api/v1/page-evaluator", s = [{ scheme: "bearer", type: "http" }];
+class y extends Error {
   constructor(t, a) {
     super(`API error ${t}: ${a}`), this.status = t, this.detail = a;
   }
@@ -10,32 +10,32 @@ class E extends Error {
 async function i(e) {
   if (!e.response.ok) {
     const t = e.error, o = (t !== null && typeof t == "object" && "title" in t && typeof t.title == "string" ? t.title : null) ?? (t ? JSON.stringify(t) : `HTTP ${e.response.status}`);
-    throw new E(e.response.status, o);
+    throw new y(e.response.status, o);
   }
   return e.data;
 }
-async function k() {
+async function I() {
   const e = await n.get({
     security: s,
     url: `${r}/configurations`
   });
   return i(e);
 }
-async function w(e) {
+async function k(e) {
   const t = await n.get({
     security: s,
     url: `${r}/configurations/${encodeURIComponent(e)}`
   });
   return i(t);
 }
-async function v(e) {
+async function E(e) {
   const t = await n.get({
     security: s,
     url: `${r}/configurations/active/${encodeURIComponent(e)}`
   });
   return t.response.status === 404 ? null : i(t);
 }
-async function $(e) {
+async function w(e) {
   const t = await n.post({
     security: s,
     url: `${r}/configurations`,
@@ -43,7 +43,7 @@ async function $(e) {
   });
   return i(t);
 }
-async function W(e, t) {
+async function $(e, t) {
   const a = await n.put({
     security: s,
     url: `${r}/configurations/${encodeURIComponent(e)}`,
@@ -51,14 +51,14 @@ async function W(e, t) {
   });
   return i(a);
 }
-async function b(e) {
+async function W(e) {
   const t = await n.post({
     security: s,
     url: `${r}/configurations/${encodeURIComponent(e)}/activate`
   });
   return i(t);
 }
-async function U(e) {
+async function b(e) {
   const t = await n.delete({
     security: s,
     url: `${r}/configurations/${encodeURIComponent(e)}`
@@ -68,14 +68,14 @@ async function U(e) {
     throw new Error(`API ${t.response.status}: ${a}`);
   }
 }
-async function R(e) {
+async function U(e) {
   const t = await n.get({
     security: s,
     url: `${r}/evaluate/cached/${encodeURIComponent(e)}`
   });
   return t.response.status === 404 ? null : i(t);
 }
-async function _(e) {
+async function R(e) {
   const t = await n.post({
     security: s,
     url: `${r}/evaluate`,
@@ -83,7 +83,7 @@ async function _(e) {
   });
   return i(t);
 }
-async function T(e) {
+async function _(e) {
   const t = await n.post({
     security: s,
     url: `${r}/recommend`,
@@ -91,7 +91,7 @@ async function T(e) {
   });
   return i(t);
 }
-async function O(e) {
+async function T(e) {
   const t = await n.get({
     security: s,
     url: `${r}/document-type/${encodeURIComponent(e)}/properties`
@@ -111,29 +111,28 @@ async function O(e) {
     }))
   };
 }
-const p = "ProWorks.AI.PageEvaluator.Condition.HasActiveConfig";
-class P extends f {
+const l = "ProWorks.AI.PageEvaluator.Condition.HasActiveConfig";
+class v extends g {
   constructor(t, a) {
-    super(t, a), this.permitted = !1, this.consumeContext(d, (o) => {
-      var l;
+    super(t, a), this.permitted = !1, this.consumeContext(f, (o) => {
       if (!o) {
         this.permitted = !1;
         return;
       }
-      const u = ((l = o.structure.getOwnerContentType()) == null ? void 0 : l.alias) ?? "";
+      const u = o.structure.getOwnerContentType()?.alias ?? "";
       if (!u) {
         this.permitted = !1;
         return;
       }
-      v(u).then((g) => {
-        this.permitted = g !== null;
+      E(u).then((m) => {
+        this.permitted = m !== null;
       }).catch(() => {
         this.permitted = !1;
       });
     });
   }
 }
-const A = "Uai.Menu.Addons", c = [
+const P = "Uai.Menu.Addons", c = [
   // ---------------------------------------------------------------------------
   // Localization: English default translations for all package UI strings.
   // ---------------------------------------------------------------------------
@@ -154,16 +153,16 @@ const A = "Uai.Menu.Addons", c = [
   // available when the action's conditions are evaluated.
   {
     type: "condition",
-    alias: p,
+    alias: l,
     name: "Page Evaluator Has Active Config Condition",
-    api: P
+    api: v
   },
   {
     type: "workspaceAction",
     kind: "default",
     alias: "ProWorks.AI.PageEvaluator.WorkspaceAction",
     name: "Page Evaluator Workspace Action",
-    api: () => import("./page-evaluator-action.api-B6EVcvTD.js"),
+    api: () => import("./page-evaluator-action.api-hQnkV95R.js"),
     meta: {
       label: "Evaluate Page",
       look: "secondary"
@@ -174,7 +173,7 @@ const A = "Uai.Menu.Addons", c = [
         match: "Umb.Workspace.Document"
       },
       {
-        alias: p
+        alias: l
       }
     ]
   },
@@ -182,7 +181,7 @@ const A = "Uai.Menu.Addons", c = [
     type: "modal",
     alias: "ProWorks.AI.PageEvaluator.Modal.Evaluation",
     name: "Page Evaluator Evaluation Modal",
-    element: () => import("./evaluation-modal.element-L15MXyQg.js").then((e) => ({
+    element: () => import("./evaluation-modal.element-DcJPpUpo.js").then((e) => ({
       element: e.EvaluationModalElement
     }))
   },
@@ -197,7 +196,7 @@ const A = "Uai.Menu.Addons", c = [
       label: "Page Evaluator",
       icon: "icon-settings",
       entityType: "evaluator-config",
-      menus: [A]
+      menus: [P]
     }
   },
   {
@@ -207,7 +206,7 @@ const A = "Uai.Menu.Addons", c = [
     meta: {
       entityType: "evaluator-config"
     },
-    element: () => import("./evaluator-config-workspace.element-XnmGZvPO.js").then((e) => ({
+    element: () => import("./evaluator-config-workspace.element-BJOqL0jt.js").then((e) => ({
       element: e.EvaluatorConfigWorkspaceElement
     }))
   },
@@ -225,7 +224,7 @@ const A = "Uai.Menu.Addons", c = [
     meta: {
       feature: "proworks-page-evaluator"
     },
-    api: () => import("./page-evaluator-test-entity.repository-BuLKWE_g.js")
+    api: () => import("./page-evaluator-test-entity.repository-CvmM9TgS.js")
   },
   {
     type: "workspaceView",
@@ -242,30 +241,30 @@ const A = "Uai.Menu.Addons", c = [
         match: "ProWorks.AI.PageEvaluator.Workspace"
       }
     ],
-    element: () => import("./evaluator-form.element-Bf1NfvT3.js").then((e) => ({
+    element: () => import("./evaluator-form.element-DQ239olk.js").then((e) => ({
       element: e.EvaluatorFormElement
     }))
   }
-], x = (e) => {
-  console.log("[ProWorks.AI.PageEvaluator] onInit called — registering", c.length, "extensions"), m.registerMany(c);
-}, M = (e, t) => {
+], O = (e) => {
+  console.log("[ProWorks.AI.PageEvaluator] onInit called — registering", c.length, "extensions"), p.registerMany(c);
+}, x = (e, t) => {
   for (const a of c)
-    m.unregister(a.alias);
+    p.unregister(a.alias);
 };
 export {
   s as B,
-  k as a,
-  b,
+  W as a,
+  n as b,
   w as c,
-  U as d,
-  _ as e,
-  O as f,
-  R as g,
-  n as h,
-  $ as i,
-  M as j,
-  x as o,
-  T as r,
-  W as u
+  b as d,
+  R as e,
+  T as f,
+  U as g,
+  k as h,
+  I as i,
+  x as j,
+  O as o,
+  _ as r,
+  $ as u
 };
-//# sourceMappingURL=entry-point-B8f0za1V.js.map
+//# sourceMappingURL=entry-point-DskGGDu6.js.map
