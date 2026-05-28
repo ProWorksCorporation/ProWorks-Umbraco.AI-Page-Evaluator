@@ -1,6 +1,6 @@
 import { property as m, state as s, customElement as f, html as o, nothing as p, css as x } from "@umbraco-cms/backoffice/external/lit";
 import { UmbLitElement as v } from "@umbraco-cms/backoffice/lit-element";
-import { f as b, c as $, h as y, B as _, u as T, i as C } from "./entry-point-B8f0za1V.js";
+import { f as b, h as $, b as y, B as _, u as T, c as C } from "./entry-point-DskGGDu6.js";
 const g = [
   {
     id: "required-fields",
@@ -320,7 +320,9 @@ let l = class extends v {
       this._docTypeSuggestions = [], this._docTypeShowSuggestions = !1;
       return;
     }
-    this._docTypeSearchTimer = setTimeout(() => void this._searchDocTypes(t), 250);
+    this._docTypeSearchTimer = setTimeout(() => {
+      this._searchDocTypes(t);
+    }, 250);
   }
   async _searchDocTypes(e) {
     try {
@@ -481,7 +483,9 @@ let l = class extends v {
                 <div class="doc-type-suggestions">
                   ${this._docTypeSuggestions.map((e) => o`
                     <div class="doc-type-suggestion"
-                      @mousedown=${() => void this._selectDocType(e.id, e.name)}>
+                      @mousedown=${() => {
+      this._selectDocType(e.id, e.name);
+    }}>
                       <span>${e.name}</span>
                       ${e.alias ? o`<span class="doc-type-suggestion-alias">${e.alias}</span>` : p}
                     </div>
@@ -821,4 +825,4 @@ l = n([
 export {
   l as EvaluatorFormElement
 };
-//# sourceMappingURL=evaluator-form.element-Bf1NfvT3.js.map
+//# sourceMappingURL=evaluator-form.element-DQ239olk.js.map

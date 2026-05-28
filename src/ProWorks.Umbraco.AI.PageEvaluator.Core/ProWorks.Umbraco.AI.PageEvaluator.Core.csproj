@@ -14,7 +14,7 @@
   <ItemGroup>
     <!-- Core Umbraco interfaces (IContentTypeService, etc.) -->
     <!-- Verify version against target Umbraco installation before building -->
-    <PackageReference Include="Umbraco.Cms.Core" Version="17.4.0" />
+    <PackageReference Include="Umbraco.Cms.Core" Version="17.4.2" />
   </ItemGroup>
 
 </Project>

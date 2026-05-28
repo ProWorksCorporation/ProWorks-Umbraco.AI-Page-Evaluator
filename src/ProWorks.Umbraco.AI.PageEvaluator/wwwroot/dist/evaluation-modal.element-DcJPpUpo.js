@@ -1,7 +1,7 @@
 import { css as z, property as m, state as g, customElement as $, nothing as c, html as s } from "@umbraco-cms/backoffice/external/lit";
 import { UmbModalBaseElement as A } from "@umbraco-cms/backoffice/modal";
 import { UMB_DOCUMENT_WORKSPACE_CONTEXT as k } from "@umbraco-cms/backoffice/document";
-import { r as E, g as S, e as R } from "./entry-point-B8f0za1V.js";
+import { r as E, g as S, e as R } from "./entry-point-DskGGDu6.js";
 import { resolveEntityAdapterByType as O } from "@umbraco-ai/core";
 import { UmbLitElement as P } from "@umbraco-cms/backoffice/lit-element";
 var F = Object.defineProperty, D = Object.getOwnPropertyDescriptor, d = (e, t, i, r) => {
@@ -185,8 +185,7 @@ let u = class extends P {
         `;
       case "result":
         return s`${i.map((r) => {
-          var n;
-          const a = ((n = this._appliedAliases.get(e.checkNumber)) == null ? void 0 : n.has(r)) ?? !1, o = t.values[r] ?? null;
+          const a = this._appliedAliases.get(e.checkNumber)?.has(r) ?? !1, o = t.values[r] ?? null;
           return this._renderRecBox(e, r, o, a, this._canApply(r));
         })}`;
       case "error":
@@ -210,8 +209,7 @@ let u = class extends P {
     }
   }
   _renderRecBox(e, t, i, r, a) {
-    var l;
-    const o = ((l = this._copiedAliases.get(e.checkNumber)) == null ? void 0 : l.has(t)) ?? !1, n = this._resolveCurrentValue(t);
+    const o = this._copiedAliases.get(e.checkNumber)?.has(t) ?? !1, n = this._resolveCurrentValue(t);
     return s`
       <div class="rec-box ${r ? "applied" : ""}">
         ${n ? s`
@@ -269,8 +267,7 @@ let u = class extends P {
     this._recStates = new Map(this._recStates).set(e, t);
   }
   async _handleGenerate(e) {
-    var i;
-    if (!((i = e.propertyAliases) != null && i.length)) return;
+    if (!e.propertyAliases?.length) return;
     this._setRecState(e.checkNumber, { kind: "generating" });
     const t = {
       nodeId: this.nodeId,
@@ -278,13 +275,13 @@ let u = class extends P {
       checkLabel: e.label,
       checkExplanation: e.explanation ?? null,
       properties: Object.fromEntries(
-        Object.entries(this.properties).map(([r, a]) => [r, String(a ?? "")])
+        Object.entries(this.properties).map(([i, r]) => [i, String(r ?? "")])
       )
     };
     try {
-      const r = await E(t);
+      const i = await E(t);
       if (!this.isConnected) return;
-      this._setRecState(e.checkNumber, { kind: "result", values: r.recommendedValues });
+      this._setRecState(e.checkNumber, { kind: "result", values: i.recommendedValues });
     } catch {
       if (!this.isConnected) return;
       this._setRecState(e.checkNumber, { kind: "error" });
@@ -809,7 +806,7 @@ let h = class extends A {
   async _applyRecommendation(e, t) {
     if (!this._workspaceContext) return;
     const i = await O("document");
-    this.isConnected && i != null && i.applyValueChange && await i.applyValueChange(this._workspaceContext, { path: e, value: t });
+    this.isConnected && i?.applyValueChange && await i.applyValueChange(this._workspaceContext, { path: e, value: t });
   }
   render() {
     return s`
@@ -834,7 +831,6 @@ let h = class extends A {
     `;
   }
   _renderBody() {
-    var e, t, i, r, a, o, n;
     switch (this._modalState) {
       case "idle":
         return c;
@@ -850,19 +846,19 @@ let h = class extends A {
           ${this._renderCacheBar()}
           <page-evaluator-report
             .report="${this._report}"
-            .nodeId="${((e = this.data) == null ? void 0 : e.nodeId) ?? ""}"
-            .properties="${((t = this.data) == null ? void 0 : t.properties) ?? {}}"
-            .propertyEditorAliases="${((i = this._report) == null ? void 0 : i.propertyEditorAliases) ?? {}}"
-            .propertyNames="${((r = this._report) == null ? void 0 : r.propertyNames) ?? {}}"
-            .recommendationsEnabled="${((a = this._report) == null ? void 0 : a.recommendationsEnabled) ?? !0}"
-            .additionalRecommendableEditorAliases="${((o = this._report) == null ? void 0 : o.additionalRecommendableEditorAliases) ?? []}">
+            .nodeId="${this.data?.nodeId ?? ""}"
+            .properties="${this.data?.properties ?? {}}"
+            .propertyEditorAliases="${this._report?.propertyEditorAliases ?? {}}"
+            .propertyNames="${this._report?.propertyNames ?? {}}"
+            .recommendationsEnabled="${this._report?.recommendationsEnabled ?? !0}"
+            .additionalRecommendableEditorAliases="${this._report?.additionalRecommendableEditorAliases ?? []}">
           </page-evaluator-report>
         `;
       case "parse-failed":
         return s`
           ${this._renderCacheBar()}
           <page-evaluator-warning
-            .rawResponse="${((n = this._report) == null ? void 0 : n.rawResponse) ?? null}"></page-evaluator-warning>
+            .rawResponse="${this._report?.rawResponse ?? null}"></page-evaluator-warning>
         `;
       case "guardrail-blocked":
         return s`
@@ -887,8 +883,7 @@ let h = class extends A {
     }
   }
   _renderCacheBar() {
-    var t;
-    const e = (t = this._report) == null ? void 0 : t.cachedAt;
+    const e = this._report?.cachedAt;
     return e ? s`
       <div class="cache-bar">
         <span>${this.localize.term("evaluatePage_lastEvaluated")} ${this._formatCachedAt(e)}</span>
@@ -943,4 +938,4 @@ h = v([
 export {
   h as EvaluationModalElement
 };
-//# sourceMappingURL=evaluation-modal.element-L15MXyQg.js.map
+//# sourceMappingURL=evaluation-modal.element-DcJPpUpo.js.map

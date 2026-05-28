@@ -12,7 +12,7 @@
     <AddRazorSupportForMvc>false</AddRazorSupportForMvc>
     <!-- NuGet packaging -->
     <PackageId>ProWorks.Umbraco.AI.PageEvaluator</PackageId>
-    <Version>1.0.19</Version>
+    <Version>1.0.20</Version>
     <Authors>ProWorks, Jason Prothero</Authors>
     <Company>ProWorks Corporation</Company>
     <PackageTags>umbraco;umbraco-marketplace;umbraco-cms;umbraco-ai;ai;page-evaluator;backoffice</PackageTags>
@@ -45,9 +45,9 @@
   <ItemGroup>
     <!-- Umbraco.AI.Core provides IAIProfileService and IAIContextService -->
     <!-- Verify version against installed Umbraco.AI package before building -->
-    <PackageReference Include="Umbraco.AI.Core" Version="1.11.0" />
+    <PackageReference Include="Umbraco.AI.Core" Version="1.12.0" />
     <!-- Umbraco.AI.Startup provides UmbracoAIComposer (required for [ComposeAfter]) -->
-    <PackageReference Include="Umbraco.AI.Startup" Version="1.11.0" />
+    <PackageReference Include="Umbraco.AI.Startup" Version="1.12.0" />
     <!-- Pin Microsoft.Extensions.AI packages to 10.6.0 — required by Umbraco.AI.Core 1.11.0
          and Anthropic 12.20.1. Both packages must be the same version. -->
     <PackageReference Include="Microsoft.Extensions.AI" Version="10.6.0" />

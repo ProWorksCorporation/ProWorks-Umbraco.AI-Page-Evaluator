@@ -1,5 +1,5 @@
 import "@umbraco-cms/backoffice/extension-registry";
-import { o as r, j as t } from "./entry-point-B8f0za1V.js";
+import { o as r, j as t } from "./entry-point-DskGGDu6.js";
 export {
   r as onInit,
   t as onUnload
