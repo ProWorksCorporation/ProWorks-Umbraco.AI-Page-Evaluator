@@ -1,7 +1,7 @@
 import { css as z, property as m, state as h, customElement as $, nothing as l, html as s } from "@umbraco-cms/backoffice/external/lit";
 import { UmbModalBaseElement as E } from "@umbraco-cms/backoffice/modal";
 import { UMB_DOCUMENT_WORKSPACE_CONTEXT as k } from "@umbraco-cms/backoffice/document";
-import { r as S, A as R, g as O, e as F } from "./entry-point-Dgd6d9p3.js";
+import { r as S, A as R, g as O, e as F } from "./entry-point-COquEai-.js";
 import { resolveEntityAdapterByType as M } from "@umbraco-ai/core";
 import { UmbLitElement as C } from "@umbraco-cms/backoffice/lit-element";
 const D = {
@@ -955,4 +955,4 @@ g = v([
 export {
   g as EvaluationModalElement
 };
-//# sourceMappingURL=evaluation-modal.element-DHJ0UZEa.js.map
+//# sourceMappingURL=evaluation-modal.element-Dca71XlP.js.map

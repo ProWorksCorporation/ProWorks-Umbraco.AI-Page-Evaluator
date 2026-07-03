@@ -112,6 +112,7 @@ dotnet ef migrations add <Name> \
 - Localization file: `src/.../Client/src/localization/en.ts` — default-exports a **nested** object `{ section: { key: 'value' } }`. Umbraco's `UmbLocalizationRegistry` joins section + underscore + key, so `{ evaluatePage: { actionLabel: 'Evaluate Page' } }` resolves as `this.localize.term('evaluatePage_actionLabel')`
 - **Never** use flat key format (`evaluatePage_actionLabel: 'value'`) in the localization file — the registry expects the nested structure
 - The localization manifest (`type: 'localization'`) is registered in `entry-point.ts` with `meta: { culture: 'en' }` and `js: () => import('./localization/en.js')`
+- **Supported languages**: `en` (source of truth), `es`, `fr`, `da`, `de`, `nb` (Norwegian Bokmål — not `no`), `sv`, `it`, `hi`, `pt` — one file per culture in `src/localization/`, each registered as its own `type: 'localization'` manifest in `entry-point.ts` with a matching `meta: { culture: '<code> }`. Culture codes match Umbraco's own core language files (`Umbraco.Web.UI.Client/src/packages/core/localization/manifests.ts`) — always verify the exact code there before adding a new language rather than guessing (e.g. Norwegian is `nb`, not `no`; Portuguese-Brazil would be `pt-BR`, not `pt`, if ever added as a distinct variant). When adding a new key, update **all** language files, not just `en.ts` — a missing key in a non-English file silently falls back to the raw key name in the backoffice UI rather than erroring.
 - All user-facing strings must go through localization — no hardcoded English strings in component templates
 
 ### Management API Client
@@ -142,6 +143,9 @@ dotnet ef migrations add <Name> \
 - `EvaluationReport.WithCachedAt(DateTime)` returns a copy with `CachedAt` set — used by the controller before returning the response so the frontend knows when the result was cached
 - `EvaluationReport.WithPropertyEditorAliases(IReadOnlyDictionary<string, string>)` returns a copy with `PropertyEditorAliases` set — called by the controller **after** the cache write so the map is never persisted to the cache; always derived fresh from `IContentTypeService` at response time
 - The modal checks `GET /evaluate/cached/{nodeId}` on open; falls through to `POST /evaluate` only when no cache entry exists or when the user clicks **Re-run Evaluation**
+
+### Package Versioning Policy
+- **This package's own NuGet version now tracks the Umbraco.AI package version it targets**, starting at `17.0.0` (changed 2026-07-03 from an independent `1.x` sequence, mirroring how the Umbraco.AI ecosystem itself moved to CMS-aligned versioning). `<Version>` in `ProWorks.Umbraco.AI.PageEvaluator.csproj` and `"version"` in `ProWorks.Umbraco.AI.PageEvaluator.Client/package.json` (plus its `package-lock.json`, kept in sync via `npm install` after any manual `package.json` version edit) must always match. The last package under the old scheme was `1.0.20` (nupkg for `1.0.19` is the latest actually published; `1.0.20` was staged but never packed/pushed). Future bumps: when Umbraco.AI's own major/minor version changes, bump this package's version to match; use the patch digit for this package's own fixes/features that don't correspond to an Umbraco.AI version bump.
 
 ### Package Version Constraints
 - **All** `Microsoft.Extensions.AI*` packages must be pinned to `10.7.0` — required by `Umbraco.AI.Core 17.0.0`'s `[10.7.0, 10.999.999)` range and Anthropic SDK `12.29.1` (pulled by `Umbraco.AI.Anthropic 17.0.0`). Do NOT downgrade below `10.7.0`.

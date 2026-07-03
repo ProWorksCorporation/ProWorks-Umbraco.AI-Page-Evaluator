@@ -46,6 +46,87 @@ const manifests: UmbExtensionManifest[] = [
     },
     js: () => import('./localization/en.js'),
   },
+  {
+    type: 'localization',
+    alias: 'ProWorks.AI.PageEvaluator.Localization.Es',
+    name: 'Page Evaluator Spanish Localization',
+    meta: {
+      culture: 'es',
+    },
+    js: () => import('./localization/es.js'),
+  },
+  {
+    type: 'localization',
+    alias: 'ProWorks.AI.PageEvaluator.Localization.Fr',
+    name: 'Page Evaluator French Localization',
+    meta: {
+      culture: 'fr',
+    },
+    js: () => import('./localization/fr.js'),
+  },
+  {
+    type: 'localization',
+    alias: 'ProWorks.AI.PageEvaluator.Localization.Da',
+    name: 'Page Evaluator Danish Localization',
+    meta: {
+      culture: 'da',
+    },
+    js: () => import('./localization/da.js'),
+  },
+  {
+    type: 'localization',
+    alias: 'ProWorks.AI.PageEvaluator.Localization.De',
+    name: 'Page Evaluator German Localization',
+    meta: {
+      culture: 'de',
+    },
+    js: () => import('./localization/de.js'),
+  },
+  {
+    type: 'localization',
+    alias: 'ProWorks.AI.PageEvaluator.Localization.Nb',
+    name: 'Page Evaluator Norwegian Localization',
+    meta: {
+      culture: 'nb',
+    },
+    js: () => import('./localization/nb.js'),
+  },
+  {
+    type: 'localization',
+    alias: 'ProWorks.AI.PageEvaluator.Localization.Sv',
+    name: 'Page Evaluator Swedish Localization',
+    meta: {
+      culture: 'sv',
+    },
+    js: () => import('./localization/sv.js'),
+  },
+  {
+    type: 'localization',
+    alias: 'ProWorks.AI.PageEvaluator.Localization.It',
+    name: 'Page Evaluator Italian Localization',
+    meta: {
+      culture: 'it',
+    },
+    js: () => import('./localization/it.js'),
+  },
+  {
+    type: 'localization',
+    alias: 'ProWorks.AI.PageEvaluator.Localization.Hi',
+    name: 'Page Evaluator Hindi Localization',
+    meta: {
+      culture: 'hi',
+    },
+    js: () => import('./localization/hi.js'),
+  },
+  {
+    type: 'localization',
+    alias: 'ProWorks.AI.PageEvaluator.Localization.Pt',
+    name: 'Page Evaluator Portuguese Localization',
+    meta: {
+      culture: 'pt',
+    },
+    js: () => import('./localization/pt.js'),
+  },
 
   // ---------------------------------------------------------------------------
   // US1 — Content Editor Evaluates a Page
