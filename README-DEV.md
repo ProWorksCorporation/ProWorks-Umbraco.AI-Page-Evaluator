@@ -77,7 +77,7 @@ After a fresh clone, import the demo content via **Settings → uSync → Import
 dotnet test
 ```
 
-The test suite covers controller error handling, service behavior, persistence mapping, cache invalidation, notification handling, and the Umbraco.AI test feature integration (215 tests, xUnit + NSubstitute).
+The test suite covers controller error handling, service behavior, persistence mapping, cache invalidation, notification handling, and the Umbraco.AI test feature integration (226 tests, xUnit + NSubstitute).
 
 ### Build the NuGet package
 
@@ -253,15 +253,25 @@ This means you can create a dedicated AI profile for page evaluation that omits 
 
 ### Error response mapping
 
+Umbraco.AI 17.0.0 wraps every provider chat client in an `AIErrorClassifyingChatClient` decorator, so provider SDK exceptions (`HttpRequestException`, Anthropic overloads, rate limits, auth failures, etc.) never reach this controller raw — they arrive as a single `Umbraco.AI.Core.Providers.Errors.AIProviderException` with a `Category` enum. The controller's `MapProviderError` helper classifies each into one of four editor-facing buckets, returned as both an HTTP status and a `category` field in the JSON body (the client uses `category`, not the status code, to pick the message — `authenticationConfiguration` and `unclassified` deliberately share HTTP 500):
+
+| `AIProviderException.Category` | HTTP status | `category` (response body) | Client message |
+|---|---|---|---|
+| `Transient`, `RateLimited` | 503 | `temporaryRetryable` | "temporarily unavailable, try again in a moment" |
+| `NetworkError` | 502 | `connectivity` | "could not reach the AI provider, check your connection" |
+| `Authentication` | 500 | `authenticationConfiguration` | "AI connection needs attention, contact your administrator" |
+| `InvalidRequest`, `NotFound`, `Unknown` | 500 | `unclassified` | generic error + Retry button |
+
+**Every non-2xx response body from this controller (other than 404) must include `type` (literal `"Error"`) and `status` (the same status code passed to `StatusCode(...)`), not just `title`/`category`.** Umbraco's backoffice binds a global response interceptor to the shared `umbHttpClient` singleton used by every extension; for any non-2xx, non-401/403/404 response it checks whether the body looks like an RFC 7807 `ProblemDetails` object (`type`, `title`, and `status` all present) and, if not, **silently discards the real body and substitutes its own generic "fatal server error" fallback** — stripping `category` before the client ever sees it. This bit us during manual QA: the server log and raw network response were both correct, but the modal rendered the generic fallback message anyway. `MapProviderError`'s callers, the guardrail 422 responses, and the generic 500 fallback all include `type`/`status` for this reason.
+
 #### POST /evaluate
 
 | Condition | HTTP status | Client behavior |
 |---|---|---|
 | No active config for document type | 404 | Modal shows "no configuration" message |
 | Guardrail policy blocked content | 422 | Modal shows guardrail reason message |
-| AI provider HTTP error | 502 | Modal shows generic error + Retry button |
-| AI provider temporarily overloaded (e.g. Anthropic 529) | 503 | Modal shows "temporarily unavailable" + Retry button |
-| Unexpected server error | 500 | Modal shows generic error + Retry button |
+| AI provider error (see category table above) | 502/503/500 | Modal shows the category-specific message + Retry button |
+| Unexpected server error (not an `AIProviderException`) | 500 | Modal shows generic error + Retry button |
 
 #### POST /recommend
 
@@ -272,11 +282,10 @@ This means you can create a dedicated AI profile for page evaluation that omits 
 | `propertyAliases` array is empty | 400 | Recommendation button shows error state |
 | Any alias not found on document type | 400 | Recommendation button shows error state |
 | Guardrail policy blocked content | 422 | Recommendation button shows error state |
-| AI provider HTTP error | 502 | Recommendation button shows error state |
-| AI provider temporarily overloaded | 503 | Recommendation button shows error state |
-| Unexpected server error | 500 | Recommendation button shows error state |
+| AI provider error (see category table above) | 502/503/500 | Recommendation button shows the category-specific message |
+| Unexpected server error (not an `AIProviderException`) | 500 | Recommendation button shows generic error state |
 
-Provider error details are never forwarded to the client to avoid leaking API key or account information.
+Provider error details (`ProviderCode`, raw exception message/stack trace) are never forwarded to the client — only the classified `category` and a package-composed, non-provider-specific `title` are returned. Full detail is logged server-side (`ILogger`) for diagnostics.
 
 ---
 

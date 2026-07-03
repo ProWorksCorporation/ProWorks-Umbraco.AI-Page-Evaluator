@@ -17,6 +17,7 @@ using Umbraco.AI.Core.Contexts;
 using Umbraco.AI.Core.Guardrails;
 using Umbraco.AI.Core.InlineChat;
 using Umbraco.AI.Core.Profiles;
+using Umbraco.AI.Core.Providers.Errors;
 using Umbraco.Cms.Core.Actions;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Security.Authorization;
@@ -371,23 +372,19 @@ public sealed class PageEvaluatorApiController : ControllerBase
         catch (AIGuardrailBlockedException ex)
         {
             _logger.LogInformation(ex, "[PageEvaluator] Guardrail blocked evaluation of node {NodeId}.", request.NodeId);
-            return UnprocessableEntity(new { title = ex.Message });
+            return UnprocessableEntity(new { type = "Error", title = ex.Message, status = StatusCodes.Status422UnprocessableEntity });
         }
-        catch (HttpRequestException ex)
+        catch (AIProviderException ex)
         {
-            _logger.LogError(ex, "[PageEvaluator] AI provider HTTP error during evaluation of node {NodeId}.", request.NodeId);
-            return StatusCode(502, new { title = "The AI provider returned an error. Please try again later." });
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException && ex.GetType().Name.EndsWith("5xxException", StringComparison.Ordinal))
-        {
-            // Anthropic.Exceptions.Anthropic5xxException (e.g. 529 Overloaded) — transient, safe to retry
-            _logger.LogWarning(ex, "[PageEvaluator] AI provider temporarily unavailable for node {NodeId}.", request.NodeId);
-            return StatusCode(503, new { title = "The AI provider is temporarily unavailable. Please try again in a moment." });
+            (int status, string category, string title) = MapProviderError(ex);
+            _logger.LogError(ex, "[PageEvaluator] AI provider error ({Category}, {ProviderCode}) during evaluation of node {NodeId}.",
+                ex.Category, ex.ProviderCode, request.NodeId);
+            return StatusCode(status, new { type = "Error", title, status, category });
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             _logger.LogError(ex, "[PageEvaluator] Unexpected error during evaluation of node {NodeId}.", request.NodeId);
-            return StatusCode(500, new { title = "An unexpected error occurred during evaluation. Please try again later." });
+            return StatusCode(500, new { type = "Error", title = "An unexpected error occurred during evaluation. Please try again later.", status = StatusCodes.Status500InternalServerError });
         }
     }
 
@@ -467,22 +464,19 @@ public sealed class PageEvaluatorApiController : ControllerBase
         catch (AIGuardrailBlockedException ex)
         {
             _logger.LogInformation(ex, "[PageEvaluator] Guardrail blocked recommendation for node {NodeId}.", request.NodeId);
-            return UnprocessableEntity(new { title = ex.Message });
+            return UnprocessableEntity(new { type = "Error", title = ex.Message, status = StatusCodes.Status422UnprocessableEntity });
         }
-        catch (HttpRequestException ex)
+        catch (AIProviderException ex)
         {
-            _logger.LogError(ex, "[PageEvaluator] AI provider HTTP error during recommendation for node {NodeId}.", request.NodeId);
-            return StatusCode(502, new { title = "The AI provider returned an error. Please try again later." });
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException && ex.GetType().Name.EndsWith("5xxException", StringComparison.Ordinal))
-        {
-            _logger.LogWarning(ex, "[PageEvaluator] AI provider temporarily unavailable for node {NodeId}.", request.NodeId);
-            return StatusCode(503, new { title = "The AI provider is temporarily unavailable. Please try again in a moment." });
+            (int status, string category, string title) = MapProviderError(ex);
+            _logger.LogError(ex, "[PageEvaluator] AI provider error ({Category}, {ProviderCode}) during recommendation for node {NodeId}.",
+                ex.Category, ex.ProviderCode, request.NodeId);
+            return StatusCode(status, new { type = "Error", title, status, category });
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             _logger.LogError(ex, "[PageEvaluator] Unexpected error during recommendation for node {NodeId}.", request.NodeId);
-            return StatusCode(500, new { title = "An unexpected error occurred. Please try again later." });
+            return StatusCode(500, new { type = "Error", title = "An unexpected error occurred. Please try again later.", status = StatusCodes.Status500InternalServerError });
         }
     }
 
@@ -574,6 +568,33 @@ public sealed class PageEvaluatorApiController : ControllerBase
     private Guid GetCurrentUserKey()
         => HttpContext.User.Identity?.GetUserKey()
             ?? throw new InvalidOperationException("Authenticated user key not found on the current request.");
+
+    /// <summary>
+    /// Maps an <see cref="AIProviderErrorCategory"/> to the HTTP status and wire-format
+    /// category string returned to the editor. See contracts/evaluate-recommend-error-responses.md
+    /// in the 004-upgrade-umbraco-ai-uui feature for the authoritative mapping table.
+    /// No default arm: a future addition to <see cref="AIProviderErrorCategory"/> must be a
+    /// compiler error here, not a silent fallthrough.
+    /// </summary>
+    private static (int Status, string Category, string Title) MapProviderError(AIProviderException ex) => ex.Category switch
+    {
+        AIProviderErrorCategory.Transient or AIProviderErrorCategory.RateLimited =>
+            (StatusCodes.Status503ServiceUnavailable, "temporaryRetryable",
+                "The AI provider is temporarily unavailable. Please try again in a moment."),
+        AIProviderErrorCategory.NetworkError =>
+            (StatusCodes.Status502BadGateway, "connectivity",
+                "Could not reach the AI provider. Please check your connection and try again."),
+        AIProviderErrorCategory.Authentication =>
+            (StatusCodes.Status500InternalServerError, "authenticationConfiguration",
+                "The AI connection needs attention. Contact your administrator to check the AI profile's credentials or configuration."),
+        AIProviderErrorCategory.InvalidRequest or AIProviderErrorCategory.NotFound or AIProviderErrorCategory.Unknown =>
+            (StatusCodes.Status500InternalServerError, "unclassified",
+                "An unexpected error occurred. Please try again later."),
+        AIProviderErrorCategory.Cancelled =>
+            throw new InvalidOperationException(
+                "AIProviderErrorCategory.Cancelled should never reach this mapping — cancellation propagates as OperationCanceledException."),
+        _ => throw new ArgumentOutOfRangeException(nameof(ex), ex.Category, "Unhandled AIProviderErrorCategory value."),
+    };
 
     private async Task<string?> GetRecommendationAsync(
         AIEvaluatorConfig config,

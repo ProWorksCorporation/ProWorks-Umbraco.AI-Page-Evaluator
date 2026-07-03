@@ -34,6 +34,12 @@ export default {
     // Modal: AI error
     aiErrorMessage:
       'The evaluation could not be completed. The AI provider returned an error.',
+    temporaryRetryableMessage:
+      'The AI provider is temporarily unavailable. Please try again in a moment.',
+    connectivityMessage:
+      'Could not reach the AI provider. Please check your connection and try again.',
+    authenticationConfigurationMessage:
+      "The AI connection needs attention. Contact your administrator to check the AI profile's credentials or configuration.",
     retryButton: 'Retry',
 
     // Modal: guardrail block

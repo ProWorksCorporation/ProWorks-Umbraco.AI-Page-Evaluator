@@ -43,7 +43,6 @@ export class EvaluatorFormElement extends UmbLitElement {
   // Validation errors keyed by field name
   @state() _errors: Record<string, string> = {};
 
-  @state() private _saving = false;
   @state() private _loadError: string | null = null;
   @state() private _promptBuilderOpen = false;
 
@@ -342,7 +341,6 @@ export class EvaluatorFormElement extends UmbLitElement {
 
     if (Object.keys(this._errors).length > 0) return;
 
-    this._saving = true;
     this.dispatchEvent(new CustomEvent('evaluator-save-start', { bubbles: true, composed: true }));
     try {
       const saved: EvaluatorConfigItem = this.configId
@@ -384,7 +382,6 @@ export class EvaluatorFormElement extends UmbLitElement {
         this._errors['_form'] = err.message;
       }
     } finally {
-      this._saving = false;
       this.dispatchEvent(new CustomEvent('evaluator-save-end', { bubbles: true, composed: true }));
     }
   }

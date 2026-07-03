@@ -6,4 +6,4 @@ export type RecommendationState =
   | { readonly kind: 'idle' }
   | { readonly kind: 'generating' }
   | { readonly kind: 'result'; readonly values: Record<string, string | null> }
-  | { readonly kind: 'error' };
+  | { readonly kind: 'error'; readonly category?: string | null };

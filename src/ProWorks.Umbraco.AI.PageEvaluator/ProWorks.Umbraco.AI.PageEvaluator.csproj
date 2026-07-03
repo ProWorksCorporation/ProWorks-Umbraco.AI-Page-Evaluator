@@ -12,7 +12,7 @@
     <AddRazorSupportForMvc>false</AddRazorSupportForMvc>
     <!-- NuGet packaging -->
     <PackageId>ProWorks.Umbraco.AI.PageEvaluator</PackageId>
-    <Version>1.0.20</Version>
+    <Version>17.0.0</Version>
     <Authors>ProWorks, Jason Prothero</Authors>
     <Company>ProWorks Corporation</Company>
     <PackageTags>umbraco;umbraco-marketplace;umbraco-cms;umbraco-ai;ai;page-evaluator;backoffice</PackageTags>
@@ -21,7 +21,7 @@
     <Copyright>Copyright (c) $([System.DateTime]::UtcNow.ToString(`yyyy`)) ProWorks Corporation</Copyright>
     <PackageReadmeFile>README.nuget.md</PackageReadmeFile>
     <PackageProjectUrl>https://github.com/ProWorksCorporation/ProWorks-Umbraco.AI-Page-Evaluator</PackageProjectUrl>
-    <PackageReleaseNotes>AI-powered page evaluation for the Umbraco 17 Umbraco.ai framework with configurable per-document-type prompts, structured scoring, evaluation caching, and back-office workspace action.</PackageReleaseNotes>
+    <PackageReleaseNotes>Version numbering now tracks the Umbraco.AI package version it targets (starting at 17.0.0), replacing the prior independent 1.x sequence. Upgraded to Umbraco CMS 17.5.1, Umbraco.AI 17.0.0, and @umbraco-ui/uui 1.18.1. AI provider failures are now classified into distinct, localized error messages (temporary/retryable, connectivity, authentication/configuration, unclassified) driven by AIProviderException.Category. Added Spanish, French, Danish, German, Norwegian, Swedish, Italian, Hindi, and Portuguese localizations alongside English.</PackageReleaseNotes>
     <RepositoryUrl>https://github.com/ProWorksCorporation/ProWorks-Umbraco.AI-Page-Evaluator</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
   </PropertyGroup>
@@ -45,13 +45,13 @@
   <ItemGroup>
     <!-- Umbraco.AI.Core provides IAIProfileService and IAIContextService -->
     <!-- Verify version against installed Umbraco.AI package before building -->
-    <PackageReference Include="Umbraco.AI.Core" Version="1.12.0" />
+    <PackageReference Include="Umbraco.AI.Core" Version="17.0.0" />
     <!-- Umbraco.AI.Startup provides UmbracoAIComposer (required for [ComposeAfter]) -->
-    <PackageReference Include="Umbraco.AI.Startup" Version="1.12.0" />
-    <!-- Pin Microsoft.Extensions.AI packages to 10.6.0 — required by Umbraco.AI.Core 1.11.0
-         and Anthropic 12.20.1. Both packages must be the same version. -->
-    <PackageReference Include="Microsoft.Extensions.AI" Version="10.6.0" />
-    <PackageReference Include="Microsoft.Extensions.AI.Abstractions" Version="10.6.0" />
+    <PackageReference Include="Umbraco.AI.Startup" Version="17.0.0" />
+    <!-- Pin Microsoft.Extensions.AI packages to 10.7.0 — required by Umbraco.AI.Core 17.0.0
+         (range [10.7.0, 10.999.999)) and Anthropic 12.29.1. Both packages must be the same version. -->
+    <PackageReference Include="Microsoft.Extensions.AI" Version="10.7.0" />
+    <PackageReference Include="Microsoft.Extensions.AI.Abstractions" Version="10.7.0" />
     <!-- EF Core providers: bundled DLLs need these at runtime in the consuming app -->
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.6" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.6" />

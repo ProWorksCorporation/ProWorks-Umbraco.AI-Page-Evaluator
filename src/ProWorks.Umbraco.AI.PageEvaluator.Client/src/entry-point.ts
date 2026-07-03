@@ -11,6 +11,12 @@
 
 import { umbExtensionsRegistry } from '@umbraco-cms/backoffice/extension-registry';
 import type { UmbEntryPointOnInit, UmbEntryPointOnUnload } from '@umbraco-cms/backoffice/extension-api';
+// Type-only import: pulls `ManifestLocalization` into the global `UmbExtensionManifestMap`
+// union (declaration merging only applies to files TypeScript actually includes in the
+// program — this package doesn't import runtime code from `@umbraco-cms/backoffice/localization`,
+// so without this the compiler falls back to checking our 'localization' manifest literal
+// against the generic `ManifestBase` and rejects the `meta` property).
+import type {} from '@umbraco-cms/backoffice/localization';
 import {
   PageEvaluatorActiveConfigCondition,
   PROWORKS_AI_ACTIVE_CONFIG_CONDITION_ALIAS,
@@ -39,6 +45,87 @@ const manifests: UmbExtensionManifest[] = [
       culture: 'en',
     },
     js: () => import('./localization/en.js'),
+  },
+  {
+    type: 'localization',
+    alias: 'ProWorks.AI.PageEvaluator.Localization.Es',
+    name: 'Page Evaluator Spanish Localization',
+    meta: {
+      culture: 'es',
+    },
+    js: () => import('./localization/es.js'),
+  },
+  {
+    type: 'localization',
+    alias: 'ProWorks.AI.PageEvaluator.Localization.Fr',
+    name: 'Page Evaluator French Localization',
+    meta: {
+      culture: 'fr',
+    },
+    js: () => import('./localization/fr.js'),
+  },
+  {
+    type: 'localization',
+    alias: 'ProWorks.AI.PageEvaluator.Localization.Da',
+    name: 'Page Evaluator Danish Localization',
+    meta: {
+      culture: 'da',
+    },
+    js: () => import('./localization/da.js'),
+  },
+  {
+    type: 'localization',
+    alias: 'ProWorks.AI.PageEvaluator.Localization.De',
+    name: 'Page Evaluator German Localization',
+    meta: {
+      culture: 'de',
+    },
+    js: () => import('./localization/de.js'),
+  },
+  {
+    type: 'localization',
+    alias: 'ProWorks.AI.PageEvaluator.Localization.Nb',
+    name: 'Page Evaluator Norwegian Localization',
+    meta: {
+      culture: 'nb',
+    },
+    js: () => import('./localization/nb.js'),
+  },
+  {
+    type: 'localization',
+    alias: 'ProWorks.AI.PageEvaluator.Localization.Sv',
+    name: 'Page Evaluator Swedish Localization',
+    meta: {
+      culture: 'sv',
+    },
+    js: () => import('./localization/sv.js'),
+  },
+  {
+    type: 'localization',
+    alias: 'ProWorks.AI.PageEvaluator.Localization.It',
+    name: 'Page Evaluator Italian Localization',
+    meta: {
+      culture: 'it',
+    },
+    js: () => import('./localization/it.js'),
+  },
+  {
+    type: 'localization',
+    alias: 'ProWorks.AI.PageEvaluator.Localization.Hi',
+    name: 'Page Evaluator Hindi Localization',
+    meta: {
+      culture: 'hi',
+    },
+    js: () => import('./localization/hi.js'),
+  },
+  {
+    type: 'localization',
+    alias: 'ProWorks.AI.PageEvaluator.Localization.Pt',
+    name: 'Page Evaluator Portuguese Localization',
+    meta: {
+      culture: 'pt',
+    },
+    js: () => import('./localization/pt.js'),
   },
 
   // ---------------------------------------------------------------------------
@@ -84,7 +171,7 @@ const manifests: UmbExtensionManifest[] = [
       import('./evaluation-modal/evaluation-modal.element.js').then((m) => ({
         element: m.EvaluationModalElement,
       })),
-  },
+  } as UmbExtensionManifest,
 
   // ---------------------------------------------------------------------------
   // US2 — Administrator Configures Evaluator per Document Type
