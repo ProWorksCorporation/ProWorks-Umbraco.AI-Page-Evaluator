@@ -782,6 +782,11 @@ public class PageEvaluatorApiControllerTests
         Assert.Equal(expectedStatus, statusResult.StatusCode);
         string json = System.Text.Json.JsonSerializer.Serialize(statusResult.Value);
         Assert.Contains($"\"category\":\"{expectedCategoryWireValue}\"", json);
+        // Umbraco's backoffice discards any non-2xx/401/403/404 body that isn't RFC 7807-shaped
+        // (type + title + status all present) and silently substitutes its own generic fallback,
+        // stripping `category` before the client ever sees it. Regression guard for that discovery.
+        Assert.Contains("\"type\":\"Error\"", json);
+        Assert.Contains($"\"status\":{expectedStatus}", json);
         Assert.DoesNotContain("provider_code_123", json);
         Assert.DoesNotContain("raw internal detail", json);
     }
@@ -832,6 +837,8 @@ public class PageEvaluatorApiControllerTests
         Assert.Equal(500, statusResult.StatusCode);
         string json = System.Text.Json.JsonSerializer.Serialize(statusResult.Value);
         Assert.DoesNotContain("Object reference", json);
+        Assert.Contains("\"type\":\"Error\"", json);
+        Assert.Contains("\"status\":500", json);
     }
 
     // ---------------------------------------------------------------------------
@@ -864,6 +871,8 @@ public class PageEvaluatorApiControllerTests
         var unprocessable = Assert.IsType<UnprocessableEntityObjectResult>(result);
         string json = System.Text.Json.JsonSerializer.Serialize(unprocessable.Value);
         Assert.Contains("blocked by a guardrail policy", json);
+        Assert.Contains("\"type\":\"Error\"", json);
+        Assert.Contains("\"status\":422", json);
     }
 
     // ---------------------------------------------------------------------------
@@ -1896,7 +1905,10 @@ public class PageEvaluatorApiControllerTests
             CheckLabel = "Meta description is missing",
         });
 
-        Assert.IsType<UnprocessableEntityObjectResult>(result);
+        var unprocessable = Assert.IsType<UnprocessableEntityObjectResult>(result);
+        string json = System.Text.Json.JsonSerializer.Serialize(unprocessable.Value);
+        Assert.Contains("\"type\":\"Error\"", json);
+        Assert.Contains("\"status\":422", json);
     }
 
     [Theory]
@@ -1941,6 +1953,8 @@ public class PageEvaluatorApiControllerTests
         Assert.Equal(expectedStatus, obj.StatusCode);
         string json = System.Text.Json.JsonSerializer.Serialize(obj.Value);
         Assert.Contains($"\"category\":\"{expectedCategoryWireValue}\"", json);
+        Assert.Contains("\"type\":\"Error\"", json);
+        Assert.Contains($"\"status\":{expectedStatus}", json);
         Assert.DoesNotContain("provider_code_789", json);
         Assert.DoesNotContain("raw internal detail", json);
     }
@@ -2014,6 +2028,8 @@ public class PageEvaluatorApiControllerTests
         Assert.Equal(500, obj.StatusCode);
         string json = System.Text.Json.JsonSerializer.Serialize(obj.Value);
         Assert.DoesNotContain("Unexpected internal failure", json);
+        Assert.Contains("\"type\":\"Error\"", json);
+        Assert.Contains("\"status\":500", json);
     }
 
     [Fact]
