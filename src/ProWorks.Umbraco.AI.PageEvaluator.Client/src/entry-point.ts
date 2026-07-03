@@ -11,6 +11,12 @@
 
 import { umbExtensionsRegistry } from '@umbraco-cms/backoffice/extension-registry';
 import type { UmbEntryPointOnInit, UmbEntryPointOnUnload } from '@umbraco-cms/backoffice/extension-api';
+// Type-only import: pulls `ManifestLocalization` into the global `UmbExtensionManifestMap`
+// union (declaration merging only applies to files TypeScript actually includes in the
+// program — this package doesn't import runtime code from `@umbraco-cms/backoffice/localization`,
+// so without this the compiler falls back to checking our 'localization' manifest literal
+// against the generic `ManifestBase` and rejects the `meta` property).
+import type {} from '@umbraco-cms/backoffice/localization';
 import {
   PageEvaluatorActiveConfigCondition,
   PROWORKS_AI_ACTIVE_CONFIG_CONDITION_ALIAS,
@@ -84,7 +90,7 @@ const manifests: UmbExtensionManifest[] = [
       import('./evaluation-modal/evaluation-modal.element.js').then((m) => ({
         element: m.EvaluationModalElement,
       })),
-  },
+  } as UmbExtensionManifest,
 
   // ---------------------------------------------------------------------------
   // US2 — Administrator Configures Evaluator per Document Type

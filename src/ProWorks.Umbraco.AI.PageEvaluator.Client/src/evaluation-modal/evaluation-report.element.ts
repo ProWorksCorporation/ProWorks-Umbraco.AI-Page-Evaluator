@@ -1,7 +1,8 @@
 import { html, css, nothing, state, type TemplateResult, customElement, property } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import type { EvaluationReportResponse, CheckResult, CheckStatus, AxisScore } from '../shared/types.js';
-import { recommend } from '../shared/api-client.js';
+import { recommend, ApiError } from '../shared/api-client.js';
+import { localizationKeyForErrorCategory } from '../shared/error-category.js';
 import type { RecommendRequest } from '../shared/types.js';
 import type { RecommendationState } from './recommendation-state.js';
 
@@ -580,12 +581,13 @@ export class EvaluationReportElement extends UmbLitElement {
           const value = state.values[alias] ?? null;
           return this._renderRecBox(check, alias, value, applied, this._canApply(alias));
         })}`;
-      case 'error':
+      case 'error': {
+        const messageKey = localizationKeyForErrorCategory(state.category, 'evaluatePage_recError');
         return html`
           <div style="display:flex;align-items:center;gap:var(--uui-size-space-2,8px);margin-top:var(--uui-size-space-2,8px);">
             <uui-icon name="icon-alert" style="color:var(--uui-color-danger-standalone,#b91c1c);"></uui-icon>
             <span style="color:var(--uui-color-danger-standalone,#b91c1c);font-size:0.85rem;">
-              ${this.localize.term('evaluatePage_recError')}
+              ${this.localize.term(messageKey)}
             </span>
             <uui-button
               look="secondary"
@@ -596,6 +598,7 @@ export class EvaluationReportElement extends UmbLitElement {
             </uui-button>
           </div>
         `;
+      }
     }
   }
 
@@ -690,9 +693,10 @@ export class EvaluationReportElement extends UmbLitElement {
       const response = await recommend(request);
       if (!this.isConnected) return;
       this._setRecState(check.checkNumber, { kind: 'result', values: response.recommendedValues });
-    } catch {
+    } catch (err) {
       if (!this.isConnected) return;
-      this._setRecState(check.checkNumber, { kind: 'error' });
+      const category = err instanceof ApiError ? err.category : null;
+      this._setRecState(check.checkNumber, { kind: 'error', category });
     }
   }
 

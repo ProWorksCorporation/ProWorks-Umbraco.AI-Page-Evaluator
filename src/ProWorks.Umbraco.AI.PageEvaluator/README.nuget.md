@@ -10,8 +10,8 @@ Adds an **Evaluate Page** workspace action to the Umbraco content editor. Clicki
 
 | Dependency | Version |
 |---|---|
-| Umbraco CMS | 17.4+ |
-| Umbraco.AI | 1.11+ |
+| Umbraco CMS | 17.5+ |
+| Umbraco.AI | 17.0+ |
 | .NET | 10 |
 
 ## Quick Start

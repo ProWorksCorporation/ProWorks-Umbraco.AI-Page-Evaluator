@@ -21,6 +21,7 @@ using Umbraco.AI.Core.Guardrails;
 using Umbraco.AI.Core.Guardrails.Evaluators;
 using Umbraco.AI.Core.InlineChat;
 using Umbraco.AI.Core.Profiles;
+using Umbraco.AI.Core.Providers.Errors;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Web.Common.Authorization;
@@ -172,25 +173,6 @@ public class PageEvaluatorApiControllerTests
         IActionResult result = await _sut.EvaluateAsync(request);
 
         Assert.IsType<NotFoundObjectResult>(result);
-    }
-
-    [Fact]
-    public async Task EvaluateAsync_WhenAiProviderFails_Returns502()
-    {
-        var request = new EvaluatePageRequest
-        {
-            NodeId = Guid.NewGuid(),
-            DocumentTypeAlias = "blogPost",
-            Properties = new(),
-        };
-
-        _evaluationService.EvaluateAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<CancellationToken>())
-            .ThrowsAsync(new HttpRequestException("AI provider returned an error."));
-
-        IActionResult result = await _sut.EvaluateAsync(request);
-
-        var statusResult = Assert.IsType<ObjectResult>(result);
-        Assert.Equal(502, statusResult.StatusCode);
     }
 
     // ---------------------------------------------------------------------------
@@ -766,11 +748,20 @@ public class PageEvaluatorApiControllerTests
     }
 
     // ---------------------------------------------------------------------------
-    // T009: Generic 502 on HttpRequestException (no provider details)
+    // AI provider error classification → editor-facing bucket
+    // (research.md §3, contracts/evaluate-recommend-error-responses.md)
     // ---------------------------------------------------------------------------
 
-    [Fact]
-    public async Task EvaluateAsync_WhenHttpRequestException_Returns502WithGenericMessage()
+    [Theory]
+    [InlineData(AIProviderErrorCategory.Transient, 503, "temporaryRetryable")]
+    [InlineData(AIProviderErrorCategory.RateLimited, 503, "temporaryRetryable")]
+    [InlineData(AIProviderErrorCategory.NetworkError, 502, "connectivity")]
+    [InlineData(AIProviderErrorCategory.Authentication, 500, "authenticationConfiguration")]
+    [InlineData(AIProviderErrorCategory.InvalidRequest, 500, "unclassified")]
+    [InlineData(AIProviderErrorCategory.NotFound, 500, "unclassified")]
+    [InlineData(AIProviderErrorCategory.Unknown, 500, "unclassified")]
+    public async Task EvaluateAsync_WhenAIProviderException_ReturnsMappedStatusAndCategory(
+        AIProviderErrorCategory category, int expectedStatus, string expectedCategoryWireValue)
     {
         var request = new EvaluatePageRequest
         {
@@ -779,28 +770,47 @@ public class PageEvaluatorApiControllerTests
             Properties = new(),
         };
 
+        var info = new AIProviderErrorInfo(
+            category, "safe user message", "provider_code_123",
+            "raw internal detail — must never appear in the response");
         _evaluationService.EvaluateAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<CancellationToken>())
-            .ThrowsAsync(new HttpRequestException("Sensitive provider error: API key invalid for account xyz"));
+            .ThrowsAsync(new AIProviderException(info));
 
         IActionResult result = await _sut.EvaluateAsync(request);
 
         var statusResult = Assert.IsType<ObjectResult>(result);
-        Assert.Equal(502, statusResult.StatusCode);
-        // The response must NOT contain the sensitive provider error message
+        Assert.Equal(expectedStatus, statusResult.StatusCode);
         string json = System.Text.Json.JsonSerializer.Serialize(statusResult.Value);
-        Assert.DoesNotContain("API key invalid", json);
-        Assert.DoesNotContain("xyz", json);
+        Assert.Contains($"\"category\":\"{expectedCategoryWireValue}\"", json);
+        Assert.DoesNotContain("provider_code_123", json);
+        Assert.DoesNotContain("raw internal detail", json);
     }
 
-    // ---------------------------------------------------------------------------
-    // T010: Generic 500 on unexpected Exception
-    // ---------------------------------------------------------------------------
-
-    // Fake exception whose type name ends with "5xxException" to exercise the
-    // Anthropic5xxException catch-when pattern without a direct SDK dependency.
-    private sealed class Fake5xxException : Exception
+    [Fact]
+    public async Task EvaluateAsync_WhenAIProviderException_LogsFullDetailServerSide()
     {
-        public Fake5xxException(string message) : base(message) { }
+        var nodeId = Guid.NewGuid();
+        var request = new EvaluatePageRequest
+        {
+            NodeId = nodeId,
+            DocumentTypeAlias = "blogPost",
+            Properties = new(),
+        };
+
+        var info = new AIProviderErrorInfo(
+            AIProviderErrorCategory.Authentication, "safe user message", "provider_code_456",
+            "raw internal detail for logs only");
+        _evaluationService.EvaluateAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new AIProviderException(info));
+
+        await _sut.EvaluateAsync(request);
+
+        _logger.Received(1).Log(
+            Arg.Is<LogLevel>(l => l == LogLevel.Error || l == LogLevel.Warning),
+            Arg.Any<EventId>(),
+            Arg.Is<object>(v => v.ToString()!.Contains("Authentication") && v.ToString()!.Contains("provider_code_456")),
+            Arg.Any<Exception>(),
+            Arg.Any<Func<object, Exception?, string>>());
     }
 
     [Fact]
@@ -854,33 +864,6 @@ public class PageEvaluatorApiControllerTests
         var unprocessable = Assert.IsType<UnprocessableEntityObjectResult>(result);
         string json = System.Text.Json.JsonSerializer.Serialize(unprocessable.Value);
         Assert.Contains("blocked by a guardrail policy", json);
-    }
-
-    // ---------------------------------------------------------------------------
-    // Anthropic 5xx transient overload → 503
-    // ---------------------------------------------------------------------------
-
-    [Fact]
-    public async Task EvaluateAsync_WhenAiProvider5xxException_Returns503WithRetryMessage()
-    {
-        var request = new EvaluatePageRequest
-        {
-            NodeId = Guid.NewGuid(),
-            DocumentTypeAlias = "blogPost",
-            Properties = new(),
-        };
-
-        _evaluationService.EvaluateAsync(
-                Arg.Any<Guid>(), Arg.Any<string>(),
-                Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<CancellationToken>())
-            .ThrowsAsync(new Fake5xxException("Status Code: 529 Too Many Requests"));
-
-        IActionResult result = await _sut.EvaluateAsync(request);
-
-        var statusResult = Assert.IsType<ObjectResult>(result);
-        Assert.Equal(503, statusResult.StatusCode);
-        string json = System.Text.Json.JsonSerializer.Serialize(statusResult.Value);
-        Assert.Contains("temporarily unavailable", json);
     }
 
     // ---------------------------------------------------------------------------
@@ -1916,8 +1899,16 @@ public class PageEvaluatorApiControllerTests
         Assert.IsType<UnprocessableEntityObjectResult>(result);
     }
 
-    [Fact]
-    public async Task RecommendAsync_HttpRequestException_Returns502()
+    [Theory]
+    [InlineData(AIProviderErrorCategory.Transient, 503, "temporaryRetryable")]
+    [InlineData(AIProviderErrorCategory.RateLimited, 503, "temporaryRetryable")]
+    [InlineData(AIProviderErrorCategory.NetworkError, 502, "connectivity")]
+    [InlineData(AIProviderErrorCategory.Authentication, 500, "authenticationConfiguration")]
+    [InlineData(AIProviderErrorCategory.InvalidRequest, 500, "unclassified")]
+    [InlineData(AIProviderErrorCategory.NotFound, 500, "unclassified")]
+    [InlineData(AIProviderErrorCategory.Unknown, 500, "unclassified")]
+    public async Task RecommendAsync_WhenAIProviderException_ReturnsMappedStatusAndCategory(
+        AIProviderErrorCategory category, int expectedStatus, string expectedCategoryWireValue)
     {
         _configService.GetActiveForDocumentTypeAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(BuildConfig("blogPost"));
@@ -1930,11 +1921,14 @@ public class PageEvaluatorApiControllerTests
         _contentTypeService.Get(Arg.Any<string>()).Returns(ct);
         _propertyEditorSchemaService.SupportsSchema(Arg.Any<string>()).Returns(false);
 
+        var info = new AIProviderErrorInfo(
+            category, "safe user message", "provider_code_789",
+            "raw internal detail — must never appear in the response");
         _chatService.GetChatResponseAsync(
             Arg.Any<Action<AIChatBuilder>>(),
             Arg.Any<IEnumerable<ChatMessage>>(),
             Arg.Any<CancellationToken>())
-            .ThrowsAsync(new HttpRequestException("Upstream error"));
+            .ThrowsAsync(new AIProviderException(info));
 
         var result = await _sut.RecommendAsync(new RecommendRequest
         {
@@ -1944,11 +1938,15 @@ public class PageEvaluatorApiControllerTests
         });
 
         var obj = Assert.IsType<ObjectResult>(result);
-        Assert.Equal(502, obj.StatusCode);
+        Assert.Equal(expectedStatus, obj.StatusCode);
+        string json = System.Text.Json.JsonSerializer.Serialize(obj.Value);
+        Assert.Contains($"\"category\":\"{expectedCategoryWireValue}\"", json);
+        Assert.DoesNotContain("provider_code_789", json);
+        Assert.DoesNotContain("raw internal detail", json);
     }
 
     [Fact]
-    public async Task RecommendAsync_Fake5xxException_Returns503()
+    public async Task RecommendAsync_WhenAIProviderException_LogsFullDetailServerSide()
     {
         _configService.GetActiveForDocumentTypeAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(BuildConfig("blogPost"));
@@ -1961,21 +1959,28 @@ public class PageEvaluatorApiControllerTests
         _contentTypeService.Get(Arg.Any<string>()).Returns(ct);
         _propertyEditorSchemaService.SupportsSchema(Arg.Any<string>()).Returns(false);
 
+        var info = new AIProviderErrorInfo(
+            AIProviderErrorCategory.NetworkError, "safe user message", "provider_code_321",
+            "raw internal detail for logs only");
         _chatService.GetChatResponseAsync(
             Arg.Any<Action<AIChatBuilder>>(),
             Arg.Any<IEnumerable<ChatMessage>>(),
             Arg.Any<CancellationToken>())
-            .ThrowsAsync(new Fake5xxException("Status Code: 529 Too Many Requests"));
+            .ThrowsAsync(new AIProviderException(info));
 
-        var result = await _sut.RecommendAsync(new RecommendRequest
+        await _sut.RecommendAsync(new RecommendRequest
         {
             NodeId = Guid.NewGuid(),
             PropertyAliases = ["metaDescription"],
             CheckLabel = "Meta description is missing",
         });
 
-        var obj = Assert.IsType<ObjectResult>(result);
-        Assert.Equal(503, obj.StatusCode);
+        _logger.Received(1).Log(
+            Arg.Is<LogLevel>(l => l == LogLevel.Error || l == LogLevel.Warning),
+            Arg.Any<EventId>(),
+            Arg.Is<object>(v => v.ToString()!.Contains("NetworkError") && v.ToString()!.Contains("provider_code_321")),
+            Arg.Any<Exception>(),
+            Arg.Any<Func<object, Exception?, string>>());
     }
 
     [Fact]

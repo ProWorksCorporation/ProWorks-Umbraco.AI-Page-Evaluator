@@ -40,20 +40,25 @@ export class ApiError extends Error {
   constructor(
     public readonly status: number,
     public readonly detail: string,
+    public readonly category: string | null = null,
   ) {
     super(`API error ${status}: ${detail}`);
   }
 }
 
-async function checkResult<T>(result: { data?: T; error?: unknown; response: Response }): Promise<T> {
+async function checkResult<T>(result: { data?: unknown; error?: unknown; response: Response }): Promise<T> {
   if (!result.response.ok) {
     const err = result.error;
     const title =
       err !== null && typeof err === 'object' && 'title' in err && typeof (err as Record<string, unknown>)['title'] === 'string'
         ? (err as Record<string, unknown>)['title'] as string
         : null;
+    const category =
+      err !== null && typeof err === 'object' && 'category' in err && typeof (err as Record<string, unknown>)['category'] === 'string'
+        ? (err as Record<string, unknown>)['category'] as string
+        : null;
     const detail = title ?? (err ? JSON.stringify(err) : `HTTP ${result.response.status}`);
-    throw new ApiError(result.response.status, detail);
+    throw new ApiError(result.response.status, detail, category);
   }
   return result.data as T;
 }

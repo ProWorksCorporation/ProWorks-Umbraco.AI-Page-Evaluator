@@ -1,6 +1,6 @@
-import { property as m, state as s, customElement as f, html as o, nothing as p, css as x } from "@umbraco-cms/backoffice/external/lit";
+import { property as m, state as a, customElement as f, html as o, nothing as p, css as x } from "@umbraco-cms/backoffice/external/lit";
 import { UmbLitElement as v } from "@umbraco-cms/backoffice/lit-element";
-import { f as b, h as $, b as y, B as _, u as T, c as C } from "./entry-point-DskGGDu6.js";
+import { f as b, c as $, h as y, B as _, u as T, i as C } from "./entry-point-Dgd6d9p3.js";
 const g = [
   {
     id: "required-fields",
@@ -69,10 +69,10 @@ const g = [
     }
   }
 ];
-var z = Object.defineProperty, A = Object.getOwnPropertyDescriptor, d = (e, t, i, a) => {
-  for (var r = a > 1 ? void 0 : a ? A(t, i) : t, u = e.length - 1, h; u >= 0; u--)
-    (h = e[u]) && (r = (a ? h(t, i, r) : h(r)) || r);
-  return a && r && z(t, i, r), r;
+var z = Object.defineProperty, A = Object.getOwnPropertyDescriptor, d = (e, t, i, s) => {
+  for (var r = s > 1 ? void 0 : s ? A(t, i) : t, u = e.length - 1, h; u >= 0; u--)
+    (h = e[u]) && (r = (s ? h(t, i, r) : h(r)) || r);
+  return s && r && z(t, i, r), r;
 };
 let c = class extends v {
   constructor() {
@@ -114,7 +114,7 @@ let c = class extends v {
 Evaluate on these axes (1–5):
 
 ` + e.map(
-      (i, a) => `### ${a + 1}. ${i.name}
+      (i, s) => `### ${s + 1}. ${i.name}
 Score 5: ${i.scoreHigh}
 Score 3: ${i.scoreMid}
 Score 1: ${i.scoreLow}`
@@ -140,18 +140,18 @@ Provide:
   generateDraft() {
     const t = (this.selectedPropertyAliases.length > 0 ? this._properties.filter((r) => this.selectedPropertyAliases.includes(r.alias)) : this._properties).map((r) => r.alias).join(", "), i = g.filter((r) => this._selectedCategories.has(r.id)).map(
       (r) => r.promptFragment.replace("{{propertyAliases}}", t).replace("{{siteContext}}", this._siteContext)
-    ), a = this.scoringEnabled ? this._buildScoringSection() : "";
+    ), s = this.scoringEnabled ? this._buildScoringSection() : "";
     if (i.length === 0) {
       this._draft = (`Evaluate the following page.
 
 Properties: ${t}
 
-Site context: ${this._siteContext}` + a).trim();
+Site context: ${this._siteContext}` + s).trim();
       return;
     }
     this._draft = i.join(`
 
-`) + a;
+`) + s;
   }
   /** Fires `prompt-selected` with the current draft. */
   usePrompt() {
@@ -246,34 +246,34 @@ d([
   m({ type: Boolean })
 ], c.prototype, "scoringEnabled", 2);
 d([
-  s()
+  a()
 ], c.prototype, "_properties", 2);
 d([
-  s()
+  a()
 ], c.prototype, "_selectedCategories", 2);
 d([
-  s()
+  a()
 ], c.prototype, "_siteContext", 2);
 d([
-  s()
+  a()
 ], c.prototype, "_draft", 2);
 d([
-  s()
+  a()
 ], c.prototype, "_loading", 2);
 d([
-  s()
+  a()
 ], c.prototype, "_error", 2);
 c = d([
   f("page-evaluator-prompt-builder")
 ], c);
-var E = Object.defineProperty, S = Object.getOwnPropertyDescriptor, n = (e, t, i, a) => {
-  for (var r = a > 1 ? void 0 : a ? S(t, i) : t, u = e.length - 1, h; u >= 0; u--)
-    (h = e[u]) && (r = (a ? h(t, i, r) : h(r)) || r);
-  return a && r && E(t, i, r), r;
+var E = Object.defineProperty, S = Object.getOwnPropertyDescriptor, n = (e, t, i, s) => {
+  for (var r = s > 1 ? void 0 : s ? S(t, i) : t, u = e.length - 1, h; u >= 0; u--)
+    (h = e[u]) && (r = (s ? h(t, i, r) : h(r)) || r);
+  return s && r && E(t, i, r), r;
 };
 let l = class extends v {
   constructor() {
-    super(...arguments), this.configId = null, this.name = "", this._description = "", this._documentTypeAlias = "", this._profileId = "", this._contextId = "", this._promptText = "", this._scoringEnabled = !1, this._recommendationsEnabled = !0, this._version = 0, this._errors = {}, this._saving = !1, this._loadError = null, this._promptBuilderOpen = !1, this._propertyAliases = [], this._availableProperties = [], this._docTypeDisplayName = "", this._docTypeSuggestions = [], this._docTypeShowSuggestions = !1, this._docTypeSearchTimer = null;
+    super(...arguments), this.configId = null, this.name = "", this._description = "", this._documentTypeAlias = "", this._profileId = "", this._contextId = "", this._promptText = "", this._scoringEnabled = !1, this._recommendationsEnabled = !0, this._version = 0, this._errors = {}, this._loadError = null, this._promptBuilderOpen = !1, this._propertyAliases = [], this._availableProperties = [], this._docTypeDisplayName = "", this._docTypeSuggestions = [], this._docTypeShowSuggestions = !1, this._docTypeSearchTimer = null;
   }
   updated(e) {
     super.updated(e), e.has("configId") && (this.configId ? this._loadConfig(this.configId) : this._resetFields());
@@ -348,8 +348,8 @@ let l = class extends v {
       });
       if (!this.isConnected) return;
       if (i.response.ok && i.data) {
-        const a = i.data;
-        this._documentTypeAlias = a.alias, this._propertyAliases = [], this._loadDocTypeInfo(a.alias);
+        const s = i.data;
+        this._documentTypeAlias = s.alias, this._propertyAliases = [], this._loadDocTypeInfo(s.alias);
       }
     } catch {
       if (!this.isConnected) return;
@@ -364,7 +364,7 @@ let l = class extends v {
    */
   async submit() {
     if (this._errors = {}, this._documentTypeAlias.trim() || (this._errors.documentTypeAlias = this.localize.term("evaluatorConfig_documentTypeRequired")), this._profileId.trim() || (this._errors.profileId = this.localize.term("evaluatorConfig_profileRequired")), this._promptText.trim() || (this._errors.promptText = this.localize.term("evaluatorConfig_promptRequired")), !(Object.keys(this._errors).length > 0)) {
-      this._saving = !0, this.dispatchEvent(new CustomEvent("evaluator-save-start", { bubbles: !0, composed: !0 }));
+      this.dispatchEvent(new CustomEvent("evaluator-save-start", { bubbles: !0, composed: !0 }));
       try {
         const e = this.configId ? await T(this.configId, {
           name: this.name,
@@ -400,7 +400,7 @@ let l = class extends v {
         if (!this.isConnected) return;
         e instanceof Error && (this._errors._form = e.message);
       } finally {
-        this._saving = !1, this.dispatchEvent(new CustomEvent("evaluator-save-end", { bubbles: !0, composed: !0 }));
+        this.dispatchEvent(new CustomEvent("evaluator-save-end", { bubbles: !0, composed: !0 }));
       }
     }
   }
@@ -408,8 +408,8 @@ let l = class extends v {
     if (this._availableProperties.length === 0) return p;
     const e = /* @__PURE__ */ new Map();
     for (const i of this._availableProperties) {
-      const a = e.get(i.groupName) ?? [];
-      a.push(i), e.set(i.groupName, a);
+      const s = e.get(i.groupName) ?? [];
+      s.push(i), e.set(i.groupName, s);
     }
     const t = new Set(this._propertyAliases);
     return o`
@@ -420,10 +420,10 @@ let l = class extends v {
         <div class="property-reference__help">
           ${this.localize.term("evaluatorConfig_propertyReferenceHelp")}
         </div>
-        ${Array.from(e.entries()).map(([i, a]) => o`
+        ${Array.from(e.entries()).map(([i, s]) => o`
           <h4 class="property-reference__group">${i}</h4>
           <ul class="property-reference__list">
-            ${a.map((r) => {
+            ${s.map((r) => {
       const u = !t.has(r.alias);
       return o`
                 <li class="property-reference__item ${u ? "property-reference__item--excluded" : ""}"
@@ -769,55 +769,52 @@ n([
   m({ attribute: !1 })
 ], l.prototype, "name", 2);
 n([
-  s()
+  a()
 ], l.prototype, "_description", 2);
 n([
-  s()
+  a()
 ], l.prototype, "_documentTypeAlias", 2);
 n([
-  s()
+  a()
 ], l.prototype, "_profileId", 2);
 n([
-  s()
+  a()
 ], l.prototype, "_contextId", 2);
 n([
-  s()
+  a()
 ], l.prototype, "_promptText", 2);
 n([
-  s()
+  a()
 ], l.prototype, "_scoringEnabled", 2);
 n([
-  s()
+  a()
 ], l.prototype, "_recommendationsEnabled", 2);
 n([
-  s()
+  a()
 ], l.prototype, "_version", 2);
 n([
-  s()
+  a()
 ], l.prototype, "_errors", 2);
 n([
-  s()
-], l.prototype, "_saving", 2);
-n([
-  s()
+  a()
 ], l.prototype, "_loadError", 2);
 n([
-  s()
+  a()
 ], l.prototype, "_promptBuilderOpen", 2);
 n([
-  s()
+  a()
 ], l.prototype, "_propertyAliases", 2);
 n([
-  s()
+  a()
 ], l.prototype, "_availableProperties", 2);
 n([
-  s()
+  a()
 ], l.prototype, "_docTypeDisplayName", 2);
 n([
-  s()
+  a()
 ], l.prototype, "_docTypeSuggestions", 2);
 n([
-  s()
+  a()
 ], l.prototype, "_docTypeShowSuggestions", 2);
 l = n([
   f("evaluator-form")
@@ -825,4 +822,4 @@ l = n([
 export {
   l as EvaluatorFormElement
 };
-//# sourceMappingURL=evaluator-form.element-DQ239olk.js.map
+//# sourceMappingURL=evaluator-form.element-BRKDFfBO.js.map

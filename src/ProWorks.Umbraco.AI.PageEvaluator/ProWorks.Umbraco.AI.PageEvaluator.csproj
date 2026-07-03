@@ -45,13 +45,13 @@
   <ItemGroup>
     <!-- Umbraco.AI.Core provides IAIProfileService and IAIContextService -->
     <!-- Verify version against installed Umbraco.AI package before building -->
-    <PackageReference Include="Umbraco.AI.Core" Version="1.12.0" />
+    <PackageReference Include="Umbraco.AI.Core" Version="17.0.0" />
     <!-- Umbraco.AI.Startup provides UmbracoAIComposer (required for [ComposeAfter]) -->
-    <PackageReference Include="Umbraco.AI.Startup" Version="1.12.0" />
-    <!-- Pin Microsoft.Extensions.AI packages to 10.6.0 — required by Umbraco.AI.Core 1.11.0
-         and Anthropic 12.20.1. Both packages must be the same version. -->
-    <PackageReference Include="Microsoft.Extensions.AI" Version="10.6.0" />
-    <PackageReference Include="Microsoft.Extensions.AI.Abstractions" Version="10.6.0" />
+    <PackageReference Include="Umbraco.AI.Startup" Version="17.0.0" />
+    <!-- Pin Microsoft.Extensions.AI packages to 10.7.0 — required by Umbraco.AI.Core 17.0.0
+         (range [10.7.0, 10.999.999)) and Anthropic 12.29.1. Both packages must be the same version. -->
+    <PackageReference Include="Microsoft.Extensions.AI" Version="10.7.0" />
+    <PackageReference Include="Microsoft.Extensions.AI.Abstractions" Version="10.7.0" />
     <!-- EF Core providers: bundled DLLs need these at runtime in the consuming app -->
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.6" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.6" />

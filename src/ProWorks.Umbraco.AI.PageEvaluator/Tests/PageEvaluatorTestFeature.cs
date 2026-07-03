@@ -3,7 +3,6 @@ using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using ProWorks.Umbraco.AI.PageEvaluator.Evaluation;
 using ProWorks.Umbraco.AI.PageEvaluator.Evaluators;
-using Umbraco.AI.Core.EditableModels;
 using Umbraco.AI.Core.Tests;
 
 namespace ProWorks.Umbraco.AI.PageEvaluator.Tests;
@@ -20,9 +19,8 @@ public sealed class PageEvaluatorTestFeature : AITestFeatureBase<PageEvaluatorTe
 
     public PageEvaluatorTestFeature(
         IServiceScopeFactory scopeFactory,
-        AITestContextResolver contextResolver,
-        IAIEditableModelSchemaBuilder schemaBuilder)
-        : base(contextResolver, schemaBuilder)
+        IAITestFeatureInfrastructure infrastructure)
+        : base(infrastructure)
     {
         _scopeFactory = scopeFactory;
     }

@@ -27,6 +27,9 @@ const e = {
     parseFailedSuffix: "to improve structured output.",
     // Modal: AI error
     aiErrorMessage: "The evaluation could not be completed. The AI provider returned an error.",
+    temporaryRetryableMessage: "The AI provider is temporarily unavailable. Please try again in a moment.",
+    connectivityMessage: "Could not reach the AI provider. Please check your connection and try again.",
+    authenticationConfigurationMessage: "The AI connection needs attention. Contact your administrator to check the AI profile's credentials or configuration.",
     retryButton: "Retry",
     // Modal: guardrail block
     guardrailBlockedMessage: "The evaluation was blocked by an Umbraco.AI guardrail policy. Review the guardrail rules configured on the AI profile.",
@@ -147,4 +150,4 @@ const e = {
 export {
   e as default
 };
-//# sourceMappingURL=en-dMWi_toJ.js.map
+//# sourceMappingURL=en-DMWtIcSu.js.map

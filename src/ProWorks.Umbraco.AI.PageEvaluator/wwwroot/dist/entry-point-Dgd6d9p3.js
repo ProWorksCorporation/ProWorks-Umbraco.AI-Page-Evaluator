@@ -1,16 +1,16 @@
 import { UmbConditionBase as g, umbExtensionsRegistry as p } from "@umbraco-cms/backoffice/extension-registry";
-import { UMB_DOCUMENT_WORKSPACE_CONTEXT as f } from "@umbraco-cms/backoffice/document";
-import { umbHttpClient as d } from "@umbraco-cms/backoffice/http-client";
-const n = d, r = "/umbraco/management/api/v1/page-evaluator", s = [{ scheme: "bearer", type: "http" }];
-class y extends Error {
-  constructor(t, a) {
-    super(`API error ${t}: ${a}`), this.status = t, this.detail = a;
+import { UMB_DOCUMENT_WORKSPACE_CONTEXT as y } from "@umbraco-cms/backoffice/document";
+import { umbHttpClient as f } from "@umbraco-cms/backoffice/http-client";
+const n = f, r = "/umbraco/management/api/v1/page-evaluator", s = [{ scheme: "bearer", type: "http" }];
+class d extends Error {
+  constructor(t, a, o = null) {
+    super(`API error ${t}: ${a}`), this.status = t, this.detail = a, this.category = o;
   }
 }
 async function i(e) {
   if (!e.response.ok) {
-    const t = e.error, o = (t !== null && typeof t == "object" && "title" in t && typeof t.title == "string" ? t.title : null) ?? (t ? JSON.stringify(t) : `HTTP ${e.response.status}`);
-    throw new y(e.response.status, o);
+    const t = e.error, a = t !== null && typeof t == "object" && "title" in t && typeof t.title == "string" ? t.title : null, o = t !== null && typeof t == "object" && "category" in t && typeof t.category == "string" ? t.category : null, c = a ?? (t ? JSON.stringify(t) : `HTTP ${e.response.status}`);
+    throw new d(e.response.status, c, o);
   }
   return e.data;
 }
@@ -114,17 +114,17 @@ async function T(e) {
 const l = "ProWorks.AI.PageEvaluator.Condition.HasActiveConfig";
 class v extends g {
   constructor(t, a) {
-    super(t, a), this.permitted = !1, this.consumeContext(f, (o) => {
+    super(t, a), this.permitted = !1, this.consumeContext(y, (o) => {
       if (!o) {
         this.permitted = !1;
         return;
       }
-      const u = o.structure.getOwnerContentType()?.alias ?? "";
-      if (!u) {
+      const c = o.structure.getOwnerContentType()?.alias ?? "";
+      if (!c) {
         this.permitted = !1;
         return;
       }
-      E(u).then((m) => {
+      E(c).then((m) => {
         this.permitted = m !== null;
       }).catch(() => {
         this.permitted = !1;
@@ -132,7 +132,7 @@ class v extends g {
     });
   }
 }
-const P = "Uai.Menu.Addons", c = [
+const P = "Uai.Menu.Addons", u = [
   // ---------------------------------------------------------------------------
   // Localization: English default translations for all package UI strings.
   // ---------------------------------------------------------------------------
@@ -143,7 +143,7 @@ const P = "Uai.Menu.Addons", c = [
     meta: {
       culture: "en"
     },
-    js: () => import("./en-dMWi_toJ.js")
+    js: () => import("./en-DMWtIcSu.js")
   },
   // ---------------------------------------------------------------------------
   // US1 — Content Editor Evaluates a Page
@@ -181,7 +181,7 @@ const P = "Uai.Menu.Addons", c = [
     type: "modal",
     alias: "ProWorks.AI.PageEvaluator.Modal.Evaluation",
     name: "Page Evaluator Evaluation Modal",
-    element: () => import("./evaluation-modal.element-DcJPpUpo.js").then((e) => ({
+    element: () => import("./evaluation-modal.element-DHJ0UZEa.js").then((e) => ({
       element: e.EvaluationModalElement
     }))
   },
@@ -206,7 +206,7 @@ const P = "Uai.Menu.Addons", c = [
     meta: {
       entityType: "evaluator-config"
     },
-    element: () => import("./evaluator-config-workspace.element-BJOqL0jt.js").then((e) => ({
+    element: () => import("./evaluator-config-workspace.element-Ck7HQCae.js").then((e) => ({
       element: e.EvaluatorConfigWorkspaceElement
     }))
   },
@@ -224,7 +224,7 @@ const P = "Uai.Menu.Addons", c = [
     meta: {
       feature: "proworks-page-evaluator"
     },
-    api: () => import("./page-evaluator-test-entity.repository-CvmM9TgS.js")
+    api: () => import("./page-evaluator-test-entity.repository-Br4iQFV2.js")
   },
   {
     type: "workspaceView",
@@ -241,30 +241,31 @@ const P = "Uai.Menu.Addons", c = [
         match: "ProWorks.AI.PageEvaluator.Workspace"
       }
     ],
-    element: () => import("./evaluator-form.element-DQ239olk.js").then((e) => ({
+    element: () => import("./evaluator-form.element-BRKDFfBO.js").then((e) => ({
       element: e.EvaluatorFormElement
     }))
   }
 ], O = (e) => {
-  console.log("[ProWorks.AI.PageEvaluator] onInit called — registering", c.length, "extensions"), p.registerMany(c);
+  console.log("[ProWorks.AI.PageEvaluator] onInit called — registering", u.length, "extensions"), p.registerMany(u);
 }, x = (e, t) => {
-  for (const a of c)
+  for (const a of u)
     p.unregister(a.alias);
 };
 export {
+  d as A,
   s as B,
-  W as a,
-  n as b,
-  w as c,
+  I as a,
+  W as b,
+  k as c,
   b as d,
   R as e,
   T as f,
   U as g,
-  k as h,
-  I as i,
+  n as h,
+  w as i,
   x as j,
   O as o,
   _ as r,
   $ as u
 };
-//# sourceMappingURL=entry-point-DskGGDu6.js.map
+//# sourceMappingURL=entry-point-Dgd6d9p3.js.map

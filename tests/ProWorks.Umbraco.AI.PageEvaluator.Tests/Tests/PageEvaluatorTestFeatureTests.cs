@@ -18,6 +18,7 @@ public class PageEvaluatorTestFeatureTests
     // AITestContextResolver is sealed — use a real instance (it has no dependencies)
     private readonly AITestContextResolver _contextResolver = new AITestContextResolver();
     private readonly IAIEditableModelSchemaBuilder _schemaBuilder = Substitute.For<IAIEditableModelSchemaBuilder>();
+    private readonly IAIEditableModelResolver _modelResolver = Substitute.For<IAIEditableModelResolver>();
     private readonly PageEvaluatorTestFeature _sut;
 
     public PageEvaluatorTestFeatureTests()
@@ -34,7 +35,12 @@ public class PageEvaluatorTestFeatureTests
         var scopeFactory = Substitute.For<IServiceScopeFactory>();
         scopeFactory.CreateScope().Returns(scope);
 
-        _sut = new PageEvaluatorTestFeature(scopeFactory, _contextResolver, _schemaBuilder);
+        var infrastructure = Substitute.For<IAITestFeatureInfrastructure>();
+        infrastructure.ContextResolver.Returns(_contextResolver);
+        infrastructure.SchemaBuilder.Returns(_schemaBuilder);
+        infrastructure.ModelResolver.Returns(_modelResolver);
+
+        _sut = new PageEvaluatorTestFeature(scopeFactory, infrastructure);
     }
 
     [Fact]

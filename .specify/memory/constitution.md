@@ -1,6 +1,37 @@
 <!--
 SYNC IMPACT REPORT
 ==================
+Version change: 1.2.0 → 1.2.1
+Bump rationale: PATCH — corrected stale pinned dependency versions in "Package Version
+  Constraints" and "Technology Stack" to match the versions actually shipped after the
+  004-upgrade-umbraco-ai-uui feature (no principle redefined; pin values updated).
+
+Corrections (errors in v1.2.0):
+  - Package Version Constraints: `Microsoft.Extensions.AI*` pin 10.3.0 → 10.7.0 (required by
+    Umbraco.AI.Core 17.0.0's `[10.7.0, 10.999.999)` range and Anthropic 12.29.1). The prior
+    10.3.0 pin was itself already stale — CLAUDE.md had documented a 10.6.0 bump that was
+    never synced back to this file, which is what allowed this second drift to go unnoticed
+    until the next upgrade. `10.4.1`'s `MissingMethodException`/`TypeLoadException` history
+    is preserved below for context; it no longer describes the current floor.
+  - Package Version Constraints: EF Core pin 10.0.4 → 10.0.6 (required by
+    `Umbraco.Cms.Persistence.EFCore 17.5.1`; matches the version already in use per CLAUDE.md).
+  - Technology Stack: "EF Core 10.0.4" → "EF Core 10.0.6" (same fact restated in a second
+    location; both now consistent).
+
+Removed sections: None
+Modified principles: None (Core Principles I–V unchanged)
+
+Templates reviewed:
+  ✅ .specify/templates/plan-template.md — no change needed (no principle renumbering).
+  ✅ .specify/templates/spec-template.md — no change needed.
+  ✅ .specify/templates/tasks-template.md — no change needed.
+
+Deferred TODOs: unchanged from v1.2.0 (TypeScript client test layer still aspirational).
+-->
+
+<!--
+PRIOR SYNC IMPACT REPORT (v1.1.0 → v1.2.0, retained for history)
+==================
 Version change: 1.1.0 → 1.2.0
 Bump rationale: MINOR — new mandatory implementation rules added to Principles III and IV;
   new "Package Version Constraints" subsection added to Technology Stack; stale/incorrect
@@ -230,7 +261,7 @@ can cause symbol conflicts with CMS internals.
   extension code. Lit MUST be imported via `@umbraco-cms/backoffice/external/lit`.
 - **CMS Platform**: Umbraco v17; all APIs used MUST be published in the Umbraco v17
   package docs or the `@umbraco-cms/backoffice` typings
-- **Server**: ASP.NET Core (Umbraco RCL), EF Core 10.0.4, SQLite (dev) / SQL Server (prod)
+- **Server**: ASP.NET Core (Umbraco RCL), EF Core 10.0.6, SQLite (dev) / SQL Server (prod)
 - **AI Integration**: Calls to AI providers MUST be proxied via a server-side Umbraco API
   controller using `IAIChatService` (from `Umbraco.AI.Core.Chat`). Injecting
   `IChatClient` or `IAIChatClientFactory` directly is FORBIDDEN. Direct browser-to-provider
@@ -250,15 +281,17 @@ testing against the full Umbraco.AI ecosystem. Upgrading past these pins has cau
 `MissingMethodException` and `TypeLoadException` failures in production.
 
 - **`Microsoft.Extensions.AI*`** (all packages in this family) MUST be pinned to
-  `10.3.0`. Do NOT use `10.4.1` or later:
-  - `10.4.1` changed `McpServerToolCallContent.set_Arguments` signature →
-    `MissingMethodException` in `Umbraco.AI.Anthropic 1.3.0`
-  - `10.4.1` pulls `OpenAI SDK 2.9.1` which removed `GetResponsesClient(string)` →
-    `MissingMethodException` in `Umbraco.AI.OpenAI 1.2.0`
+  `10.7.0` (required by `Umbraco.AI.Core 17.0.0`'s `[10.7.0, 10.999.999)` range and
+  Anthropic SDK `12.29.1` floor). Historical context: an earlier `10.3.0` pin existed
+  because `10.4.1` changed `McpServerToolCallContent.set_Arguments`'s signature
+  (`MissingMethodException` in `Umbraco.AI.Anthropic 1.3.0`) and pulled `OpenAI SDK 2.9.1`,
+  which removed `GetResponsesClient(string)` (`MissingMethodException` in
+  `Umbraco.AI.OpenAI 1.2.0`) — both issues are specific to the now-superseded 1.x
+  Umbraco.AI line and do not apply to the current `17.0.0` pin.
 - **`Microsoft.Extensions.AI`** and **`Microsoft.Extensions.AI.Abstractions`** MUST
   always be the same version — mismatches cause
   `TypeLoadException: FunctionApprovalRequestContent`.
-- **EF Core** MUST be `10.0.4` (required by `Umbraco.Cms.Persistence.EFCore 17.3.4`).
+- **EF Core** MUST be `10.0.6` (required by `Umbraco.Cms.Persistence.EFCore 17.5.1`).
 
 ## Development Workflow & Quality Gates
 
@@ -302,4 +335,4 @@ removes or redefines a Core Principle.
 All PRs and code reviews MUST verify compliance with each Core Principle. Complexity
 violations MUST be documented in the Complexity Tracking table of the relevant feature plan.
 
-**Version**: 1.2.0 | **Ratified**: 2026-03-30 | **Last Amended**: 2026-05-14
+**Version**: 1.2.1 | **Ratified**: 2026-03-30 | **Last Amended**: 2026-07-02

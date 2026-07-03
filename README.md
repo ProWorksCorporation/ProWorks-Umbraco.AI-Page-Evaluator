@@ -21,7 +21,8 @@ An Umbraco 17 backoffice package that adds an **Evaluate Page** button to the co
 - **Content cleaning**: HTML tags are stripped and long property values are truncated before sending to the AI, reducing token consumption
 - **Draft-aware**: overlays unsaved text edits on top of the published content snapshot so unevaluated changes are included
 - **AI text recommendations**: for any Fail or Warn check that targets a specific property, a **Generate recommendation** button fetches an AI-suggested replacement value. The recommendation box shows the property's current value alongside the suggestion so editors can compare before applying. Recommendations are property-editor-aware: plain text and Tags fields offer full apply + copy; Rich Text fields offer copy-only (since the Umbraco RTE stores a JSON envelope that cannot be replaced by plain text); complex fields such as media pickers and block lists are excluded automatically. Third-party or custom property editors can be enabled for recommendations via `appsettings.json` (see [Configuration options](#configuration-options))
-- **Guardrail policy support**: when the AI profile has guardrail rules that block an evaluation (pre- or post-generate), the modal shows a specific message identifying which policy fired rather than a generic error; transient AI provider overload errors (e.g. Anthropic 529) are detected and shown as a "temporarily unavailable, please retry" prompt
+- **Guardrail policy support**: when the AI profile has guardrail rules that block an evaluation (pre- or post-generate), the modal shows a specific message identifying which policy fired rather than a generic error
+- **Distinct AI failure messages**: transient provider overloads/rate limits show a "temporarily unavailable, please retry" prompt; network/connectivity failures reaching the provider show a distinct connectivity message; authentication or configuration problems (e.g. an invalid AI connection credential) show a message directing editors to contact their administrator, rather than a generic error in all three cases
 - **Security hardened**: admin-only config management, generic error responses (provider details are never leaked to the client), prompt injection defense, and per-user audit trail
 - **Umbraco.AI Test Support**: fully supports multi-run tests and results evaluation to compare evaluations across models and package releases.
 
@@ -31,8 +32,8 @@ An Umbraco 17 backoffice package that adds an **Evaluate Page** button to the co
 
 | Dependency | Version |
 |---|---|
-| Umbraco CMS | 17.4.x |
-| Umbraco.AI | 1.12.x |
+| Umbraco CMS | 17.5.x |
+| Umbraco.AI | 17.0.x |
 | .NET | 10 |
 
 ---

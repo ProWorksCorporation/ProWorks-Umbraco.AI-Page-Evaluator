@@ -2,6 +2,7 @@ import { html, css, nothing, type TemplateResult, customElement, state } from '@
 import { UmbModalBaseElement } from '@umbraco-cms/backoffice/modal';
 import { UMB_DOCUMENT_WORKSPACE_CONTEXT } from '@umbraco-cms/backoffice/document';
 import { getCachedEvaluation, evaluatePage } from '../shared/api-client.js';
+import { localizationKeyForErrorCategory } from '../shared/error-category.js';
 import type { EvaluationReportResponse } from '../shared/types.js';
 import type { EvaluationModalData, EvaluationModalValue } from './evaluation-modal.token.js';
 import { resolveEntityAdapterByType } from '@umbraco-ai/core';
@@ -58,6 +59,7 @@ export class EvaluationModalElement extends UmbModalBaseElement<EvaluationModalD
   @state() private _progressKey = '';
   @state() private _report: EvaluationReportResponse | null = null;
   @state() private _errorDetail: string | null = null;
+  @state() private _errorCategory: string | null = null;
   private _inFlight = false;
   private _workspaceContext: typeof UMB_DOCUMENT_WORKSPACE_CONTEXT.TYPE | undefined;
 
@@ -128,10 +130,13 @@ export class EvaluationModalElement extends UmbModalBaseElement<EvaluationModalD
     } catch (err) {
       if (!this.isConnected) return;
       const status = err !== null && typeof err === 'object' && 'status' in err
-        ? (err as { status: unknown }).status
+        ? err.status
         : null;
       const detail = err !== null && typeof err === 'object' && 'detail' in err
-        ? String((err as { detail: unknown }).detail)
+        ? String(err.detail)
+        : null;
+      const category = err !== null && typeof err === 'object' && 'category' in err
+        ? String(err.category)
         : null;
       if (status === 422) {
         this._modalState = 'guardrail-blocked';
@@ -139,6 +144,7 @@ export class EvaluationModalElement extends UmbModalBaseElement<EvaluationModalD
       } else {
         this._modalState = 'error';
         this._errorDetail = detail;
+        this._errorCategory = category;
       }
     } finally {
       this._inFlight = false;
@@ -245,10 +251,12 @@ export class EvaluationModalElement extends UmbModalBaseElement<EvaluationModalD
           </div>
         `;
 
-      case 'error':
+      case 'error': {
+        const messageKey = localizationKeyForErrorCategory(this._errorCategory, 'evaluatePage_aiErrorMessage');
         return html`
           <div class="error-container" role="alert">
-            <p>${this._errorDetail ?? this.localize.term('evaluatePage_aiErrorMessage')}</p>
+            <p>${this.localize.term(messageKey)}</p>
+            ${this._errorDetail ? html`<p><em>${this._errorDetail}</em></p>` : nothing}
             <uui-button
               look="primary"
               color="warning"
@@ -258,6 +266,7 @@ export class EvaluationModalElement extends UmbModalBaseElement<EvaluationModalD
             </uui-button>
           </div>
         `;
+      }
     }
   }
 
