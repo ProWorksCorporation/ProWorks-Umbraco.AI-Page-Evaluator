@@ -1,129 +1,100 @@
 /**
- * T054 — MSW integration test for document type property loading
- * via Umbraco Management API `GET /document-type/by-alias/{alias}`.
+ * MSW integration tests for `fetchDocTypeProperties` (shared/api-client.ts), which the
+ * prompt builder and evaluator form use to load a document type's properties from the
+ * package's own endpoint `GET /page-evaluator/document-type/{alias}/properties`.
  *
- * Tests the fetch utility used by prompt-builder.element.ts to load
- * property aliases from the Umbraco Management API.
- *
- * RED STATE: Fails until T057 creates `src/prompt-builder/prompt-builder.element.ts`
- * which exports a `fetchDocTypeProperties` helper (or similar).
+ * Rewritten for 003-upgrade-umbraco-17-6: the original test targeted Umbraco's core
+ * `/document-type/by-alias/{alias}` endpoint and a helper exported from the prompt-builder
+ * element, neither of which is used any more.
  */
 
 import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest';
 import { setupServer } from 'msw/node';
 import { http, HttpResponse } from 'msw';
+import { fetchDocTypeProperties } from '../../src/shared/api-client.js';
 
-// RED STATE: import will fail until T057 creates the module
-import { fetchDocTypeProperties } from '../../src/prompt-builder/prompt-builder.element.js';
-import type { DocumentTypePropertySummary } from '../../src/shared/types.js';
+const BASE = '/umbraco/management/api/v1/page-evaluator';
 
-const DOC_TYPE_BASE = '/umbraco/management/api/v1/document-type';
-
-const mockDocTypeResponse = {
+const mockResponse = {
   alias: 'blogPost',
   name: 'Blog Post',
   properties: [
-    {
-      alias: 'blogNavigationImage',
-      label: 'Navigation Image',
-      propertyEditorUiAlias: 'Umb.PropertyEditorUi.MediaPicker',
-      container: { name: 'Content' },
-    },
-    {
-      alias: 'postDate',
-      label: 'Post Date',
-      propertyEditorUiAlias: 'Umb.PropertyEditorUi.DateTimePicker',
-      container: { name: 'Content' },
-    },
-    {
-      alias: 'summary',
-      label: 'Summary',
-      propertyEditorUiAlias: 'Umb.PropertyEditorUi.TextArea',
-      container: { name: 'Content' },
-    },
-    {
-      alias: 'metaDescription',
-      label: 'Meta Description',
-      propertyEditorUiAlias: 'Umb.PropertyEditorUi.TextArea',
-      container: { name: 'SEO' },
-    },
-    {
-      alias: 'browserTitle',
-      label: 'Browser Title',
-      propertyEditorUiAlias: 'Umb.PropertyEditorUi.TextBox',
-      container: { name: 'SEO' },
-    },
+    { alias: 'blogNavigationImage', label: 'Navigation Image', groupName: 'Content', editorAlias: 'Umbraco.MediaPicker3' },
+    { alias: 'postDate', label: 'Post Date', groupName: 'Content', editorAlias: 'Umbraco.DateTime' },
+    { alias: 'summary', label: 'Summary', groupName: 'Content', editorAlias: 'Umbraco.TextArea' },
+    { alias: 'metaDescription', label: 'Meta Description', groupName: 'SEO', editorAlias: 'Umbraco.TextArea' },
+    { alias: 'browserTitle', label: 'Browser Title', groupName: 'SEO', editorAlias: 'Umbraco.TextBox' },
   ],
 };
 
 const server = setupServer();
-
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
 
 describe('fetchDocTypeProperties', () => {
-  it('returns property summaries from the Umbraco Management API', async () => {
-    server.use(
-      http.get(`${DOC_TYPE_BASE}/by-alias/blogPost`, () =>
-        HttpResponse.json(mockDocTypeResponse),
-      ),
-    );
+  it('returns the document type name and property summaries', async () => {
+    server.use(http.get(`${BASE}/document-type/blogPost/properties`, () => HttpResponse.json(mockResponse)));
 
-    const props: DocumentTypePropertySummary[] = await fetchDocTypeProperties('blogPost');
+    const info = await fetchDocTypeProperties('blogPost');
 
-    expect(props).toHaveLength(5);
+    expect(info.name).toBe('Blog Post');
+    expect(info.properties).toHaveLength(5);
   });
 
-  it('maps alias, label, groupName and editorAlias correctly', async () => {
-    server.use(
-      http.get(`${DOC_TYPE_BASE}/by-alias/blogPost`, () =>
-        HttpResponse.json(mockDocTypeResponse),
-      ),
-    );
+  it('maps alias, label, groupName and editorAlias', async () => {
+    server.use(http.get(`${BASE}/document-type/blogPost/properties`, () => HttpResponse.json(mockResponse)));
 
-    const props = await fetchDocTypeProperties('blogPost');
-    const first = props[0];
+    const [first] = (await fetchDocTypeProperties('blogPost')).properties;
 
-    expect(first?.alias).toBe('blogNavigationImage');
-    expect(first?.label).toBe('Navigation Image');
-    expect(first?.groupName).toBe('Content');
-    expect(first?.editorAlias).toBe('Umb.PropertyEditorUi.MediaPicker');
+    expect(first).toEqual({
+      alias: 'blogNavigationImage',
+      label: 'Navigation Image',
+      groupName: 'Content',
+      editorAlias: 'Umbraco.MediaPicker3',
+    });
   });
 
-  it('groups properties correctly by container name', async () => {
-    server.use(
-      http.get(`${DOC_TYPE_BASE}/by-alias/blogPost`, () =>
-        HttpResponse.json(mockDocTypeResponse),
-      ),
-    );
+  it('keeps the group name of every property', async () => {
+    server.use(http.get(`${BASE}/document-type/blogPost/properties`, () => HttpResponse.json(mockResponse)));
 
-    const props = await fetchDocTypeProperties('blogPost');
-    const contentProps = props.filter((p) => p.groupName === 'Content');
-    const seoProps = props.filter((p) => p.groupName === 'SEO');
+    const { properties } = await fetchDocTypeProperties('blogPost');
 
-    expect(contentProps).toHaveLength(3);
-    expect(seoProps).toHaveLength(2);
+    expect(properties.filter((p) => p.groupName === 'Content')).toHaveLength(3);
+    expect(properties.filter((p) => p.groupName === 'SEO')).toHaveLength(2);
   });
 
-  it('throws when the document type alias is not found (404)', async () => {
+  it('URL-encodes the alias', async () => {
+    let requestedPath = '';
     server.use(
-      http.get(`${DOC_TYPE_BASE}/by-alias/unknownType`, () =>
-        HttpResponse.json({ title: 'Not found' }, { status: 404 }),
+      http.get(`${BASE}/document-type/:alias/properties`, ({ request }) => {
+        requestedPath = new URL(request.url).pathname;
+        return HttpResponse.json({ ...mockResponse, properties: [] });
+      }),
+    );
+
+    await fetchDocTypeProperties('my type');
+
+    expect(requestedPath).toBe(`${BASE}/document-type/my%20type/properties`);
+  });
+
+  it('throws when the document type is not found (404)', async () => {
+    server.use(
+      http.get(`${BASE}/document-type/unknownType/properties`, () =>
+        HttpResponse.json({ type: 'Error', title: 'Not found', status: 404 }, { status: 404 }),
       ),
     );
 
     await expect(fetchDocTypeProperties('unknownType')).rejects.toThrow();
   });
 
-  it('returns empty array when doc type has no properties', async () => {
+  it('returns an empty list when the document type has no properties', async () => {
     server.use(
-      http.get(`${DOC_TYPE_BASE}/by-alias/emptyType`, () =>
-        HttpResponse.json({ alias: 'emptyType', name: 'Empty Type', properties: [] }),
+      http.get(`${BASE}/document-type/empty/properties`, () =>
+        HttpResponse.json({ alias: 'empty', name: 'Empty', properties: [] }),
       ),
     );
 
-    const props = await fetchDocTypeProperties('emptyType');
-    expect(props).toHaveLength(0);
+    expect((await fetchDocTypeProperties('empty')).properties).toHaveLength(0);
   });
 });

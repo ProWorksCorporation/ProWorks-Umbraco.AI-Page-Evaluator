@@ -40,6 +40,21 @@ export default {
       'Der KI-Anbieter konnte nicht erreicht werden. Überprüfen Sie Ihre Verbindung und versuchen Sie es erneut.',
     authenticationConfigurationMessage:
       'Die KI-Verbindung erfordert Aufmerksamkeit. Wenden Sie sich an Ihren Administrator, um die Anmeldedaten oder die Konfiguration des KI-Profils zu überprüfen.',
+    // 003-upgrade-umbraco-17-6: gateway/culture errors, variability notice, rich-text Apply
+    gatewayTimeoutMessage:
+      "Die Auswertung hat länger gedauert, als Ihr Netzwerk-Gateway erlaubt, und wurde daher abgebrochen. Bitte versuchen Sie es erneut. Wenn das weiterhin passiert, bitten Sie Ihren Administrator, das Proxy- oder CDN-Timeout für das Backoffice zu erhöhen.",
+    gatewayUnreachableMessage:
+      "Der Server war über Ihr Netzwerk-Gateway nicht erreichbar. Überprüfen Sie Ihre Verbindung und versuchen Sie es erneut.",
+    cultureNotCreatedMessage:
+      "Diese Sprachversion der Seite hat noch keinen Inhalt, daher gibt es nichts auszuwerten.",
+    invalidCultureMessage:
+      "Die ausgewählte Sprache konnte nicht ausgewertet werden. Laden Sie die Seite neu und versuchen Sie es erneut.",
+    samplingVariesNotice:
+      "Dieser Bericht wurde von einem KI-Modell erstellt, das keine deterministische Ausgabe unterstützt. Die Bewertungen können daher abweichen, wenn Sie die Auswertung erneut ausführen.",
+    rteApplyBlockedMessage:
+      "Dieser Vorschlag würde eingebettete Inhalte (Blöcke oder Medien) aus dem Feld entfernen und kann daher nicht automatisch übernommen werden. Kopieren Sie ihn und bearbeiten Sie das Feld stattdessen manuell.",
+    applyFailedMessage:
+      "Der Vorschlag konnte nicht auf dieses Feld angewendet werden. Ihr vorhandener Inhalt wurde nicht verändert.",
     retryButton: 'Erneut versuchen',
 
     // Modal: guardrail block
@@ -66,6 +81,9 @@ export default {
   },
 
   evaluatorConfig: {
+    // 003-upgrade-umbraco-17-6: sampling-support notice under the profile picker
+    samplingVariesNotice:
+      "Das ausgewählte KI-Profil verwendet ein Modell, das keine deterministische Ausgabe unterstützt. Die Bewertungen können zwischen wiederholten Auswertungen abweichen.",
     // Workspace: list
     sectionLabel: 'Seitenbewerter',
     listHeadline: 'Seitenbewerter-Konfigurationen',

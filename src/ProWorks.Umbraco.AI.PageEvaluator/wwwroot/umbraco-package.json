@@ -1,7 +1,7 @@
 {
   "$schema": "../../umbraco-package-schema.json",
   "name": "ProWorks.AI.PageEvaluator",
-  "version": "1.0.0",
+  "version": "17.3.0",
   "allowPublicAccess": false,
   "extensions": [
     {

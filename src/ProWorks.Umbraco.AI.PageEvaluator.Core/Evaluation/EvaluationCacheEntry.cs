@@ -8,6 +8,13 @@ public sealed class EvaluationCacheEntry
     /// <summary>The Umbraco content node GUID this cache entry belongs to.</summary>
     public Guid NodeId { get; init; }
 
+    /// <summary>
+    /// The culture this entry covers: lower-cased ISO code (e.g. <c>"da-dk"</c>) for culture-varying
+    /// documents, or <see cref="string.Empty"/> for invariant documents and for rows cached before
+    /// entries became culture-scoped (FR-018d).
+    /// </summary>
+    public string Culture { get; init; } = string.Empty;
+
     /// <summary>The document type alias at the time of caching.</summary>
     public string DocumentTypeAlias { get; init; } = string.Empty;
 

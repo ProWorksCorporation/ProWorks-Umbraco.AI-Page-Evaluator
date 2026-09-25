@@ -27,7 +27,10 @@ public static class UmbracoBuilderExtensions
         // Umbraco connection string — matches the pattern used by Umbraco.AI packages.
         builder.Services.AddUmbracoDbContext<UmbracoAIPageEvaluatorDbContext>(
             (options, connectionString, providerName, _) =>
-                UmbracoAIPageEvaluatorDbContext.ConfigureProvider(options, connectionString, providerName));
+                UmbracoAIPageEvaluatorDbContext.ConfigureProvider(options, connectionString, providerName),
+            // The evaluator's tables live in the Umbraco database, so share Umbraco's connection
+            // and transaction (the behaviour of the pre-17.6 overload, now obsolete).
+            shareUmbracoConnection: true);
 
         // Register repositories as Singleton — IEFCoreScopeProvider handles internal lifetimes.
         builder.Services.AddSingleton<IAIEvaluatorConfigRepository, EFCoreAIEvaluatorConfigRepository>();

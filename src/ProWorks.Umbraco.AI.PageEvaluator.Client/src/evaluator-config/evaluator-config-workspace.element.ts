@@ -364,7 +364,8 @@ export class EvaluatorConfigWorkspaceElement extends UmbLitElement {
                               ${this.localize.term('evaluatorConfig_editButton')}
                             </uui-button>
                             <uui-button
-                              look="danger"
+                              look="primary"
+                              color="danger"
                               label=${this.localize.term('evaluatorConfig_deleteButton')}
                               @click=${() => this._handleDelete(config.id)}>
                               ${this.localize.term('evaluatorConfig_deleteButton')}

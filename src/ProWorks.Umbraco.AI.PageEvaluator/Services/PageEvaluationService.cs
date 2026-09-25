@@ -6,9 +6,6 @@ using ProWorks.Umbraco.AI.PageEvaluator.Evaluators;
 using Umbraco.AI.Core.Chat;
 using Umbraco.AI.Core.Contexts;
 using Umbraco.AI.Core.InlineChat;
-using Umbraco.Cms.Core.DeliveryApi;
-using Umbraco.Cms.Core.Models.PublishedContent;
-using Umbraco.Cms.Core.Web;
 using System.Text.RegularExpressions;
 
 namespace ProWorks.Umbraco.AI.PageEvaluator.Services;
@@ -24,26 +21,26 @@ public sealed partial class PageEvaluationService : IPageEvaluationService
     private readonly IAIEvaluatorConfigService _configService;
     private readonly IAIContextService _contextService;
     private readonly IAIContextProcessor _contextProcessor;
-    private readonly IAIChatService _chatService;
-    private readonly IUmbracoContextAccessor _umbracoContextAccessor;
-    private readonly IApiContentBuilder _contentBuilder;
+    private readonly IEvaluatorChatExecutor _chatExecutor;
+    private readonly ICultureAwareContentPropertyResolver _propertyResolver;
+    private readonly ISamplingSupportService _samplingSupport;
     private readonly ILogger<PageEvaluationService> _logger;
 
     public PageEvaluationService(
         IAIEvaluatorConfigService configService,
         IAIContextService contextService,
         IAIContextProcessor contextProcessor,
-        IAIChatService chatService,
-        IUmbracoContextAccessor umbracoContextAccessor,
-        IApiContentBuilder contentBuilder,
+        IEvaluatorChatExecutor chatExecutor,
+        ICultureAwareContentPropertyResolver propertyResolver,
+        ISamplingSupportService samplingSupport,
         ILogger<PageEvaluationService> logger)
     {
         _configService = configService;
         _contextService = contextService;
         _contextProcessor = contextProcessor;
-        _chatService = chatService;
-        _umbracoContextAccessor = umbracoContextAccessor;
-        _contentBuilder = contentBuilder;
+        _chatExecutor = chatExecutor;
+        _propertyResolver = propertyResolver;
+        _samplingSupport = samplingSupport;
         _logger = logger;
     }
 
@@ -51,13 +48,15 @@ public sealed partial class PageEvaluationService : IPageEvaluationService
         Guid nodeId,
         string documentTypeAlias,
         IReadOnlyDictionary<string, object?> properties,
+        string? culture = null,
         CancellationToken cancellationToken = default)
     {
         AIEvaluatorConfig? config = await _configService.GetActiveForDocumentTypeAsync(documentTypeAlias, cancellationToken);
         if (config is null)
             throw new InvalidOperationException($"No active evaluator configuration found for document type '{documentTypeAlias}'.");
 
-        IReadOnlyDictionary<string, object?> resolvedProperties = ResolveProperties(nodeId, properties);
+        // FR-018a: the viewed culture's content (plus invariant properties), overlaid with unsaved text drafts.
+        IReadOnlyDictionary<string, object?> resolvedProperties = _propertyResolver.Resolve(nodeId, culture, properties);
 
         // Filter properties if the config specifies which aliases to include.
         if (config.PropertyAliases is { Count: > 0 })
@@ -107,32 +106,21 @@ public sealed partial class PageEvaluationService : IPageEvaluationService
             new ChatMessage(ChatRole.User, userMessage),
         ];
 
-        // Pass an explicit empty Tools list so the Umbraco.AI context-retrieval tool
-        // (get_context_resource) is not registered on this request. Context content is
-        // already injected into the system prompt above; tool-based retrieval would
-        // fail due to an argument-type mismatch in the current Umbraco.AI build.
-        // Temperature=0 for deterministic evaluation output.
-        // ResponseFormat=Json for structured JSON output.
-        // MaxOutputTokens: pages with many checks generate large JSON responses; set a
-        // generous ceiling to avoid truncated output (default varies by provider/model).
-        ChatOptions chatOptions = new()
-        {
-            Tools = [],
-            Temperature = 0f,
-            ResponseFormat = ChatResponseFormat.Json,
-            MaxOutputTokens = 16384,
-        };
-
-        ChatResponse response = await _chatService.GetChatResponseAsync(
-            chat =>
-            {
-                chat.WithAlias("proworks-page-evaluator")
-                    .WithName("ProWorks Page Evaluator")
-                    .WithDescription("Evaluates page content against configured criteria")
-                    .WithProfile(config.ProfileId)
-                    .WithChatOptions(chatOptions);
-            },
-            messages,
+        // The executor enforces the report schema where the provider supports it and falls back to
+        // JSON mode once per profile version if the provider rejects it (FR-017). Tools stay empty:
+        // context content is already injected into the system prompt above.
+        // Temperature=0 for deterministic output (Umbraco.AI strips it for models that reject it; FR-015).
+        // MaxOutputTokens: pages with many checks generate large JSON responses; set a generous ceiling.
+        ChatResponse response = await _chatExecutor.ExecuteAsync(
+            new EvaluatorChatRequest(
+                config.ProfileId,
+                Alias: "proworks-page-evaluator",
+                Name: "ProWorks Page Evaluator",
+                Description: "Evaluates page content against configured criteria",
+                Messages: messages,
+                Temperature: 0f,
+                MaxOutputTokens: 16384,
+                Schema: ChatSchemas.EvaluationReport(config.ScoringEnabled)),
             cancellationToken);
 
         string responseText = response.Text ?? string.Empty;
@@ -147,81 +135,13 @@ public sealed partial class PageEvaluationService : IPageEvaluationService
             ?? TryParseMarkdown(responseText)
             ?? EvaluationReport.Failed(responseText);
 
+        // FR-015b: record whether the model that actually served this response ignores temperature
+        // (Umbraco.AI strips it silently), so the report — fresh or cached — can show the notice.
+        bool temperatureSupported = await _samplingSupport.IsTemperatureSupportedAsync(
+            config.ProfileId, response.ModelId, cancellationToken);
+        report = report.WithSamplingSettingsIgnored(!temperatureSupported);
+
         return new EvaluationRawResult(report, systemPrompt, userMessage, responseText);
-    }
-
-    // ---------------------------------------------------------------------------
-    // Property resolution
-    // ---------------------------------------------------------------------------
-
-    /// <summary>
-    /// Returns an LLM-friendly property dictionary for the given content node.
-    ///
-    /// Strategy:
-    ///   1. Fetch the published version of the node and call
-    ///      <see cref="IApiContentBuilder.Build"/> — Umbraco's own Content Delivery API
-    ///      builder. It resolves every property type: rich text → plain HTML, media
-    ///      pickers → URL + metadata, Block List/Grid → structured JSON, MNTP → named
-    ///      references. The resulting <c>Properties</c> dictionary is directly
-    ///      JSON-serialisable and AI-readable.
-    ///   2. Overlay simple text draft values (non-JSON strings) from the back-office so
-    ///      that unsaved edits in text boxes / textareas are still evaluated.
-    ///   3. Fall back to raw draft values when the published cache is unavailable or
-    ///      the node has never been published.
-    /// </summary>
-    private IReadOnlyDictionary<string, object?> ResolveProperties(
-        Guid nodeId,
-        IReadOnlyDictionary<string, object?> draftProperties)
-    {
-        if (!_umbracoContextAccessor.TryGetUmbracoContext(out IUmbracoContext? ctx) || ctx.Content is null)
-        {
-            _logger.LogDebug("[PageEvaluator] No UmbracoContext — using raw draft properties.");
-            return draftProperties;
-        }
-
-        IPublishedContent? publishedContent = ctx.Content.GetById(nodeId);
-        if (publishedContent is null)
-        {
-            _logger.LogDebug("[PageEvaluator] Node {NodeId} not in published cache — using raw draft properties.", nodeId);
-            return draftProperties;
-        }
-
-        IDictionary<string, object?> resolved = _contentBuilder.Build(publishedContent)?.Properties
-            ?? new Dictionary<string, object?>();
-
-        var merged = new Dictionary<string, object?>(resolved);
-
-        // Overlay simple draft text values so unsaved editor changes reach the AI.
-        // Complex draft values (media pickers, blocks) stay as the CD-API-resolved form.
-        int draftOverrides = 0;
-        foreach ((string alias, object? value) in draftProperties)
-        {
-            if (IsSimpleTextDraft(value))
-            {
-                merged[alias] = value;
-                draftOverrides++;
-            }
-        }
-
-        _logger.LogDebug("[PageEvaluator] CD API resolved {Resolved} properties; {Draft} draft overrides applied.",
-            resolved.Count, draftOverrides);
-
-        return merged;
-    }
-
-    /// <summary>
-    /// Returns <see langword="true"/> when <paramref name="value"/> is a plain string
-    /// that does not look like serialised JSON (objects / arrays / UDIs).
-    /// These are the only draft values worth overlaying on the resolved published data.
-    /// </summary>
-    private static bool IsSimpleTextDraft(object? value)
-    {
-        if (value is not string s) return false;
-        string trimmed = s.TrimStart();
-        return trimmed.Length > 0
-            && trimmed[0] != '{'
-            && trimmed[0] != '['
-            && !trimmed.StartsWith("umb://", StringComparison.OrdinalIgnoreCase);
     }
 
     // ---------------------------------------------------------------------------

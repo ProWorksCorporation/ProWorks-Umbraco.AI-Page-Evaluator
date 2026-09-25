@@ -1,15 +1,16 @@
 import { html, css, nothing, type TemplateResult, customElement, state } from '@umbraco-cms/backoffice/external/lit';
 import { UmbModalBaseElement } from '@umbraco-cms/backoffice/modal';
 import { UMB_DOCUMENT_WORKSPACE_CONTEXT } from '@umbraco-cms/backoffice/document';
-import { getCachedEvaluation, evaluatePage } from '../shared/api-client.js';
-import { localizationKeyForErrorCategory } from '../shared/error-category.js';
+import { ApiError, getCachedEvaluation, evaluatePage } from '../shared/api-client.js';
+import { localizationKeyForError, shouldHideErrorDetail } from '../shared/error-category.js';
 import type { EvaluationReportResponse } from '../shared/types.js';
 import type { EvaluationModalData, EvaluationModalValue } from './evaluation-modal.token.js';
-import { resolveEntityAdapterByType } from '@umbraco-ai/core';
+import { applyRecommendedValue } from '../shared/apply-value.js';
+import type { RecApplyEventDetail } from './evaluation-report.element.js';
 import './evaluation-report.element.js';
 import './evaluation-warning.element.js';
 
-type ModalState = 'idle' | 'loading' | 'success' | 'parse-failed' | 'guardrail-blocked' | 'error';
+type ModalState = 'idle' | 'loading' | 'success' | 'parse-failed' | 'guardrail-blocked' | 'error' | 'culture-not-created';
 
 /** Localization keys for each progress phase, resolved via this.localize.term(). */
 const PROGRESS_KEYS = {
@@ -32,7 +33,7 @@ export class EvaluationModalElement extends UmbModalBaseElement<EvaluationModalD
       align-items: center;
       justify-content: center;
       gap: var(--uui-size-space-4, 16px);
-      padding: var(--uui-size-space-8, 32px);
+      padding: var(--uui-size-layout-2, 30px);
     }
 
     .cache-bar {
@@ -60,12 +61,15 @@ export class EvaluationModalElement extends UmbModalBaseElement<EvaluationModalD
   @state() private _report: EvaluationReportResponse | null = null;
   @state() private _errorDetail: string | null = null;
   @state() private _errorCategory: string | null = null;
+  @state() private _errorType: string | null = null;
   private _inFlight = false;
   private _workspaceContext: typeof UMB_DOCUMENT_WORKSPACE_CONTEXT.TYPE | undefined;
 
-  private readonly _onRecApply = async (e: Event): Promise<void> => {
-    const detail = (e as CustomEvent<{ propertyAlias: string; value: unknown }>).detail;
-    await this._applyRecommendation(detail.propertyAlias, detail.value);
+  private readonly _onRecApply = (e: Event): void => {
+    const detail = (e as CustomEvent<RecApplyEventDetail>).detail;
+    // The report lives in this modal's shadow root, so e.target is retargeted to the modal host;
+    // composedPath()[0] is the report element that dispatched it (and must receive any failure).
+    void this._applyRecommendation(e.composedPath()[0] ?? null, detail);
   };
 
   override connectedCallback(): void {
@@ -86,8 +90,14 @@ export class EvaluationModalElement extends UmbModalBaseElement<EvaluationModalD
     const data = this.data;
     if (!data) return;
 
+    // FR-018: a language version with no content yet has nothing to evaluate — say so, no API call.
+    if (data.cultureNotCreated) {
+      this._modalState = 'culture-not-created';
+      return;
+    }
+
     try {
-      const cached = await getCachedEvaluation(data.nodeId);
+      const cached = await getCachedEvaluation(data.nodeId, data.culture);
       if (cached) {
         if (!this.isConnected) return;
         this._report = cached;
@@ -118,7 +128,12 @@ export class EvaluationModalElement extends UmbModalBaseElement<EvaluationModalD
 
       if (!this.isConnected) return;
       this._progressKey = PROGRESS_KEYS.waiting;
-      const report = await evaluatePage(data);
+      const report = await evaluatePage({
+        nodeId: data.nodeId,
+        documentTypeAlias: data.documentTypeAlias,
+        culture: data.culture,
+        properties: data.properties,
+      });
 
       if (!this.isConnected) return;
       this._progressKey = PROGRESS_KEYS.rendering;
@@ -129,22 +144,20 @@ export class EvaluationModalElement extends UmbModalBaseElement<EvaluationModalD
       this._modalState = report.parseFailed ? 'parse-failed' : 'success';
     } catch (err) {
       if (!this.isConnected) return;
-      const status = err !== null && typeof err === 'object' && 'status' in err
-        ? err.status
-        : null;
-      const detail = err !== null && typeof err === 'object' && 'detail' in err
-        ? String(err.detail)
-        : null;
-      const category = err !== null && typeof err === 'object' && 'category' in err
-        ? String(err.category)
-        : null;
-      if (status === 422) {
+      const apiError = err instanceof ApiError ? err : null;
+      const type = apiError?.type ?? null;
+      const category = apiError?.category ?? null;
+      const hideDetail = shouldHideErrorDetail({ type });
+      // Gateway/network types are checked first: a proxy can't produce our guardrail 422.
+      if (!hideDetail && apiError?.status === 422) {
         this._modalState = 'guardrail-blocked';
-        this._errorDetail = detail;
+        this._errorDetail = apiError.detail;
       } else {
         this._modalState = 'error';
-        this._errorDetail = detail;
+        // The interceptor's gateway/network text is English-only — show just the localized message.
+        this._errorDetail = hideDetail ? null : (apiError?.detail ?? null);
         this._errorCategory = category;
+        this._errorType = type;
       }
     } finally {
       this._inFlight = false;
@@ -176,12 +189,28 @@ export class EvaluationModalElement extends UmbModalBaseElement<EvaluationModalD
     }
   }
 
-  private async _applyRecommendation(propertyAlias: string, value: unknown): Promise<void> {
-    if (!this._workspaceContext) return;
-    const adapter = await resolveEntityAdapterByType('document');
-    if (!this.isConnected) return;
-    if (!adapter?.applyValueChange) return;
-    await adapter.applyValueChange(this._workspaceContext, { path: propertyAlias, value });
+  /**
+   * Writes a recommendation into the document (FR-016). On failure, tells the report element so it
+   * can show the apply-failed message instead of "Applied"; existing content is left untouched.
+   */
+  private async _applyRecommendation(source: EventTarget | null, detail: RecApplyEventDetail): Promise<void> {
+    const ctx = this._workspaceContext;
+    const ok = ctx
+      ? await applyRecommendedValue(
+          ctx,
+          detail.propertyAlias,
+          this._report?.propertyEditorAliases[detail.propertyAlias],
+          detail.value,
+          // FR-018c: the helper writes the viewed culture only for culture-varying properties.
+          this.data?.culture ?? null,
+        )
+      : false;
+    if (ok || !this.isConnected) return;
+    source?.dispatchEvent(
+      new CustomEvent<RecApplyEventDetail>('page-evaluator-rec-apply-failed', {
+        detail: { propertyAlias: detail.propertyAlias, checkNumber: detail.checkNumber },
+      }),
+    );
   }
 
   override render(): TemplateResult {
@@ -226,9 +255,10 @@ export class EvaluationModalElement extends UmbModalBaseElement<EvaluationModalD
         return html`
           ${this._renderCacheBar()}
           <page-evaluator-report
-            .report="${this._report!}"
+            .report="${this._report}"
             .nodeId="${this.data?.nodeId ?? ''}"
-            .properties="${(this.data?.properties ?? {}) as Record<string, unknown>}"
+            .culture="${this.data?.culture ?? null}"
+            .properties="${this.data?.properties ?? {}}"
             .propertyEditorAliases="${this._report?.propertyEditorAliases ?? {}}"
             .propertyNames="${this._report?.propertyNames ?? {}}"
             .recommendationsEnabled="${this._report?.recommendationsEnabled ?? true}"
@@ -243,6 +273,13 @@ export class EvaluationModalElement extends UmbModalBaseElement<EvaluationModalD
             .rawResponse="${this._report?.rawResponse ?? null}"></page-evaluator-warning>
         `;
 
+      case 'culture-not-created':
+        return html`
+          <div class="error-container" role="status">
+            <p>${this.localize.term('evaluatePage_cultureNotCreatedMessage')}</p>
+          </div>
+        `;
+
       case 'guardrail-blocked':
         return html`
           <div class="error-container" role="alert">
@@ -252,7 +289,7 @@ export class EvaluationModalElement extends UmbModalBaseElement<EvaluationModalD
         `;
 
       case 'error': {
-        const messageKey = localizationKeyForErrorCategory(this._errorCategory, 'evaluatePage_aiErrorMessage');
+        const messageKey = localizationKeyForError({ type: this._errorType, category: this._errorCategory }, 'evaluatePage_aiErrorMessage');
         return html`
           <div class="error-container" role="alert">
             <p>${this.localize.term(messageKey)}</p>

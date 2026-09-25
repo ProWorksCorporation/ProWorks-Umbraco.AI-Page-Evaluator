@@ -12,7 +12,7 @@
     <AddRazorSupportForMvc>false</AddRazorSupportForMvc>
     <!-- NuGet packaging -->
     <PackageId>ProWorks.Umbraco.AI.PageEvaluator</PackageId>
-    <Version>17.0.0</Version>
+    <Version>17.3.0</Version>
     <Authors>ProWorks, Jason Prothero</Authors>
     <Company>ProWorks Corporation</Company>
     <PackageTags>umbraco;umbraco-marketplace;umbraco-cms;umbraco-ai;ai;page-evaluator;backoffice</PackageTags>
@@ -21,7 +21,7 @@
     <Copyright>Copyright (c) $([System.DateTime]::UtcNow.ToString(`yyyy`)) ProWorks Corporation</Copyright>
     <PackageReadmeFile>README.nuget.md</PackageReadmeFile>
     <PackageProjectUrl>https://github.com/ProWorksCorporation/ProWorks-Umbraco.AI-Page-Evaluator</PackageProjectUrl>
-    <PackageReleaseNotes>Version numbering now tracks the Umbraco.AI package version it targets (starting at 17.0.0), replacing the prior independent 1.x sequence. Upgraded to Umbraco CMS 17.5.1, Umbraco.AI 17.0.0, and @umbraco-ui/uui 1.18.1. AI provider failures are now classified into distinct, localized error messages (temporary/retryable, connectivity, authentication/configuration, unclassified) driven by AIProviderException.Category. Added Spanish, French, Danish, German, Norwegian, Swedish, Italian, Hindi, and Portuguese localizations alongside English.</PackageReleaseNotes>
+    <PackageReleaseNotes>17.3.0: Requires Umbraco CMS 17.6.2+ and Umbraco.AI 17.3.4+ (UUI 2, EF Core 10.0.10). Language-aware evaluation, recommendations, Apply and per-language caching on multilingual sites. Rich Text recommendations can be applied directly, with a safeguard that withholds Apply when embedded blocks would be lost, and now always come back as clean HTML (previously they could be returned in the editor's internal JSON format). Provider-enforced JSON response schemas with an automatic fallback. A notice when the AI model ignores the deterministic (temperature) setting. Localized messages for aborted/timed-out AI requests and for gateway timeouts/unreachable gateways. Evaluation cache is migrated automatically on first start. Installing on a site older than Umbraco 17.6.2 now fails with a clear NU1605 error instead of partially upgrading the CMS.</PackageReleaseNotes>
     <RepositoryUrl>https://github.com/ProWorksCorporation/ProWorks-Umbraco.AI-Page-Evaluator</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
   </PropertyGroup>
@@ -45,16 +45,29 @@
   <ItemGroup>
     <!-- Umbraco.AI.Core provides IAIProfileService and IAIContextService -->
     <!-- Verify version against installed Umbraco.AI package before building -->
-    <PackageReference Include="Umbraco.AI.Core" Version="17.0.0" />
+    <PackageReference Include="Umbraco.AI.Core" Version="[17.3.4, 18.0.0)" />
     <!-- Umbraco.AI.Startup provides UmbracoAIComposer (required for [ComposeAfter]) -->
-    <PackageReference Include="Umbraco.AI.Startup" Version="17.0.0" />
-    <!-- Pin Microsoft.Extensions.AI packages to 10.7.0 — required by Umbraco.AI.Core 17.0.0
+    <PackageReference Include="Umbraco.AI.Startup" Version="[17.3.4, 18.0.0)" />
+    <!-- CMS floor (FR-002). The Core/Persistence project references are PrivateAssets="all", so
+         without these the nuspec would carry no CMS dependency at all and NuGet would resolve the
+         CMS packages to Umbraco.AI's own floor (17.5.0), mixing 17.5.0 and 17.6.2 assemblies. -->
+    <PackageReference Include="Umbraco.Cms.Api.Management" Version="[17.6.2, 18.0.0)" />
+    <PackageReference Include="Umbraco.Cms.Persistence.EFCore" Version="[17.6.2, 18.0.0)" />
+    <PackageReference Include="Umbraco.Cms.Persistence.EFCore.Sqlite" Version="[17.6.2, 18.0.0)" />
+    <PackageReference Include="Umbraco.Cms.Persistence.EFCore.SqlServer" Version="[17.6.2, 18.0.0)" />
+    <!-- FR-003: the sub-package floors above don't stop an install on an older site: NuGet silently lifts
+         just those packages to 17.6.2 and leaves the rest (including the 17.5.x backoffice client) behind.
+         Depending on the Umbraco.Cms meta-package makes a site's own lower Umbraco.Cms reference a hard
+         NU1605 "package downgrade" error instead (QS-21, validation.md). Its build assets (Umbraco.Cms.Targets:
+         appsettings-schema copies, App_Plugins/umbraco folder content) are for web apps, not this library. -->
+    <PackageReference Include="Umbraco.Cms" Version="[17.6.2, 18.0.0)" ExcludeAssets="build;buildTransitive" />
+    <!-- Pin Microsoft.Extensions.AI packages to 10.7.0 — required by Umbraco.AI.Core 17.3.4
          (range [10.7.0, 10.999.999)) and Anthropic 12.29.1. Both packages must be the same version. -->
     <PackageReference Include="Microsoft.Extensions.AI" Version="10.7.0" />
     <PackageReference Include="Microsoft.Extensions.AI.Abstractions" Version="10.7.0" />
     <!-- EF Core providers: bundled DLLs need these at runtime in the consuming app -->
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.6" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.6" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.10" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.10" />
   </ItemGroup>
 
   <!-- TargetsForTfmSpecificBuildOutput is the official NuGet extensibility point for adding extra DLLs to lib/ -->

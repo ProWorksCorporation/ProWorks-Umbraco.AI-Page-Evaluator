@@ -5,9 +5,8 @@ using Umbraco.Cms.Core.Notifications;
 namespace ProWorks.Umbraco.AI.PageEvaluator.Notifications;
 
 /// <summary>
-/// Invalidates cached evaluation results when content is published.
-/// Deletes cache entries for each published node so the next evaluation
-/// modal open triggers a fresh AI evaluation.
+/// Invalidates cached evaluation results when content is published. Only the cultures that were
+/// published (or unpublished as part of the publish) are cleared; see <see cref="CacheInvalidationRules"/>.
 /// </summary>
 public sealed class ContentPublishedNotificationHandler
     : INotificationAsyncHandler<ContentPublishedNotification>
@@ -23,7 +22,11 @@ public sealed class ContentPublishedNotificationHandler
     {
         foreach (var content in notification.PublishedEntities)
         {
-            await _cacheRepository.DeleteAsync(content.Key, cancellationToken);
+            await CacheInvalidationRules.InvalidateAsync(
+                _cacheRepository,
+                content,
+                [notification.PublishedCultures, notification.UnpublishedCultures],
+                cancellationToken);
         }
     }
 }

@@ -9,6 +9,12 @@ public sealed class RecommendRequest
     /// <summary>The property aliases to generate recommendations for (one alias → one AI call).</summary>
     public IReadOnlyList<string> PropertyAliases { get; set; } = [];
 
+    /// <summary>
+    /// The culture being viewed. Required for culture-varying document types; ignored for invariant
+    /// ones. When set, the recommendation is written in that language (FR-018b).
+    /// </summary>
+    public string? Culture { get; set; }
+
     /// <summary>The check label (e.g. "Meta description is missing").</summary>
     public string CheckLabel { get; set; } = string.Empty;
 

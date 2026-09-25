@@ -39,6 +39,15 @@ public sealed class PageEvaluatorComposer : IComposer
         // Application services.
         builder.Services.AddScoped<IAIEvaluatorConfigService, AIEvaluatorConfigService>();
         builder.Services.AddScoped<IPageEvaluationService, PageEvaluationService>();
+        // Reads provider capability metadata only (no AI call); scoped like IAIProfileService's consumers.
+        builder.Services.AddScoped<ISamplingSupportService, SamplingSupportService>();
+        // FR-017: provider-enforced response schemas with a one-shot fallback; the support cache is
+        // process-wide so a rejected profile version isn't retried on every request.
+        builder.Services.AddSingleton<IStructuredOutputSupportCache, StructuredOutputSupportCache>();
+        builder.Services.AddScoped<IEvaluatorChatExecutor, EvaluatorChatExecutor>();
+        // FR-018a: culture-scoped content resolution. Its dependencies (IPublishedContentCache,
+        // IVariationContextAccessor, IOutputExpansionStrategyAccessor) are all singletons in CMS 17.6.2.
+        builder.Services.AddSingleton<ICultureAwareContentPropertyResolver, CultureAwareContentPropertyResolver>();
 
         // Decorate IApiContentBuilder with cycle detection so that cyclic content graphs
         // (e.g. Block List → Content Picker → ancestor) do not cause StackOverflowException
@@ -89,6 +98,7 @@ public sealed class PageEvaluatorComposer : IComposer
 
         // Invalidate cached evaluations when content is published.
         builder.AddNotificationAsyncHandler<ContentPublishedNotification, ContentPublishedNotificationHandler>();
+        builder.AddNotificationAsyncHandler<ContentUnpublishedNotification, ContentUnpublishedNotificationHandler>();
 
         // Register the PageEvaluatorTestFeature with the Umbraco.AI test runner.
         builder.AITestFeatures().Add<PageEvaluatorTestFeature>();

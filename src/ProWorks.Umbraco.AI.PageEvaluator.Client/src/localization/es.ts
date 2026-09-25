@@ -40,6 +40,21 @@ export default {
       'No se pudo contactar con el proveedor de IA. Compruebe su conexión e inténtelo de nuevo.',
     authenticationConfigurationMessage:
       'La conexión de IA necesita atención. Póngase en contacto con su administrador para revisar las credenciales o la configuración del perfil de IA.',
+    // 003-upgrade-umbraco-17-6: gateway/culture errors, variability notice, rich-text Apply
+    gatewayTimeoutMessage:
+      "La evaluación tardó más de lo que permite tu puerta de enlace de red, por lo que se detuvo. Inténtalo de nuevo. Si sigue ocurriendo, pide a tu administrador que aumente el tiempo de espera del proxy o de la CDN para el backoffice.",
+    gatewayUnreachableMessage:
+      "No se pudo acceder al servidor a través de tu puerta de enlace de red. Comprueba tu conexión e inténtalo de nuevo.",
+    cultureNotCreatedMessage:
+      "Esta versión de idioma de la página todavía no tiene contenido, así que no hay nada que evaluar.",
+    invalidCultureMessage:
+      "No se pudo evaluar el idioma seleccionado. Recarga la página e inténtalo de nuevo.",
+    samplingVariesNotice:
+      "Este informe lo generó un modelo de IA que no admite resultados deterministas, por lo que las puntuaciones pueden variar si vuelves a ejecutar la evaluación.",
+    rteApplyBlockedMessage:
+      "Esta sugerencia eliminaría contenido incrustado (bloques o medios) del campo, así que no se puede aplicar automáticamente. Cópiala y edítala manualmente.",
+    applyFailedMessage:
+      "No se pudo aplicar la sugerencia a este campo. Tu contenido actual no se ha modificado.",
     retryButton: 'Reintentar',
 
     // Modal: guardrail block
@@ -66,6 +81,9 @@ export default {
   },
 
   evaluatorConfig: {
+    // 003-upgrade-umbraco-17-6: sampling-support notice under the profile picker
+    samplingVariesNotice:
+      "El perfil de IA seleccionado usa un modelo que no admite resultados deterministas. Las puntuaciones de la evaluación pueden variar entre ejecuciones.",
     // Workspace: list
     sectionLabel: 'Evaluador de páginas',
     listHeadline: 'Configuraciones del evaluador de páginas',

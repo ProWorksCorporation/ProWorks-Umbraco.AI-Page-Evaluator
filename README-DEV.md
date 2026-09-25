@@ -37,7 +37,8 @@ tests/
 ### Prerequisites
 
 - .NET 10 SDK
-- Node.js 20+
+- Node.js **24.13+** and npm **11+** (required by `@umbraco-cms/backoffice` 17.6 and `@umbraco-ui/uui` 2; `package.json` declares `engines`)
+- Umbraco CMS 17.6.2 / Umbraco.AI 17.3.4 (the TestSite already references these)
 - An Umbraco.AI-compatible AI provider API key (Anthropic recommended)
 
 ### Build the backoffice client
@@ -69,15 +70,52 @@ Open `https://localhost:44318/umbraco` in a browser.
 | Login | `admin@example.com` / `SecureP@ssw0rd!` |
 | Database | SQLite (`umbraco.sqlite.db` in TestSite root) |
 
-After a fresh clone, import the demo content via **Settings → uSync → Import All**.
+After a fresh clone, import the demo content via **Settings → uSync → Import All**. This brings in the languages, doc types, data types, templates and content, but **not the evaluator configurations**: those live in the package's own database tables. Create them in **AI → Page Evaluator** (see "E2E prerequisites" below).
+
+**Templates and `Layout`:** the views use `Layout = "~/Views/Shared/_Layout.cshtml";` (the path form). Don't change it to `Layout = "_Layout";`. Umbraco reads a bare name as a *master template alias*, and because `_Layout` is a plain ASP.NET Core layout rather than an Umbraco template, creating or importing the templates then fails with `MasterTemplateNotFound`. The TestSite had no templates in its database until 2026-09-24 for exactly this reason.
+
+**One session per user:** the TestSite sets `Umbraco:CMS:Security:AllowConcurrentLogins` to `false`, so every new login (including the e2e auth setup and any script) signs the same user out elsewhere. Use a separate backoffice user for automation if you want to stay logged in.
 
 ### Run the tests
 
 ```bash
+# Server (xUnit + NSubstitute; the cache repository tests use in-memory SQLite)
 dotnet test
+
+# Client (Vitest unit + MSW integration)
+cd src/ProWorks.Umbraco.AI.PageEvaluator.Client
+npm run typecheck && npm run lint && npm test
+
+# E2E against the running TestSite (Playwright + @umbraco/playwright-testhelpers; see "E2E prerequisites")
+npx playwright install chromium   # first time only
+URL=https://localhost:44318 UMBRACO_URL=https://localhost:44318 \
+UMBRACO_USER_LOGIN=admin@example.com UMBRACO_USER_PASSWORD='SecureP@ssw0rd!' npm run test:e2e
 ```
 
-The test suite covers controller error handling, service behavior, persistence mapping, cache invalidation, notification handling, and the Umbraco.AI test feature integration (226 tests, xUnit + NSubstitute).
+The server suite covers controller error handling (including the Umbraco.AI 17.1+ `Cancelled` category and culture validation), the evaluator chat executor (enforced schemas and the one-shot fallback), culture-aware content resolution, the per-culture cache repository, publish/unpublish invalidation, and the Umbraco.AI test feature. The client suite covers the API client's error typing, the rich-text block safeguard, the apply helper, the report and form elements, and localization key parity across all 10 languages.
+
+**E2E prerequisites.** The suite runs against the real TestSite and mocks only the AI endpoints (`tests/e2e/helpers.ts`), so it relies on the TestSite's content and on these **active evaluator configurations**, which aren't in uSync:
+
+| Doc type | Why the specs need it |
+|---|---|
+| `home` | Evaluate Page on Home; the config list/form specs open **"Home Page Scoring Test"** by name |
+| `landingPage` | the multilingual specs on "ProWorks AI Page Evaluator" (any name; recommendations enabled) |
+| `contentPage` | must have **no** active config: the About Us spec checks the button is hidden |
+
+The specs don't save anything to existing content. `tags-apply.spec.ts` needs a Tags property the TestSite doesn't have, so it creates a throwaway doc type, document and evaluator config (all prefixed `ZZ E2E`) through the Management API and deletes them again, even on failure. Note: the testhelpers' `umbracoApi` fixture doesn't work on CMS 17.6 (it expects the access token in localStorage; 17.6 uses HttpOnly cookies). Use `tests/e2e/management-api.ts` for test data instead.
+
+Client test notes: the Vitest setup (`tests/setup/vitest.setup.ts`) loads `element-internals-polyfill` because happy-dom lacks `attachInternals()`, which UUI 2 form controls need; await `el.updateComplete` before asserting on a rendered `UmbLitElement`.
+
+### Multilingual test content
+
+The uSync files already contain it (imported with **Import All**):
+
+- Languages `en-US` (default) and `da-DK` (Danish, falls back to `en-US`).
+- The `landingPage` doc type and its `seo` composition **vary by culture**; `headerImage` and `ogImage` stay invariant.
+- **ProWorks AI Page Evaluator** (under Home, key `3e4f5a6b-7c8d-4e9f-a0b1-c2d3e4f5a6b7`) has English and Danish text, both published. Only the **Danish** `introText` embeds a block (a "Test block", key `d3a0c1e2-5b7f-4c1a-9e2d-7f003da00001`), so the rich-text Apply safeguard can be tested against a field with and without blocks. The shared "Richtext editor" data type allows the `testBlock` element type for this.
+- Our Services and Umbraco AI are `landingPage` pages with **no** Danish variant, for the "language not created yet" case.
+
+If you change this content, re-export with uSync so the setup stays reproducible.
 
 ### Build the NuGet package
 
@@ -111,8 +149,10 @@ and update `<PackageReleaseNotes>` to describe what changed.
 
 ### Database migrations
 
+`dotnet-ef` isn't required globally; a local copy works: `dotnet tool install dotnet-ef --version 10.0.10 --tool-path ./.tools` then run `./.tools/dotnet-ef` in place of `dotnet ef`. Migrations are applied automatically at startup by `RunPageEvaluatorMigrationNotificationHandler`. On SQLite, primary-key changes rebuild the table (EF logs a non-transactional warning — expected).
+
 ```bash
-# SQLite (delete old migration files first)
+# SQLite
 dotnet ef migrations add <Name> \
   --project src/ProWorks.Umbraco.AI.PageEvaluator.Persistence.Sqlite \
   --context UmbracoAIPageEvaluatorDbContext
@@ -131,7 +171,7 @@ dotnet ef migrations add <Name> \
 Editor clicks "Evaluate Page"
         │
         ▼
-Modal opens → GET /evaluate/cached/{nodeId}
+Modal opens → GET /evaluate/cached/{nodeId}?culture={viewed culture, if the page varies by culture}
         │
         ├─ Cache hit → renders report immediately with "Last evaluated" timestamp
         │              "Re-run Evaluation" button available to force a fresh call
@@ -139,26 +179,30 @@ Modal opens → GET /evaluate/cached/{nodeId}
         └─ Cache miss (or Re-run) →
                 │
                 ▼
-        Workspace action collects draft property values
+        Workspace action collects the viewed culture's draft values (+ invariant values)
                 │
                 ▼
         POST /umbraco/management/api/v1/page-evaluator/evaluate
                 │
                 ├─ Fetches the active evaluator config for the document type
-                ├─ Resolves published property values via IApiContentBuilder
-                │   (media → metadata, rich text → plain text, blocks → structured JSON)
+                ├─ Validates the culture (400 invalidCulture / cultureNotCreated)
+                ├─ Resolves property values for that culture (CultureAwareContentPropertyResolver:
+                │   published, else draft; Delivery API mapping — media → metadata,
+                │   rich text → plain text, blocks → structured JSON)
                 ├─ Filters to selected properties only (if PropertyAliases configured)
                 ├─ Strips HTML tags and truncates long values (2000 char limit)
                 ├─ Overlays simple draft text values for unsaved edits
                 ├─ Builds system prompt (config prompt + optional context + JSON format instructions)
                 ├─ Adds defensive preamble to guard against prompt injection from content
-                └─ Calls the AI model via IAIChatService (Temperature=0, JSON format)
+                └─ Calls the AI model via IEvaluatorChatExecutor → IAIChatService
+                    (Temperature=0, enforced JSON schema; one-time fallback to JSON mode
+                     if the provider rejects the schema)
                         │
                         ▼
                 Parses JSON response → EvaluationReport
                         │
                         ▼
-                Saved to umbracoAIEvaluationCache (keyed on NodeId)
+                Saved to umbracoAIEvaluationCache (keyed on NodeId + Culture)
                         │
                         ▼
                 Modal renders: score pills · suggestions · attention items · passing items

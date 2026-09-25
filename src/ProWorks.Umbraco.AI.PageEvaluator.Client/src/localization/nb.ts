@@ -40,6 +40,21 @@ export default {
       'Kunne ikke nå AI-leverandøren. Kontroller tilkoblingen og prøv igjen.',
     authenticationConfigurationMessage:
       'AI-tilkoblingen trenger oppmerksomhet. Kontakt administratoren for å kontrollere AI-profilens legitimasjon eller konfigurasjon.',
+    // 003-upgrade-umbraco-17-6: gateway/culture errors, variability notice, rich-text Apply
+    gatewayTimeoutMessage:
+      "Evalueringen tok lengre tid enn nettverksgatewayen din tillater, så den ble stoppet. Prøv igjen. Hvis det fortsetter å skje, ber du administratoren om å øke tidsavbruddet for proxy eller CDN for backoffice.",
+    gatewayUnreachableMessage:
+      "Serveren kunne ikke nås gjennom nettverksgatewayen din. Sjekk tilkoblingen og prøv igjen.",
+    cultureNotCreatedMessage:
+      "Denne språkversjonen av siden har ikke noe innhold ennå, så det er ingenting å evaluere.",
+    invalidCultureMessage:
+      "Det valgte språket kunne ikke evalueres. Last inn siden på nytt og prøv igjen.",
+    samplingVariesNotice:
+      "Denne rapporten ble laget av en AI-modell som ikke støtter deterministisk utdata, så poengsummene kan variere hvis du kjører evalueringen på nytt.",
+    rteApplyBlockedMessage:
+      "Dette forslaget ville fjerne innebygd innhold (blokker eller medier) fra feltet, så det kan ikke brukes automatisk. Kopier det og rediger manuelt i stedet.",
+    applyFailedMessage:
+      "Forslaget kunne ikke brukes på dette feltet. Det eksisterende innholdet ditt er ikke endret.",
     retryButton: 'Prøv igjen',
 
     // Modal: guardrail block
@@ -66,6 +81,9 @@ export default {
   },
 
   evaluatorConfig: {
+    // 003-upgrade-umbraco-17-6: sampling-support notice under the profile picker
+    samplingVariesNotice:
+      "Den valgte AI-profilen bruker en modell som ikke støtter deterministisk utdata. Evalueringspoengene kan variere mellom kjøringer.",
     // Workspace: list
     sectionLabel: 'Sideevaluator',
     listHeadline: 'Sideevaluator-konfigurasjoner',

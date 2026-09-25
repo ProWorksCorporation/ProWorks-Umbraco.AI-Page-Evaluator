@@ -25,6 +25,7 @@ using Umbraco.AI.Core.Providers.Errors;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Web.Common.Authorization;
+using ProWorks.Umbraco.AI.PageEvaluator.Tests.TestData;
 using Xunit;
 
 namespace ProWorks.Umbraco.AI.PageEvaluator.Tests.Controllers;
@@ -46,6 +47,8 @@ public class PageEvaluatorApiControllerTests
     private readonly IAIChatService _chatService = Substitute.For<IAIChatService>();
     private readonly IPropertyEditorSchemaService _propertyEditorSchemaService = Substitute.For<IPropertyEditorSchemaService>();
     private readonly IOptions<PageEvaluatorOptions> _options = Options.Create(new PageEvaluatorOptions());
+    private readonly ISamplingSupportService _samplingSupport = Substitute.For<ISamplingSupportService>();
+    private readonly ILanguageService _languageService = Substitute.For<ILanguageService>();
     private readonly PageEvaluatorApiController _sut;
 
     public PageEvaluatorApiControllerTests()
@@ -62,7 +65,7 @@ public class PageEvaluatorApiControllerTests
             _evaluationService, _configService, _profileService, _contextService,
             _contentTypeService, _cacheRepository, _logger,
             _contentService, _authorizationService,
-            _chatService, _propertyEditorSchemaService, _options);
+            new EvaluatorChatExecutor(_chatService, _profileService, new StructuredOutputSupportCache(), Microsoft.Extensions.Logging.Abstractions.NullLogger<EvaluatorChatExecutor>.Instance), _propertyEditorSchemaService, _options, _samplingSupport, _languageService);
         _sut.ControllerContext = new ControllerContext
         {
             HttpContext = new DefaultHttpContext(),
@@ -103,7 +106,7 @@ public class PageEvaluatorApiControllerTests
         };
         var expectedReport = EvaluationReport.Parsed(score, checks, "Add meta description.");
 
-        _evaluationService.EvaluateAsync(nodeId, alias, Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<CancellationToken>())
+        _evaluationService.EvaluateAsync(nodeId, alias, Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .Returns(expectedReport);
 
         IActionResult result = await _sut.EvaluateAsync(request);
@@ -122,7 +125,7 @@ public class PageEvaluatorApiControllerTests
         const string alias = "blogPost";
         var request = new EvaluatePageRequest { NodeId = nodeId, DocumentTypeAlias = alias, Properties = new() };
 
-        _evaluationService.EvaluateAsync(nodeId, alias, Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<CancellationToken>())
+        _evaluationService.EvaluateAsync(nodeId, alias, Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .Returns(EvaluationReport.Parsed(new EvaluationScore(1, 1), [], null));
 
         IActionResult result = await _sut.EvaluateAsync(request);
@@ -146,7 +149,7 @@ public class PageEvaluatorApiControllerTests
         var request = new EvaluatePageRequest { NodeId = nodeId, DocumentTypeAlias = alias, Properties = new() };
 
         var rawReport = EvaluationReport.Failed("The page looks OK but I could not structure this.");
-        _evaluationService.EvaluateAsync(nodeId, alias, Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<CancellationToken>())
+        _evaluationService.EvaluateAsync(nodeId, alias, Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .Returns(rawReport);
 
         IActionResult result = await _sut.EvaluateAsync(request);
@@ -167,7 +170,7 @@ public class PageEvaluatorApiControllerTests
             Properties = new(),
         };
 
-        _evaluationService.EvaluateAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<CancellationToken>())
+        _evaluationService.EvaluateAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .ThrowsAsync(new InvalidOperationException("No active configuration for document type 'unknownType'."));
 
         IActionResult result = await _sut.EvaluateAsync(request);
@@ -196,7 +199,7 @@ public class PageEvaluatorApiControllerTests
         Assert.IsType<NotFoundObjectResult>(result);
         await _evaluationService.DidNotReceive()
             .EvaluateAsync(Arg.Any<Guid>(), Arg.Any<string>(),
-                Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<CancellationToken>());
+                Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<string?>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -227,7 +230,7 @@ public class PageEvaluatorApiControllerTests
         _contentService.GetById(nodeId).Returns(content);
 
         _evaluationService
-            .EvaluateAsync(nodeId, "blogPost", Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<CancellationToken>())
+            .EvaluateAsync(nodeId, "blogPost", Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .Returns(EvaluationReport.Parsed(new EvaluationScore(1, 1), [], null));
 
         var request = new EvaluatePageRequest
@@ -239,7 +242,7 @@ public class PageEvaluatorApiControllerTests
         IActionResult result = await _sut.EvaluateAsync(request);
 
         await _evaluationService.Received(1)
-            .EvaluateAsync(nodeId, "blogPost", Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<CancellationToken>());
+            .EvaluateAsync(nodeId, "blogPost", Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<string?>(), Arg.Any<CancellationToken>());
         Assert.IsType<OkObjectResult>(result);
     }
 
@@ -256,7 +259,7 @@ public class PageEvaluatorApiControllerTests
         IActionResult result = await _sut.GetCachedEvaluationAsync(nodeId);
 
         Assert.IsType<NotFoundObjectResult>(result);
-        await _cacheRepository.DidNotReceive().GetAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+        await _cacheRepository.DidNotReceive().GetAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -287,7 +290,7 @@ public class PageEvaluatorApiControllerTests
         var nodeId = Guid.NewGuid();
         var cachedAt = new DateTime(2026, 4, 2, 12, 0, 0, DateTimeKind.Utc);
         var cachedReport = EvaluationReport.Parsed(new EvaluationScore(5, 6), [], "Looks good.");
-        _cacheRepository.GetAsync(nodeId, Arg.Any<CancellationToken>())
+        _cacheRepository.GetAsync(nodeId, Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(new EvaluationCacheEntry
             {
                 NodeId = nodeId,
@@ -308,7 +311,7 @@ public class PageEvaluatorApiControllerTests
     public async Task GetCachedEvaluationAsync_WhenCacheMiss_Returns404()
     {
         var nodeId = Guid.NewGuid();
-        _cacheRepository.GetAsync(nodeId, Arg.Any<CancellationToken>())
+        _cacheRepository.GetAsync(nodeId, Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns((EvaluationCacheEntry?)null);
 
         IActionResult result = await _sut.GetCachedEvaluationAsync(nodeId);
@@ -755,6 +758,9 @@ public class PageEvaluatorApiControllerTests
     [Theory]
     [InlineData(AIProviderErrorCategory.Transient, 503, "temporaryRetryable")]
     [InlineData(AIProviderErrorCategory.RateLimited, 503, "temporaryRetryable")]
+    // Umbraco.AI 17.1.1+ wraps cancellations the caller didn't request as Cancelled
+    // (003-upgrade-umbraco-17-6 research R10); this used to throw inside the catch block.
+    [InlineData(AIProviderErrorCategory.Cancelled, 503, "temporaryRetryable")]
     [InlineData(AIProviderErrorCategory.NetworkError, 502, "connectivity")]
     [InlineData(AIProviderErrorCategory.Authentication, 500, "authenticationConfiguration")]
     [InlineData(AIProviderErrorCategory.InvalidRequest, 500, "unclassified")]
@@ -773,7 +779,7 @@ public class PageEvaluatorApiControllerTests
         var info = new AIProviderErrorInfo(
             category, "safe user message", "provider_code_123",
             "raw internal detail — must never appear in the response");
-        _evaluationService.EvaluateAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<CancellationToken>())
+        _evaluationService.EvaluateAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .ThrowsAsync(new AIProviderException(info));
 
         IActionResult result = await _sut.EvaluateAsync(request);
@@ -792,6 +798,41 @@ public class PageEvaluatorApiControllerTests
     }
 
     [Fact]
+    public async Task EvaluateAsync_WhenProviderTimesOut_Returns503TemporaryRetryable()
+    {
+        // Umbraco.AI maps an HttpClient timeout to Transient with provider code "timeout".
+        var info = new AIProviderErrorInfo(
+            AIProviderErrorCategory.Transient, "The AI provider timed out.", "timeout", "The request was canceled due to the configured HttpClient.Timeout");
+        _evaluationService.EvaluateAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new AIProviderException(info));
+
+        IActionResult result = await _sut.EvaluateAsync(new EvaluatePageRequest { NodeId = Guid.NewGuid(), DocumentTypeAlias = "blogPost", Properties = new() });
+
+        var statusResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(503, statusResult.StatusCode);
+        Assert.Contains("\"category\":\"temporaryRetryable\"", System.Text.Json.JsonSerializer.Serialize(statusResult.Value));
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_WhenEditorCancels_PropagatesWithoutErrorLog()
+    {
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+        _evaluationService.EvaluateAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new OperationCanceledException(cts.Token));
+
+        await Assert.ThrowsAsync<OperationCanceledException>(() =>
+            _sut.EvaluateAsync(new EvaluatePageRequest { NodeId = Guid.NewGuid(), DocumentTypeAlias = "blogPost", Properties = new() }, cts.Token));
+
+        _logger.DidNotReceive().Log(
+            LogLevel.Error,
+            Arg.Any<EventId>(),
+            Arg.Any<object>(),
+            Arg.Any<Exception?>(),
+            Arg.Any<Func<object, Exception?, string>>());
+    }
+
+    [Fact]
     public async Task EvaluateAsync_WhenAIProviderException_LogsFullDetailServerSide()
     {
         var nodeId = Guid.NewGuid();
@@ -805,7 +846,7 @@ public class PageEvaluatorApiControllerTests
         var info = new AIProviderErrorInfo(
             AIProviderErrorCategory.Authentication, "safe user message", "provider_code_456",
             "raw internal detail for logs only");
-        _evaluationService.EvaluateAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<CancellationToken>())
+        _evaluationService.EvaluateAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .ThrowsAsync(new AIProviderException(info));
 
         await _sut.EvaluateAsync(request);
@@ -828,7 +869,7 @@ public class PageEvaluatorApiControllerTests
             Properties = new(),
         };
 
-        _evaluationService.EvaluateAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<CancellationToken>())
+        _evaluationService.EvaluateAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .ThrowsAsync(new NullReferenceException("Object reference not set"));
 
         IActionResult result = await _sut.EvaluateAsync(request);
@@ -863,7 +904,7 @@ public class PageEvaluatorApiControllerTests
         };
         _evaluationService.EvaluateAsync(
                 Arg.Any<Guid>(), Arg.Any<string>(),
-                Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<CancellationToken>())
+                Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .ThrowsAsync(new AIGuardrailBlockedException(evaluationResult));
 
         IActionResult result = await _sut.EvaluateAsync(request);
@@ -889,7 +930,7 @@ public class PageEvaluatorApiControllerTests
             Properties = new(),
         };
 
-        _evaluationService.EvaluateAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<CancellationToken>())
+        _evaluationService.EvaluateAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .ThrowsAsync(new OperationCanceledException());
 
         await Assert.ThrowsAsync<OperationCanceledException>(() => _sut.EvaluateAsync(request));
@@ -973,7 +1014,7 @@ public class PageEvaluatorApiControllerTests
             _evaluationService, _configService, _profileService, _contextService,
             _contentTypeService, _cacheRepository, _logger,
             _contentService, _authorizationService,
-            _chatService, _propertyEditorSchemaService, options);
+            new EvaluatorChatExecutor(_chatService, _profileService, new StructuredOutputSupportCache(), Microsoft.Extensions.Logging.Abstractions.NullLogger<EvaluatorChatExecutor>.Instance), _propertyEditorSchemaService, options, _samplingSupport, _languageService);
         sut.ControllerContext = _sut.ControllerContext;
         return sut;
     }
@@ -1253,7 +1294,7 @@ public class PageEvaluatorApiControllerTests
         const string alias = "blogPost";
         var request = new EvaluatePageRequest { NodeId = nodeId, DocumentTypeAlias = alias, Properties = new() };
 
-        _evaluationService.EvaluateAsync(nodeId, alias, Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<CancellationToken>())
+        _evaluationService.EvaluateAsync(nodeId, alias, Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .Returns(EvaluationReport.Parsed(new EvaluationScore(1, 1), [], null));
 
         var contentType = Substitute.For<IContentType>();
@@ -1278,7 +1319,7 @@ public class PageEvaluatorApiControllerTests
         const string alias = "blogPost";
         var request = new EvaluatePageRequest { NodeId = nodeId, DocumentTypeAlias = alias, Properties = new() };
 
-        _evaluationService.EvaluateAsync(nodeId, alias, Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<CancellationToken>())
+        _evaluationService.EvaluateAsync(nodeId, alias, Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .Returns(EvaluationReport.Parsed(new EvaluationScore(1, 1), [], null));
 
         _contentTypeService.Get(alias).Returns((IContentType?)null);
@@ -1298,7 +1339,7 @@ public class PageEvaluatorApiControllerTests
         const string alias = "blogPost";
         var request = new EvaluatePageRequest { NodeId = nodeId, DocumentTypeAlias = alias, Properties = new() };
 
-        _evaluationService.EvaluateAsync(nodeId, alias, Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<CancellationToken>())
+        _evaluationService.EvaluateAsync(nodeId, alias, Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .Returns(EvaluationReport.Parsed(new EvaluationScore(1, 1), [], null));
 
         var contentType = Substitute.For<IContentType>();
@@ -1332,7 +1373,7 @@ public class PageEvaluatorApiControllerTests
             Report = cachedReport,
             CachedAt = DateTime.UtcNow,
         };
-        _cacheRepository.GetAsync(nodeId, Arg.Any<CancellationToken>()).Returns(entry);
+        _cacheRepository.GetAsync(nodeId, Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(entry);
 
         var contentType = Substitute.For<IContentType>();
         var propType = Substitute.For<IPropertyType>();
@@ -1362,7 +1403,7 @@ public class PageEvaluatorApiControllerTests
             Report = cachedReport,
             CachedAt = DateTime.UtcNow,
         };
-        _cacheRepository.GetAsync(nodeId, Arg.Any<CancellationToken>()).Returns(entry);
+        _cacheRepository.GetAsync(nodeId, Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(entry);
         _contentTypeService.Get(alias).Returns((IContentType?)null);
 
         IActionResult result = await _sut.GetCachedEvaluationAsync(nodeId);
@@ -1380,7 +1421,7 @@ public class PageEvaluatorApiControllerTests
         const string alias = "blogPost";
         var request = new EvaluatePageRequest { NodeId = nodeId, DocumentTypeAlias = alias, Properties = new() };
 
-        _evaluationService.EvaluateAsync(nodeId, alias, Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<CancellationToken>())
+        _evaluationService.EvaluateAsync(nodeId, alias, Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .Returns(EvaluationReport.Parsed(new EvaluationScore(1, 1), [], null));
 
         var contentType = Substitute.For<IContentType>();
@@ -1412,7 +1453,7 @@ public class PageEvaluatorApiControllerTests
             Report = cachedReport,
             CachedAt = DateTime.UtcNow,
         };
-        _cacheRepository.GetAsync(nodeId, Arg.Any<CancellationToken>()).Returns(entry);
+        _cacheRepository.GetAsync(nodeId, Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(entry);
 
         var contentType = Substitute.For<IContentType>();
         var propType = Substitute.For<IPropertyType>();
@@ -1437,7 +1478,7 @@ public class PageEvaluatorApiControllerTests
         const string alias = "blogPost";
         var request = new EvaluatePageRequest { NodeId = nodeId, DocumentTypeAlias = alias, Properties = new() };
 
-        _evaluationService.EvaluateAsync(nodeId, alias, Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<CancellationToken>())
+        _evaluationService.EvaluateAsync(nodeId, alias, Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .Returns(EvaluationReport.Parsed(new EvaluationScore(1, 1), [], null));
 
         var contentType = Substitute.For<IContentType>();
@@ -1467,7 +1508,7 @@ public class PageEvaluatorApiControllerTests
     public async Task EvaluateAsync_AttachesRecommendationsEnabled_TrueWhenConfigEnabled()
     {
         var nodeId = Guid.NewGuid();
-        _evaluationService.EvaluateAsync(nodeId, "blogPost", Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<CancellationToken>())
+        _evaluationService.EvaluateAsync(nodeId, "blogPost", Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .Returns(EvaluationReport.Parsed(new EvaluationScore(1, 1), [], null));
 
         var config = BuildConfig("blogPost");
@@ -1486,7 +1527,7 @@ public class PageEvaluatorApiControllerTests
     public async Task EvaluateAsync_AttachesRecommendationsEnabled_FalseWhenConfigDisabled()
     {
         var nodeId = Guid.NewGuid();
-        _evaluationService.EvaluateAsync(nodeId, "blogPost", Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<CancellationToken>())
+        _evaluationService.EvaluateAsync(nodeId, "blogPost", Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .Returns(EvaluationReport.Parsed(new EvaluationScore(1, 1), [], null));
 
         var config = BuildConfig("blogPost");
@@ -1505,7 +1546,7 @@ public class PageEvaluatorApiControllerTests
     public async Task GetCachedEvaluationAsync_AttachesRecommendationsEnabled_TrueWhenConfigEnabled()
     {
         var nodeId = Guid.NewGuid();
-        _cacheRepository.GetAsync(nodeId, Arg.Any<CancellationToken>())
+        _cacheRepository.GetAsync(nodeId, Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(new EvaluationCacheEntry
             {
                 NodeId = nodeId,
@@ -1530,7 +1571,7 @@ public class PageEvaluatorApiControllerTests
     public async Task GetCachedEvaluationAsync_AttachesRecommendationsEnabled_FalseWhenConfigDisabled()
     {
         var nodeId = Guid.NewGuid();
-        _cacheRepository.GetAsync(nodeId, Arg.Any<CancellationToken>())
+        _cacheRepository.GetAsync(nodeId, Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(new EvaluationCacheEntry
             {
                 NodeId = nodeId,
@@ -1565,7 +1606,7 @@ public class PageEvaluatorApiControllerTests
         });
         var sut = BuildSut(optionsWithExtra);
 
-        _evaluationService.EvaluateAsync(nodeId, "blogPost", Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<CancellationToken>())
+        _evaluationService.EvaluateAsync(nodeId, "blogPost", Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .Returns(EvaluationReport.Parsed(new EvaluationScore(1, 1), [], null));
 
         var result = await sut.EvaluateAsync(new EvaluatePageRequest { NodeId = nodeId, DocumentTypeAlias = "blogPost", Properties = new() });
@@ -1581,7 +1622,7 @@ public class PageEvaluatorApiControllerTests
     public async Task EvaluateAsync_WhenNoAdditionalEditorAliases_AttachesEmptyList()
     {
         var nodeId = Guid.NewGuid();
-        _evaluationService.EvaluateAsync(nodeId, "blogPost", Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<CancellationToken>())
+        _evaluationService.EvaluateAsync(nodeId, "blogPost", Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .Returns(EvaluationReport.Parsed(new EvaluationScore(1, 1), [], null));
 
         var result = await _sut.EvaluateAsync(new EvaluatePageRequest { NodeId = nodeId, DocumentTypeAlias = "blogPost", Properties = new() });
@@ -1601,7 +1642,7 @@ public class PageEvaluatorApiControllerTests
         });
         var sut = BuildSut(optionsWithExtra);
 
-        _evaluationService.EvaluateAsync(nodeId, "blogPost", Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<CancellationToken>())
+        _evaluationService.EvaluateAsync(nodeId, "blogPost", Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .Returns(EvaluationReport.Parsed(new EvaluationScore(1, 1), [], null));
 
         EvaluationCacheEntry? capturedEntry = null;
@@ -1625,7 +1666,7 @@ public class PageEvaluatorApiControllerTests
         });
         var sut = BuildSut(optionsWithExtra);
 
-        _cacheRepository.GetAsync(nodeId, Arg.Any<CancellationToken>())
+        _cacheRepository.GetAsync(nodeId, Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(new EvaluationCacheEntry
             {
                 NodeId = nodeId,
@@ -1646,7 +1687,7 @@ public class PageEvaluatorApiControllerTests
     public async Task GetCachedEvaluationAsync_WhenNoAdditionalEditorAliases_AttachesEmptyList()
     {
         var nodeId = Guid.NewGuid();
-        _cacheRepository.GetAsync(nodeId, Arg.Any<CancellationToken>())
+        _cacheRepository.GetAsync(nodeId, Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(new EvaluationCacheEntry
             {
                 NodeId = nodeId,
@@ -1914,6 +1955,9 @@ public class PageEvaluatorApiControllerTests
     [Theory]
     [InlineData(AIProviderErrorCategory.Transient, 503, "temporaryRetryable")]
     [InlineData(AIProviderErrorCategory.RateLimited, 503, "temporaryRetryable")]
+    // Umbraco.AI 17.1.1+ wraps cancellations the caller didn't request as Cancelled
+    // (003-upgrade-umbraco-17-6 research R10); this used to throw inside the catch block.
+    [InlineData(AIProviderErrorCategory.Cancelled, 503, "temporaryRetryable")]
     [InlineData(AIProviderErrorCategory.NetworkError, 502, "connectivity")]
     [InlineData(AIProviderErrorCategory.Authentication, 500, "authenticationConfiguration")]
     [InlineData(AIProviderErrorCategory.InvalidRequest, 500, "unclassified")]
@@ -1957,6 +2001,42 @@ public class PageEvaluatorApiControllerTests
         Assert.Contains($"\"status\":{expectedStatus}", json);
         Assert.DoesNotContain("provider_code_789", json);
         Assert.DoesNotContain("raw internal detail", json);
+    }
+
+    [Fact]
+    public async Task RecommendAsync_WhenEditorCancels_PropagatesWithoutErrorLog()
+    {
+        _configService.GetActiveForDocumentTypeAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(BuildConfig("blogPost"));
+        var propType = Substitute.For<IPropertyType>();
+        propType.Alias.Returns("metaDescription");
+        propType.PropertyEditorAlias.Returns("Umbraco.TextBox");
+        var ct = Substitute.For<IContentType>();
+        ct.CompositionPropertyTypes.Returns(new[] { propType });
+        _contentTypeService.Get(Arg.Any<string>()).Returns(ct);
+        _propertyEditorSchemaService.SupportsSchema(Arg.Any<string>()).Returns(false);
+
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+        _chatService.GetChatResponseAsync(
+            Arg.Any<Action<AIChatBuilder>>(),
+            Arg.Any<IEnumerable<ChatMessage>>(),
+            Arg.Any<CancellationToken>())
+            .ThrowsAsync(new OperationCanceledException(cts.Token));
+
+        await Assert.ThrowsAsync<OperationCanceledException>(() => _sut.RecommendAsync(new RecommendRequest
+        {
+            NodeId = Guid.NewGuid(),
+            PropertyAliases = ["metaDescription"],
+            CheckLabel = "Meta description is missing",
+        }, cts.Token));
+
+        _logger.DidNotReceive().Log(
+            LogLevel.Error,
+            Arg.Any<EventId>(),
+            Arg.Any<object>(),
+            Arg.Any<Exception?>(),
+            Arg.Any<Func<object, Exception?, string>>());
     }
 
     [Fact]
@@ -2033,7 +2113,7 @@ public class PageEvaluatorApiControllerTests
     }
 
     [Fact]
-    public async Task RecommendAsync_ForTagsProperty_PromptRequestsJsonArray()
+    public async Task RecommendAsync_ForTagsWithoutAnEditorSchema_PromptRequestsJsonArray()
     {
         // Use the default content node from the constructor (alias = "blogPost")
         _configService.GetActiveForDocumentTypeAsync("blogPost", Arg.Any<CancellationToken>())
@@ -2075,6 +2155,132 @@ public class PageEvaluatorApiControllerTests
         Assert.Contains("recommendedValue", capturedSystemPrompt, StringComparison.OrdinalIgnoreCase);
     }
 
+    private async Task<string> CaptureRichTextRecommendPromptAsync(string currentBodyMarkup, bool editorHasSchema = false)
+    {
+        _configService.GetActiveForDocumentTypeAsync("blogPost", Arg.Any<CancellationToken>())
+            .Returns(BuildConfig("blogPost"));
+        var propType = Substitute.For<IPropertyType>();
+        propType.Alias.Returns("bodyText");
+        propType.PropertyEditorAlias.Returns("Umbraco.RichText");
+        var ct = Substitute.For<IContentType>();
+        ct.CompositionPropertyTypes.Returns(new[] { propType });
+        _contentTypeService.Get("blogPost").Returns(ct);
+        // Rich text ignores the editor schema; the flag only proves that it does.
+        _propertyEditorSchemaService.SupportsSchema("Umbraco.RichText").Returns(editorHasSchema);
+        if (editorHasSchema)
+        {
+            _propertyEditorSchemaService.GetSchemaAsync(Arg.Any<Guid>())
+                .Returns(global::Umbraco.Cms.Core.Attempt.SucceedWithStatus(
+                    global::Umbraco.Cms.Core.Services.OperationStatus.PropertyEditorSchemaOperationStatus.Success,
+                    new PropertyValueSchema(null, CmsValueSchemas.RichText())));
+        }
+
+        string capturedSystemPrompt = string.Empty;
+        _chatService.GetChatResponseAsync(
+            Arg.Any<Action<AIChatBuilder>>(),
+            Arg.Do<IEnumerable<ChatMessage>>(msgs =>
+                capturedSystemPrompt = msgs.FirstOrDefault(m => m.Role == ChatRole.System)?.Text ?? string.Empty),
+            Arg.Any<CancellationToken>())
+            .Returns(new ChatResponse([new ChatMessage(ChatRole.Assistant, "{\"recommendedValue\":\"<p>Better</p>\"}")]));
+
+        await _sut.RecommendAsync(new RecommendRequest
+        {
+            NodeId = Guid.NewGuid(),
+            PropertyAliases = ["bodyText"],
+            CheckLabel = "Body content is thin",
+            Properties = new Dictionary<string, string> { ["bodyText"] = currentBodyMarkup },
+        });
+
+        return capturedSystemPrompt;
+    }
+
+    [Theory]
+    [InlineData("<p>Intro</p><umb-rte-block data-content-key=\"a1\"><!--Umbraco-Block--></umb-rte-block>")]
+    [InlineData("<p>Intro <umb-rte-block-inline class=\"x\" data-content-key=\"a1\"></umb-rte-block-inline></p>")]
+    [InlineData("<p>Intro</p><umb-rte-block data-content-id=\"a1\"></umb-rte-block>")]
+    public async Task RecommendAsync_ForRichTextWithEmbeddedBlocks_InstructsTheModelToKeepPlaceholders(string currentMarkup)
+    {
+        string prompt = await CaptureRichTextRecommendPromptAsync(currentMarkup);
+
+        Assert.Contains("Keep every", prompt);
+        Assert.Contains("data-content-key", prompt);
+        Assert.DoesNotContain("Do not include block editor references", prompt);
+    }
+
+    [Fact]
+    public async Task RecommendAsync_ForRichTextWithoutEmbeddedBlocks_KeepsTheCleanHtmlInstruction()
+    {
+        string prompt = await CaptureRichTextRecommendPromptAsync("<p>Just text</p>");
+
+        Assert.Contains("Do not include block editor references", prompt);
+        Assert.DoesNotContain("Keep every", prompt);
+    }
+
+    [Fact]
+    public async Task RecommendAsync_ForRichTextProperty_PromptForbidsTheStorageObjectShape()
+    {
+        string prompt = await CaptureRichTextRecommendPromptAsync("<p>Just text</p>");
+
+        Assert.Contains("must be an HTML string", prompt);
+    }
+
+    private async Task<string?> RecommendWithModelReplyAsync(string editorAlias, string modelReply)
+    {
+        _configService.GetActiveForDocumentTypeAsync("blogPost", Arg.Any<CancellationToken>())
+            .Returns(BuildConfig("blogPost"));
+        var propType = Substitute.For<IPropertyType>();
+        propType.Alias.Returns("bodyText");
+        propType.PropertyEditorAlias.Returns(editorAlias);
+        var ct = Substitute.For<IContentType>();
+        ct.CompositionPropertyTypes.Returns(new[] { propType });
+        _contentTypeService.Get("blogPost").Returns(ct);
+        _propertyEditorSchemaService.SupportsSchema(editorAlias).Returns(false);
+        _chatService.GetChatResponseAsync(
+            Arg.Any<Action<AIChatBuilder>>(),
+            Arg.Any<IEnumerable<ChatMessage>>(),
+            Arg.Any<CancellationToken>())
+            .Returns(new ChatResponse([new ChatMessage(ChatRole.Assistant, modelReply)]));
+
+        IActionResult result = await _sut.RecommendAsync(new RecommendRequest
+        {
+            NodeId = Guid.NewGuid(),
+            PropertyAliases = ["bodyText"],
+            CheckLabel = "Body content is thin",
+            Properties = new Dictionary<string, string> { ["bodyText"] = "<p>Old</p>" },
+        });
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        return Assert.IsType<RecommendResponse>(ok.Value).RecommendedValues["bodyText"];
+    }
+
+    // Seen live (2026-09-24, claude-sonnet-4-6): the model sometimes copies the editor's storage shape
+    // into the string, which hid the kept block placeholders from the client's Apply safeguard.
+    [Theory]
+    [InlineData("{\"recommendedValue\":\"{\\\"markup\\\": \\\"<p>New <umb-rte-block data-content-key=\\\\\\\"a1\\\\\\\"></umb-rte-block></p>\\\", \\\"blocks\\\": null}\"}")]
+    [InlineData("{\"recommendedValue\":{\"markup\":\"<p>New <umb-rte-block data-content-key=\\\"a1\\\"></umb-rte-block></p>\",\"blocks\":null}}")]
+    public async Task RecommendAsync_ForRichText_UnwrapsAStorageShapedValueToItsMarkup(string modelReply)
+    {
+        string? value = await RecommendWithModelReplyAsync("Umbraco.RichText", modelReply);
+
+        Assert.Equal("<p>New <umb-rte-block data-content-key=\"a1\"></umb-rte-block></p>", value);
+    }
+
+    [Fact]
+    public async Task RecommendAsync_ForRichText_LeavesPlainHtmlUnchanged()
+    {
+        string? value = await RecommendWithModelReplyAsync("Umbraco.RichText", "{\"recommendedValue\":\"<p>New</p>\"}");
+
+        Assert.Equal("<p>New</p>", value);
+    }
+
+    [Fact]
+    public async Task RecommendAsync_ForPlainText_DoesNotUnwrapJsonLookingText()
+    {
+        string? value = await RecommendWithModelReplyAsync("Umbraco.TextBox", "{\"recommendedValue\":\"{\\\"markup\\\": \\\"x\\\"}\"}");
+
+        Assert.Equal("{\"markup\": \"x\"}", value);
+    }
+
     [Fact]
     public async Task RecommendAsync_ForRichTextProperty_PromptRequestsHtml()
     {
@@ -2089,7 +2295,6 @@ public class PageEvaluatorApiControllerTests
         ct.CompositionPropertyTypes.Returns(new[] { propType });
         _contentTypeService.Get("blogPost").Returns(ct);
 
-        _propertyEditorSchemaService.SupportsSchema("Umbraco.RichText").Returns(false);
 
         string capturedSystemPrompt = string.Empty;
         _chatService.GetChatResponseAsync(
@@ -2131,7 +2336,6 @@ public class PageEvaluatorApiControllerTests
         ct.CompositionPropertyTypes.Returns(new[] { propType });
         _contentTypeService.Get("blogPost").Returns(ct);
 
-        _propertyEditorSchemaService.SupportsSchema("Umbraco.TinyMCE").Returns(false);
 
         string capturedSystemPrompt = string.Empty;
         _chatService.GetChatResponseAsync(
@@ -2161,7 +2365,7 @@ public class PageEvaluatorApiControllerTests
     }
 
     [Fact]
-    public async Task RecommendAsync_ForPlainTextProperty_PromptIsGenericText()
+    public async Task RecommendAsync_ForPlainTextWithoutAnEditorSchema_PromptIsGenericText()
     {
         // Use the default content node from the constructor (alias = "blogPost")
         _configService.GetActiveForDocumentTypeAsync("blogPost", Arg.Any<CancellationToken>())
@@ -2204,5 +2408,429 @@ public class PageEvaluatorApiControllerTests
         Assert.DoesNotContain("JSON array", capturedSystemPrompt, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("Rich Text", capturedSystemPrompt, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("recommendedValue", capturedSystemPrompt, StringComparison.OrdinalIgnoreCase);
+    }
+
+    // ---------------------------------------------------------------------------
+    // GET /profiles/{profileId}/sampling-support (003-upgrade-umbraco-17-6 FR-015a)
+    // ---------------------------------------------------------------------------
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task GetSamplingSupportAsync_ReturnsTheServiceAnswer(bool supported)
+    {
+        var profileId = Guid.NewGuid();
+        _samplingSupport.IsTemperatureSupportedAsync(profileId, null, Arg.Any<CancellationToken>()).Returns(supported);
+
+        IActionResult result = await _sut.GetSamplingSupportAsync(profileId);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        Assert.Contains($"\"temperatureSupported\":{(supported ? "true" : "false")}", System.Text.Json.JsonSerializer.Serialize(ok.Value));
+    }
+
+    [Fact]
+    public void GetSamplingSupportAsync_RequiresSettingsSectionAccess()
+    {
+        var method = typeof(PageEvaluatorApiController).GetMethod(nameof(PageEvaluatorApiController.GetSamplingSupportAsync))!;
+        var authorize = method.GetCustomAttributes(typeof(AuthorizeAttribute), inherit: false)
+            .Cast<AuthorizeAttribute>()
+            .SingleOrDefault();
+
+        Assert.NotNull(authorize);
+        Assert.Equal(AuthorizationPolicies.SectionAccessSettings, authorize!.Policy);
+    }
+
+    // ---------------------------------------------------------------------------
+    // Enforced recommendation schema per editor kind (003-upgrade-umbraco-17-6 FR-017, T069)
+    // ---------------------------------------------------------------------------
+
+    private async Task<AIOutputSchema?> CaptureRecommendSchemaAsync(string editorAlias, System.Text.Json.Nodes.JsonObject? editorSchema)
+    {
+        _configService.GetActiveForDocumentTypeAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(BuildConfig("blogPost"));
+        var propType = Substitute.For<IPropertyType>();
+        propType.Alias.Returns("field");
+        propType.PropertyEditorAlias.Returns(editorAlias);
+        propType.DataTypeKey.Returns(Guid.NewGuid());
+        var ct = Substitute.For<IContentType>();
+        ct.CompositionPropertyTypes.Returns(new[] { propType });
+        _contentTypeService.Get(Arg.Any<string>()).Returns(ct);
+        _propertyEditorSchemaService.SupportsSchema(editorAlias).Returns(editorSchema is not null);
+        if (editorSchema is not null)
+        {
+            _propertyEditorSchemaService.GetSchemaAsync(Arg.Any<Guid>())
+                .Returns(global::Umbraco.Cms.Core.Attempt.SucceedWithStatus(
+                    global::Umbraco.Cms.Core.Services.OperationStatus.PropertyEditorSchemaOperationStatus.Success,
+                    new PropertyValueSchema(null, editorSchema)));
+        }
+
+        AIChatBuilder? captured = null;
+        _chatService.GetChatResponseAsync(
+                Arg.Do<Action<AIChatBuilder>>(configure => { var b = new AIChatBuilder(); configure(b); captured = b; }),
+                Arg.Any<IEnumerable<ChatMessage>>(),
+                Arg.Any<CancellationToken>())
+            .Returns(new ChatResponse([new ChatMessage(ChatRole.Assistant, "{\"recommendedValue\":null}")]));
+
+        await _sut.RecommendAsync(new RecommendRequest { NodeId = Guid.NewGuid(), PropertyAliases = ["field"], CheckLabel = "c" });
+
+        return (AIOutputSchema?)typeof(AIChatBuilder)
+            .GetField("_outputSchema", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
+            .GetValue(captured!);
+    }
+
+    [Fact]
+    public async Task RecommendAsync_ForTagsWithoutAnEditorSchema_EnforcesAnArrayOfStrings()
+    {
+        AIOutputSchema? schema = await CaptureRecommendSchemaAsync("Umbraco.Tags", editorSchema: null);
+
+        var format = Assert.IsType<ChatResponseFormatJson>(schema!.ResponseFormat);
+        string raw = format.Schema!.Value.GetRawText();
+        Assert.Contains("pageEvaluatorRecommendation", raw);
+        Assert.Contains("\"array\"", raw);
+    }
+
+    // The CMS rich-text editor publishes a {markup, blocks} value schema (IValueSchemaProvider). Seen live
+    // 2026-09-24: using it made the model return that object instead of HTML and bypassed the rich-text
+    // prompt (keep-placeholders instruction included). Rich text must use its own HTML string schema.
+    [Theory]
+    [InlineData("Umbraco.RichText")]
+    [InlineData("Umbraco.TinyMCE")]
+    public async Task RecommendAsync_ForRichTextWithAnEditorSchema_EnforcesTheHtmlStringSchemaInstead(string editorAlias)
+    {
+        AIOutputSchema? schema = await CaptureRecommendSchemaAsync(editorAlias, CmsValueSchemas.RichText());
+
+        var format = Assert.IsType<ChatResponseFormatJson>(schema!.ResponseFormat);
+        string raw = format.Schema!.Value.GetRawText();
+        Assert.Contains("pageEvaluatorRecommendation", raw);
+        Assert.Contains("\"string\"", raw);
+        Assert.DoesNotContain("\"blocks\"", raw); // not the editor's {markup, blocks} object
+        await _propertyEditorSchemaService.DidNotReceive().GetSchemaAsync(Arg.Any<Guid>());
+    }
+
+    [Fact]
+    public async Task RecommendAsync_ForRichTextWithAnEditorSchema_UsesTheRichTextPrompt()
+    {
+        string prompt = await CaptureRichTextRecommendPromptAsync(
+            "<p>Intro</p><umb-rte-block data-content-key=\"a1\"><!--Umbraco-Block--></umb-rte-block>", editorHasSchema: true);
+
+        Assert.DoesNotContain("JSON Schema", prompt);
+        Assert.Contains("Keep every", prompt);
+        Assert.Contains("must be an HTML string", prompt);
+    }
+
+    // ---------------------------------------------------------------------------
+    // Realistic editor schemas: what IPropertyEditorSchemaService returns on a real site (TestData/CmsValueSchemas)
+    // ---------------------------------------------------------------------------
+
+    private async Task<(string Prompt, string? OutputSchema)> RecommendWithCmsSchemaAsync(string editorAlias, int? maxChars = null)
+    {
+        _configService.GetActiveForDocumentTypeAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(BuildConfig("blogPost"));
+        var propType = Substitute.For<IPropertyType>();
+        propType.Alias.Returns("field");
+        propType.PropertyEditorAlias.Returns(editorAlias);
+        propType.DataTypeKey.Returns(Guid.NewGuid());
+        var ct = Substitute.For<IContentType>();
+        ct.CompositionPropertyTypes.Returns(new[] { propType });
+        _contentTypeService.Get(Arg.Any<string>()).Returns(ct);
+        _propertyEditorSchemaService.SupportsSchema(editorAlias).Returns(true);
+        _propertyEditorSchemaService.GetSchemaAsync(Arg.Any<Guid>())
+            .Returns(global::Umbraco.Cms.Core.Attempt.SucceedWithStatus(
+                global::Umbraco.Cms.Core.Services.OperationStatus.PropertyEditorSchemaOperationStatus.Success,
+                new PropertyValueSchema(null, CmsValueSchemas.For(editorAlias, maxChars))));
+
+        string prompt = string.Empty;
+        AIChatBuilder? captured = null;
+        _chatService.GetChatResponseAsync(
+                Arg.Do<Action<AIChatBuilder>>(configure => { var b = new AIChatBuilder(); configure(b); captured = b; }),
+                Arg.Do<IEnumerable<ChatMessage>>(msgs => prompt = msgs.FirstOrDefault(m => m.Role == ChatRole.System)?.Text ?? string.Empty),
+                Arg.Any<CancellationToken>())
+            .Returns(new ChatResponse([new ChatMessage(ChatRole.Assistant, "{\"recommendedValue\":null}")]));
+
+        await _sut.RecommendAsync(new RecommendRequest { NodeId = Guid.NewGuid(), PropertyAliases = ["field"], CheckLabel = "c" });
+
+        var schema = (AIOutputSchema?)typeof(AIChatBuilder)
+            .GetField("_outputSchema", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
+            .GetValue(captured!);
+        string? raw = schema?.ResponseFormat is ChatResponseFormatJson json ? json.Schema?.GetRawText() : null;
+        return (prompt, raw);
+    }
+
+    [Theory]
+    [InlineData("Umbraco.TextBox")]
+    [InlineData("Umbraco.TextArea")]
+    public async Task RecommendAsync_ForPlainTextWithTheCmsSchema_KeepsThePlainTextGuidance(string editorAlias)
+    {
+        (string prompt, string? outputSchema) = await RecommendWithCmsSchemaAsync(editorAlias);
+
+        Assert.Contains("plain text property", prompt);
+        Assert.Contains("Do not include HTML tags, markdown formatting", prompt);
+        Assert.Contains("MUST conform to the following JSON Schema", prompt);
+        Assert.DoesNotContain("at most", prompt);
+        Assert.Contains("\"string\"", outputSchema);
+    }
+
+    [Theory]
+    [InlineData("Umbraco.TextBox")]
+    [InlineData("Umbraco.TextArea")]
+    public async Task RecommendAsync_ForPlainTextWithAMaxLength_StatesTheLimitAndEnforcesIt(string editorAlias)
+    {
+        (string prompt, string? outputSchema) = await RecommendWithCmsSchemaAsync(editorAlias, maxChars: 60);
+
+        Assert.Contains("at most 60 characters", prompt);
+        Assert.Contains("\"maxLength\":60", outputSchema);
+    }
+
+    [Fact]
+    public async Task RecommendAsync_ForMarkdownWithTheCmsSchema_AsksForMarkdownNotPlainText()
+    {
+        (string prompt, string? outputSchema) = await RecommendWithCmsSchemaAsync("Umbraco.MarkdownEditor");
+
+        Assert.Contains("Markdown property", prompt);
+        Assert.DoesNotContain("markdown formatting", prompt);
+        Assert.Contains("\"string\"", outputSchema);
+    }
+
+    [Fact]
+    public async Task RecommendAsync_ForTagsWithTheCmsSchema_KeepsTheTagsGuidanceAndEnforcesAnArray()
+    {
+        (string prompt, string? outputSchema) = await RecommendWithCmsSchemaAsync("Umbraco.Tags");
+
+        Assert.Contains("Tags property", prompt);
+        Assert.Contains("natural-language tag strings", prompt);
+        Assert.Contains("\"array\"", outputSchema);
+    }
+
+    [Theory]
+    [InlineData("Umbraco.RichText")]
+    [InlineData("Umbraco.TinyMCE")]
+    public async Task RecommendAsync_ForRichTextWithTheCmsSchema_UsesTheHtmlPromptAndSchema(string editorAlias)
+    {
+        (string prompt, string? outputSchema) = await RecommendWithCmsSchemaAsync(editorAlias);
+
+        Assert.Contains("Rich Text (HTML) property", prompt);
+        Assert.DoesNotContain("JSON Schema", prompt);
+        Assert.Contains("HTML markup", outputSchema);
+        Assert.DoesNotContain("\"blocks\"", outputSchema);
+    }
+
+    [Fact]
+    public async Task RecommendAsync_ForAnEditorSchemaAStrictProviderWouldReject_SendsNoSchema()
+    {
+        var blockListSchema = System.Text.Json.Nodes.JsonNode.Parse("""{"type":"object","properties":{"contentData":{"type":"array","items":{}}}}""")!.AsObject();
+
+        AIOutputSchema? schema = await CaptureRecommendSchemaAsync("Umbraco.BlockList", blockListSchema);
+
+        Assert.Null(schema);
+    }
+
+    // ---------------------------------------------------------------------------
+    // Culture awareness (003-upgrade-umbraco-17-6 FR-018, contracts/management-api.md §1)
+    // ---------------------------------------------------------------------------
+
+    private IContent GivenVaryingContent(Guid nodeId, params string[] availableCultures)
+    {
+        var content = Substitute.For<IContent>();
+        var contentType = Substitute.For<ISimpleContentType>();
+        contentType.Alias.Returns("blogPost");
+        contentType.Variations.Returns(ContentVariation.Culture);
+        content.ContentType.Returns(contentType);
+        content.Key.Returns(nodeId);
+        content.IsCultureAvailable(Arg.Any<string>())
+            .Returns(call => availableCultures.Contains(call.Arg<string>(), StringComparer.OrdinalIgnoreCase));
+        _contentService.GetById(nodeId).Returns(content);
+        return content;
+    }
+
+    private void GivenLanguages(params string[] isoCodes)
+    {
+        ILanguage[] languages = isoCodes.Select(code =>
+        {
+            var language = Substitute.For<ILanguage>();
+            language.IsoCode.Returns(code);
+            return language;
+        }).ToArray();
+        _languageService.GetAllAsync().Returns(languages);
+    }
+
+    private static string Json(IActionResult result)
+        => System.Text.Json.JsonSerializer.Serialize(((ObjectResult)result).Value);
+
+    private static EvaluationCacheEntry CachedEntry(Guid nodeId, string culture)
+        => new()
+        {
+            NodeId = nodeId,
+            Culture = culture,
+            DocumentTypeAlias = "blogPost",
+            Report = EvaluationReport.Parsed(new EvaluationScore(1, 1), [], null),
+            CachedAt = DateTime.UtcNow,
+        };
+
+    [Fact]
+    public async Task GetCachedEvaluationAsync_InvariantDocument_IgnoresTheSuppliedCulture()
+    {
+        var nodeId = Guid.NewGuid();
+        _cacheRepository.GetAsync(nodeId, string.Empty, Arg.Any<CancellationToken>()).Returns(CachedEntry(nodeId, string.Empty));
+
+        IActionResult result = await _sut.GetCachedEvaluationAsync(nodeId, "da-DK");
+
+        Assert.IsType<OkObjectResult>(result);
+        await _cacheRepository.Received(1).GetAsync(nodeId, string.Empty, Arg.Any<CancellationToken>());
+        Assert.Null(Assert.IsType<EvaluationReport>(((OkObjectResult)result).Value).Culture);
+    }
+
+    [Fact]
+    public async Task GetCachedEvaluationAsync_VaryingDocument_LooksUpTheLowerCasedCulture()
+    {
+        var nodeId = Guid.NewGuid();
+        GivenVaryingContent(nodeId, "da-DK", "en-US");
+        GivenLanguages("en-US", "da-DK");
+        _cacheRepository.GetAsync(nodeId, "da-dk", Arg.Any<CancellationToken>()).Returns(CachedEntry(nodeId, "da-dk"));
+
+        IActionResult result = await _sut.GetCachedEvaluationAsync(nodeId, "DA-dk");
+
+        Assert.IsType<OkObjectResult>(result);
+        Assert.Equal("da-dk", Assert.IsType<EvaluationReport>(((OkObjectResult)result).Value).Culture);
+        await _cacheRepository.DidNotReceive().GetAsync(nodeId, string.Empty, Arg.Any<CancellationToken>());
+    }
+
+    [Theory]
+    [InlineData(null, "invalidCulture")]
+    [InlineData("", "invalidCulture")]
+    [InlineData("fr-FR", "invalidCulture")]
+    [InlineData("sv-SE", "cultureNotCreated")]
+    public async Task EvaluateAsync_VaryingDocument_RejectsMissingUnknownOrNotCreatedCultures(string? culture, string expectedCategory)
+    {
+        var nodeId = Guid.NewGuid();
+        GivenVaryingContent(nodeId, "da-DK");
+        GivenLanguages("en-US", "da-DK", "sv-SE");
+
+        IActionResult result = await _sut.EvaluateAsync(new EvaluatePageRequest { NodeId = nodeId, Culture = culture, Properties = new() });
+
+        var bad = Assert.IsType<BadRequestObjectResult>(result);
+        string json = Json(bad);
+        Assert.Contains($"\"category\":\"{expectedCategory}\"", json);
+        Assert.Contains("\"type\":\"Error\"", json);
+        Assert.Contains("\"status\":400", json);
+        await _evaluationService.DidNotReceive().EvaluateAsync(
+            Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<string?>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_ChecksPermissionBeforeCulture()
+    {
+        var nodeId = Guid.NewGuid();
+        GivenVaryingContent(nodeId);
+        GivenLanguages("en-US");
+        _authorizationService
+            .AuthorizeAsync(Arg.Any<ClaimsPrincipal>(), Arg.Any<object?>(), Arg.Any<string>())
+            .Returns(AuthorizationResult.Failed());
+
+        IActionResult result = await _sut.EvaluateAsync(new EvaluatePageRequest { NodeId = nodeId, Culture = null, Properties = new() });
+
+        Assert.Equal(StatusCodes.Status403Forbidden, Assert.IsType<ObjectResult>(result).StatusCode);
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_VaryingDocument_SavesPerCulture_AndDiscardsTheLegacyRow()
+    {
+        var nodeId = Guid.NewGuid();
+        GivenVaryingContent(nodeId, "da-DK");
+        GivenLanguages("en-US", "da-DK");
+        _evaluationService.EvaluateAsync(nodeId, "blogPost", Arg.Any<IReadOnlyDictionary<string, object?>>(), "da-dk", Arg.Any<CancellationToken>())
+            .Returns(EvaluationReport.Parsed(new EvaluationScore(1, 1), [], null));
+
+        IActionResult result = await _sut.EvaluateAsync(new EvaluatePageRequest { NodeId = nodeId, Culture = "da-DK", Properties = new() });
+
+        Assert.IsType<OkObjectResult>(result);
+        await _cacheRepository.Received(1).SaveAsync(
+            Arg.Is<EvaluationCacheEntry>(e => e.NodeId == nodeId && e.Culture == "da-dk"), Arg.Any<CancellationToken>());
+        await _cacheRepository.Received(1).DeleteAsync(nodeId, string.Empty, Arg.Any<CancellationToken>());
+        Assert.Equal("da-dk", Assert.IsType<EvaluationReport>(((OkObjectResult)result).Value).Culture);
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_InvariantDocument_SavesWithoutCulture_AndKeepsItsRow()
+    {
+        var nodeId = Guid.NewGuid();
+        _evaluationService.EvaluateAsync(nodeId, "blogPost", Arg.Any<IReadOnlyDictionary<string, object?>>(), null, Arg.Any<CancellationToken>())
+            .Returns(EvaluationReport.Parsed(new EvaluationScore(1, 1), [], null));
+
+        await _sut.EvaluateAsync(new EvaluatePageRequest { NodeId = nodeId, Culture = "da-DK", Properties = new() });
+
+        await _cacheRepository.Received(1).SaveAsync(Arg.Is<EvaluationCacheEntry>(e => e.Culture == string.Empty), Arg.Any<CancellationToken>());
+        await _cacheRepository.DidNotReceive().DeleteAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+    }
+
+    private async Task<string> CaptureRecommendPromptForCultureAsync(Guid nodeId, string? culture)
+    {
+        _configService.GetActiveForDocumentTypeAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(BuildConfig("blogPost"));
+        var propType = Substitute.For<IPropertyType>();
+        propType.Alias.Returns("metaDescription");
+        propType.PropertyEditorAlias.Returns("Umbraco.TextBox");
+        var ct = Substitute.For<IContentType>();
+        ct.CompositionPropertyTypes.Returns(new[] { propType });
+        _contentTypeService.Get(Arg.Any<string>()).Returns(ct);
+        _propertyEditorSchemaService.SupportsSchema(Arg.Any<string>()).Returns(false);
+        string prompt = string.Empty;
+        _chatService.GetChatResponseAsync(
+                Arg.Any<Action<AIChatBuilder>>(),
+                Arg.Do<IEnumerable<ChatMessage>>(msgs => prompt = msgs.First(m => m.Role == ChatRole.System).Text ?? string.Empty),
+                Arg.Any<CancellationToken>())
+            .Returns(new ChatResponse([new ChatMessage(ChatRole.Assistant, "{\"recommendedValue\":\"x\"}")]));
+
+        await _sut.RecommendAsync(new RecommendRequest { NodeId = nodeId, Culture = culture, PropertyAliases = ["metaDescription"], CheckLabel = "c" });
+        return prompt;
+    }
+
+    [Fact]
+    public async Task RecommendAsync_VaryingDocument_AsksForTheValueInThatLanguage()
+    {
+        var nodeId = Guid.NewGuid();
+        GivenVaryingContent(nodeId, "da-DK");
+        GivenLanguages("en-US", "da-DK");
+
+        string prompt = await CaptureRecommendPromptForCultureAsync(nodeId, "da-DK");
+
+        Assert.Contains("Write the recommended value in Danish (Denmark) (da-dk).", prompt);
+    }
+
+    [Fact]
+    public async Task RecommendAsync_InvariantDocument_HasNoLanguageLine()
+    {
+        string prompt = await CaptureRecommendPromptForCultureAsync(Guid.NewGuid(), "da-DK");
+
+        Assert.DoesNotContain("Write the recommended value in", prompt);
+    }
+
+    // ---------------------------------------------------------------------------
+    // Audit-log feature identity for recommendations (003-upgrade-umbraco-17-6 FR-019, research R7)
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public async Task RecommendAsync_UsesItsOwnInlineChatAlias()
+    {
+        _configService.GetActiveForDocumentTypeAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(BuildConfig("blogPost"));
+        var propType = Substitute.For<IPropertyType>();
+        propType.Alias.Returns("metaDescription");
+        propType.PropertyEditorAlias.Returns("Umbraco.TextBox");
+        var ct = Substitute.For<IContentType>();
+        ct.CompositionPropertyTypes.Returns(new[] { propType });
+        _contentTypeService.Get(Arg.Any<string>()).Returns(ct);
+        _propertyEditorSchemaService.SupportsSchema(Arg.Any<string>()).Returns(false);
+        AIChatBuilder? captured = null;
+        _chatService.GetChatResponseAsync(
+                Arg.Do<Action<AIChatBuilder>>(configure => { var b = new AIChatBuilder(); configure(b); captured = b; }),
+                Arg.Any<IEnumerable<ChatMessage>>(),
+                Arg.Any<CancellationToken>())
+            .Returns(new ChatResponse([new ChatMessage(ChatRole.Assistant, "{\"recommendedValue\":\"x\"}")]));
+
+        await _sut.RecommendAsync(new RecommendRequest { NodeId = Guid.NewGuid(), PropertyAliases = ["metaDescription"], CheckLabel = "c" });
+
+        string? Field(string name) => (string?)typeof(AIChatBuilder)
+            .GetField(name, System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
+            .GetValue(captured!);
+        Assert.Equal("proworks-page-evaluator-recommend", Field("_alias"));
+        Assert.Equal("ProWorks Page Evaluator — Recommendations", Field("_name"));
     }
 }

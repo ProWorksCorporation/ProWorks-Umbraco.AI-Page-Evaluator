@@ -5,7 +5,7 @@
 @inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage<ContentModels.BlogPost>
 @using ContentModels = Umbraco.Cms.Web.Common.PublishedModels;
 @{
-    Layout = "_Layout";
+    Layout = "~/Views/Shared/_Layout.cshtml"; // path form: Umbraco treats a bare alias as a master template
 
     var pageTitle   = Model.Value<string>("pageTitle").NullOrWhiteSpaceAsNull() ?? Model.Name;
     var headerImage = Model.Value<IPublishedContent>("headerImage");

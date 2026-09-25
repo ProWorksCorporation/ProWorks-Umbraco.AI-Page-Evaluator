@@ -25,7 +25,10 @@ public static class SqlServerPageEvaluatorBuilderExtensions
                 optionsBuilder.UseSqlServer(
                     connectionString,
                     o => o.MigrationsAssembly("ProWorks.Umbraco.AI.PageEvaluator.Persistence.SqlServer"));
-            });
+            },
+            // The evaluator's tables live in the Umbraco database, so share Umbraco's connection
+            // and transaction (the behaviour of the pre-17.6 overload, now obsolete).
+            shareUmbracoConnection: true);
 
         return builder;
     }
