@@ -9,19 +9,10 @@
  * `src/prompt-builder/prompt-builder.element.ts`.
  */
 
-import { vi, describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest';
 
-vi.mock('@umbraco-cms/backoffice/lit-element', () => ({
-  UmbLitElement: class extends HTMLElement {
-    static createProperty(_name: PropertyKey, _options?: unknown): void {}
-    connectedCallback() {}
-    disconnectedCallback() {}
-    render() { return null; }
-  },
-}));
-vi.mock('@umbraco-cms/backoffice/element-api', () => ({
-  UmbElementMixin: (Base: typeof HTMLElement) => Base,
-}));
+// The real UmbLitElement is used (it runs fine under happy-dom), so the element's
+// updated() lifecycle loads properties exactly as it does in the backoffice.
 
 import { setupServer } from 'msw/node';
 import { http, HttpResponse } from 'msw';
@@ -30,22 +21,22 @@ import { http, HttpResponse } from 'msw';
 import '../../src/prompt-builder/prompt-builder.element.js';
 
 const ELEMENT_TAG = 'page-evaluator-prompt-builder';
-const DOC_TYPE_BASE = '/umbraco/management/api/v1/document-type';
+const DOC_TYPE_BASE = '/umbraco/management/api/v1/page-evaluator/document-type';
 
 /** Builds a mock Umbraco doc type response with N properties across groups. */
 function mockDocType(alias: string, propertyCount: number) {
+  // Shape of the package's GET /page-evaluator/document-type/{alias}/properties response.
   const properties = Array.from({ length: propertyCount }, (_, i) => ({
     alias: `property${i + 1}`,
     label: `Property ${i + 1}`,
-    propertyEditorUiAlias: 'Umb.PropertyEditorUi.TextBox',
-    container: { name: i < 5 ? 'Content' : 'SEO' },
+    groupName: i < 5 ? 'Content' : 'SEO',
+    editorAlias: 'Umbraco.TextBox',
   }));
 
   return {
     alias,
     name: alias.charAt(0).toUpperCase() + alias.slice(1),
     properties,
-    containers: [{ name: 'Content' }, { name: 'SEO' }],
   };
 }
 
@@ -78,7 +69,7 @@ function renderBuilder(alias: string): PromptBuilderElement {
 describe('prompt-builder.element — property loading', () => {
   it('loads property aliases from the doc type API on connect', async () => {
     server.use(
-      http.get(`${DOC_TYPE_BASE}/by-alias/blogPost`, () =>
+      http.get(`${DOC_TYPE_BASE}/blogPost/properties`, () =>
         HttpResponse.json(mockDocType('blogPost', 5)),
       ),
     );
@@ -91,7 +82,7 @@ describe('prompt-builder.element — property loading', () => {
 
   it('SC-006: renders ≥ 8 of 10 property aliases in the list', async () => {
     server.use(
-      http.get(`${DOC_TYPE_BASE}/by-alias/richPage`, () =>
+      http.get(`${DOC_TYPE_BASE}/richPage/properties`, () =>
         HttpResponse.json(mockDocType('richPage', 10)),
       ),
     );
@@ -105,9 +96,9 @@ describe('prompt-builder.element — property loading', () => {
 });
 
 describe('prompt-builder.element — category selection', () => {
-  it('starts with no categories selected', async () => {
+  it('starts with every category selected', async () => {
     server.use(
-      http.get(`${DOC_TYPE_BASE}/by-alias/blogPost`, () =>
+      http.get(`${DOC_TYPE_BASE}/blogPost/properties`, () =>
         HttpResponse.json(mockDocType('blogPost', 3)),
       ),
     );
@@ -116,12 +107,12 @@ describe('prompt-builder.element — category selection', () => {
     await new Promise<void>((r) => setTimeout(r, 50));
 
     const selected = (el as PromptBuilderElement)._selectedCategories;
-    expect(selected?.size ?? 0).toBe(0);
+    expect(selected?.size ?? 0).toBe(6);
   });
 
   it('toggles a category on when selected', async () => {
     server.use(
-      http.get(`${DOC_TYPE_BASE}/by-alias/blogPost`, () =>
+      http.get(`${DOC_TYPE_BASE}/blogPost/properties`, () =>
         HttpResponse.json(mockDocType('blogPost', 3)),
       ),
     );
@@ -145,7 +136,7 @@ describe('prompt-builder.element — category selection', () => {
 describe('prompt-builder.element — draft generation', () => {
   it('draft contains property aliases when generateDraft is called', async () => {
     server.use(
-      http.get(`${DOC_TYPE_BASE}/by-alias/blogPost`, () =>
+      http.get(`${DOC_TYPE_BASE}/blogPost/properties`, () =>
         HttpResponse.json(mockDocType('blogPost', 3)),
       ),
     );
@@ -170,7 +161,7 @@ describe('prompt-builder.element — draft generation', () => {
 
   it('draft weaves in siteContext when set', async () => {
     server.use(
-      http.get(`${DOC_TYPE_BASE}/by-alias/blogPost`, () =>
+      http.get(`${DOC_TYPE_BASE}/blogPost/properties`, () =>
         HttpResponse.json(mockDocType('blogPost', 3)),
       ),
     );
@@ -192,7 +183,7 @@ describe('prompt-builder.element — draft generation', () => {
 
   it('fires prompt-selected event when Use This Prompt is clicked', async () => {
     server.use(
-      http.get(`${DOC_TYPE_BASE}/by-alias/blogPost`, () =>
+      http.get(`${DOC_TYPE_BASE}/blogPost/properties`, () =>
         HttpResponse.json(mockDocType('blogPost', 3)),
       ),
     );
@@ -221,7 +212,7 @@ describe('prompt-builder.element — draft generation', () => {
 describe('prompt-builder.element — scoring prompt', () => {
   it('draft without scoringEnabled does not contain "Evaluation Dimensions"', async () => {
     server.use(
-      http.get(`${DOC_TYPE_BASE}/by-alias/blogPost`, () =>
+      http.get(`${DOC_TYPE_BASE}/blogPost/properties`, () =>
         HttpResponse.json(mockDocType('blogPost', 3)),
       ),
     );
@@ -241,7 +232,7 @@ describe('prompt-builder.element — scoring prompt', () => {
 
   it('draft with scoringEnabled and a category selected contains "Evaluation Dimensions"', async () => {
     server.use(
-      http.get(`${DOC_TYPE_BASE}/by-alias/blogPost`, () =>
+      http.get(`${DOC_TYPE_BASE}/blogPost/properties`, () =>
         HttpResponse.json(mockDocType('blogPost', 3)),
       ),
     );
@@ -261,7 +252,7 @@ describe('prompt-builder.element — scoring prompt', () => {
 
   it('scoring draft uses camelCase "overallScore" (not "overall_score")', async () => {
     server.use(
-      http.get(`${DOC_TYPE_BASE}/by-alias/blogPost`, () =>
+      http.get(`${DOC_TYPE_BASE}/blogPost/properties`, () =>
         HttpResponse.json(mockDocType('blogPost', 3)),
       ),
     );
@@ -283,7 +274,7 @@ describe('prompt-builder.element — scoring prompt', () => {
 
   it('scoring draft uses camelCase "axisScores" (not "axis_scores")', async () => {
     server.use(
-      http.get(`${DOC_TYPE_BASE}/by-alias/blogPost`, () =>
+      http.get(`${DOC_TYPE_BASE}/blogPost/properties`, () =>
         HttpResponse.json(mockDocType('blogPost', 3)),
       ),
     );
@@ -305,7 +296,7 @@ describe('prompt-builder.element — scoring prompt', () => {
 
   it('scoring draft contains "Verdict Thresholds"', async () => {
     server.use(
-      http.get(`${DOC_TYPE_BASE}/by-alias/blogPost`, () =>
+      http.get(`${DOC_TYPE_BASE}/blogPost/properties`, () =>
         HttpResponse.json(mockDocType('blogPost', 3)),
       ),
     );
@@ -325,7 +316,7 @@ describe('prompt-builder.element — scoring prompt', () => {
 
   it('scoring draft contains the dimension name of the selected category', async () => {
     server.use(
-      http.get(`${DOC_TYPE_BASE}/by-alias/blogPost`, () =>
+      http.get(`${DOC_TYPE_BASE}/blogPost/properties`, () =>
         HttpResponse.json(mockDocType('blogPost', 3)),
       ),
     );

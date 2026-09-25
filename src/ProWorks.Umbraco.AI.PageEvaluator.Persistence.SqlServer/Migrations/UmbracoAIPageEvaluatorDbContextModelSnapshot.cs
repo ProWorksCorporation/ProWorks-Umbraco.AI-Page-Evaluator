@@ -17,7 +17,7 @@ namespace ProWorks.Umbraco.AI.PageEvaluator.Persistence.SqlServer.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.4")
+                .HasAnnotation("ProductVersion", "10.0.10")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -25,8 +25,13 @@ namespace ProWorks.Umbraco.AI.PageEvaluator.Persistence.SqlServer.Migrations
             modelBuilder.Entity("ProWorks.Umbraco.AI.PageEvaluator.Persistence.Cache.EvaluationCacheEntity", b =>
                 {
                     b.Property<Guid>("NodeId")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Culture")
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)")
+                        .HasDefaultValue("");
 
                     b.Property<DateTime>("CachedAt")
                         .HasColumnType("datetime2");
@@ -40,7 +45,7 @@ namespace ProWorks.Umbraco.AI.PageEvaluator.Persistence.SqlServer.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.HasKey("NodeId");
+                    b.HasKey("NodeId", "Culture");
 
                     b.ToTable("umbracoAIEvaluationCache");
                 });

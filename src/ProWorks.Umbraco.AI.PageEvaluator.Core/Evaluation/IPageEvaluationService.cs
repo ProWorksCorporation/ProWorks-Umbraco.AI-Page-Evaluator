@@ -35,6 +35,7 @@ public interface IPageEvaluationService
         Guid nodeId,
         string documentTypeAlias,
         IReadOnlyDictionary<string, object?> properties,
+        string? culture = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>

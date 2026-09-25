@@ -2,9 +2,18 @@ import { html, css, nothing, state, type TemplateResult, customElement, property
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import type { EvaluationReportResponse, CheckResult, CheckStatus, AxisScore } from '../shared/types.js';
 import { recommend, ApiError } from '../shared/api-client.js';
-import { localizationKeyForErrorCategory } from '../shared/error-category.js';
+import { localizationKeyForError } from '../shared/error-category.js';
 import type { RecommendRequest } from '../shared/types.js';
 import type { RecommendationState } from './recommendation-state.js';
+import { canApplyRichText } from '../shared/rte-blocks.js';
+import { isRichTextEditor } from '../shared/apply-value.js';
+
+/** Detail of the `page-evaluator-rec-apply` / `page-evaluator-rec-apply-failed` events. */
+export interface RecApplyEventDetail {
+  readonly propertyAlias: string;
+  readonly checkNumber: number;
+  readonly value?: string;
+}
 
 type TagColor = 'positive' | 'warning' | 'danger';
 
@@ -23,6 +32,44 @@ type TagColor = 'positive' | 'warning' | 'danger';
 @customElement('page-evaluator-report')
 export class EvaluationReportElement extends UmbLitElement {
   static override styles = css`
+    .rec-notice {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--uui-size-space-2);
+      margin-top: var(--uui-size-space-2);
+      padding: var(--uui-size-space-2) var(--uui-size-space-3);
+      background: var(--uui-color-warning);
+      color: var(--uui-color-warning-contrast);
+      border: 1px solid var(--uui-color-warning-standalone);
+      border-radius: var(--uui-border-radius);
+      font-size: var(--uui-type-small-size);
+    }
+
+    .rec-notice--error {
+      background: var(--uui-color-danger);
+      color: var(--uui-color-danger-contrast);
+      border-color: var(--uui-color-danger-standalone);
+    }
+
+    /* FR-015b notice: core's own inline-notice pattern (no alert element exists in 17.6; research R12.4). */
+    .sampling-notice {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--uui-size-space-2);
+      margin-bottom: var(--uui-size-space-4);
+      padding: var(--uui-size-space-3) var(--uui-size-space-4);
+      background: var(--uui-color-warning);
+      color: var(--uui-color-warning-contrast);
+      border: 1px solid var(--uui-color-warning-standalone);
+      border-radius: var(--uui-border-radius);
+      font-size: var(--uui-type-small-size);
+    }
+
+    .sampling-notice uui-icon {
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
     :host {
       display: block;
       padding: var(--uui-size-space-4, 16px);
@@ -298,6 +345,10 @@ export class EvaluationReportElement extends UmbLitElement {
   @property({ attribute: false })
   nodeId: string = '';
 
+  /** Culture being viewed (FR-018b); recommendations are generated in that language. */
+  @property({ attribute: false })
+  culture: string | null = null;
+
   @property({ attribute: false })
   properties: Record<string, unknown> = {};
 
@@ -322,6 +373,35 @@ export class EvaluationReportElement extends UmbLitElement {
   @state()
   private _copiedAliases = new Map<number, Set<string>>();
 
+  /** Aliases whose Apply the modal reported as failed, per check (FR-016: content left untouched). */
+  @state()
+  private _applyFailedAliases = new Map<number, Set<string>>();
+
+  private readonly _onApplyFailed = (e: Event): void => {
+    const detail = (e as CustomEvent<RecApplyEventDetail>).detail;
+    const applied = new Map(this._appliedAliases);
+    const appliedSet = new Set(applied.get(detail.checkNumber) ?? []);
+    appliedSet.delete(detail.propertyAlias);
+    applied.set(detail.checkNumber, appliedSet);
+    this._appliedAliases = applied;
+
+    const failed = new Map(this._applyFailedAliases);
+    const failedSet = new Set(failed.get(detail.checkNumber) ?? []);
+    failedSet.add(detail.propertyAlias);
+    failed.set(detail.checkNumber, failedSet);
+    this._applyFailedAliases = failed;
+  };
+
+  override connectedCallback(): void {
+    super.connectedCallback();
+    this.addEventListener('page-evaluator-rec-apply-failed', this._onApplyFailed);
+  }
+
+  override disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this.removeEventListener('page-evaluator-rec-apply-failed', this._onApplyFailed);
+  }
+
   override render(): TemplateResult | typeof nothing {
     if (!this.report) return nothing;
 
@@ -335,6 +415,12 @@ export class EvaluationReportElement extends UmbLitElement {
     const passingChecks = checks.filter((c) => c.status === 'Pass');
 
     return html`
+      ${this.report.samplingSettingsIgnored === true
+        ? html`<div class="sampling-notice" role="status">
+            <uui-icon name="icon-info"></uui-icon>
+            <span>${this.localize.term('evaluatePage_samplingVariesNotice')}</span>
+          </div>`
+        : nothing}
       ${hasScoring ? this._renderScoring(overallScore, axisScores) : nothing}
 
       ${total > 0
@@ -448,9 +534,7 @@ export class EvaluationReportElement extends UmbLitElement {
     'Umbraco.TextArea',
     'Umbraco.Markdown',
     'Umbraco.Tags',
-  ]);
-
-  private static readonly _COPY_ONLY_EDITORS = new Set([
+    // Rich text: Apply builds a { markup, blocks } value (FR-016); _canApply adds the embedded-block check.
     'Umbraco.RichText',
     'Umbraco.TinyMCE',
   ]);
@@ -465,7 +549,6 @@ export class EvaluationReportElement extends UmbLitElement {
     if (editorAlias !== undefined) {
       return (
         EvaluationReportElement._FULL_RECOMMEND_EDITORS.has(editorAlias) ||
-        EvaluationReportElement._COPY_ONLY_EDITORS.has(editorAlias) ||
         this._isAdditionalEditor(editorAlias)
       );
     }
@@ -478,12 +561,16 @@ export class EvaluationReportElement extends UmbLitElement {
   }
 
   /**
-   * Returns true when the Apply button should be shown for the given property alias.
-   * Only plain-text editors support direct apply; RTE / TinyMCE are copy-only.
-   * Editors listed in additionalRecommendableEditorAliases are treated as full recommend (apply supported).
+   * Returns true when the Apply button should be shown for the given property alias and recommendation.
+   * Rich text is applicable only when the recommendation keeps every embedded block placeholder of the
+   * current value exactly once (FR-016). Editors listed in additionalRecommendableEditorAliases are
+   * treated as full recommend (apply supported).
    */
-  private _canApply(alias: string): boolean {
+  private _canApply(alias: string, recommended: string | null): boolean {
     const editorAlias = this.propertyEditorAliases[alias];
+    if (isRichTextEditor(editorAlias)) {
+      return recommended !== null && canApplyRichText(this._currentMarkup(alias), recommended);
+    }
     if (editorAlias !== undefined) {
       return (
         EvaluationReportElement._FULL_RECOMMEND_EDITORS.has(editorAlias) ||
@@ -504,11 +591,28 @@ export class EvaluationReportElement extends UmbLitElement {
     );
   }
 
+  /** The current rich-text markup of `alias` (the `.markup` of a `{ markup, blocks }` value), or ''. */
+  private _currentMarkup(alias: string): string {
+    const raw = this.properties[alias];
+    if (typeof raw === 'string') return raw;
+    if (typeof raw === 'object' && raw !== null && 'markup' in raw && typeof raw.markup === 'string') {
+      return raw.markup;
+    }
+    return '';
+  }
+
+  /** The string sent to /recommend as a property's current value (rich text → its markup). */
+  private _recommendInputValue(alias: string, value: unknown): string {
+    if (isRichTextEditor(this.propertyEditorAliases[alias])) return this._currentMarkup(alias);
+    return typeof value === 'string' ? value : JSON.stringify(value ?? '');
+  }
+
   private _resolveCurrentValue(alias: string): string {
     const raw = this.properties[alias];
     if (raw === null || raw === undefined) return '';
     if (typeof raw === 'string') return raw;
     if (Array.isArray(raw)) return raw.join(', ');
+    if (isRichTextEditor(this.propertyEditorAliases[alias])) return this._currentMarkup(alias);
     return '';
   }
 
@@ -579,10 +683,10 @@ export class EvaluationReportElement extends UmbLitElement {
         return html`${recommendableAliases.map((alias) => {
           const applied = this._appliedAliases.get(check.checkNumber)?.has(alias) ?? false;
           const value = state.values[alias] ?? null;
-          return this._renderRecBox(check, alias, value, applied, this._canApply(alias));
+          return this._renderRecBox(check, alias, value, applied, this._canApply(alias, value));
         })}`;
       case 'error': {
-        const messageKey = localizationKeyForErrorCategory(state.category, 'evaluatePage_recError');
+        const messageKey = localizationKeyForError(state, 'evaluatePage_recError');
         return html`
           <div style="display:flex;align-items:center;gap:var(--uui-size-space-2,8px);margin-top:var(--uui-size-space-2,8px);">
             <uui-icon name="icon-alert" style="color:var(--uui-color-danger-standalone,#b91c1c);"></uui-icon>
@@ -610,6 +714,8 @@ export class EvaluationReportElement extends UmbLitElement {
     canApply: boolean,
   ): TemplateResult {
     const copied = this._copiedAliases.get(check.checkNumber)?.has(alias) ?? false;
+    const applyFailed = this._applyFailedAliases.get(check.checkNumber)?.has(alias) ?? false;
+    const applyBlocked = !canApply && value !== null && isRichTextEditor(this.propertyEditorAliases[alias]);
     const currentValue = this._resolveCurrentValue(alias);
     return html`
       <div class="rec-box ${applied ? 'applied' : ''}">
@@ -630,6 +736,18 @@ export class EvaluationReportElement extends UmbLitElement {
             : this._recSuggestedLabel(alias)}
         </div>
         <div class="rec-text">${value ?? ''}</div>
+        ${applyBlocked
+          ? html`<div class="rec-notice" role="status">
+              <uui-icon name="icon-info"></uui-icon>
+              <span>${this.localize.term('evaluatePage_rteApplyBlockedMessage')}</span>
+            </div>`
+          : nothing}
+        ${applyFailed
+          ? html`<div class="rec-notice rec-notice--error" role="alert">
+              <uui-icon name="icon-alert"></uui-icon>
+              <span>${this.localize.term('evaluatePage_applyFailedMessage')}</span>
+            </div>`
+          : nothing}
         <div class="rec-actions">
           ${canApply && !applied
             ? html`
@@ -681,11 +799,12 @@ export class EvaluationReportElement extends UmbLitElement {
 
     const request: RecommendRequest = {
       nodeId: this.nodeId,
+      culture: this.culture,
       propertyAliases: check.propertyAliases,
       checkLabel: check.label,
       checkExplanation: check.explanation ?? null,
       properties: Object.fromEntries(
-        Object.entries(this.properties).map(([k, v]) => [k, String(v ?? '')]),
+        Object.entries(this.properties).map(([k, v]) => [k, this._recommendInputValue(k, v)]),
       ),
     };
 
@@ -695,25 +814,37 @@ export class EvaluationReportElement extends UmbLitElement {
       this._setRecState(check.checkNumber, { kind: 'result', values: response.recommendedValues });
     } catch (err) {
       if (!this.isConnected) return;
+      // ApiError is thrown for every non-2xx/network failure now that api-client opts out of
+      // umbHttpClient's throwOnError (research R12.3), so category and type reach the UI.
       const category = err instanceof ApiError ? err.category : null;
-      this._setRecState(check.checkNumber, { kind: 'error', category });
+      const type = err instanceof ApiError ? err.type : null;
+      this._setRecState(check.checkNumber, { kind: 'error', category, type });
     }
   }
 
   private _handleApply(check: CheckResult, alias: string, value: string | null): void {
     if (!alias || value === null) return;
-    this.dispatchEvent(
-      new CustomEvent('page-evaluator-rec-apply', {
-        bubbles: true,
-        composed: true,
-        detail: { propertyAlias: alias, value },
-      }),
-    );
+    const failed = new Map(this._applyFailedAliases);
+    const failedSet = new Set(failed.get(check.checkNumber) ?? []);
+    if (failedSet.delete(alias)) {
+      failed.set(check.checkNumber, failedSet);
+      this._applyFailedAliases = failed;
+    }
+    // Mark applied before dispatching so a failure reported during dispatch can revert it.
     const applied = new Map(this._appliedAliases);
     const set = new Set(applied.get(check.checkNumber) ?? []);
     set.add(alias);
     applied.set(check.checkNumber, set);
     this._appliedAliases = applied;
+
+    const detail: RecApplyEventDetail = { propertyAlias: alias, checkNumber: check.checkNumber, value };
+    this.dispatchEvent(
+      new CustomEvent<RecApplyEventDetail>('page-evaluator-rec-apply', {
+        bubbles: true,
+        composed: true,
+        detail,
+      }),
+    );
   }
 
   private async _handleCopy(checkNumber: number, alias: string, value: string | null): Promise<void> {

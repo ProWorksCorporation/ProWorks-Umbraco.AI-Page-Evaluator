@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Text.Json;
 using ProWorks.Umbraco.AI.PageEvaluator.Evaluation;
 using Xunit;
 
@@ -327,5 +328,35 @@ public class EvaluationReportTests
 
         Assert.Single(copy.AdditionalRecommendableEditorAliases);
         Assert.Equal("MyPackage.CustomText", copy.AdditionalRecommendableEditorAliases[0]);
+    }
+
+    // ---------------------------------------------------------------------------
+    // SamplingSettingsIgnored (003-upgrade-umbraco-17-6 FR-015b) — persisted in the cache JSON
+    // ---------------------------------------------------------------------------
+
+    // Same options as EFCoreEvaluationCacheRepository.
+    private static readonly JsonSerializerOptions CacheJson = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+
+    [Fact]
+    public void WithSamplingSettingsIgnored_RoundTripsThroughTheCacheJson()
+    {
+        var report = EvaluationReport.Parsed(new EvaluationScore(1, 1), [new(1, CheckStatus.Pass, "Title", null, null)], null)
+            .WithSamplingSettingsIgnored(true);
+
+        string json = JsonSerializer.Serialize(report, CacheJson);
+        var restored = JsonSerializer.Deserialize<EvaluationReport>(json, CacheJson);
+
+        Assert.Contains("\"samplingSettingsIgnored\":true", json);
+        Assert.True(restored!.SamplingSettingsIgnored);
+    }
+
+    [Fact]
+    public void SamplingSettingsIgnored_IsNull_ForReportsCachedBeforeTheUpgrade()
+    {
+        const string legacyJson = """{"parseFailed":false,"score":{"passed":1,"total":1},"checks":[],"suggestions":null}""";
+
+        var restored = JsonSerializer.Deserialize<EvaluationReport>(legacyJson, CacheJson);
+
+        Assert.Null(restored!.SamplingSettingsIgnored);
     }
 }

@@ -1,96 +1,52 @@
 /**
- * T045 — Playwright E2E tests for the evaluator configuration workflow.
+ * E2E: the Page Evaluator configuration workspace (AI section → Add-ons → Page Evaluator).
  *
- * Tests: create evaluator, verify Active badge, edit, delete, verify button absent.
- *
- * These tests require a running Umbraco v17 instance with Umbraco.AI configured.
- * They are excluded from the Vitest test run (vite.config.ts excludes tests/e2e/**).
- * Run with: npx playwright test tests/e2e/evaluator-config.spec.ts
+ * Uses the TestSite's existing configurations ("Home Page Scoring Test" for `home`,
+ * "Blog Post Checker" for `blogPost`). Read-only: nothing is created, saved or deleted.
+ * The sampling-support endpoint is mocked to exercise both notice states (US3 / FR-015a).
  */
+import { expect } from '@playwright/test';
+import { test } from '@umbraco/playwright-testhelpers';
+import { mockSamplingSupport } from './helpers';
 
-import { test, expect } from '@playwright/test';
-
-const BACKOFFICE_URL = process.env['UMBRACO_URL'] ?? 'https://localhost:44382/umbraco';
-const ADMIN_EMAIL = process.env['UMBRACO_ADMIN_EMAIL'] ?? 'admin@example.com';
-const ADMIN_PASSWORD = process.env['UMBRACO_ADMIN_PASSWORD'] ?? 'Password1234!';
-
-test.describe('Evaluator Configuration Workflow', () => {
-  test.beforeEach(async ({ page }) => {
-    await page.goto(`${BACKOFFICE_URL}/login`);
-    await page.getByLabel('Email').fill(ADMIN_EMAIL);
-    await page.getByLabel('Password').fill(ADMIN_PASSWORD);
-    await page.getByRole('button', { name: 'Log in' }).click();
-    await page.waitForURL(`${BACKOFFICE_URL}/**`);
+test.describe('Evaluator configuration workspace', () => {
+  test.beforeEach(async ({ umbracoUi }) => {
+    await umbracoUi.goToBackOffice();
+    await umbracoUi.content.goToSection('AI', false);
+    await umbracoUi.page.getByRole('link', { name: 'Page Evaluator' }).click();
   });
 
-  test('can create a new evaluator configuration', async ({ page }) => {
-    // Navigate to Addons > Page Evaluator
-    await page.getByRole('menuitem', { name: 'Addons' }).click();
-    await page.getByRole('menuitem', { name: 'Page Evaluator' }).click();
-
-    // Click Create New
-    await page.getByRole('button', { name: 'Create New' }).click();
-
-    // Fill in the form
-    await page.getByLabel('Name').fill('Blog Post Evaluator E2E');
-    await page.getByLabel('Document Type').fill('blogPost');
-    // Profile picker — select first available Chat profile
-    await page.locator('uai-profile-picker').click();
-    await page.getByRole('option').first().click();
-    await page.getByLabel('Prompt').fill('Evaluate this blog post for content quality.');
-
-    // Save
-    await page.getByRole('button', { name: 'Save' }).click();
-
-    // Verify config appears in list with Active badge
-    await expect(page.getByText('Blog Post Evaluator E2E')).toBeVisible();
-    await expect(page.locator('uui-badge', { hasText: 'Active' }).first()).toBeVisible();
+  test('lists configurations grouped by document type with their status', async ({ umbracoUi }) => {
+    await expect(umbracoUi.page.getByRole('heading', { name: 'Page Evaluator Configurations' })).toBeVisible({ timeout: 15000 });
+    const homeRow = umbracoUi.page.getByRole('row', { name: /Home Page Scoring Test/ });
+    await expect(homeRow).toBeVisible();
+    await expect(homeRow.getByText('Active')).toBeVisible();
+    await expect(homeRow.getByRole('button', { name: 'Edit' })).toBeVisible();
+    await expect(homeRow.getByRole('button', { name: 'Delete' })).toBeVisible();
   });
 
-  test('active badge appears on most recently saved config for a doc type', async ({ page }) => {
-    // Navigate to Page Evaluator config list
-    await page.getByRole('menuitem', { name: 'Addons' }).click();
-    await page.getByRole('menuitem', { name: 'Page Evaluator' }).click();
+  test('opens an existing configuration in the form', async ({ umbracoUi }) => {
+    await umbracoUi.page.getByRole('row', { name: /Home Page Scoring Test/ }).getByRole('button', { name: 'Edit' }).click();
 
-    // Find the blogPost group
-    const blogGroup = page.locator('[data-doc-type="blogPost"]');
-    await expect(blogGroup.locator('uui-badge', { hasText: 'Active' })).toBeVisible();
+    await expect(umbracoUi.page.getByRole('textbox', { name: 'Name' })).toHaveValue('Home Page Scoring Test', { timeout: 15000 });
+    await expect(umbracoUi.page.getByRole('textbox', { name: 'Evaluation Prompt' })).not.toBeEmpty();
+    await expect(umbracoUi.page.getByRole('button', { name: 'Back to list' })).toBeVisible();
   });
 
-  test('can edit an existing evaluator configuration', async ({ page }) => {
-    await page.getByRole('menuitem', { name: 'Addons' }).click();
-    await page.getByRole('menuitem', { name: 'Page Evaluator' }).click();
+  test('shows the "scores may vary" notice when the profile model ignores temperature', async ({ umbracoUi }) => {
+    await mockSamplingSupport(umbracoUi.page, false);
 
-    // Click edit on the first config
-    await page.getByRole('button', { name: 'Edit' }).first().click();
+    await umbracoUi.page.getByRole('row', { name: /Home Page Scoring Test/ }).getByRole('button', { name: 'Edit' }).click();
 
-    // Update the name
-    const nameInput = page.getByLabel('Name');
-    await nameInput.clear();
-    await nameInput.fill('Blog Post Evaluator E2E (Edited)');
-
-    await page.getByRole('button', { name: 'Save' }).click();
-
-    await expect(page.getByText('Blog Post Evaluator E2E (Edited)')).toBeVisible();
+    await expect(umbracoUi.page.getByRole('status').filter({ hasText: /scores may vary/i })).toBeVisible({ timeout: 15000 });
   });
 
-  test('can delete a configuration and Evaluate Page button disappears', async ({ page }) => {
-    await page.getByRole('menuitem', { name: 'Addons' }).click();
-    await page.getByRole('menuitem', { name: 'Page Evaluator' }).click();
+  test('does not show the notice when the profile model honours temperature', async ({ umbracoUi }) => {
+    await mockSamplingSupport(umbracoUi.page, true);
 
-    // Delete the Blog Post evaluator
-    await page.getByRole('button', { name: 'Delete' }).first().click();
+    await umbracoUi.page.getByRole('row', { name: /Home Page Scoring Test/ }).getByRole('button', { name: 'Edit' }).click();
 
-    // Confirm deletion dialog
-    await expect(page.getByRole('dialog')).toBeVisible();
-    await page.getByRole('button', { name: 'Confirm' }).click();
-
-    await expect(page.getByText('Blog Post Evaluator E2E')).not.toBeVisible();
-
-    // Navigate to a blog post content node and verify button is absent
-    await page.getByRole('menuitem', { name: 'Content' }).click();
-    await page.getByRole('treeitem', { name: /blog/i }).first().click();
-
-    await expect(page.getByRole('button', { name: 'Evaluate Page' })).not.toBeVisible();
+    await expect(umbracoUi.page.getByRole('textbox', { name: 'Name' })).toBeVisible({ timeout: 15000 });
+    await expect(umbracoUi.page.getByRole('status').filter({ hasText: /scores may vary/i })).toHaveCount(0);
   });
 });

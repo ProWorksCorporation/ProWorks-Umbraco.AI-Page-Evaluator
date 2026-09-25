@@ -1,109 +1,181 @@
 /**
- * T030 — Playwright E2E test for the full evaluate-page flow.
+ * E2E: evaluating a page from the document workspace (US1, US2, US3, US4 of
+ * specs/003-upgrade-umbraco-17-6), against the running TestSite.
  *
- * Prerequisites (must be true for this test to pass):
- * 1. A local Umbraco v17 instance is running at UMBRACO_URL.
- * 2. The ProWorks AI Page Evaluator package is installed and the dist bundle is built.
- * 3. An evaluator configuration exists for the "blogPost" document type.
- * 4. At least one Blog Post content node exists in the CMS.
- * 5. Umbraco.AI is configured with a working AI connection (real or mocked).
+ * Prerequisites: the TestSite's synced content — a "Home" page (document type `home`, which has an
+ * active evaluator config and a rich-text `introText`) and "About Us" (`contentPage`, no config).
+ * AI responses are mocked (see helpers.ts), so no AI provider is called.
  *
- * RED STATE: This test will fail until T031-T039 implement the full US1 feature.
+ * Rewritten in 003 onto @umbraco/playwright-testhelpers navigation: the original specs used
+ * selectors that never matched a real backoffice.
  */
-import { test, expect } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
+import { ConstantHelper, test } from '@umbraco/playwright-testhelpers';
+import {
+  mockCachedEvaluation,
+  mockEvaluate,
+  mockNoCachedEvaluation,
+  mockRecommend,
+  mockReport,
+} from './helpers';
 
-const UMBRACO_URL = process.env['UMBRACO_URL'] ?? 'http://localhost:5000';
-const UMBRACO_USERNAME = process.env['UMBRACO_USERNAME'] ?? 'admin@example.com';
-const UMBRACO_PASSWORD = process.env['UMBRACO_PASSWORD'] ?? 'adminPassword123!';
-
-test.describe('US1 — Content Editor Evaluates a Page', () => {
-  test.beforeEach(async ({ page }) => {
-    // Log into the Umbraco back-office
-    await page.goto(`${UMBRACO_URL}/umbraco`);
-    await page.getByLabel('Email').fill(UMBRACO_USERNAME);
-    await page.getByLabel('Password').fill(UMBRACO_PASSWORD);
-    await page.getByRole('button', { name: /log in/i }).click();
-    await expect(page.getByRole('main')).toBeVisible({ timeout: 15000 });
+test.describe('Evaluate Page', () => {
+  test.beforeEach(async ({ umbracoUi }) => {
+    await umbracoUi.goToBackOffice();
+    await umbracoUi.content.goToSection(ConstantHelper.sections.content, false);
   });
 
-  test('Evaluate Page button is visible on a blog post with an active evaluator', async ({ page }) => {
-    // Navigate to the Content section
-    await page.getByRole('link', { name: /content/i }).click();
+  test('shows the Evaluate Page action only for document types with an active evaluator', async ({ umbracoUi }) => {
+    await umbracoUi.content.goToContentWithName('Home');
+    await expect(umbracoUi.page.getByRole('button', { name: 'Evaluate Page' })).toBeVisible({ timeout: 15000 });
 
-    // Open a Blog Post node (assumes at least one exists)
-    await page.getByRole('treeitem', { name: /blog post/i }).first().click();
-
-    // The workspace action button should be visible
-    const evaluateButton = page.getByRole('button', { name: /evaluate page/i });
-    await expect(evaluateButton).toBeVisible({ timeout: 5000 });
+    // About Us is a child of Home in the TestSite tree.
+    await umbracoUi.content.openContentCaretButtonForName('Home');
+    await umbracoUi.content.goToContentWithName('About Us');
+    await expect(umbracoUi.page.getByRole('textbox', { name: 'Enter a name...' })).toHaveValue('About Us', { timeout: 15000 });
+    await expect(umbracoUi.page.getByRole('button', { name: 'Evaluate Page' })).toHaveCount(0);
   });
 
-  test('Evaluate Page button is NOT visible on a document type without an evaluator', async ({ page }) => {
-    // Navigate to a node of a type that has no evaluator configured
-    await page.getByRole('link', { name: /content/i }).click();
-    await page.getByRole('treeitem', { name: /home/i }).first().click();
+  test('shows a cached report without calling the AI', async ({ umbracoUi }) => {
+    const sent: unknown[] = [];
+    await mockCachedEvaluation(umbracoUi.page, mockReport());
+    await mockEvaluate(umbracoUi.page, 200, mockReport(), sent);
 
-    // The evaluate button must NOT appear
-    const evaluateButton = page.getByRole('button', { name: /evaluate page/i });
-    await expect(evaluateButton).not.toBeVisible({ timeout: 3000 });
+    await umbracoUi.content.goToContentWithName('Home');
+    await umbracoUi.page.getByRole('button', { name: 'Evaluate Page' }).click();
+
+    await expect(umbracoUi.page.locator('page-evaluator-report')).toBeVisible({ timeout: 15000 });
+    await expect(umbracoUi.page.getByText('E2E: intro text too short')).toBeVisible();
+    expect(sent).toHaveLength(0);
   });
 
-  test('Opens evaluation modal when Evaluate Page is clicked', async ({ page }) => {
-    await page.getByRole('link', { name: /content/i }).click();
-    await page.getByRole('treeitem', { name: /blog post/i }).first().click();
+  test('runs a fresh evaluation when nothing is cached and sends the invariant culture', async ({ umbracoUi }) => {
+    const sent: unknown[] = [];
+    await mockNoCachedEvaluation(umbracoUi.page);
+    await mockEvaluate(umbracoUi.page, 200, mockReport(), sent);
 
-    await page.getByRole('button', { name: /evaluate page/i }).click();
+    await umbracoUi.content.goToContentWithName('Home');
+    await umbracoUi.page.getByRole('button', { name: 'Evaluate Page' }).click();
 
-    // Slide-in dialog (sidebar modal) should appear
-    const modal = page.getByRole('dialog');
-    await expect(modal).toBeVisible({ timeout: 5000 });
+    await expect(umbracoUi.page.getByText('E2E: headline present')).toBeVisible({ timeout: 15000 });
+    expect(sent).toHaveLength(1);
+    expect((sent[0] as { culture: unknown }).culture).toBeNull();
   });
 
-  test('Shows progress messages while evaluation is running', async ({ page }) => {
-    await page.getByRole('link', { name: /content/i }).click();
-    await page.getByRole('treeitem', { name: /blog post/i }).first().click();
-    await page.getByRole('button', { name: /evaluate page/i }).click();
+  test('shows the localized gateway-timeout message for a 504 from a proxy', async ({ umbracoUi }) => {
+    await mockNoCachedEvaluation(umbracoUi.page);
+    // The backoffice interceptor rewrites 504 to type GatewayTimeout whatever the body says.
+    await mockEvaluate(umbracoUi.page, 504, '<html>Gateway Timeout</html>');
 
-    // Progress messages should appear while waiting for AI
-    const progressMessage = page.getByText(/sending page data|waiting for ai response/i);
-    await expect(progressMessage).toBeVisible({ timeout: 5000 });
+    await umbracoUi.content.goToContentWithName('Home');
+    await umbracoUi.page.getByRole('button', { name: 'Evaluate Page' }).click();
+
+    await expect(umbracoUi.page.getByText(/took longer than your network gateway allows/i)).toBeVisible({ timeout: 15000 });
+    await expect(umbracoUi.page.getByText(/fatal server error/i)).toHaveCount(0);
   });
 
-  test('Renders structured evaluation report within 30 seconds', async ({ page }) => {
-    await page.getByRole('link', { name: /content/i }).click();
-    await page.getByRole('treeitem', { name: /blog post/i }).first().click();
-    await page.getByRole('button', { name: /evaluate page/i }).click();
+  test('shows the retryable message for a temporarily unavailable provider (incl. Cancelled)', async ({ umbracoUi }) => {
+    await mockNoCachedEvaluation(umbracoUi.page);
+    await mockEvaluate(umbracoUi.page, 503, {
+      type: 'Error',
+      title: 'The AI provider is temporarily unavailable.',
+      status: 503,
+      category: 'temporaryRetryable',
+    });
 
-    // The structured report element must become visible within 30 seconds (FR-004, FR-013)
-    const reportElement = page.locator('page-evaluator-report');
-    await expect(reportElement).toBeVisible({ timeout: 30000 });
+    await umbracoUi.content.goToContentWithName('Home');
+    await umbracoUi.page.getByRole('button', { name: 'Evaluate Page' }).click();
+
+    await expect(umbracoUi.page.getByText(/temporarily unavailable/i).first()).toBeVisible({ timeout: 15000 });
+    await expect(umbracoUi.page.getByRole('button', { name: 'Retry' })).toBeVisible();
   });
 
-  test('Report contains score, passing items, and attention items sections', async ({ page }) => {
-    await page.getByRole('link', { name: /content/i }).click();
-    await page.getByRole('treeitem', { name: /blog post/i }).first().click();
-    await page.getByRole('button', { name: /evaluate page/i }).click();
+  test('shows the variability notice on a report produced by a model that ignores temperature', async ({ umbracoUi }) => {
+    await mockCachedEvaluation(umbracoUi.page, mockReport({ samplingSettingsIgnored: true }));
 
-    const reportElement = page.locator('page-evaluator-report');
-    await expect(reportElement).toBeVisible({ timeout: 30000 });
+    await umbracoUi.content.goToContentWithName('Home');
+    await umbracoUi.page.getByRole('button', { name: 'Evaluate Page' }).click();
 
-    // Score section
-    await expect(page.getByText(/\d+\/\d+ checks passed/i)).toBeVisible();
-
-    // At least one of passing or attention sections
-    const hasPassing = await page.getByText(/passing items/i).isVisible().catch(() => false);
-    const hasAttention = await page.getByText(/attention/i).isVisible().catch(() => false);
-    expect(hasPassing || hasAttention).toBe(true);
+    await expect(umbracoUi.page.getByRole('status').filter({ hasText: /scores may vary/i })).toBeVisible({ timeout: 15000 });
   });
 
-  test('Shows parse-failed warning when AI returns unstructured response', async ({ page }) => {
-    // This test requires a misconfigured evaluator that causes parse failure.
-    // Skip if not applicable in current test environment.
-    test.skip(true, 'Requires a specifically misconfigured evaluator for parse-fail scenario.');
+  test('applies a rich-text recommendation into the editor', async ({ umbracoUi }) => {
+    await mockCachedEvaluation(umbracoUi.page, mockReport());
+    await mockRecommend(umbracoUi.page, { introText: '<p>E2E applied intro paragraph.</p>' });
+
+    await umbracoUi.content.goToContentWithName('Home');
+    await umbracoUi.page.getByRole('button', { name: 'Evaluate Page' }).click();
+    await umbracoUi.page.getByRole('button', { name: /generate recommendation/i }).first().click();
+    await umbracoUi.page.getByRole('button', { name: 'Apply' }).click();
+
+    await expect(umbracoUi.page.getByText(/applied/i).first()).toBeVisible({ timeout: 15000 });
+    await umbracoUi.page.getByRole('button', { name: 'Close' }).click();
+    await expect(
+      umbracoUi.page.getByTestId('input:tiptap-rte').getByText('E2E applied intro paragraph.'),
+    ).toBeVisible({ timeout: 15000 });
   });
 
-  test('Shows retry button on 502 AI provider error', async ({ page }) => {
-    // This test requires the AI provider to be misconfigured or unavailable.
-    test.skip(true, 'Requires AI provider to return a 502 error.');
+  test.describe('on a multilingual page', () => {
+    // "ProWorks AI Page Evaluator" (landingPage, varies by culture). Its Danish introText embeds one
+    // testBlock; the English intro has none (tasks T003, validation.md).
+    const TEST_PAGE = '3e4f5a6b-7c8d-4e9f-a0b1-c2d3e4f5a6b7';
+    const DA_BLOCK = '<umb-rte-block data-content-key="d3a0c1e2-5b7f-4c1a-9e2d-7f003da00001"><!--Umbraco-Block--></umb-rte-block>';
+
+    async function openVariant(umbracoUi: { page: Page }, culture: string): Promise<void> {
+      await umbracoUi.page.goto(`/umbraco/section/content/workspace/document/edit/${TEST_PAGE}/${culture}`);
+      await expect(umbracoUi.page.getByRole('button', { name: 'Evaluate Page' })).toBeVisible({ timeout: 15000 });
+    }
+
+    for (const [culture, expectedTitle] of [
+      ['da-DK', 'Stop med at udgive sider'],
+      ['en-US', 'Stop Publishing Pages'],
+    ] as const) {
+      test(`evaluates the ${culture} variant with that language's values`, async ({ umbracoUi }) => {
+        const cachedUrls: string[] = [];
+        umbracoUi.page.on('request', (r) => {
+          if (r.url().includes('/page-evaluator/evaluate/cached/')) cachedUrls.push(r.url());
+        });
+        const sent: unknown[] = [];
+        await mockNoCachedEvaluation(umbracoUi.page);
+        await mockEvaluate(umbracoUi.page, 200, mockReport({ culture }), sent);
+
+        await openVariant(umbracoUi, culture);
+        await umbracoUi.page.getByRole('button', { name: 'Evaluate Page' }).click();
+
+        await expect(umbracoUi.page.getByText('E2E: intro text too short')).toBeVisible({ timeout: 15000 });
+        expect(cachedUrls.some((u) => u.includes(`culture=${culture}`))).toBe(true);
+        expect(sent).toHaveLength(1);
+        const body = sent[0] as { culture: string; properties: Record<string, unknown> };
+        expect(body.culture).toBe(culture);
+        expect(String(body.properties['pageTitle'])).toContain(expectedTitle);
+        // Invariant properties are still sent alongside the culture's own values.
+        expect(body.properties).toHaveProperty('headerImage');
+      });
+    }
+
+    test('withholds rich-text Apply when the recommendation drops an embedded block', async ({ umbracoUi }) => {
+      await mockCachedEvaluation(umbracoUi.page, mockReport({ culture: 'da-DK' }));
+      await mockRecommend(umbracoUi.page, { introText: '<p>Ingen blokke her.</p>' });
+
+      await openVariant(umbracoUi, 'da-DK');
+      await umbracoUi.page.getByRole('button', { name: 'Evaluate Page' }).click();
+      await umbracoUi.page.getByRole('button', { name: /generate recommendation/i }).first().click();
+
+      await expect(umbracoUi.page.getByText(/would remove embedded content/i)).toBeVisible({ timeout: 15000 });
+      await expect(umbracoUi.page.getByRole('button', { name: 'Apply' })).toHaveCount(0);
+      await expect(umbracoUi.page.getByRole('button', { name: /copy/i }).first()).toBeVisible();
+    });
+
+    test('offers rich-text Apply when the recommendation keeps the embedded block', async ({ umbracoUi }) => {
+      await mockCachedEvaluation(umbracoUi.page, mockReport({ culture: 'da-DK' }));
+      await mockRecommend(umbracoUi.page, { introText: `<p>Ny indledning.</p>${DA_BLOCK}` });
+
+      await openVariant(umbracoUi, 'da-DK');
+      await umbracoUi.page.getByRole('button', { name: 'Evaluate Page' }).click();
+      await umbracoUi.page.getByRole('button', { name: /generate recommendation/i }).first().click();
+
+      await expect(umbracoUi.page.getByRole('button', { name: 'Apply' })).toBeVisible({ timeout: 15000 });
+      await expect(umbracoUi.page.getByText(/would remove embedded content/i)).toHaveCount(0);
+    });
   });
 });

@@ -40,6 +40,21 @@ export default {
       "Impossible de contacter le fournisseur d'IA. Vérifiez votre connexion et réessayez.",
     authenticationConfigurationMessage:
       "La connexion IA nécessite votre attention. Contactez votre administrateur pour vérifier les identifiants ou la configuration du profil IA.",
+    // 003-upgrade-umbraco-17-6: gateway/culture errors, variability notice, rich-text Apply
+    gatewayTimeoutMessage:
+      "L'évaluation a pris plus de temps que ne l'autorise votre passerelle réseau et a donc été interrompue. Veuillez réessayer. Si le problème persiste, demandez à votre administrateur d'augmenter le délai d'expiration du proxy ou du CDN pour le back-office.",
+    gatewayUnreachableMessage:
+      "Le serveur est inaccessible via votre passerelle réseau. Vérifiez votre connexion et réessayez.",
+    cultureNotCreatedMessage:
+      "Cette version linguistique de la page n'a pas encore de contenu, il n'y a donc rien à évaluer.",
+    invalidCultureMessage:
+      "La langue sélectionnée n'a pas pu être évaluée. Rechargez la page et réessayez.",
+    samplingVariesNotice:
+      "Ce rapport a été produit par un modèle d'IA qui ne prend pas en charge les résultats déterministes ; les scores peuvent donc varier si vous relancez l'évaluation.",
+    rteApplyBlockedMessage:
+      "Cette suggestion supprimerait du contenu intégré (blocs ou médias) du champ ; elle ne peut donc pas être appliquée automatiquement. Copiez-la et modifiez le champ manuellement.",
+    applyFailedMessage:
+      "La suggestion n'a pas pu être appliquée à ce champ. Votre contenu existant n'a pas été modifié.",
     retryButton: 'Réessayer',
 
     // Modal: guardrail block
@@ -66,6 +81,9 @@ export default {
   },
 
   evaluatorConfig: {
+    // 003-upgrade-umbraco-17-6: sampling-support notice under the profile picker
+    samplingVariesNotice:
+      "Le profil d'IA sélectionné utilise un modèle qui ne prend pas en charge les résultats déterministes. Les scores d'évaluation peuvent varier d'une exécution à l'autre.",
     // Workspace: list
     sectionLabel: 'Évaluateur de page',
     listHeadline: "Configurations de l'évaluateur de page",

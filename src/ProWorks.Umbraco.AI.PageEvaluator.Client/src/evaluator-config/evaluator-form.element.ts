@@ -6,6 +6,7 @@ import {
   createConfiguration,
   fetchDocTypeProperties,
   getConfiguration,
+  getSamplingSupport,
   updateConfiguration,
 } from '../shared/api-client.js';
 import type { EvaluatorConfigItem, DocumentTypePropertySummary } from '../shared/types.js';
@@ -42,6 +43,8 @@ export class EvaluatorFormElement extends UmbLitElement {
 
   // Validation errors keyed by field name
   @state() _errors: Record<string, string> = {};
+  /** FR-015a: false when the selected profile's model ignores temperature; null = unknown/not loaded. */
+  @state() _temperatureSupported: boolean | null = null;
 
   @state() private _loadError: string | null = null;
   @state() private _promptBuilderOpen = false;
@@ -59,6 +62,25 @@ export class EvaluatorFormElement extends UmbLitElement {
   static override styles = css`
     :host {
       display: block;
+    }
+
+    /* FR-015a notice: core's own inline-notice pattern (no alert element exists in 17.6; research R12.4). */
+    .sampling-notice {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--uui-size-space-2);
+      margin-top: var(--uui-size-space-3);
+      padding: var(--uui-size-space-3) var(--uui-size-space-4);
+      background: var(--uui-color-warning);
+      color: var(--uui-color-warning-contrast);
+      border: 1px solid var(--uui-color-warning-standalone);
+      border-radius: var(--uui-border-radius);
+      font-size: var(--uui-type-small-size);
+    }
+
+    .sampling-notice uui-icon {
+      flex-shrink: 0;
+      margin-top: 2px;
     }
 
     uui-box {
@@ -205,6 +227,7 @@ export class EvaluatorFormElement extends UmbLitElement {
     this._docTypeSuggestions = [];
     this._docTypeShowSuggestions = false;
     this._profileId = '';
+    this._temperatureSupported = null;
     this._contextId = '';
     this._promptText = '';
     this._scoringEnabled = false;
@@ -235,6 +258,7 @@ export class EvaluatorFormElement extends UmbLitElement {
       this._description = config.description ?? '';
       this._documentTypeAlias = config.documentTypeAlias;
       this._profileId = config.profileId;
+      void this.refreshSamplingSupport(config.profileId);
       this._contextId = config.contextId ?? '';
       this._promptText = config.promptText;
       this._scoringEnabled = config.scoringEnabled;
@@ -325,6 +349,27 @@ export class EvaluatorFormElement extends UmbLitElement {
       this._propertyAliases = [...this._propertyAliases, alias];
     } else {
       this._propertyAliases = this._propertyAliases.filter(a => a !== alias);
+    }
+  }
+
+  private _onProfileChange(profileId: string): void {
+    this._profileId = profileId;
+    this._temperatureSupported = null;
+    if (profileId) void this.refreshSamplingSupport(profileId);
+  }
+
+  /**
+   * Loads whether the given profile's model honours temperature (FR-015a). A response is discarded when
+   * the selected profile changed while it was in flight (research R12.6); errors clear the notice.
+   */
+  async refreshSamplingSupport(profileId: string): Promise<void> {
+    try {
+      const { temperatureSupported } = await getSamplingSupport(profileId);
+      if (!this.isConnected || this._profileId !== profileId) return;
+      this._temperatureSupported = temperatureSupported;
+    } catch {
+      if (!this.isConnected || this._profileId !== profileId) return;
+      this._temperatureSupported = null;
     }
   }
 
@@ -483,9 +528,15 @@ export class EvaluatorFormElement extends UmbLitElement {
             <uai-profile-picker
               capability="Chat"
               .value=${this._profileId}
-              @change=${(e: Event) => { this._profileId = (e.target as HTMLInputElement).value as string; }}>
+              @change=${(e: Event) => { this._onProfileChange((e.target as HTMLInputElement).value); }}>
             </uai-profile-picker>
             ${this._errors['profileId'] ? html`<uui-form-validation-message>${this._errors['profileId']}</uui-form-validation-message>` : nothing}
+            ${this._temperatureSupported === false
+              ? html`<div class="sampling-notice" role="status">
+                  <uui-icon name="icon-info"></uui-icon>
+                  <span>${this.localize.term('evaluatorConfig_samplingVariesNotice')}</span>
+                </div>`
+              : nothing}
           </div>
         </umb-property-layout>
 
@@ -494,7 +545,7 @@ export class EvaluatorFormElement extends UmbLitElement {
           <div slot="editor">
             <uai-context-picker
               .value=${this._contextId}
-              @change=${(e: Event) => { this._contextId = (e.target as HTMLInputElement).value as string ?? ''; }}>
+              @change=${(e: Event) => { this._contextId = (e.target as HTMLInputElement).value ?? ''; }}>
             </uai-context-picker>
           </div>
         </umb-property-layout>

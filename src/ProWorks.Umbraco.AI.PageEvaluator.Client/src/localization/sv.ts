@@ -40,6 +40,21 @@ export default {
       'Det gick inte att nå AI-leverantören. Kontrollera din anslutning och försök igen.',
     authenticationConfigurationMessage:
       'AI-anslutningen behöver åtgärdas. Kontakta din administratör för att kontrollera AI-profilens autentiseringsuppgifter eller konfiguration.',
+    // 003-upgrade-umbraco-17-6: gateway/culture errors, variability notice, rich-text Apply
+    gatewayTimeoutMessage:
+      "Utvärderingen tog längre tid än din nätverksgateway tillåter och avbröts därför. Försök igen. Om det fortsätter att hända ber du administratören att höja tidsgränsen för proxy eller CDN för backoffice.",
+    gatewayUnreachableMessage:
+      "Servern kunde inte nås via din nätverksgateway. Kontrollera anslutningen och försök igen.",
+    cultureNotCreatedMessage:
+      "Den här språkversionen av sidan har inget innehåll ännu, så det finns inget att utvärdera.",
+    invalidCultureMessage:
+      "Det valda språket kunde inte utvärderas. Läs in sidan igen och försök på nytt.",
+    samplingVariesNotice:
+      "Den här rapporten togs fram av en AI-modell som inte stöder deterministiska svar, så poängen kan variera om du kör utvärderingen igen.",
+    rteApplyBlockedMessage:
+      "Det här förslaget skulle ta bort inbäddat innehåll (block eller media) från fältet, så det kan inte tillämpas automatiskt. Kopiera det och redigera manuellt i stället.",
+    applyFailedMessage:
+      "Förslaget kunde inte tillämpas på det här fältet. Ditt befintliga innehåll har inte ändrats.",
     retryButton: 'Försök igen',
 
     // Modal: guardrail block
@@ -66,6 +81,9 @@ export default {
   },
 
   evaluatorConfig: {
+    // 003-upgrade-umbraco-17-6: sampling-support notice under the profile picker
+    samplingVariesNotice:
+      "Den valda AI-profilen använder en modell som inte stöder deterministiska svar. Utvärderingspoängen kan variera mellan körningar.",
     // Workspace: list
     sectionLabel: 'Sidutvärderare',
     listHeadline: 'Konfigurationer för sidutvärderare',

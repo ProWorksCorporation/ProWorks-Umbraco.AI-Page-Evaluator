@@ -5,13 +5,21 @@ namespace ProWorks.Umbraco.AI.PageEvaluator.Persistence.Cache;
 
 /// <summary>
 /// EFCore entity mapping to the <c>umbracoAIEvaluationCache</c> table.
-/// One row per content node — keyed on NodeId. Upserted on each (re-)evaluation.
+/// One row per (content node, culture) — composite key (NodeId, Culture), configured in
+/// <c>UmbracoAIPageEvaluatorDbContext</c>. Upserted on each (re-)evaluation.
 /// </summary>
 [Table("umbracoAIEvaluationCache")]
 public sealed class EvaluationCacheEntity
 {
-    [Key]
     public Guid NodeId { get; set; }
+
+    /// <summary>
+    /// Lower-cased ISO culture code for culture-varying documents; <see cref="string.Empty"/> for invariant
+    /// documents and for rows cached before the (NodeId, Culture) key was introduced.
+    /// </summary>
+    [Required(AllowEmptyStrings = true)]
+    [MaxLength(64)]
+    public string Culture { get; set; } = string.Empty;
 
     [Required]
     [MaxLength(255)]

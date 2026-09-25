@@ -40,6 +40,21 @@ export default {
       'Could not reach the AI provider. Please check your connection and try again.',
     authenticationConfigurationMessage:
       "The AI connection needs attention. Contact your administrator to check the AI profile's credentials or configuration.",
+    // 003-upgrade-umbraco-17-6: gateway/culture errors, variability notice, rich-text Apply
+    gatewayTimeoutMessage:
+      "The evaluation took longer than your network gateway allows, so it was stopped. Please try again. If this keeps happening, ask your administrator to raise the proxy or CDN timeout for the backoffice.",
+    gatewayUnreachableMessage:
+      "The server could not be reached through your network gateway. Check your connection and try again.",
+    cultureNotCreatedMessage:
+      "This language version of the page has no content yet, so there is nothing to evaluate.",
+    invalidCultureMessage:
+      "The selected language could not be evaluated. Reload the page and try again.",
+    samplingVariesNotice:
+      "This report was produced by an AI model that does not support deterministic output, so scores may vary if you re-run the evaluation.",
+    rteApplyBlockedMessage:
+      "This suggestion would remove embedded content (blocks or media) from the field, so it can't be applied automatically. Copy it and edit by hand instead.",
+    applyFailedMessage:
+      "The suggestion could not be applied to this field. Your existing content has not been changed.",
     retryButton: 'Retry',
 
     // Modal: guardrail block
@@ -66,6 +81,9 @@ export default {
   },
 
   evaluatorConfig: {
+    // 003-upgrade-umbraco-17-6: sampling-support notice under the profile picker
+    samplingVariesNotice:
+      "The selected AI profile uses a model that does not support deterministic output. Evaluation scores may vary between re-runs.",
     // Workspace: list
     sectionLabel: 'Page Evaluator',
     listHeadline: 'Page Evaluator Configurations',

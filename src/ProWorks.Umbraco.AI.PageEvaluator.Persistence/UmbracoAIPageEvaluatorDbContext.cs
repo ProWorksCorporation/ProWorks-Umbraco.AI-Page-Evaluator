@@ -63,7 +63,9 @@ public sealed class UmbracoAIPageEvaluatorDbContext : DbContext
 
         modelBuilder.Entity<EvaluationCacheEntity>(entity =>
         {
-            entity.HasKey(e => e.NodeId);
+            // One row per (node, culture); '' = invariant/legacy (003-upgrade-umbraco-17-6 FR-018d).
+            entity.HasKey(e => new { e.NodeId, e.Culture });
+            entity.Property(e => e.Culture).HasMaxLength(64).HasDefaultValue(string.Empty);
         });
     }
 }

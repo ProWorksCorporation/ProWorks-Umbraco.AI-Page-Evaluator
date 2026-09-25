@@ -17,6 +17,8 @@ vi.mock('@umbraco-cms/backoffice/extension-registry', () => ({
 vi.mock('@umbraco-cms/backoffice/lit-element', () => ({
   UmbLitElement: class extends HTMLElement {
     static createProperty(_name: PropertyKey, _options?: unknown): void {}
+    // UmbLitElement provides this.localize via UmbLocalizationController; echo the key.
+    localize = { term: (key: string): string => key };
     connectedCallback() {}
     disconnectedCallback() {}
     render() { return null; }
@@ -73,9 +75,13 @@ function renderForm(props: Partial<{
 }
 
 describe('evaluator-form.element — validation', () => {
-  it('sets name error when name is empty on submit', async () => {
+  it('does not raise a name error — the name is edited in the workspace header, not the form', async () => {
+    let postWasCalled = false;
     server.use(
-      http.post(`${BASE}/configurations`, () => HttpResponse.json({})),
+      http.post(`${BASE}/configurations`, () => {
+        postWasCalled = true;
+        return HttpResponse.json({});
+      }),
     );
 
     const el = renderForm({ name: '', documentTypeAlias: 'blogPost', profileId: 'a1b2', promptText: 'Evaluate.' });
@@ -84,7 +90,8 @@ describe('evaluator-form.element — validation', () => {
     await el.submit?.();
     await new Promise<void>((resolve) => setTimeout(resolve, 10));
 
-    expect(el._errors?.['name']).toBeTruthy();
+    expect(el._errors?.['name']).toBeUndefined();
+    expect(postWasCalled).toBe(true);
   });
 
   it('sets documentTypeAlias error when empty on submit', async () => {
@@ -174,13 +181,76 @@ describe('evaluator-form.element — save behaviour', () => {
     );
 
     const el = renderForm({ name: 'Test', documentTypeAlias: 'blogPost', profileId: 'a1b2c3d4', promptText: 'Evaluate.' });
-    // Simulate editing an existing config by setting an id
-    (el as FormElement & { _configId?: string })._configId = existingId;
+    // Editing an existing config: the workspace sets the public configId property.
+    (el as FormElement & { configId?: string }).configId = existingId;
     await new Promise<void>((resolve) => setTimeout(resolve, 10));
 
     await el.submit?.();
     await new Promise<void>((resolve) => setTimeout(resolve, 50));
 
     expect(putWasCalled).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Sampling-support notice (003-upgrade-umbraco-17-6 FR-015a, research R8/R12.6)
+// ---------------------------------------------------------------------------
+
+type SamplingForm = FormElement & {
+  _temperatureSupported?: boolean | null;
+  refreshSamplingSupport?: (profileId: string) => Promise<void>;
+};
+
+describe('evaluator-form.element — sampling-support notice', () => {
+  it('records temperatureSupported=false for a profile whose model ignores temperature', async () => {
+    server.use(
+      http.get(`${BASE}/profiles/p-reasoning/sampling-support`, () => HttpResponse.json({ temperatureSupported: false })),
+    );
+    const el = renderForm({ profileId: 'p-reasoning' }) as SamplingForm;
+
+    await el.refreshSamplingSupport?.('p-reasoning');
+
+    expect(el._temperatureSupported).toBe(false);
+  });
+
+  it('records temperatureSupported=true for a profile that honours temperature', async () => {
+    server.use(
+      http.get(`${BASE}/profiles/p-classic/sampling-support`, () => HttpResponse.json({ temperatureSupported: true })),
+    );
+    const el = renderForm({ profileId: 'p-classic' }) as SamplingForm;
+
+    await el.refreshSamplingSupport?.('p-classic');
+
+    expect(el._temperatureSupported).toBe(true);
+  });
+
+  it('clears the notice state when the lookup fails', async () => {
+    server.use(
+      http.get(`${BASE}/profiles/p-broken/sampling-support`, () =>
+        HttpResponse.json({ type: 'Error', title: 'boom', status: 500 }, { status: 500 }),
+      ),
+    );
+    const el = renderForm({ profileId: 'p-broken' }) as SamplingForm;
+    el._temperatureSupported = false;
+
+    await el.refreshSamplingSupport?.('p-broken');
+
+    expect(el._temperatureSupported).toBeNull();
+  });
+
+  it('discards a stale response when the selected profile changed while the lookup was in flight', async () => {
+    server.use(
+      http.get(`${BASE}/profiles/p-old/sampling-support`, async () => {
+        await new Promise<void>((resolve) => setTimeout(resolve, 30));
+        return HttpResponse.json({ temperatureSupported: false });
+      }),
+    );
+    const el = renderForm({ profileId: 'p-old' }) as SamplingForm;
+
+    const pending = el.refreshSamplingSupport?.('p-old');
+    el._profileId = 'p-new';
+    await pending;
+
+    expect(el._temperatureSupported ?? null).toBeNull();
   });
 });

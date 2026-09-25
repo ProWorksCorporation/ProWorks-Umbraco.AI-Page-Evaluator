@@ -34,7 +34,7 @@ namespace ProWorks.Umbraco.AI.PageEvaluator.Controllers;
 [ApiController]
 [Authorize(Policy = AuthorizationPolicies.BackOfficeAccess)]
 [Route("umbraco/management/api/v1/page-evaluator")]
-public sealed class PageEvaluatorApiController : ControllerBase
+public sealed partial class PageEvaluatorApiController : ControllerBase
 {
     private readonly IPageEvaluationService _evaluationService;
     private readonly IAIEvaluatorConfigService _configService;
@@ -45,9 +45,11 @@ public sealed class PageEvaluatorApiController : ControllerBase
     private readonly ILogger<PageEvaluatorApiController> _logger;
     private readonly IContentService _contentService;
     private readonly IAuthorizationService _authorizationService;
-    private readonly IAIChatService _chatService;
+    private readonly IEvaluatorChatExecutor _chatExecutor;
     private readonly IPropertyEditorSchemaService _propertyEditorSchemaService;
     private readonly IOptions<PageEvaluatorOptions> _options;
+    private readonly ISamplingSupportService _samplingSupport;
+    private readonly ILanguageService _languageService;
 
     public PageEvaluatorApiController(
         IPageEvaluationService evaluationService,
@@ -59,9 +61,11 @@ public sealed class PageEvaluatorApiController : ControllerBase
         ILogger<PageEvaluatorApiController> logger,
         IContentService contentService,
         IAuthorizationService authorizationService,
-        IAIChatService chatService,
+        IEvaluatorChatExecutor chatExecutor,
         IPropertyEditorSchemaService propertyEditorSchemaService,
-        IOptions<PageEvaluatorOptions> options)
+        IOptions<PageEvaluatorOptions> options,
+        ISamplingSupportService samplingSupport,
+        ILanguageService languageService)
     {
         _evaluationService = evaluationService;
         _configService = configService;
@@ -72,9 +76,11 @@ public sealed class PageEvaluatorApiController : ControllerBase
         _logger = logger;
         _contentService = contentService;
         _authorizationService = authorizationService;
-        _chatService = chatService;
+        _chatExecutor = chatExecutor;
         _propertyEditorSchemaService = propertyEditorSchemaService;
         _options = options;
+        _samplingSupport = samplingSupport;
+        _languageService = languageService;
     }
 
     // ---------------------------------------------------------------------------
@@ -273,6 +279,7 @@ public sealed class PageEvaluatorApiController : ControllerBase
     [HttpGet("evaluate/cached/{nodeId:guid}")]
     public async Task<IActionResult> GetCachedEvaluationAsync(
         Guid nodeId,
+        [FromQuery] string? culture = null,
         CancellationToken cancellationToken = default)
     {
         // Verify the content node exists and the requesting user has Browse access.
@@ -288,7 +295,12 @@ public sealed class PageEvaluatorApiController : ControllerBase
             return StatusCode(StatusCodes.Status403Forbidden,
                 new { title = "You do not have permission to view the cached evaluation for this content node." });
 
-        EvaluationCacheEntry? entry = await _cacheRepository.GetAsync(nodeId, cancellationToken);
+        (string? normalisedCulture, IActionResult? cultureError) = await NormaliseCultureAsync(content, culture);
+        if (cultureError is not null)
+            return cultureError;
+
+        // Legacy '' rows are never returned for culture-varying documents: the lookup is by exact culture.
+        EvaluationCacheEntry? entry = await _cacheRepository.GetAsync(nodeId, normalisedCulture!, cancellationToken);
         if (entry is null)
             return NotFound(new { title = $"No cached evaluation for node '{nodeId}'." });
 
@@ -297,6 +309,7 @@ public sealed class PageEvaluatorApiController : ControllerBase
         IReadOnlyDictionary<string, string> editorAliases = BuildPropertyEditorAliases(entry.DocumentTypeAlias);
         IReadOnlyDictionary<string, string> propertyNames = BuildPropertyNames(entry.DocumentTypeAlias);
         return Ok(entry.Report.WithCachedAt(entry.CachedAt)
+            .WithCulture(NullIfInvariant(normalisedCulture!))
             .WithPropertyEditorAliases(editorAliases)
             .WithPropertyNames(propertyNames)
             .WithRecommendationsEnabled(recommendationsEnabled)
@@ -335,6 +348,11 @@ public sealed class PageEvaluatorApiController : ControllerBase
             return StatusCode(StatusCodes.Status403Forbidden,
                 new { title = "You do not have permission to evaluate this content node." });
 
+        (string? normalisedCulture, IActionResult? cultureError) = await NormaliseCultureAsync(content, request.Culture);
+        if (cultureError is not null)
+            return cultureError;
+        string culture = normalisedCulture!;
+
         // Use the canonical alias from the content node, not the client-supplied value.
         string documentTypeAlias = content.ContentType.Alias;
 
@@ -344,22 +362,30 @@ public sealed class PageEvaluatorApiController : ControllerBase
                 request.NodeId,
                 documentTypeAlias,
                 request.Properties,
+                NullIfInvariant(culture),
                 cancellationToken);
 
             DateTime cachedAt = DateTime.UtcNow;
             await _cacheRepository.SaveAsync(new EvaluationCacheEntry
             {
                 NodeId = request.NodeId,
+                Culture = culture,
                 DocumentTypeAlias = documentTypeAlias,
                 Report = report,
                 CachedAt = cachedAt,
             }, cancellationToken);
+
+            // A pre-upgrade row has no culture; it's never shown for a culture-varying document, so
+            // discard it as soon as a culture-specific result exists (data-model.md §1).
+            if (culture.Length > 0)
+                await _cacheRepository.DeleteAsync(request.NodeId, string.Empty, cancellationToken);
 
             AIEvaluatorConfig? activeConfig = await _configService.GetActiveForDocumentTypeAsync(documentTypeAlias, cancellationToken);
             bool recommendationsEnabled = activeConfig?.RecommendationsEnabled ?? true;
             IReadOnlyDictionary<string, string> editorAliases = BuildPropertyEditorAliases(documentTypeAlias);
             IReadOnlyDictionary<string, string> propertyNames = BuildPropertyNames(documentTypeAlias);
             return Ok(report.WithCachedAt(cachedAt)
+                .WithCulture(NullIfInvariant(culture))
                 .WithPropertyEditorAliases(editorAliases)
                 .WithPropertyNames(propertyNames)
                 .WithRecommendationsEnabled(recommendationsEnabled)
@@ -420,6 +446,10 @@ public sealed class PageEvaluatorApiController : ControllerBase
             return StatusCode(StatusCodes.Status403Forbidden,
                 new { title = "Recommendations are not enabled for this evaluator configuration." });
 
+        (string? normalisedCulture, IActionResult? cultureError) = await NormaliseCultureAsync(content, request.Culture);
+        if (cultureError is not null)
+            return cultureError;
+
         if (request.PropertyAliases.Count == 0)
             return BadRequest(new { title = "PropertyAliases must contain at least one alias." });
 
@@ -441,7 +471,10 @@ public sealed class PageEvaluatorApiController : ControllerBase
         foreach ((string alias, IPropertyType propType) in propertyTypes)
         {
             JsonObject? schema = null;
-            if (_propertyEditorSchemaService.SupportsSchema(propType.PropertyEditorAlias))
+            // Rich text never uses the editor's own {markup, blocks} value schema: the client builds that value
+            // from HTML itself, and the schema branch would bypass the rich-text prompt (FR-016 placeholders).
+            if (!IsRichTextEditor(propType.PropertyEditorAlias)
+                && _propertyEditorSchemaService.SupportsSchema(propType.PropertyEditorAlias))
             {
                 var attempt = await _propertyEditorSchemaService.GetSchemaAsync(propType.DataTypeKey);
                 if (attempt.Success)
@@ -456,7 +489,7 @@ public sealed class PageEvaluatorApiController : ControllerBase
             foreach ((string alias, IPropertyType propType) in propertyTypes)
             {
                 string? recommended = await GetRecommendationAsync(
-                    config, request, propType, schemas[alias], cancellationToken);
+                    config, request, propType, schemas[alias], NullIfInvariant(normalisedCulture!), cancellationToken);
                 recommendedValues[alias] = recommended;
             }
             return Ok(new RecommendResponse { RecommendedValues = recommendedValues });
@@ -542,6 +575,25 @@ public sealed class PageEvaluatorApiController : ControllerBase
     }
 
     // ---------------------------------------------------------------------------
+    // GET /profiles/{profileId}/sampling-support  (003-upgrade-umbraco-17-6 FR-015a)
+    // ---------------------------------------------------------------------------
+
+    /// <summary>
+    /// Reports whether the AI profile's model honours the temperature setting, so the evaluator config
+    /// screen can warn that scores may vary between re-runs. Never 404s: an unknown profile, provider or
+    /// capability is reported as supported (the notice is simply not shown).
+    /// </summary>
+    [HttpGet("profiles/{profileId:guid}/sampling-support")]
+    [Authorize(Policy = AuthorizationPolicies.SectionAccessSettings)]
+    public async Task<IActionResult> GetSamplingSupportAsync(
+        Guid profileId,
+        CancellationToken cancellationToken = default)
+    {
+        bool supported = await _samplingSupport.IsTemperatureSupportedAsync(profileId, null, cancellationToken);
+        return Ok(new { temperatureSupported = supported });
+    }
+
+    // ---------------------------------------------------------------------------
     // Private helpers
     // ---------------------------------------------------------------------------
 
@@ -565,20 +617,64 @@ public sealed class PageEvaluatorApiController : ControllerBase
             .ToDictionary(p => p.Alias, p => p.Name);
     }
 
+    /// <summary>
+    /// Normalises the requested culture for a content node (contracts/management-api.md §1):
+    /// invariant document types always use <see cref="string.Empty"/> (the supplied value is ignored);
+    /// culture-varying ones need a configured language that exists on the node. The result is the
+    /// lower-cased ISO code used as the cache key.
+    /// </summary>
+    private async Task<(string? Culture, IActionResult? Error)> NormaliseCultureAsync(IContent content, string? requested)
+    {
+        if (!content.ContentType.VariesByCulture())
+            return (string.Empty, null);
+
+        if (string.IsNullOrWhiteSpace(requested))
+            return (null, CultureError("invalidCulture", "A culture is required for this document type because it varies by culture."));
+
+        IEnumerable<ILanguage> languages = await _languageService.GetAllAsync();
+        ILanguage? language = languages.FirstOrDefault(l => string.Equals(l.IsoCode, requested, StringComparison.OrdinalIgnoreCase));
+        if (language is null)
+            return (null, CultureError("invalidCulture", $"'{requested}' is not a configured language."));
+
+        if (!content.IsCultureAvailable(language.IsoCode))
+            return (null, CultureError("cultureNotCreated", $"This page has no content in '{language.IsoCode}' yet."));
+
+        return (language.IsoCode.ToLowerInvariant(), null);
+    }
+
+    private ObjectResult CultureError(string category, string title)
+        => BadRequest(new { type = "Error", title, status = StatusCodes.Status400BadRequest, category });
+
+    private static string? NullIfInvariant(string culture) => culture.Length == 0 ? null : culture;
+
+    private static string CultureDisplayName(string culture)
+    {
+        try
+        {
+            return System.Globalization.CultureInfo.GetCultureInfo(culture).EnglishName;
+        }
+        catch (System.Globalization.CultureNotFoundException)
+        {
+            return culture;
+        }
+    }
+
     private Guid GetCurrentUserKey()
         => HttpContext.User.Identity?.GetUserKey()
             ?? throw new InvalidOperationException("Authenticated user key not found on the current request.");
 
     /// <summary>
     /// Maps an <see cref="AIProviderErrorCategory"/> to the HTTP status and wire-format
-    /// category string returned to the editor. See contracts/evaluate-recommend-error-responses.md
-    /// in the 004-upgrade-umbraco-ai-uui feature for the authoritative mapping table.
-    /// No default arm: a future addition to <see cref="AIProviderErrorCategory"/> must be a
-    /// compiler error here, not a silent fallthrough.
+    /// category string returned to the editor. See
+    /// specs/003-upgrade-umbraco-17-6/contracts/error-responses.md for the authoritative table.
+    /// <see cref="AIProviderErrorCategory.Cancelled"/> is reachable since Umbraco.AI 17.1.1: its
+    /// error-classifying chat client only rethrows cancellations of the caller's own token and
+    /// wraps any other <see cref="OperationCanceledException"/>, so it maps to the retryable bucket.
+    /// Never add a default arm that hides a new category: every value must be mapped explicitly.
     /// </summary>
     private static (int Status, string Category, string Title) MapProviderError(AIProviderException ex) => ex.Category switch
     {
-        AIProviderErrorCategory.Transient or AIProviderErrorCategory.RateLimited =>
+        AIProviderErrorCategory.Transient or AIProviderErrorCategory.RateLimited or AIProviderErrorCategory.Cancelled =>
             (StatusCodes.Status503ServiceUnavailable, "temporaryRetryable",
                 "The AI provider is temporarily unavailable. Please try again in a moment."),
         AIProviderErrorCategory.NetworkError =>
@@ -590,9 +686,6 @@ public sealed class PageEvaluatorApiController : ControllerBase
         AIProviderErrorCategory.InvalidRequest or AIProviderErrorCategory.NotFound or AIProviderErrorCategory.Unknown =>
             (StatusCodes.Status500InternalServerError, "unclassified",
                 "An unexpected error occurred. Please try again later."),
-        AIProviderErrorCategory.Cancelled =>
-            throw new InvalidOperationException(
-                "AIProviderErrorCategory.Cancelled should never reach this mapping — cancellation propagates as OperationCanceledException."),
         _ => throw new ArgumentOutOfRangeException(nameof(ex), ex.Category, "Unhandled AIProviderErrorCategory value."),
     };
 
@@ -601,9 +694,10 @@ public sealed class PageEvaluatorApiController : ControllerBase
         RecommendRequest request,
         IPropertyType propertyType,
         JsonObject? schema,
+        string? culture,
         CancellationToken cancellationToken)
     {
-        string systemPrompt = BuildRecommendSystemPrompt(request, propertyType, schema);
+        string systemPrompt = BuildRecommendSystemPrompt(request, propertyType, schema, culture);
         string userMessage = BuildRecommendUserMessage(request);
 
         List<ChatMessage> messages =
@@ -612,33 +706,60 @@ public sealed class PageEvaluatorApiController : ControllerBase
             new ChatMessage(ChatRole.User, userMessage),
         ];
 
-        ChatOptions chatOptions = new()
-        {
-            Tools = [],
-            Temperature = 0.3f,
-            ResponseFormat = ChatResponseFormat.Json,
-            MaxOutputTokens = 2048,
-        };
+        RecommendationValueKind kind =
+            schema is not null ? RecommendationValueKind.EditorSchema
+            : IsTagsEditor(propertyType.PropertyEditorAlias) ? RecommendationValueKind.Tags
+            : IsRichTextEditor(propertyType.PropertyEditorAlias) ? RecommendationValueKind.RichText
+            : RecommendationValueKind.Text;
 
-        ChatResponse response = await _chatService.GetChatResponseAsync(
-            chat =>
-            {
-                chat.WithAlias("proworks-page-evaluator")
-                    .WithName("ProWorks Page Evaluator")
-                    .WithDescription("Generates text recommendations for page content fields")
-                    .WithProfile(config.ProfileId)
-                    .WithChatOptions(chatOptions);
-            },
-            messages,
+        ChatResponse response = await _chatExecutor.ExecuteAsync(
+            new EvaluatorChatRequest(
+                config.ProfileId,
+                // FR-019: a distinct alias gives recommendations their own feature identity in the
+                // Umbraco.AI audit log (usage statistics don't break down by feature; research R7).
+                Alias: "proworks-page-evaluator-recommend",
+                Name: "ProWorks Page Evaluator — Recommendations",
+                Description: "Generates text recommendations for page content fields",
+                Messages: messages,
+                Temperature: 0.3f,
+                MaxOutputTokens: 2048,
+                // Null when the editor's own schema isn't strict-representable: plain JSON mode then.
+                Schema: ChatSchemas.Recommendation(kind, schema)),
             cancellationToken);
 
-        return ParseRecommendedValue(response.Text ?? string.Empty);
+        string? recommended = ParseRecommendedValue(response.Text ?? string.Empty);
+        return kind == RecommendationValueKind.RichText ? UnwrapRichTextStorageShape(recommended) : recommended;
+    }
+
+    /// <summary>
+    /// Models sometimes copy the editor's storage shape (<c>{"markup": "…", "blocks": …}</c>) into the rich-text
+    /// value, as a JSON string or object. That hides the kept block placeholders behind escaped quotes, so the
+    /// client's Apply safeguard would wrongly withhold Apply, and applying it would insert the JSON as text.
+    /// Returns the markup in that case; any other value is returned unchanged.
+    /// </summary>
+    private static string? UnwrapRichTextStorageShape(string? value)
+    {
+        if (value is null || !value.TrimStart().StartsWith('{'))
+            return value;
+        try
+        {
+            using JsonDocument doc = JsonDocument.Parse(value);
+            if (doc.RootElement.ValueKind == JsonValueKind.Object
+                && doc.RootElement.TryGetProperty("markup", out JsonElement markup)
+                && markup.ValueKind == JsonValueKind.String)
+            {
+                return markup.GetString();
+            }
+        }
+        catch (JsonException) { }
+        return value;
     }
 
     private static string BuildRecommendSystemPrompt(
         RecommendRequest request,
         IPropertyType propertyType,
-        JsonObject? schema)
+        JsonObject? schema,
+        string? culture = null)
     {
         var sb = new System.Text.StringBuilder();
         sb.AppendLine("You are an SEO and content assistant.");
@@ -648,6 +769,9 @@ public sealed class PageEvaluatorApiController : ControllerBase
 
         if (schema is not null)
         {
+            // Core text and tag editors publish a value schema too (IValueSchemaProvider), so this branch is the
+            // one that runs for them on a real site: keep their editor-specific guidance alongside the schema.
+            AppendEditorGuidance(sb, propertyType.PropertyEditorAlias, schema);
             sb.AppendLine("The value MUST conform to the following JSON Schema:");
             sb.AppendLine(schema.ToJsonString());
             sb.AppendLine();
@@ -663,7 +787,19 @@ public sealed class PageEvaluatorApiController : ControllerBase
         {
             sb.AppendLine("The field is a Rich Text (HTML) property. Generate clean, semantic HTML markup.");
             sb.AppendLine("Use standard block elements only: <p>, <h2>, <h3>, <ul>, <ol>, <li>, <strong>, <em>.");
-            sb.AppendLine("Do not include block editor references, data attributes, or umb:// UDI references.");
+            if (request.Properties.TryGetValue(propertyType.Alias, out string? currentMarkup)
+                && currentMarkup is not null
+                && RteBlockPlaceholderRegex().IsMatch(currentMarkup))
+            {
+                // FR-016: Apply is only offered when every embedded block survives (client-side check).
+                sb.AppendLine("The current value contains embedded content blocks. Keep every <umb-rte-block ...> and <umb-rte-block-inline ...> element exactly as it appears in the current value (same attributes, same data-content-key), in a sensible position. Do not add new ones.");
+                sb.AppendLine("Do not include umb:// UDI references.");
+            }
+            else
+            {
+                sb.AppendLine("Do not include block editor references, data attributes, or umb:// UDI references.");
+            }
+            sb.AppendLine("recommendedValue must be an HTML string, not an object: do not wrap it in {\"markup\": …, \"blocks\": …}.");
             sb.AppendLine("Return a single JSON object: {\"recommendedValue\": \"<p>your html here</p>\"}");
         }
         else
@@ -671,6 +807,13 @@ public sealed class PageEvaluatorApiController : ControllerBase
             sb.AppendLine("The field is a plain text property. Generate a concise plain-text value.");
             sb.AppendLine("Do not include HTML tags, markdown formatting, or labels for other fields.");
             sb.AppendLine("Return a single JSON object: {\"recommendedValue\": \"<your recommended text>\"}");
+        }
+
+        if (culture is not null)
+        {
+            // FR-018b: recommendations are written in the language being edited.
+            sb.AppendLine();
+            sb.AppendLine($"Write the recommended value in {CultureDisplayName(culture)} ({culture}).");
         }
 
         sb.AppendLine();
@@ -681,6 +824,44 @@ public sealed class PageEvaluatorApiController : ControllerBase
 
         return sb.ToString().TrimEnd();
     }
+
+    /// <summary>An embedded-block placeholder in rich-text markup (editor or Delivery API form).</summary>
+    [System.Text.RegularExpressions.GeneratedRegex(@"<umb-rte-block(?:-inline)?[^>]*?data-content-(?:key|id)\s*=", System.Text.RegularExpressions.RegexOptions.IgnoreCase)]
+    private static partial System.Text.RegularExpressions.Regex RteBlockPlaceholderRegex();
+
+    /// <summary>Editor-specific guidance for the schema branch; nothing for editors without a dedicated rule.</summary>
+    private static void AppendEditorGuidance(System.Text.StringBuilder sb, string editorAlias, JsonObject schema)
+    {
+        if (IsTagsEditor(editorAlias))
+        {
+            sb.AppendLine("The field is a Tags property. Generate a list of relevant, natural-language tag strings.");
+        }
+        else if (IsMarkdownEditor(editorAlias))
+        {
+            sb.AppendLine("The field is a Markdown property. Generate Markdown-formatted text.");
+            sb.AppendLine("Do not include HTML tags or labels for other fields.");
+        }
+        else if (IsPlainTextEditor(editorAlias))
+        {
+            sb.AppendLine("The field is a plain text property. Generate a concise plain-text value.");
+            sb.AppendLine("Do not include HTML tags, markdown formatting, or labels for other fields.");
+        }
+        else
+        {
+            return;
+        }
+
+        // Providers don't all enforce maxLength inside structured outputs, so state the limit explicitly.
+        if (schema["maxLength"] is JsonValue maxLength && maxLength.TryGetValue(out int max) && max > 0)
+            sb.AppendLine($"Keep the value to at most {max} characters.");
+    }
+
+    private static bool IsPlainTextEditor(string editorAlias) =>
+        editorAlias.Equals("Umbraco.TextBox", StringComparison.OrdinalIgnoreCase)
+        || editorAlias.Equals("Umbraco.TextArea", StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsMarkdownEditor(string editorAlias) =>
+        editorAlias.Equals("Umbraco.MarkdownEditor", StringComparison.OrdinalIgnoreCase);
 
     private static bool IsTagsEditor(string editorAlias) =>
         editorAlias.Equals("Umbraco.Tags", StringComparison.OrdinalIgnoreCase);
@@ -831,6 +1012,12 @@ public sealed class EvaluatePageRequest
 
     /// <summary>The document type alias of the node.</summary>
     public string DocumentTypeAlias { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The culture being viewed (e.g. <c>"da-DK"</c>). Required for culture-varying document types;
+    /// ignored for invariant ones (FR-018).
+    /// </summary>
+    public string? Culture { get; set; }
 
     /// <summary>
     /// Current draft property values from the back-office editor.

@@ -40,6 +40,21 @@ export default {
       'Não foi possível contactar o provedor de IA. Verifique a sua ligação e tente novamente.',
     authenticationConfigurationMessage:
       'A ligação de IA precisa de atenção. Contacte o administrador para verificar as credenciais ou a configuração do perfil de IA.',
+    // 003-upgrade-umbraco-17-6: gateway/culture errors, variability notice, rich-text Apply
+    gatewayTimeoutMessage:
+      "A avaliação demorou mais do que o seu gateway de rede permite e, por isso, foi interrompida. Tente novamente. Se isso continuar acontecendo, peça ao seu administrador para aumentar o tempo limite do proxy ou da CDN para o backoffice.",
+    gatewayUnreachableMessage:
+      "Não foi possível acessar o servidor pelo seu gateway de rede. Verifique sua conexão e tente novamente.",
+    cultureNotCreatedMessage:
+      "Esta versão de idioma da página ainda não tem conteúdo, então não há nada para avaliar.",
+    invalidCultureMessage:
+      "Não foi possível avaliar o idioma selecionado. Recarregue a página e tente novamente.",
+    samplingVariesNotice:
+      "Este relatório foi gerado por um modelo de IA que não oferece saída determinística, portanto as pontuações podem variar se você executar a avaliação novamente.",
+    rteApplyBlockedMessage:
+      "Esta sugestão removeria conteúdo incorporado (blocos ou mídia) do campo, por isso não pode ser aplicada automaticamente. Copie-a e edite manualmente.",
+    applyFailedMessage:
+      "Não foi possível aplicar a sugestão a este campo. Seu conteúdo existente não foi alterado.",
     retryButton: 'Tentar novamente',
 
     // Modal: guardrail block
@@ -66,6 +81,9 @@ export default {
   },
 
   evaluatorConfig: {
+    // 003-upgrade-umbraco-17-6: sampling-support notice under the profile picker
+    samplingVariesNotice:
+      "O perfil de IA selecionado usa um modelo que não oferece saída determinística. As pontuações da avaliação podem variar entre execuções.",
     // Workspace: list
     sectionLabel: 'Avaliador de página',
     listHeadline: 'Configurações do avaliador de página',

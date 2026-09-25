@@ -49,6 +49,22 @@ public sealed record EvaluationReport
     public IReadOnlyList<AxisScore>? AxisScores { get; init; }
 
     /// <summary>
+    /// <see langword="true"/> when the AI model that produced this report is declared (by its provider) to
+    /// ignore the temperature setting, so scores may vary between re-runs (FR-015b).
+    /// <b>Persisted in the evaluation cache</b> so a cached report keeps reflecting the model that actually
+    /// produced it, even if the profile's model changes later. <see langword="null"/> for reports cached
+    /// before this field existed — no notice is shown for those.
+    /// </summary>
+    public bool? SamplingSettingsIgnored { get; init; }
+
+    /// <summary>
+    /// The culture this report covers (lower-cased ISO code), or <see langword="null"/> for invariant documents.
+    /// Populated by the API controller at response time — never stored in the evaluation cache
+    /// (the cache key carries the culture).
+    /// </summary>
+    public string? Culture { get; init; }
+
+    /// <summary>
     /// Maps each property alias to its Umbraco property editor alias (e.g. "Umbraco.TextBox").
     /// Populated by the API controller at response time — never stored in the evaluation cache.
     /// Null when unavailable (e.g. the document type was deleted after evaluation).
@@ -95,6 +111,17 @@ public sealed record EvaluationReport
     /// <summary>Creates a parse-failure report containing only the raw response text.</summary>
     public static EvaluationReport Failed(string rawResponse) =>
         new() { ParseFailed = true, RawResponse = rawResponse };
+
+    /// <summary>
+    /// Returns a copy of this report with <see cref="SamplingSettingsIgnored"/> set. Unlike the response-time
+    /// <c>With*</c> helpers below, call this <b>before</b> the cache write — the flag is part of the cached report.
+    /// </summary>
+    public EvaluationReport WithSamplingSettingsIgnored(bool ignored) => this with { SamplingSettingsIgnored = ignored };
+
+    /// <summary>
+    /// Returns a copy of this report with <see cref="Culture"/> set. Response time only — call after the cache write.
+    /// </summary>
+    public EvaluationReport WithCulture(string? culture) => this with { Culture = culture };
 
     /// <summary>Returns a copy of this report with the specified <see cref="CachedAt"/> timestamp.</summary>
     public EvaluationReport WithCachedAt(DateTime cachedAt) => this with { CachedAt = cachedAt };

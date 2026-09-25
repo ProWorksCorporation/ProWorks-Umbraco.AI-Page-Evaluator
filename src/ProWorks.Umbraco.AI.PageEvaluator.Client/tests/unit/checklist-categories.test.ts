@@ -1,7 +1,7 @@
 /**
  * T052 — Vitest unit tests for checklist-categories.ts
  *
- * Tests: all 6 categories defined, each has id/label/promptFragment,
+ * Tests: all 6 categories defined, each has id/labelKey/promptFragment,
  *        each promptFragment contains {{propertyAliases}} and {{siteContext}}.
  *
  * RED STATE: Fails to collect until T056 creates
@@ -18,10 +18,10 @@ describe('checklist-categories', () => {
     expect(CHECKLIST_CATEGORIES).toHaveLength(6);
   });
 
-  it('each category has a non-empty id, label, and promptFragment', () => {
+  it('each category has a non-empty id, labelKey, and promptFragment', () => {
     for (const cat of CHECKLIST_CATEGORIES) {
       expect(cat.id).toBeTruthy();
-      expect(cat.label).toBeTruthy();
+      expect(cat.labelKey).toBeTruthy();
       expect(cat.promptFragment).toBeTruthy();
     }
   });

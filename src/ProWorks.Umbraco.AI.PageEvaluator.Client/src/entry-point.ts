@@ -242,14 +242,14 @@ const manifests: UmbExtensionManifest[] = [
   },
 ];
 
-export const onInit: UmbEntryPointOnInit = (_host): void => {
+export const onInit: UmbEntryPointOnInit = (): void => {
   console.log('[ProWorks.AI.PageEvaluator] onInit called — registering', manifests.length, 'extensions');
   umbExtensionsRegistry.registerMany(manifests);
   // umbHttpClient (used by apiClient) is pre-configured with Bearer auth by Umbraco's
   // app.element before any extension onInit runs — no further setup needed here.
 };
 
-export const onUnload: UmbEntryPointOnUnload = (_host, _extensionRegistry): void => {
+export const onUnload: UmbEntryPointOnUnload = (): void => {
   for (const manifest of manifests) {
     umbExtensionsRegistry.unregister(manifest.alias);
   }

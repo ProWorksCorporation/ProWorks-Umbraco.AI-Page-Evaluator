@@ -8,6 +8,7 @@ using ProWorks.Umbraco.AI.PageEvaluator.Services;
 using Umbraco.AI.Core.Chat;
 using Umbraco.AI.Core.Contexts;
 using Umbraco.AI.Core.InlineChat;
+using Umbraco.AI.Core.Profiles;
 using Umbraco.Cms.Core.DeliveryApi;
 using Umbraco.Cms.Core.Models.DeliveryApi;
 using Umbraco.Cms.Core.Models.PublishedContent;
@@ -28,18 +29,22 @@ public class PageEvaluationServiceTests
     private readonly IAIContextService _contextService = Substitute.For<IAIContextService>();
     private readonly IAIContextProcessor _contextProcessor = Substitute.For<IAIContextProcessor>();
     private readonly IAIChatService _chatService = Substitute.For<IAIChatService>();
-    private readonly IUmbracoContextAccessor _contextAccessor = Substitute.For<IUmbracoContextAccessor>();
-    private readonly IApiContentBuilder _contentBuilder = Substitute.For<IApiContentBuilder>();
+    private readonly ICultureAwareContentPropertyResolver _propertyResolver = Substitute.For<ICultureAwareContentPropertyResolver>();
+    private readonly ISamplingSupportService _samplingSupport = Substitute.For<ISamplingSupportService>();
     private readonly ILogger<PageEvaluationService> _logger = Substitute.For<ILogger<PageEvaluationService>>();
     private readonly PageEvaluationService _sut;
 
     public PageEvaluationServiceTests()
     {
-        // Tests run without a live Umbraco context — ResolveProperties falls back to raw draft values.
-        IUmbracoContext? nullCtx = null;
-        _contextAccessor.TryGetUmbracoContext(out nullCtx).Returns(false);
+        // Default: the resolver passes the supplied draft values straight through (no published content).
+        _propertyResolver.Resolve(Arg.Any<Guid>(), Arg.Any<string?>(), Arg.Any<IReadOnlyDictionary<string, object?>>())
+            .Returns(call => call.ArgAt<IReadOnlyDictionary<string, object?>>(2));
 
-        _sut = new PageEvaluationService(_configService, _contextService, _contextProcessor, _chatService, _contextAccessor, _contentBuilder, _logger);
+        // Default: models honour temperature (no variability notice).
+        _samplingSupport.IsTemperatureSupportedAsync(Arg.Any<Guid>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
+            .Returns(true);
+
+        _sut = new PageEvaluationService(_configService, _contextService, _contextProcessor, new EvaluatorChatExecutor(_chatService, Substitute.For<IAIProfileService>(), new StructuredOutputSupportCache(), Microsoft.Extensions.Logging.Abstractions.NullLogger<EvaluatorChatExecutor>.Instance), _propertyResolver, _samplingSupport, _logger);
     }
 
     // ---------------------------------------------------------------------------
@@ -883,7 +888,7 @@ public class PageEvaluationServiceTests
         MockChatResponse(jsonResponse);
 
         EvaluationReport report = await _sut.EvaluateAsync(
-            nodeId, documentTypeAlias, new Dictionary<string, object?>(), CancellationToken.None);
+            nodeId, documentTypeAlias, new Dictionary<string, object?>(), null, CancellationToken.None);
 
         Assert.False(report.ParseFailed);
         Assert.Equal(2, report.Checks.Count);
@@ -993,7 +998,7 @@ public class PageEvaluationServiceTests
         MockChatResponse(jsonResponse);
 
         EvaluationReport report = await _sut.EvaluateAsync(
-            nodeId, documentTypeAlias, new Dictionary<string, object?>(), CancellationToken.None);
+            nodeId, documentTypeAlias, new Dictionary<string, object?>(), null, CancellationToken.None);
 
         Assert.False(report.ParseFailed);
         Assert.Single(report.Checks);
@@ -1329,151 +1334,32 @@ public class PageEvaluationServiceTests
     // ResolveProperties: published cache paths (Task 9)
     // ---------------------------------------------------------------------------
 
-    [Fact]
-    public async Task EvaluateAsync_WhenPublishedContextAvailable_CallsApiContentBuilder()
-    {
-        // Fresh doubles for this test — class-level stub returns false for TryGetUmbracoContext
-        var contextAccessor = Substitute.For<IUmbracoContextAccessor>();
-        var contentBuilder = Substitute.For<IApiContentBuilder>();
-        var configService = Substitute.For<IAIEvaluatorConfigService>();
-        var chatService = Substitute.For<IAIChatService>();
-        var contextService = Substitute.For<IAIContextService>();
-        var contextProcessor = Substitute.For<IAIContextProcessor>();
-        var logger = Substitute.For<ILogger<PageEvaluationService>>();
+    // Content resolution (published vs draft, Delivery API mapping, draft overlay, cycles) moved to
+    // CultureAwareContentPropertyResolver — see CultureAwareContentPropertyResolverTests.
 
+    [Fact]
+    public async Task EvaluateAsync_ResolvesPropertiesForTheRequestedCulture()
+    {
         const string documentTypeAlias = "blogPost";
         var nodeId = Guid.NewGuid();
-        configService.GetActiveForDocumentTypeAsync(documentTypeAlias, Arg.Any<CancellationToken>())
+        _configService.GetActiveForDocumentTypeAsync(documentTypeAlias, Arg.Any<CancellationToken>())
             .Returns(BuildConfig(documentTypeAlias));
-
-        var publishedContent = Substitute.For<IPublishedContent>();
-        var contentCache = Substitute.For<IPublishedContentCache>();
-        contentCache.GetById(nodeId).Returns(publishedContent);
-
-        var ctx = Substitute.For<IUmbracoContext>();
-        ctx.Content.Returns(contentCache);
-
-        contextAccessor
-            .TryGetUmbracoContext(out Arg.Any<IUmbracoContext?>())
-            .ReturnsForAnyArgs(x => { x[0] = ctx; return true; });
-
-        var apiContent = Substitute.For<IApiContent>();
-        apiContent.Properties.Returns(new Dictionary<string, object?> { ["title"] = "Published Title" });
-        contentBuilder.Build(publishedContent).Returns(apiContent);
-
-        chatService.GetChatResponseAsync(
+        var drafts = new Dictionary<string, object?> { ["title"] = "Draft" };
+        _propertyResolver.Resolve(nodeId, "da-dk", drafts)
+            .Returns(new Dictionary<string, object?> { ["title"] = "Dansk titel" });
+        string capturedUserMessage = string.Empty;
+        _chatService.GetChatResponseAsync(
                 Arg.Any<Action<AIChatBuilder>>(),
-                Arg.Any<IEnumerable<ChatMessage>>(),
+                Arg.Do<IEnumerable<ChatMessage>>(msgs => capturedUserMessage = msgs.First(m => m.Role == ChatRole.User).Text ?? string.Empty),
                 Arg.Any<CancellationToken>())
             .Returns(new ChatResponse(new ChatMessage(ChatRole.Assistant,
                 """{"score":{"passed":1,"total":1},"checks":[{"checkNumber":1,"status":"Pass","label":"T","explanation":null}],"suggestions":null}""")));
 
-        var sut = new PageEvaluationService(
-            configService, contextService, contextProcessor, chatService, contextAccessor, contentBuilder, logger);
+        await _sut.EvaluateAsync(nodeId, documentTypeAlias, drafts, "da-dk");
 
-        EvaluationReport report = await sut.EvaluateAsync(nodeId, documentTypeAlias, new Dictionary<string, object?>());
-
-        contentBuilder.Received(1).Build(publishedContent);
-        Assert.False(report.ParseFailed);
-    }
-
-    [Fact]
-    public async Task EvaluateAsync_WhenNodeNotInPublishedCache_DoesNotCallApiContentBuilder()
-    {
-        var contextAccessor = Substitute.For<IUmbracoContextAccessor>();
-        var contentBuilder = Substitute.For<IApiContentBuilder>();
-        var configService = Substitute.For<IAIEvaluatorConfigService>();
-        var chatService = Substitute.For<IAIChatService>();
-        var contextService = Substitute.For<IAIContextService>();
-        var contextProcessor = Substitute.For<IAIContextProcessor>();
-        var logger = Substitute.For<ILogger<PageEvaluationService>>();
-
-        const string documentTypeAlias = "blogPost";
-        var nodeId = Guid.NewGuid();
-        configService.GetActiveForDocumentTypeAsync(documentTypeAlias, Arg.Any<CancellationToken>())
-            .Returns(BuildConfig(documentTypeAlias));
-
-        var contentCache = Substitute.For<IPublishedContentCache>();
-        contentCache.GetById(nodeId).Returns((IPublishedContent?)null);
-
-        var ctx = Substitute.For<IUmbracoContext>();
-        ctx.Content.Returns(contentCache);
-
-        contextAccessor
-            .TryGetUmbracoContext(out Arg.Any<IUmbracoContext?>())
-            .ReturnsForAnyArgs(x => { x[0] = ctx; return true; });
-
-        chatService.GetChatResponseAsync(
-                Arg.Any<Action<AIChatBuilder>>(),
-                Arg.Any<IEnumerable<ChatMessage>>(),
-                Arg.Any<CancellationToken>())
-            .Returns(new ChatResponse(new ChatMessage(ChatRole.Assistant,
-                """{"score":{"passed":1,"total":1},"checks":[{"checkNumber":1,"status":"Pass","label":"T","explanation":null}],"suggestions":null}""")));
-
-        var sut = new PageEvaluationService(
-            configService, contextService, contextProcessor, chatService, contextAccessor, contentBuilder, logger);
-
-        EvaluationReport report = await sut.EvaluateAsync(nodeId, documentTypeAlias, new Dictionary<string, object?>());
-
-        contentBuilder.DidNotReceive().Build(Arg.Any<IPublishedContent>());
-        Assert.False(report.ParseFailed);
-    }
-
-    [Fact]
-    public async Task EvaluateAsync_WhenApiContentBuilderReturnsNull_FallsBackToDraftProperties()
-    {
-        // Arrange: node is in the published cache but Build() returns null.
-        // This is the observable outcome when CycleDetectingApiContentBuilder detects a cycle
-        // at the root call level, or when Umbraco itself cannot resolve the content.
-        // The service must not throw and must fall back to the caller-supplied draft values.
-        var contextAccessor = Substitute.For<IUmbracoContextAccessor>();
-        var contentBuilder = Substitute.For<IApiContentBuilder>();
-        var configService = Substitute.For<IAIEvaluatorConfigService>();
-        var chatService = Substitute.For<IAIChatService>();
-        var contextService = Substitute.For<IAIContextService>();
-        var contextProcessor = Substitute.For<IAIContextProcessor>();
-        var logger = Substitute.For<ILogger<PageEvaluationService>>();
-
-        const string documentTypeAlias = "blogPost";
-        var nodeId = Guid.NewGuid();
-        configService.GetActiveForDocumentTypeAsync(documentTypeAlias, Arg.Any<CancellationToken>())
-            .Returns(BuildConfig(documentTypeAlias));
-
-        var publishedContent = Substitute.For<IPublishedContent>();
-        var contentCache = Substitute.For<IPublishedContentCache>();
-        contentCache.GetById(nodeId).Returns(publishedContent);
-
-        var ctx = Substitute.For<IUmbracoContext>();
-        ctx.Content.Returns(contentCache);
-
-        contextAccessor
-            .TryGetUmbracoContext(out Arg.Any<IUmbracoContext?>())
-            .ReturnsForAnyArgs(x => { x[0] = ctx; return true; });
-
-        // Build() returns null — simulates cycle detection or unresolvable content
-        contentBuilder.Build(publishedContent).Returns((IApiContent?)null);
-
-        string? capturedUserMessage = null;
-        chatService.GetChatResponseAsync(
-                Arg.Any<Action<AIChatBuilder>>(),
-                Arg.Do<IEnumerable<ChatMessage>>(msgs =>
-                    capturedUserMessage = msgs.LastOrDefault()?.Text),
-                Arg.Any<CancellationToken>())
-            .Returns(new ChatResponse(new ChatMessage(ChatRole.Assistant,
-                """{"score":{"passed":1,"total":1},"checks":[{"checkNumber":1,"status":"Pass","label":"T","explanation":null}],"suggestions":null}""")));
-
-        var sut = new PageEvaluationService(
-            configService, contextService, contextProcessor, chatService, contextAccessor, contentBuilder, logger);
-
-        var draftProperties = new Dictionary<string, object?> { ["title"] = "Draft Title" };
-
-        // Act
-        EvaluationReport report = await sut.EvaluateAsync(nodeId, documentTypeAlias, draftProperties);
-
-        // Assert: Build() was called (node was found), report parsed, draft value reached the prompt
-        contentBuilder.Received(1).Build(publishedContent);
-        Assert.False(report.ParseFailed);
-        Assert.Contains("Draft Title", capturedUserMessage);
+        _propertyResolver.Received(1).Resolve(nodeId, "da-dk", drafts);
+        Assert.Contains("Dansk titel", capturedUserMessage);
+        Assert.DoesNotContain("Draft", capturedUserMessage);
     }
 
     [Fact]
@@ -1547,5 +1433,65 @@ public class PageEvaluationServiceTests
         Assert.Equal(CheckStatus.Pass, report.Checks[0].Status);
         Assert.Equal("Some Check", report.Checks[0].Label);
         Assert.Equal(CheckStatus.Fail, report.Checks[1].Status);
+    }
+
+    // ---------------------------------------------------------------------------
+    // SamplingSettingsIgnored (003-upgrade-umbraco-17-6 FR-015b, research R8)
+    // ---------------------------------------------------------------------------
+
+    [Theory]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    public async Task EvaluateAsync_SetsSamplingSettingsIgnored_FromTheModelThatServedTheResponse(
+        bool temperatureSupported, bool expectedIgnored)
+    {
+        const string documentTypeAlias = "blogPost";
+        AIEvaluatorConfig config = BuildConfig(documentTypeAlias);
+        _configService.GetActiveForDocumentTypeAsync(documentTypeAlias, Arg.Any<CancellationToken>()).Returns(config);
+        _chatService.GetChatResponseAsync(Arg.Any<Action<AIChatBuilder>>(), Arg.Any<IEnumerable<ChatMessage>>(), Arg.Any<CancellationToken>())
+            .Returns(new ChatResponse(new ChatMessage(ChatRole.Assistant,
+                """{"score":{"passed":1,"total":1},"checks":[{"checkNumber":1,"status":"Pass","label":"T","explanation":null}],"suggestions":null}"""))
+            {
+                ModelId = "model-that-served-it",
+            });
+        _samplingSupport.IsTemperatureSupportedAsync(config.ProfileId, "model-that-served-it", Arg.Any<CancellationToken>())
+            .Returns(temperatureSupported);
+
+        EvaluationReport report = await _sut.EvaluateAsync(Guid.NewGuid(), documentTypeAlias, new Dictionary<string, object?>());
+
+        Assert.Equal(expectedIgnored, report.SamplingSettingsIgnored);
+        await _samplingSupport.Received(1).IsTemperatureSupportedAsync(config.ProfileId, "model-that-served-it", Arg.Any<CancellationToken>());
+    }
+
+    // ---------------------------------------------------------------------------
+    // Enforced report schema (003-upgrade-umbraco-17-6 FR-017, T069)
+    // ---------------------------------------------------------------------------
+
+    [Theory]
+    [InlineData(false, "pageEvaluatorReport")]
+    [InlineData(true, "pageEvaluatorReportScored")]
+    public async Task EvaluateAsync_EnforcesTheReportSchemaMatchingScoring(bool scoringEnabled, string expectedTitle)
+    {
+        const string documentTypeAlias = "blogPost";
+        AIEvaluatorConfig config = BuildConfig(documentTypeAlias);
+        config.ScoringEnabled = scoringEnabled;
+        _configService.GetActiveForDocumentTypeAsync(documentTypeAlias, Arg.Any<CancellationToken>()).Returns(config);
+        var builders = new List<AIChatBuilder>();
+        _chatService.GetChatResponseAsync(
+                Arg.Do<Action<AIChatBuilder>>(configure => { var b = new AIChatBuilder(); configure(b); builders.Add(b); }),
+                Arg.Any<IEnumerable<ChatMessage>>(),
+                Arg.Any<CancellationToken>())
+            .Returns(new ChatResponse(new ChatMessage(ChatRole.Assistant,
+                """{"score":{"passed":1,"total":1},"checks":[{"checkNumber":1,"status":"Pass","label":"T","explanation":null}],"suggestions":null}""")));
+
+        await _sut.EvaluateAsync(Guid.NewGuid(), documentTypeAlias, new Dictionary<string, object?>());
+
+        AIChatBuilder builder = Assert.Single(builders);
+        var outputSchema = (AIOutputSchema?)typeof(AIChatBuilder)
+            .GetField("_outputSchema", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
+            .GetValue(builder);
+        Assert.NotNull(outputSchema);
+        var format = Assert.IsType<ChatResponseFormatJson>(outputSchema!.ResponseFormat);
+        Assert.Contains(expectedTitle, format.Schema!.Value.GetRawText());
     }
 }

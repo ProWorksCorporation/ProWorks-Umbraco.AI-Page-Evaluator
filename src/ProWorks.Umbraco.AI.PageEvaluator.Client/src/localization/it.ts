@@ -40,6 +40,21 @@ export default {
       'Impossibile raggiungere il provider IA. Controlla la connessione e riprova.',
     authenticationConfigurationMessage:
       "La connessione IA richiede attenzione. Contatta l'amministratore per verificare le credenziali o la configurazione del profilo IA.",
+    // 003-upgrade-umbraco-17-6: gateway/culture errors, variability notice, rich-text Apply
+    gatewayTimeoutMessage:
+      "La valutazione ha richiesto più tempo di quanto consentito dal gateway di rete ed è stata interrotta. Riprova. Se continua a succedere, chiedi all'amministratore di aumentare il timeout del proxy o della CDN per il backoffice.",
+    gatewayUnreachableMessage:
+      "Impossibile raggiungere il server tramite il gateway di rete. Controlla la connessione e riprova.",
+    cultureNotCreatedMessage:
+      "Questa versione linguistica della pagina non ha ancora contenuti, quindi non c'è nulla da valutare.",
+    invalidCultureMessage:
+      "Non è stato possibile valutare la lingua selezionata. Ricarica la pagina e riprova.",
+    samplingVariesNotice:
+      "Questo report è stato generato da un modello di IA che non supporta output deterministico, quindi i punteggi potrebbero variare se esegui di nuovo la valutazione.",
+    rteApplyBlockedMessage:
+      "Questo suggerimento rimuoverebbe contenuti incorporati (blocchi o media) dal campo, quindi non può essere applicato automaticamente. Copialo e modifica il campo manualmente.",
+    applyFailedMessage:
+      "Non è stato possibile applicare il suggerimento a questo campo. Il contenuto esistente non è stato modificato.",
     retryButton: 'Riprova',
 
     // Modal: guardrail block
@@ -66,6 +81,9 @@ export default {
   },
 
   evaluatorConfig: {
+    // 003-upgrade-umbraco-17-6: sampling-support notice under the profile picker
+    samplingVariesNotice:
+      "Il profilo IA selezionato usa un modello che non supporta output deterministico. I punteggi della valutazione potrebbero variare tra un'esecuzione e l'altra.",
     // Workspace: list
     sectionLabel: 'Valutatore pagina',
     listHeadline: 'Configurazioni del valutatore pagina',

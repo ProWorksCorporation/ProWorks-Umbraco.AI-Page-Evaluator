@@ -10,8 +10,10 @@ Adds an **Evaluate Page** workspace action to the Umbraco content editor. Clicki
 
 | Dependency | Version |
 |---|---|
-| Umbraco CMS | 17.5+ |
-| Umbraco.AI | 17.0+ |
+| Umbraco CMS | 17.6.2+ (17.x) |
+| Umbraco.AI | 17.3.4+ (17.x) |
+
+Upgrade the CMS and Umbraco.AI first, then this package (on an older CMS the install fails with NU1605 "package downgrade" for `Umbraco.Cms`); the evaluation cache table is migrated automatically on first start.
 | .NET | 10 |
 
 ## Quick Start
@@ -27,7 +29,9 @@ Adds an **Evaluate Page** workspace action to the Umbraco content editor. Clicki
 - Supports any AI provider configured in Umbraco.AI (Anthropic, OpenAI, etc.)
 - Cached results with timestamp and one-click re-evaluation
 - Workspace action hidden automatically on unconfigured document types
-- AI text recommendations for Fail and Warn checks — the recommendation panel shows the current field value alongside the AI suggestion so you can compare before applying or copying it to the clipboard
+- Tells you when scores may vary: a notice appears on the configuration screen and on reports when the selected AI model ignores the deterministic-output (temperature) setting, as OpenAI reasoning models and newer Claude models do
+- AI text recommendations for Fail and Warn checks — the recommendation panel shows the current field value alongside the AI suggestion so you can compare before applying or copying it to the clipboard; Rich Text can be applied directly (withheld if embedded blocks would be lost)
+- Multilingual aware: evaluations, recommendations, Apply and the cache follow the language you're viewing
 
 ## About ProWorks
 

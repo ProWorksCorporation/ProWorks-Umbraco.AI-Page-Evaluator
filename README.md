@@ -12,7 +12,8 @@ An Umbraco 17 backoffice package that adds an **Evaluate Page** button to the co
 
 - **One-click evaluation** from the document workspace toolbar
 - **Structured report**: per-check pass / warn / fail status with explanations, overall score, and a suggestions summary
-- **Evaluation caching**: results are cached per content node, so re-opening the modal shows the previous result instantly with a timestamp. A **Re-run Evaluation** button forces a fresh AI call
+- **Evaluation caching**: results are cached per content node (and per language on multilingual sites), so re-opening the modal shows the previous result instantly with a timestamp. A **Re-run Evaluation** button forces a fresh AI call. Publishing or unpublishing a language clears only that language's cached result
+- **Multilingual aware**: on a site with several languages, the evaluation covers the language you're viewing (plus shared, non-varying properties), recommendations are written in that language, and **Apply** writes only to that language's fields
 - **Configurable per document type**: create named evaluator configurations with custom prompts in the Umbraco.AI Add-ons section; activate, edit, or delete configurations from the list view
 - **Prompt Builder**: guided UI for generating evaluation prompts from document type properties and checklist categories
 - **AI provider agnostic**: works with any profile configured in Umbraco.AI (Anthropic, OpenAI, etc.)
@@ -20,9 +21,10 @@ An Umbraco 17 backoffice package that adds an **Evaluate Page** button to the co
 - **Rich property resolution**: uses Umbraco's Content Delivery API builder to send properly resolved property values (media alt text, block content, rich text as plain text, MNTP references) rather than raw editor format
 - **Content cleaning**: HTML tags are stripped and long property values are truncated before sending to the AI, reducing token consumption
 - **Draft-aware**: overlays unsaved text edits on top of the published content snapshot so unevaluated changes are included
-- **AI text recommendations**: for any Fail or Warn check that targets a specific property, a **Generate recommendation** button fetches an AI-suggested replacement value. The recommendation box shows the property's current value alongside the suggestion so editors can compare before applying. Recommendations are property-editor-aware: plain text and Tags fields offer full apply + copy; Rich Text fields offer copy-only (since the Umbraco RTE stores a JSON envelope that cannot be replaced by plain text); complex fields such as media pickers and block lists are excluded automatically. Third-party or custom property editors can be enabled for recommendations via `appsettings.json` (see [Configuration options](#configuration-options))
+- **AI text recommendations**: for any Fail or Warn check that targets a specific property, a **Generate recommendation** button fetches an AI-suggested replacement value. The recommendation box shows the property's current value alongside the suggestion so editors can compare before applying. Recommendations are property-editor-aware: plain text, Tags and **Rich Text** fields offer full apply + copy; complex fields such as media pickers and block lists are excluded automatically. For Rich Text with embedded blocks or media, Apply is only offered when the suggestion keeps every embedded item — otherwise you get Copy and an explanation, so embedded content is never lost. Third-party or custom property editors can be enabled for recommendations via `appsettings.json` (see [Configuration options](#configuration-options))
 - **Guardrail policy support**: when the AI profile has guardrail rules that block an evaluation (pre- or post-generate), the modal shows a specific message identifying which policy fired rather than a generic error
-- **Distinct AI failure messages**: transient provider overloads/rate limits show a "temporarily unavailable, please retry" prompt; network/connectivity failures reaching the provider show a distinct connectivity message; authentication or configuration problems (e.g. an invalid AI connection credential) show a message directing editors to contact their administrator, rather than a generic error in all three cases
+- **Distinct AI failure messages**: transient provider overloads, rate limits, timeouts and aborted requests show a "temporarily unavailable, please retry" prompt; network/connectivity failures reaching the provider show a distinct connectivity message; authentication or configuration problems (e.g. an invalid AI connection credential) show a message directing editors to contact their administrator; gateway timeouts and unreachable gateways (proxies/CDNs in front of the backoffice) get their own messages — never a generic "fatal error"
+- **Reliable structured output**: evaluations and recommendations ask the AI provider to enforce the expected JSON structure where it supports it, with an automatic one-time fallback to the tolerant parser for models that reject it
 - **Security hardened**: admin-only config management, generic error responses (provider details are never leaked to the client), prompt injection defense, and per-user audit trail
 - **Umbraco.AI Test Support**: fully supports multi-run tests and results evaluation to compare evaluations across models and package releases.
 
@@ -32,9 +34,11 @@ An Umbraco 17 backoffice package that adds an **Evaluate Page** button to the co
 
 | Dependency | Version |
 |---|---|
-| Umbraco CMS | 17.5.x |
-| Umbraco.AI | 17.0.x |
+| Umbraco CMS | 17.6.2 or later 17.x |
+| Umbraco.AI | 17.3.4 or later 17.x (Core/Startup; with Anthropic 17.1+, OpenAI 17.2+, Agent 17.1+) |
 | .NET | 10 |
+
+**Upgrading from 17.0.x of this package?** Upgrade Umbraco CMS to 17.6.2+ and the Umbraco.AI packages to 17.3.4+ first, then this package. The package depends on `Umbraco.Cms` 17.6.2+, so on an older site the install fails with `NU1605: Detected package downgrade: Umbraco.Cms from 17.6.2 to …`: upgrade the platform first rather than working around that error. On first start the package migrates its evaluation cache table (existing cached results are kept).
 
 ---
 
@@ -119,6 +123,24 @@ By default only the built-in Umbraco editors listed above support recommendation
 ```
 
 Editors listed here are treated as plain-text fields and receive both the **Recommend** and **Apply** buttons in the evaluation modal. Alias comparison is case-insensitive. Built-in Umbraco editors (`Umbraco.TextBox`, `Umbraco.TextArea`, `Umbraco.Markdown`, `Umbraco.Tags`, `Umbraco.RichText`, `Umbraco.TinyMCE`) do not need to be listed here.
+
+---
+
+## Evaluation behaviour
+
+### Saving cost on re-runs (Anthropic prompt caching)
+
+Umbraco.AI 17.3 adds optional prompt caching for Anthropic profiles (**AI > Profiles > your profile > capability settings > Prompt caching**, `5m` or `1h`). The evaluator sends the same system prompt for every page of a document type, so enabling caching on the evaluator's profile can reduce input-token cost for repeated evaluations. Cached-token counts appear in Umbraco.AI's usage reporting.
+
+### Usage and audit reporting
+
+Evaluations and recommendations run under two different inline-chat aliases (`proworks-page-evaluator` and `proworks-page-evaluator-recommend`), so they appear as separate feature identities in the Umbraco.AI **audit log** and can be filtered separately. Umbraco.AI's usage statistics group by provider, model, profile and user rather than by feature — to see evaluation and recommendation costs separately there, give each its own AI profile.
+
+### Scores may vary on some AI models
+
+The evaluator asks for deterministic output (`temperature = 0`) so that re-running an evaluation on unchanged content gives the same scores. Since Umbraco.AI 17.3, providers declare which models accept that setting and Umbraco.AI silently drops it for the ones that don't — for example OpenAI's reasoning models (o-series, GPT-5) and newer Claude models. On those models, scores can differ between re-runs of the same page.
+
+The package tells you when this applies: the evaluator configuration screen shows a notice under the AI profile picker when the selected profile's model ignores the setting, and every report produced by such a model (fresh or cached) carries the same notice. For the most repeatable scores, use a profile whose model supports temperature.
 
 ---
 

@@ -116,22 +116,39 @@ export interface EvaluationReportResponse {
   readonly recommendationsEnabled: boolean;
   /** Editor aliases from third-party packages configured to support recommendations. */
   readonly additionalRecommendableEditorAliases: readonly string[];
+  /**
+   * True when the AI model that produced this report is declared to ignore the temperature setting,
+   * so scores may vary between re-runs (FR-015b). Persisted with the cached report; null for reports
+   * cached before this field existed.
+   */
+  readonly samplingSettingsIgnored: boolean | null;
+  /** The culture this report covers (lower-cased ISO code); null for invariant documents. */
+  readonly culture: string | null;
 }
 
 /** Request body for POST /evaluate. */
 export interface EvaluatePageRequest {
   readonly nodeId: string;
   readonly documentTypeAlias: string;
+  /** Culture being viewed; null for invariant document types (FR-018). */
+  readonly culture: string | null;
   readonly properties: Record<string, unknown>;
 }
 
 /** Request body for POST /recommend. */
 export interface RecommendRequest {
   readonly nodeId: string;
+  /** Culture being viewed; the recommendation is written in that language (FR-018b). */
+  readonly culture: string | null;
   readonly propertyAliases: readonly string[];
   readonly checkLabel: string;
   readonly checkExplanation: string | null;
   readonly properties: Record<string, string>;
+}
+
+/** Response body for GET /profiles/{profileId}/sampling-support. */
+export interface SamplingSupportResponse {
+  readonly temperatureSupported: boolean;
 }
 
 /** Response body for POST /recommend. */
