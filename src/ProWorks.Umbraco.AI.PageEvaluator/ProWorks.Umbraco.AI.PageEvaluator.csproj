@@ -7,12 +7,12 @@
     <LangVersion>latest</LangVersion>
     <RootNamespace>ProWorks.Umbraco.AI.PageEvaluator</RootNamespace>
     <AssemblyName>ProWorks.Umbraco.AI.PageEvaluator</AssemblyName>
-    <Description>AI-powered page evaluation for the Umbraco 17 Umvbraco.ai framework: evaluates content against configurable AI prompts and displays structured results in the back-office.</Description>
+    <Description>AI-powered page evaluation for the Umbraco 17 Umvbraco.AI framework: evaluates content against configurable AI prompts and displays structured results in the back-office.</Description>
     <StaticWebAssetBasePath>App_Plugins/ProWorks.AI.PageEvaluator</StaticWebAssetBasePath>
     <AddRazorSupportForMvc>false</AddRazorSupportForMvc>
     <!-- NuGet packaging -->
     <PackageId>ProWorks.Umbraco.AI.PageEvaluator</PackageId>
-    <Version>17.3.0</Version>
+    <Version>17.3.1</Version>
     <Authors>ProWorks, Jason Prothero</Authors>
     <Company>ProWorks Corporation</Company>
     <PackageTags>umbraco;umbraco-marketplace;umbraco-cms;umbraco-ai;ai;page-evaluator;backoffice</PackageTags>
@@ -21,7 +21,7 @@
     <Copyright>Copyright (c) $([System.DateTime]::UtcNow.ToString(`yyyy`)) ProWorks Corporation</Copyright>
     <PackageReadmeFile>README.nuget.md</PackageReadmeFile>
     <PackageProjectUrl>https://github.com/ProWorksCorporation/ProWorks-Umbraco.AI-Page-Evaluator</PackageProjectUrl>
-    <PackageReleaseNotes>17.3.0: Requires Umbraco CMS 17.6.2+ and Umbraco.AI 17.3.4+ (UUI 2, EF Core 10.0.10). Language-aware evaluation, recommendations, Apply and per-language caching on multilingual sites. Rich Text recommendations can be applied directly, with a safeguard that withholds Apply when embedded blocks would be lost, and now always come back as clean HTML (previously they could be returned in the editor's internal JSON format). Provider-enforced JSON response schemas with an automatic fallback. A notice when the AI model ignores the deterministic (temperature) setting. Localized messages for aborted/timed-out AI requests and for gateway timeouts/unreachable gateways. Evaluation cache is migrated automatically on first start. Installing on a site older than Umbraco 17.6.2 now fails with a clear NU1605 error instead of partially upgrading the CMS.</PackageReleaseNotes>
+    <PackageReleaseNotes>17.3.1: Fixes an unattended install or upgrade failing with "no such table: umbracoAIEvaluationCache" when another package publishes content during install (issue #25). Cache clean-up on publish/unpublish now waits until Umbraco is fully running and never blocks a publish. 17.3.0: Requires Umbraco CMS 17.6.2+ and Umbraco.AI 17.3.4+ (UUI 2, EF Core 10.0.10). Language-aware evaluation, recommendations, Apply and per-language caching on multilingual sites. Rich Text recommendations can be applied directly, with a safeguard that withholds Apply when embedded blocks would be lost, and now always come back as clean HTML (previously they could be returned in the editor's internal JSON format). Provider-enforced JSON response schemas with an automatic fallback. A notice when the AI model ignores the deterministic (temperature) setting. Localized messages for aborted/timed-out AI requests and for gateway timeouts/unreachable gateways. Evaluation cache is migrated automatically on first start. Installing on a site older than Umbraco 17.6.2 now fails with a clear NU1605 error instead of partially upgrading the CMS.</PackageReleaseNotes>
     <RepositoryUrl>https://github.com/ProWorksCorporation/ProWorks-Umbraco.AI-Page-Evaluator</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
   </PropertyGroup>

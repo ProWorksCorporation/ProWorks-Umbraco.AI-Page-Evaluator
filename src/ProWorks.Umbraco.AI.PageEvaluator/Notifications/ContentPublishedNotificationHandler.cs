@@ -1,6 +1,8 @@
+using Microsoft.Extensions.Logging;
 using ProWorks.Umbraco.AI.PageEvaluator.Evaluation;
 using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Notifications;
+using Umbraco.Cms.Core.Services;
 
 namespace ProWorks.Umbraco.AI.PageEvaluator.Notifications;
 
@@ -12,21 +14,25 @@ public sealed class ContentPublishedNotificationHandler
     : INotificationAsyncHandler<ContentPublishedNotification>
 {
     private readonly IEvaluationCacheRepository _cacheRepository;
+    private readonly IRuntimeState _runtimeState;
+    private readonly ILogger<ContentPublishedNotificationHandler> _logger;
 
-    public ContentPublishedNotificationHandler(IEvaluationCacheRepository cacheRepository)
+    public ContentPublishedNotificationHandler(
+        IEvaluationCacheRepository cacheRepository,
+        IRuntimeState runtimeState,
+        ILogger<ContentPublishedNotificationHandler> logger)
     {
         _cacheRepository = cacheRepository;
+        _runtimeState = runtimeState;
+        _logger = logger;
     }
 
-    public async Task HandleAsync(ContentPublishedNotification notification, CancellationToken cancellationToken)
-    {
-        foreach (var content in notification.PublishedEntities)
-        {
-            await CacheInvalidationRules.InvalidateAsync(
-                _cacheRepository,
-                content,
-                [notification.PublishedCultures, notification.UnpublishedCultures],
-                cancellationToken);
-        }
-    }
+    public Task HandleAsync(ContentPublishedNotification notification, CancellationToken cancellationToken)
+        => CacheInvalidationRules.InvalidateSafelyAsync(
+            _cacheRepository,
+            _runtimeState,
+            _logger,
+            notification.PublishedEntities,
+            [notification.PublishedCultures, notification.UnpublishedCultures],
+            cancellationToken);
 }

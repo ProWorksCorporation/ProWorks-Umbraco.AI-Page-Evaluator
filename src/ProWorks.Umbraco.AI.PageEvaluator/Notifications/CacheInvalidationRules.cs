@@ -1,5 +1,8 @@
+using Microsoft.Extensions.Logging;
 using ProWorks.Umbraco.AI.PageEvaluator.Evaluation;
+using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Core.Services;
 using Umbraco.Extensions;
 
 namespace ProWorks.Umbraco.AI.PageEvaluator.Notifications;
@@ -18,6 +21,46 @@ namespace ProWorks.Umbraco.AI.PageEvaluator.Notifications;
 internal static class CacheInvalidationRules
 {
     private const string AllCultures = "*";
+
+    /// <summary>
+    /// Best-effort invalidation for the publish/unpublish handlers. Cache invalidation must never break the
+    /// operation that raised the notification (a publish, a uSync import, an unattended install):
+    /// <list type="bullet">
+    ///   <item>Below <see cref="RuntimeLevel.Run"/> (install/upgrade) nothing is done. This package's EF Core
+    ///   migration runs on <c>UmbracoApplicationStartedNotification</c>, so during an unattended install the
+    ///   cache table doesn't exist yet (and during an upgrade it may lack newer columns), and nothing can have
+    ///   been cached yet anyway. Issue #25: a package publishing content during install aborted the install
+    ///   with "no such table: umbracoAIEvaluationCache".</item>
+    ///   <item>Any other failure is logged as a warning per entity and skipped; the worst case is a stale cached
+    ///   report, which the editor can replace with Re-run. Cancellation still propagates.</item>
+    /// </list>
+    /// </summary>
+    public static async Task InvalidateSafelyAsync(
+        IEvaluationCacheRepository cacheRepository,
+        IRuntimeState runtimeState,
+        ILogger logger,
+        IEnumerable<IContent> entities,
+        IReadOnlyList<IReadOnlyDictionary<Guid, IReadOnlyCollection<string>>?> cultureMaps,
+        CancellationToken cancellationToken)
+    {
+        if (runtimeState.Level != RuntimeLevel.Run)
+            return;
+
+        foreach (IContent content in entities)
+        {
+            try
+            {
+                await InvalidateAsync(cacheRepository, content, cultureMaps, cancellationToken);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                logger.LogWarning(
+                    ex,
+                    "[PageEvaluator] Could not clear the cached evaluation for node {NodeId}; its cached report may be stale until the evaluation is re-run.",
+                    content.Key);
+            }
+        }
+    }
 
     public static async Task InvalidateAsync(
         IEvaluationCacheRepository cacheRepository,
