@@ -40,6 +40,8 @@ An Umbraco 17 backoffice package that adds an **Evaluate Page** button to the co
 
 **Upgrading from 17.0.x of this package?** Upgrade Umbraco CMS to 17.6.2+ and the Umbraco.AI packages to 17.3.4+ first, then this package. The package depends on `Umbraco.Cms` 17.6.2+, so on an older site the install fails with `NU1605: Detected package downgrade: Umbraco.Cms from 17.6.2 to …`: upgrade the platform first rather than working around that error. On first start the package migrates its evaluation cache table (existing cached results are kept).
 
+**Unattended installs:** use **17.3.1 or later** if your site installs or upgrades unattended alongside a package that publishes content during install (for example a starter kit such as Clean). Earlier versions could abort the unattended install with `no such table: umbracoAIEvaluationCache` ([#25](https://github.com/ProWorksCorporation/ProWorks-Umbraco.AI-Page-Evaluator/issues/25)); restarting the site worked around it.
+
 ---
 
 ## Getting Started
