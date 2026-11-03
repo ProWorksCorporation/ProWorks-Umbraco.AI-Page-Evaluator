@@ -12,7 +12,7 @@ src/
     Controllers/PageEvaluatorApiController.cs      # Management API endpoints
     Services/PageEvaluationService.cs             # AI orchestration + property resolution
     Composers/PageEvaluatorComposer.cs            # DI registrations
-    wwwroot/dist/                                 # Compiled backoffice JS (git-ignored; build from Client)
+    wwwroot/dist/                                 # Compiled backoffice JS (committed; rebuild from Client after TS changes)
   ProWorks.Umbraco.AI.PageEvaluator.Client/       # TypeScript / Lit / Vite backoffice extensions
     src/
       entry-point.ts                              # Registers all extensions
