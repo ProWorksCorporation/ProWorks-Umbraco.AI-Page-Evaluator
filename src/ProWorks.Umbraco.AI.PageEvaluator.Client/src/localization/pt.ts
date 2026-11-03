@@ -49,8 +49,6 @@ export default {
       "Esta versão de idioma da página ainda não tem conteúdo, então não há nada para avaliar.",
     invalidCultureMessage:
       "Não foi possível avaliar o idioma selecionado. Recarregue a página e tente novamente.",
-    samplingVariesNotice:
-      "Este relatório foi gerado por um modelo de IA que não oferece saída determinística, portanto as pontuações podem variar se você executar a avaliação novamente.",
     rteApplyBlockedMessage:
       "Esta sugestão removeria conteúdo incorporado (blocos ou mídia) do campo, por isso não pode ser aplicada automaticamente. Copie-a e edite manualmente.",
     applyFailedMessage:

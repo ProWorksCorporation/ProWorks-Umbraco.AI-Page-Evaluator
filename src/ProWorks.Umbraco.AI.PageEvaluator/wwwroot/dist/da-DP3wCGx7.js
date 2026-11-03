@@ -35,7 +35,6 @@ const e = {
     gatewayUnreachableMessage: "Serveren kunne ikke nås gennem din netværksgateway. Kontrollér din forbindelse, og prøv igen.",
     cultureNotCreatedMessage: "Denne sprogversion af siden har endnu intet indhold, så der er intet at evaluere.",
     invalidCultureMessage: "Det valgte sprog kunne ikke evalueres. Genindlæs siden, og prøv igen.",
-    samplingVariesNotice: "Denne rapport blev lavet af en AI-model, der ikke understøtter deterministisk output, så scorerne kan variere, hvis du kører evalueringen igen.",
     rteApplyBlockedMessage: "Dette forslag ville fjerne indlejret indhold (blokke eller medier) fra feltet, så det kan ikke anvendes automatisk. Kopiér det, og redigér manuelt i stedet.",
     applyFailedMessage: "Forslaget kunne ikke anvendes på dette felt. Dit eksisterende indhold er ikke blevet ændret.",
     retryButton: "Prøv igen",
@@ -162,4 +161,4 @@ const e = {
 export {
   e as default
 };
-//# sourceMappingURL=da-1Hgnr8F8.js.map
+//# sourceMappingURL=da-DP3wCGx7.js.map

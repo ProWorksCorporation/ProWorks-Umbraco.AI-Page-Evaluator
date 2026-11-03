@@ -49,8 +49,6 @@ export default {
       "Denne språkversjonen av siden har ikke noe innhold ennå, så det er ingenting å evaluere.",
     invalidCultureMessage:
       "Det valgte språket kunne ikke evalueres. Last inn siden på nytt og prøv igjen.",
-    samplingVariesNotice:
-      "Denne rapporten ble laget av en AI-modell som ikke støtter deterministisk utdata, så poengsummene kan variere hvis du kjører evalueringen på nytt.",
     rteApplyBlockedMessage:
       "Dette forslaget ville fjerne innebygd innhold (blokker eller medier) fra feltet, så det kan ikke brukes automatisk. Kopier det og rediger manuelt i stedet.",
     applyFailedMessage:

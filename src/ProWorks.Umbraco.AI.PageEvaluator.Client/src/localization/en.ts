@@ -49,8 +49,6 @@ export default {
       "This language version of the page has no content yet, so there is nothing to evaluate.",
     invalidCultureMessage:
       "The selected language could not be evaluated. Reload the page and try again.",
-    samplingVariesNotice:
-      "This report was produced by an AI model that does not support deterministic output, so scores may vary if you re-run the evaluation.",
     rteApplyBlockedMessage:
       "This suggestion would remove embedded content (blocks or media) from the field, so it can't be applied automatically. Copy it and edit by hand instead.",
     applyFailedMessage:

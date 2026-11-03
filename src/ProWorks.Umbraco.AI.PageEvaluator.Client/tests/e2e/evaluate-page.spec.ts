@@ -90,13 +90,15 @@ test.describe('Evaluate Page', () => {
     await expect(umbracoUi.page.getByRole('button', { name: 'Retry' })).toBeVisible();
   });
 
-  test('shows the variability notice on a report produced by a model that ignores temperature', async ({ umbracoUi }) => {
+  test('does not show the variability notice to editors, even when the model ignored temperature', async ({ umbracoUi }) => {
+    // 17.6.0: the "scores may vary" notice is admin-only (configuration screen); it worried content editors.
     await mockCachedEvaluation(umbracoUi.page, mockReport({ samplingSettingsIgnored: true }));
 
     await umbracoUi.content.goToContentWithName('Home');
     await umbracoUi.page.getByRole('button', { name: 'Evaluate Page' }).click();
 
-    await expect(umbracoUi.page.getByRole('status').filter({ hasText: /scores may vary/i })).toBeVisible({ timeout: 15000 });
+    await expect(umbracoUi.page.getByText(/Last evaluated/)).toBeVisible({ timeout: 15000 });
+    await expect(umbracoUi.page.getByRole('status').filter({ hasText: /scores may vary/i })).toHaveCount(0);
   });
 
   test('applies a rich-text recommendation into the editor', async ({ umbracoUi }) => {

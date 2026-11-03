@@ -35,7 +35,6 @@ const e = {
     gatewayUnreachableMessage: "Serveren kunne ikke nås gjennom nettverksgatewayen din. Sjekk tilkoblingen og prøv igjen.",
     cultureNotCreatedMessage: "Denne språkversjonen av siden har ikke noe innhold ennå, så det er ingenting å evaluere.",
     invalidCultureMessage: "Det valgte språket kunne ikke evalueres. Last inn siden på nytt og prøv igjen.",
-    samplingVariesNotice: "Denne rapporten ble laget av en AI-modell som ikke støtter deterministisk utdata, så poengsummene kan variere hvis du kjører evalueringen på nytt.",
     rteApplyBlockedMessage: "Dette forslaget ville fjerne innebygd innhold (blokker eller medier) fra feltet, så det kan ikke brukes automatisk. Kopier det og rediger manuelt i stedet.",
     applyFailedMessage: "Forslaget kunne ikke brukes på dette feltet. Det eksisterende innholdet ditt er ikke endret.",
     retryButton: "Prøv igjen",
@@ -162,4 +161,4 @@ const e = {
 export {
   e as default
 };
-//# sourceMappingURL=nb-CLMRL80A.js.map
+//# sourceMappingURL=nb-CA5IZMuZ.js.map

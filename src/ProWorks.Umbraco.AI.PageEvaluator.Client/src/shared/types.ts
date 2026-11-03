@@ -119,7 +119,8 @@ export interface EvaluationReportResponse {
   /**
    * True when the AI model that produced this report is declared to ignore the temperature setting,
    * so scores may vary between re-runs (FR-015b). Persisted with the cached report; null for reports
-   * cached before this field existed.
+   * cached before this field existed. Not shown on the report since 17.6.0 (the notice is admin-only, on the
+   * configuration screen).
    */
   readonly samplingSettingsIgnored: boolean | null;
   /** The culture this report covers (lower-cased ISO code); null for invariant documents. */

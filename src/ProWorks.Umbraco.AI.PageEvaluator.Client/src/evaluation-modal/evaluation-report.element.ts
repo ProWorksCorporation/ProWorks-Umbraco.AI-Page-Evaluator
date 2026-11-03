@@ -51,25 +51,6 @@ export class EvaluationReportElement extends UmbLitElement {
       border-color: var(--uui-color-danger-standalone);
     }
 
-    /* FR-015b notice: core's own inline-notice pattern (no alert element exists in 17.6; research R12.4). */
-    .sampling-notice {
-      display: flex;
-      align-items: flex-start;
-      gap: var(--uui-size-space-2);
-      margin-bottom: var(--uui-size-space-4);
-      padding: var(--uui-size-space-3) var(--uui-size-space-4);
-      background: var(--uui-color-warning);
-      color: var(--uui-color-warning-contrast);
-      border: 1px solid var(--uui-color-warning-standalone);
-      border-radius: var(--uui-border-radius);
-      font-size: var(--uui-type-small-size);
-    }
-
-    .sampling-notice uui-icon {
-      flex-shrink: 0;
-      margin-top: 2px;
-    }
-
     :host {
       display: block;
       padding: var(--uui-size-space-4, 16px);
@@ -414,13 +395,9 @@ export class EvaluationReportElement extends UmbLitElement {
     const attentionChecks = checks.filter((c) => c.status === 'Fail' || c.status === 'Warn');
     const passingChecks = checks.filter((c) => c.status === 'Pass');
 
+    // No "scores may vary" notice here: since 17.6.0 it's shown to admins on the configuration screen only
+    // (it worried content editors). report.samplingSettingsIgnored is still returned and cached.
     return html`
-      ${this.report.samplingSettingsIgnored === true
-        ? html`<div class="sampling-notice" role="status">
-            <uui-icon name="icon-info"></uui-icon>
-            <span>${this.localize.term('evaluatePage_samplingVariesNotice')}</span>
-          </div>`
-        : nothing}
       ${hasScoring ? this._renderScoring(overallScore, axisScores) : nothing}
 
       ${total > 0

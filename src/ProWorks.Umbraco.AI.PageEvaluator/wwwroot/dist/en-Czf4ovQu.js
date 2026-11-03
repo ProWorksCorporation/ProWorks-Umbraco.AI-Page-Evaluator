@@ -35,7 +35,6 @@ const e = {
     gatewayUnreachableMessage: "The server could not be reached through your network gateway. Check your connection and try again.",
     cultureNotCreatedMessage: "This language version of the page has no content yet, so there is nothing to evaluate.",
     invalidCultureMessage: "The selected language could not be evaluated. Reload the page and try again.",
-    samplingVariesNotice: "This report was produced by an AI model that does not support deterministic output, so scores may vary if you re-run the evaluation.",
     rteApplyBlockedMessage: "This suggestion would remove embedded content (blocks or media) from the field, so it can't be applied automatically. Copy it and edit by hand instead.",
     applyFailedMessage: "The suggestion could not be applied to this field. Your existing content has not been changed.",
     retryButton: "Retry",
@@ -162,4 +161,4 @@ const e = {
 export {
   e as default
 };
-//# sourceMappingURL=en-BHMbEn_Y.js.map
+//# sourceMappingURL=en-Czf4ovQu.js.map

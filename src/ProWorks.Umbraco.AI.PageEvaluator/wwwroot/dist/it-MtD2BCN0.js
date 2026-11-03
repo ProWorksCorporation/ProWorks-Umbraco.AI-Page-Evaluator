@@ -35,7 +35,6 @@ const e = {
     gatewayUnreachableMessage: "Impossibile raggiungere il server tramite il gateway di rete. Controlla la connessione e riprova.",
     cultureNotCreatedMessage: "Questa versione linguistica della pagina non ha ancora contenuti, quindi non c'è nulla da valutare.",
     invalidCultureMessage: "Non è stato possibile valutare la lingua selezionata. Ricarica la pagina e riprova.",
-    samplingVariesNotice: "Questo report è stato generato da un modello di IA che non supporta output deterministico, quindi i punteggi potrebbero variare se esegui di nuovo la valutazione.",
     rteApplyBlockedMessage: "Questo suggerimento rimuoverebbe contenuti incorporati (blocchi o media) dal campo, quindi non può essere applicato automaticamente. Copialo e modifica il campo manualmente.",
     applyFailedMessage: "Non è stato possibile applicare il suggerimento a questo campo. Il contenuto esistente non è stato modificato.",
     retryButton: "Riprova",
@@ -162,4 +161,4 @@ const e = {
 export {
   e as default
 };
-//# sourceMappingURL=it-DfSNPJJK.js.map
+//# sourceMappingURL=it-MtD2BCN0.js.map

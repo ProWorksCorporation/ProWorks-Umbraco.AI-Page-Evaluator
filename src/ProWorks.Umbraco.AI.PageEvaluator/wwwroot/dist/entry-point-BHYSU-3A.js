@@ -194,7 +194,7 @@ const C = "Uai.Menu.Addons", m = [
     meta: {
       culture: "en"
     },
-    js: () => import("./en-BHMbEn_Y.js")
+    js: () => import("./en-Czf4ovQu.js")
   },
   {
     type: "localization",
@@ -203,7 +203,7 @@ const C = "Uai.Menu.Addons", m = [
     meta: {
       culture: "es"
     },
-    js: () => import("./es-hVlbBjTn.js")
+    js: () => import("./es-C1XaNu2l.js")
   },
   {
     type: "localization",
@@ -212,7 +212,7 @@ const C = "Uai.Menu.Addons", m = [
     meta: {
       culture: "fr"
     },
-    js: () => import("./fr-DbIBlkhI.js")
+    js: () => import("./fr-DjPeS480.js")
   },
   {
     type: "localization",
@@ -221,7 +221,7 @@ const C = "Uai.Menu.Addons", m = [
     meta: {
       culture: "da"
     },
-    js: () => import("./da-1Hgnr8F8.js")
+    js: () => import("./da-DP3wCGx7.js")
   },
   {
     type: "localization",
@@ -230,7 +230,7 @@ const C = "Uai.Menu.Addons", m = [
     meta: {
       culture: "de"
     },
-    js: () => import("./de-Be0TH_MZ.js")
+    js: () => import("./de-BSMZVc3V.js")
   },
   {
     type: "localization",
@@ -239,7 +239,7 @@ const C = "Uai.Menu.Addons", m = [
     meta: {
       culture: "nb"
     },
-    js: () => import("./nb-CLMRL80A.js")
+    js: () => import("./nb-CA5IZMuZ.js")
   },
   {
     type: "localization",
@@ -248,7 +248,7 @@ const C = "Uai.Menu.Addons", m = [
     meta: {
       culture: "sv"
     },
-    js: () => import("./sv-CgAT5mWD.js")
+    js: () => import("./sv-lOzC50fH.js")
   },
   {
     type: "localization",
@@ -257,7 +257,7 @@ const C = "Uai.Menu.Addons", m = [
     meta: {
       culture: "it"
     },
-    js: () => import("./it-DfSNPJJK.js")
+    js: () => import("./it-MtD2BCN0.js")
   },
   {
     type: "localization",
@@ -266,7 +266,7 @@ const C = "Uai.Menu.Addons", m = [
     meta: {
       culture: "hi"
     },
-    js: () => import("./hi-BZyNBgn-.js")
+    js: () => import("./hi-DDMrbCDt.js")
   },
   {
     type: "localization",
@@ -275,7 +275,7 @@ const C = "Uai.Menu.Addons", m = [
     meta: {
       culture: "pt"
     },
-    js: () => import("./pt-NF3ppP2K.js")
+    js: () => import("./pt-cLFsywWj.js")
   },
   // ---------------------------------------------------------------------------
   // US1 — Content Editor Evaluates a Page
@@ -313,7 +313,7 @@ const C = "Uai.Menu.Addons", m = [
     type: "modal",
     alias: "ProWorks.AI.PageEvaluator.Modal.Evaluation",
     name: "Page Evaluator Evaluation Modal",
-    element: () => import("./evaluation-modal.element-wQcSNUUS.js").then((t) => ({
+    element: () => import("./evaluation-modal.element-CnkB7a-t.js").then((t) => ({
       element: t.EvaluationModalElement
     }))
   },
@@ -338,7 +338,7 @@ const C = "Uai.Menu.Addons", m = [
     meta: {
       entityType: "evaluator-config"
     },
-    element: () => import("./evaluator-config-workspace.element-Bvbma7mj.js").then((t) => ({
+    element: () => import("./evaluator-config-workspace.element-DENEndwF.js").then((t) => ({
       element: t.EvaluatorConfigWorkspaceElement
     }))
   },
@@ -356,7 +356,7 @@ const C = "Uai.Menu.Addons", m = [
     meta: {
       feature: "proworks-page-evaluator"
     },
-    api: () => import("./page-evaluator-test-entity.repository-Cu42MXKw.js")
+    api: () => import("./page-evaluator-test-entity.repository-lI9DRIVP.js")
   },
   {
     type: "workspaceView",
@@ -373,7 +373,7 @@ const C = "Uai.Menu.Addons", m = [
         match: "ProWorks.AI.PageEvaluator.Workspace"
       }
     ],
-    element: () => import("./evaluator-form.element-BsoBh445.js").then((t) => ({
+    element: () => import("./evaluator-form.element-cYKSt7cq.js").then((t) => ({
       element: t.EvaluatorFormElement
     }))
   }
@@ -402,4 +402,4 @@ export {
   S as r,
   U as u
 };
-//# sourceMappingURL=entry-point-DOo7Wyva.js.map
+//# sourceMappingURL=entry-point-BHYSU-3A.js.map

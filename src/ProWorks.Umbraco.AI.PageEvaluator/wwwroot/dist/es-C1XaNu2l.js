@@ -35,7 +35,6 @@ const e = {
     gatewayUnreachableMessage: "No se pudo acceder al servidor a través de tu puerta de enlace de red. Comprueba tu conexión e inténtalo de nuevo.",
     cultureNotCreatedMessage: "Esta versión de idioma de la página todavía no tiene contenido, así que no hay nada que evaluar.",
     invalidCultureMessage: "No se pudo evaluar el idioma seleccionado. Recarga la página e inténtalo de nuevo.",
-    samplingVariesNotice: "Este informe lo generó un modelo de IA que no admite resultados deterministas, por lo que las puntuaciones pueden variar si vuelves a ejecutar la evaluación.",
     rteApplyBlockedMessage: "Esta sugerencia eliminaría contenido incrustado (bloques o medios) del campo, así que no se puede aplicar automáticamente. Cópiala y edítala manualmente.",
     applyFailedMessage: "No se pudo aplicar la sugerencia a este campo. Tu contenido actual no se ha modificado.",
     retryButton: "Reintentar",
@@ -162,4 +161,4 @@ const e = {
 export {
   e as default
 };
-//# sourceMappingURL=es-hVlbBjTn.js.map
+//# sourceMappingURL=es-C1XaNu2l.js.map

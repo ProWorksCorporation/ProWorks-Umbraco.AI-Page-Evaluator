@@ -84,7 +84,7 @@ dotnet ef migrations add <Name> \
 - Calls the AI through **`IEvaluatorChatExecutor`** (`Services/EvaluatorChatExecutor.cs`), which wraps `IAIChatService` (from `Umbraco.AI.Core.Chat`) — **never** inject `IChatClient` or `IAIChatClientFactory` directly
 - Resolves content through **`ICultureAwareContentPropertyResolver`** (see "Language awareness") — the service no longer takes `IUmbracoContextAccessor`/`IApiContentBuilder`
 - Request: alias `proworks-page-evaluator`, `Temperature = 0f`, `Tools = []`, `MaxOutputTokens = 16384`, schema `ChatSchemas.EvaluationReport(config.ScoringEnabled)`
-- After the call it sets `EvaluationReport.SamplingSettingsIgnored` from `ISamplingSupportService.IsTemperatureSupportedAsync(profileId, response.ModelId)` — **persisted** in the cache so cached reports keep the "scores may vary" notice for the model that produced them
+- After the call it sets `EvaluationReport.SamplingSettingsIgnored` from `ISamplingSupportService.IsTemperatureSupportedAsync(profileId, response.ModelId)` — **persisted** in the cache with the report. Since 17.6.0 the report **doesn't render** a notice for it (it worried content editors); the "scores may vary" notice is admin-only, on the config form (`evaluatorConfig_samplingVariesNotice`). The field stays in the API and cache
 - Checks `ChatFinishReason.Length` after response to detect truncation
 - Includes defensive preamble in user message to guard against prompt injection from content
 - Filters properties by `config.PropertyAliases` when set; strips HTML tags and truncates at 2000 chars
@@ -118,7 +118,7 @@ dotnet ef migrations add <Name> \
 - The modal listens on its host, so `e.target` is retargeted — use `e.composedPath()[0]` to reach the report element
 
 ### Inline notices
-- There is still no alert/callout element in the 17.8 backoffice or UUI 2.1. Use core's pattern: `<div role="status">` + `<uui-icon name="icon-info">` styled in `static styles` with `--uui-color-warning*` (or `--uui-color-default*`) and `--uui-border-radius` — no inline `style=`. The config form's notices share the `.profile-notice` class (renamed from `.sampling-notice` in 005); the report keeps its own `.sampling-notice`
+- There is still no alert/callout element in the 17.8 backoffice or UUI 2.1. Use core's pattern: `<div role="status">` + `<uui-icon name="icon-info">` styled in `static styles` with `--uui-color-warning*` (or `--uui-color-default*`) and `--uui-border-radius` — no inline `style=`. The config form's notices share the `.profile-notice` class (renamed from `.sampling-notice` in 005); the report no longer has a sampling notice (removed in 17.6.0 with its `evaluatePage_samplingVariesNotice` key)
 
 ### Profile system prompts (005, Umbraco.AI 17.5+)
 - `AIProfileSystemPromptChatMiddleware` (Umbraco.AI.Core) prepends a chat profile's `AIChatProfileSettings.SystemPromptTemplate` as the **first** system message of every `IAIChatService` call through that profile — evaluate and recommend included — whenever it isn't null/whitespace. It can only be switched off site-wide (`builder.AIChatMiddleware().Remove<…>()`), which would also affect Copilot/Prompt/agents: **never remove it in this package**

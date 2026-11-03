@@ -158,7 +158,7 @@ The evaluation report (and the raw AI output shown when a response can't be read
 
 The evaluator asks for deterministic output (`temperature = 0`) so that re-running an evaluation on unchanged content gives the same scores. Since Umbraco.AI 17.3, providers declare which models accept that setting and Umbraco.AI silently drops it for the ones that don't — for example OpenAI's reasoning models (o-series, GPT-5) and newer Claude models. On those models, scores can differ between re-runs of the same page.
 
-The package tells you when this applies: the evaluator configuration screen shows a notice under the AI profile picker when the selected profile's model ignores the setting, and every report produced by such a model (fresh or cached) carries the same notice. For the most repeatable scores, use a profile whose model supports temperature.
+The package tells administrators when this applies: the evaluator configuration screen shows a notice under the AI profile picker when the selected profile's model ignores the setting. For the most repeatable scores, use a profile whose model supports temperature. Since 17.6.0 the report itself no longer shows this notice, so content editors aren't worried by something they can't act on; the API still returns `samplingSettingsIgnored` with each report.
 
 ---
 

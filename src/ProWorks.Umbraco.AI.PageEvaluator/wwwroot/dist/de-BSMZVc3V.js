@@ -35,7 +35,6 @@ const e = {
     gatewayUnreachableMessage: "Der Server war über Ihr Netzwerk-Gateway nicht erreichbar. Überprüfen Sie Ihre Verbindung und versuchen Sie es erneut.",
     cultureNotCreatedMessage: "Diese Sprachversion der Seite hat noch keinen Inhalt, daher gibt es nichts auszuwerten.",
     invalidCultureMessage: "Die ausgewählte Sprache konnte nicht ausgewertet werden. Laden Sie die Seite neu und versuchen Sie es erneut.",
-    samplingVariesNotice: "Dieser Bericht wurde von einem KI-Modell erstellt, das keine deterministische Ausgabe unterstützt. Die Bewertungen können daher abweichen, wenn Sie die Auswertung erneut ausführen.",
     rteApplyBlockedMessage: "Dieser Vorschlag würde eingebettete Inhalte (Blöcke oder Medien) aus dem Feld entfernen und kann daher nicht automatisch übernommen werden. Kopieren Sie ihn und bearbeiten Sie das Feld stattdessen manuell.",
     applyFailedMessage: "Der Vorschlag konnte nicht auf dieses Feld angewendet werden. Ihr vorhandener Inhalt wurde nicht verändert.",
     retryButton: "Erneut versuchen",
@@ -162,4 +161,4 @@ const e = {
 export {
   e as default
 };
-//# sourceMappingURL=de-Be0TH_MZ.js.map
+//# sourceMappingURL=de-BSMZVc3V.js.map

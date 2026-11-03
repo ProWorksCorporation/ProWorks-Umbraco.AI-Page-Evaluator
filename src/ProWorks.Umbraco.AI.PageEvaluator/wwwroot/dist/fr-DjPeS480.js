@@ -35,7 +35,6 @@ const e = {
     gatewayUnreachableMessage: "Le serveur est inaccessible via votre passerelle réseau. Vérifiez votre connexion et réessayez.",
     cultureNotCreatedMessage: "Cette version linguistique de la page n'a pas encore de contenu, il n'y a donc rien à évaluer.",
     invalidCultureMessage: "La langue sélectionnée n'a pas pu être évaluée. Rechargez la page et réessayez.",
-    samplingVariesNotice: "Ce rapport a été produit par un modèle d'IA qui ne prend pas en charge les résultats déterministes ; les scores peuvent donc varier si vous relancez l'évaluation.",
     rteApplyBlockedMessage: "Cette suggestion supprimerait du contenu intégré (blocs ou médias) du champ ; elle ne peut donc pas être appliquée automatiquement. Copiez-la et modifiez le champ manuellement.",
     applyFailedMessage: "La suggestion n'a pas pu être appliquée à ce champ. Votre contenu existant n'a pas été modifié.",
     retryButton: "Réessayer",
@@ -162,4 +161,4 @@ const e = {
 export {
   e as default
 };
-//# sourceMappingURL=fr-DbIBlkhI.js.map
+//# sourceMappingURL=fr-DjPeS480.js.map

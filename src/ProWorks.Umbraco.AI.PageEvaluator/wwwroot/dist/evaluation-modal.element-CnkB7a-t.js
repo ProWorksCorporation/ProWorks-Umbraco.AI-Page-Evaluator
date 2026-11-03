@@ -2,15 +2,15 @@ import { css as k, property as v, state as h, customElement as A, nothing as c, 
 import { UmbModalBaseElement as T } from "@umbraco-cms/backoffice/modal";
 import { UMB_DOCUMENT_WORKSPACE_CONTEXT as F } from "@umbraco-cms/backoffice/document";
 import { UmbDataPathPropertyValueQuery as N, UMB_VALIDATION_CONTEXT as M } from "@umbraco-cms/backoffice/validation";
-import { r as D, A as w, g as B, e as O } from "./entry-point-DOo7Wyva.js";
-import { l as C, s as I } from "./error-category-TUEjuh5i.js";
+import { r as D, A as w, g as B, e as O } from "./entry-point-BHYSU-3A.js";
+import { l as P, s as I } from "./error-category-TUEjuh5i.js";
 import { UmbVariantId as L } from "@umbraco-cms/backoffice/variant";
 import { UmbLitElement as E } from "@umbraco-cms/backoffice/lit-element";
 function U() {
   return { layout: {}, contentData: [], settingsData: [], expose: [] };
 }
-const S = /<umb-rte-block(?:-inline)?\b[^>]*>/gi, j = /\bdata-content-(?:key|id)\s*=\s*"([^"]*)"/i, V = /(<umb-rte-block(-inline)?\b[^>]*>)\s*(<\/umb-rte-block\2>)/gi;
-function P(e) {
+const S = /<umb-rte-block(?:-inline)?\b[^>]*>/gi, j = /\bdata-content-(?:key|id)\s*=\s*"([^"]*)"/i, W = /(<umb-rte-block(-inline)?\b[^>]*>)\s*(<\/umb-rte-block\2>)/gi;
+function C(e) {
   const t = [];
   for (const i of e.matchAll(S)) {
     const r = j.exec(i[0])?.[1];
@@ -18,13 +18,13 @@ function P(e) {
   }
   return t;
 }
-function W(e) {
-  return e.replace(S, (t) => t.replace(/\bdata-content-id(\s*=)/i, "data-content-key$1")).replace(V, "$1<!--Umbraco-Block-->$3");
+function V(e) {
+  return e.replace(S, (t) => t.replace(/\bdata-content-id(\s*=)/i, "data-content-key$1")).replace(W, "$1<!--Umbraco-Block-->$3");
 }
 function K(e, t) {
-  const i = P(t), r = new Set(i);
+  const i = C(t), r = new Set(i);
   if (r.size !== i.length) return !1;
-  const a = new Set(P(e));
+  const a = new Set(C(e));
   if (a.size !== r.size) return !1;
   for (const s of a)
     if (!r.has(s)) return !1;
@@ -63,11 +63,11 @@ async function q(e, t, i, r, a, s) {
     const n = await e.structure.getPropertyStructureByAlias(t), l = a !== null && e.getVariesByCulture() === !0 && n?.variesByCulture === !0 ? a : null, m = L.Create({ culture: l, segment: null });
     let f = r;
     if (y(i)) {
-      const _ = e.getPropertyValue(t, m);
+      const b = e.getPropertyValue(t, m);
       f = {
         // Recommendations for rich text are always HTML strings; anything else is not applicable markup.
-        markup: W(typeof r == "string" ? r : ""),
-        blocks: Y(_) ?? U()
+        markup: V(typeof r == "string" ? r : ""),
+        blocks: Y(b) ?? U()
       };
     } else i === "Umbraco.Tags" && (f = H(r));
     return await e.setPropertyValue(t, f, m), s?.removeMessagesByPath(
@@ -99,12 +99,8 @@ let u = class extends E {
   }
   render() {
     if (!this.report) return c;
-    const { checks: e, suggestions: t, overallScore: i, axisScores: r } = this.report, a = i !== null || r !== null && r.length > 0, s = e.filter((p) => p.status === "Pass").length, n = e.filter((p) => p.status === "Warn").length, l = e.filter((p) => p.status === "Fail").length, m = e.length, f = e.filter((p) => p.status === "Fail" || p.status === "Warn"), _ = e.filter((p) => p.status === "Pass");
+    const { checks: e, suggestions: t, overallScore: i, axisScores: r } = this.report, a = i !== null || r !== null && r.length > 0, s = e.filter((p) => p.status === "Pass").length, n = e.filter((p) => p.status === "Warn").length, l = e.filter((p) => p.status === "Fail").length, m = e.length, f = e.filter((p) => p.status === "Fail" || p.status === "Warn"), b = e.filter((p) => p.status === "Pass");
     return o`
-      ${this.report.samplingSettingsIgnored === !0 ? o`<div class="sampling-notice" role="status">
-            <uui-icon name="icon-info"></uui-icon>
-            <span>${this.localize.term("evaluatePage_samplingVariesNotice")}</span>
-          </div>` : c}
       ${a ? this._renderScoring(i, r) : c}
 
       ${m > 0 ? o`
@@ -137,10 +133,10 @@ let u = class extends E {
             </ul>
           ` : c}
 
-      ${_.length > 0 ? o`
-            <p class="section-title">${this.localize.term("evaluatePage_reportPassingItems")} (${_.length})</p>
+      ${b.length > 0 ? o`
+            <p class="section-title">${this.localize.term("evaluatePage_reportPassingItems")} (${b.length})</p>
             <ul class="check-list">
-              ${_.map((p) => this._renderCheck(p))}
+              ${b.map((p) => this._renderCheck(p))}
             </ul>
           ` : c}
     `;
@@ -289,7 +285,7 @@ let u = class extends E {
           return this._renderRecBox(e, r, s, a, this._canApply(r, s));
         })}`;
       case "error": {
-        const r = C(t, "evaluatePage_recError");
+        const r = P(t, "evaluatePage_recError");
         return o`
           <div style="display:flex;align-items:center;gap:var(--uui-size-space-2,8px);margin-top:var(--uui-size-space-2,8px);">
             <uui-icon name="icon-alert" style="color:var(--uui-color-danger-standalone,#b91c1c);"></uui-icon>
@@ -442,25 +438,6 @@ u.styles = k`
       background: var(--uui-color-danger);
       color: var(--uui-color-danger-contrast);
       border-color: var(--uui-color-danger-standalone);
-    }
-
-    /* FR-015b notice: core's own inline-notice pattern (no alert element exists in 17.6; research R12.4). */
-    .sampling-notice {
-      display: flex;
-      align-items: flex-start;
-      gap: var(--uui-size-space-2);
-      margin-bottom: var(--uui-size-space-4);
-      padding: var(--uui-size-space-3) var(--uui-size-space-4);
-      background: var(--uui-color-warning);
-      color: var(--uui-color-warning-contrast);
-      border: 1px solid var(--uui-color-warning-standalone);
-      border-radius: var(--uui-border-radius);
-      font-size: var(--uui-type-small-size);
-    }
-
-    .sampling-notice uui-icon {
-      flex-shrink: 0;
-      margin-top: 2px;
     }
 
     :host {
@@ -878,7 +855,7 @@ R([
 x = R([
   A("page-evaluator-warning")
 ], x);
-var oe = Object.defineProperty, ne = Object.getOwnPropertyDescriptor, b = (e, t, i, r) => {
+var oe = Object.defineProperty, ne = Object.getOwnPropertyDescriptor, _ = (e, t, i, r) => {
   for (var a = r > 1 ? void 0 : r ? ne(t, i) : t, s = e.length - 1, n; s >= 0; s--)
     (n = e[s]) && (a = (r ? n(t, i, a) : n(a)) || a);
   return r && a && oe(t, i, a), a;
@@ -1072,7 +1049,7 @@ let g = class extends T {
           </div>
         `;
       case "error": {
-        const e = C({ type: this._errorType, category: this._errorCategory }, "evaluatePage_aiErrorMessage");
+        const e = P({ type: this._errorType, category: this._errorCategory }, "evaluatePage_aiErrorMessage");
         return o`
           <div class="error-container" role="alert">
             <p>${this.localize.term(e)}</p>
@@ -1132,28 +1109,28 @@ g.styles = k`
       color: var(--uui-color-danger-contrast, #fff);
     }
   `;
-b([
+_([
   h()
 ], g.prototype, "_modalState", 2);
-b([
+_([
   h()
 ], g.prototype, "_progressKey", 2);
-b([
+_([
   h()
 ], g.prototype, "_report", 2);
-b([
+_([
   h()
 ], g.prototype, "_errorDetail", 2);
-b([
+_([
   h()
 ], g.prototype, "_errorCategory", 2);
-b([
+_([
   h()
 ], g.prototype, "_errorType", 2);
-g = b([
+g = _([
   A("page-evaluator-modal")
 ], g);
 export {
   g as EvaluationModalElement
 };
-//# sourceMappingURL=evaluation-modal.element-wQcSNUUS.js.map
+//# sourceMappingURL=evaluation-modal.element-CnkB7a-t.js.map

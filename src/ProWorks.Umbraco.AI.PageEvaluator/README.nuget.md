@@ -29,7 +29,7 @@ Upgrade the CMS and Umbraco.AI first, then this package (on an older CMS the ins
 - Supports any AI provider configured in Umbraco.AI (Anthropic, OpenAI, etc.)
 - Cached results with timestamp and one-click re-evaluation
 - Workspace action hidden automatically on unconfigured document types
-- Tells you when scores may vary: a notice appears on the configuration screen and on reports when the selected AI model ignores the deterministic-output (temperature) setting, as OpenAI reasoning models and newer Claude models do
+- Tells administrators when scores may vary: a notice appears on the configuration screen when the selected AI model ignores the deterministic-output (temperature) setting, as OpenAI reasoning models and newer Claude models do
 - AI text recommendations for Fail and Warn checks — the recommendation panel shows the current field value alongside the AI suggestion so you can compare before applying or copying it to the clipboard; Rich Text can be applied directly (withheld if embedded blocks would be lost)
 - Multilingual aware: evaluations, recommendations, Apply and the cache follow the language you're viewing
 - Warns on the configuration screen when the selected AI profile has its own system prompt, which Umbraco.AI 17.5+ sends ahead of the evaluator's instructions; the evaluator's own format, language and tone rules are marked as taking precedence, but a dedicated profile with no system prompt gives the most predictable results
