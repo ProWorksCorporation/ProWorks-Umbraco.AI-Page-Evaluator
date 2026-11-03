@@ -49,6 +49,7 @@ public class PageEvaluatorApiControllerTests
     private readonly IOptions<PageEvaluatorOptions> _options = Options.Create(new PageEvaluatorOptions());
     private readonly ISamplingSupportService _samplingSupport = Substitute.For<ISamplingSupportService>();
     private readonly ILanguageService _languageService = Substitute.For<ILanguageService>();
+    private readonly IProfileSystemPromptService _profileSystemPrompt = Substitute.For<IProfileSystemPromptService>();
     private readonly PageEvaluatorApiController _sut;
 
     public PageEvaluatorApiControllerTests()
@@ -65,7 +66,7 @@ public class PageEvaluatorApiControllerTests
             _evaluationService, _configService, _profileService, _contextService,
             _contentTypeService, _cacheRepository, _logger,
             _contentService, _authorizationService,
-            new EvaluatorChatExecutor(_chatService, _profileService, new StructuredOutputSupportCache(), Microsoft.Extensions.Logging.Abstractions.NullLogger<EvaluatorChatExecutor>.Instance), _propertyEditorSchemaService, _options, _samplingSupport, _languageService);
+            new EvaluatorChatExecutor(_chatService, _profileService, new StructuredOutputSupportCache(), Microsoft.Extensions.Logging.Abstractions.NullLogger<EvaluatorChatExecutor>.Instance), _propertyEditorSchemaService, _options, _samplingSupport, _languageService, _profileSystemPrompt);
         _sut.ControllerContext = new ControllerContext
         {
             HttpContext = new DefaultHttpContext(),
@@ -1014,7 +1015,7 @@ public class PageEvaluatorApiControllerTests
             _evaluationService, _configService, _profileService, _contextService,
             _contentTypeService, _cacheRepository, _logger,
             _contentService, _authorizationService,
-            new EvaluatorChatExecutor(_chatService, _profileService, new StructuredOutputSupportCache(), Microsoft.Extensions.Logging.Abstractions.NullLogger<EvaluatorChatExecutor>.Instance), _propertyEditorSchemaService, options, _samplingSupport, _languageService);
+            new EvaluatorChatExecutor(_chatService, _profileService, new StructuredOutputSupportCache(), Microsoft.Extensions.Logging.Abstractions.NullLogger<EvaluatorChatExecutor>.Instance), _propertyEditorSchemaService, options, _samplingSupport, _languageService, _profileSystemPrompt);
         sut.ControllerContext = _sut.ControllerContext;
         return sut;
     }
@@ -2273,6 +2274,29 @@ public class PageEvaluatorApiControllerTests
         Assert.Equal("<p>New</p>", value);
     }
 
+    // 005 FR-015: profile system prompts (Umbraco.AI 17.5+) can wrap the reply in prose or extra
+    // code blocks. Cases P2, P3, P5, P7 and P8 from contracts/prompts-and-parsing.md.
+    [Theory]
+    [InlineData("Umbraco.TextBox", "Of course! Here is a friendlier title:\n{\"recommendedValue\":\"A warmer title\"}", "A warmer title")]
+    [InlineData("Umbraco.TextBox", "{\"recommendedValue\":\"A warmer title\"}\n\nLet me know if you want {more} options!", "A warmer title")]
+    [InlineData("Umbraco.TextBox", "Example format:\n```text\n{placeholder}\n```\nAnswer:\n```json\n{\"recommendedValue\":\"A warmer title\"}\n```", "A warmer title")]
+    [InlineData("Umbraco.RichText", "Here it is: {\"recommendedValue\":\"<p>Use {curly} words and a \\\"quote\\\"</p>\"} Cheers {", "<p>Use {curly} words and a \"quote\"</p>")]
+    public async Task RecommendAsync_WhenReplyIsWrappedInProseOrExtraBlocks_StillExtractsTheValue(
+        string editorAlias, string modelReply, string expected)
+    {
+        string? value = await RecommendWithModelReplyAsync(editorAlias, modelReply);
+
+        Assert.Equal(expected, value);
+    }
+
+    [Fact]
+    public async Task RecommendAsync_WhenReplyIsProseOnly_ReturnsNullForThatAlias()
+    {
+        string? value = await RecommendWithModelReplyAsync("Umbraco.TextBox", "I think the current title is already great, honestly!");
+
+        Assert.Null(value);
+    }
+
     [Fact]
     public async Task RecommendAsync_ForPlainText_DoesNotUnwrapJsonLookingText()
     {
@@ -2438,6 +2462,49 @@ public class PageEvaluatorApiControllerTests
 
         Assert.NotNull(authorize);
         Assert.Equal(AuthorizationPolicies.SectionAccessSettings, authorize!.Policy);
+    }
+
+    // ---------------------------------------------------------------------------
+    // GET /profiles/{profileId}/system-prompt (005-upgrade-cms-17-8-ai-17-6 FR-012/FR-014)
+    // ---------------------------------------------------------------------------
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task GetProfileSystemPromptAsync_ReturnsOnlyWhetherAPromptExists(bool hasPrompt)
+    {
+        var profileId = Guid.NewGuid();
+        _profileSystemPrompt.HasSystemPromptAsync(profileId, Arg.Any<CancellationToken>()).Returns(hasPrompt);
+
+        IActionResult result = await _sut.GetProfileSystemPromptAsync(profileId);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        string json = System.Text.Json.JsonSerializer.Serialize(ok.Value);
+        Assert.Equal($"{{\"hasSystemPrompt\":{hasPrompt.ToString().ToLowerInvariant()}}}", json);
+    }
+
+    [Fact]
+    public async Task GetProfileSystemPromptAsync_UnknownProfile_Returns200False()
+    {
+        // The service answers false for an unknown profile; the endpoint never 404s (contracts/management-api.md).
+        _profileSystemPrompt.HasSystemPromptAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(false);
+
+        IActionResult result = await _sut.GetProfileSystemPromptAsync(Guid.NewGuid());
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        Assert.Equal("{\"hasSystemPrompt\":false}", System.Text.Json.JsonSerializer.Serialize(ok.Value));
+    }
+
+    [Fact]
+    public void GetProfileSystemPromptAsync_RequiresSettingsSectionAccess()
+    {
+        var method = typeof(PageEvaluatorApiController).GetMethod(nameof(PageEvaluatorApiController.GetProfileSystemPromptAsync));
+        var authorize = method!.GetCustomAttributes(typeof(AuthorizeAttribute), false).Cast<AuthorizeAttribute>().SingleOrDefault();
+        var route = method.GetCustomAttributes(typeof(HttpGetAttribute), false).Cast<HttpGetAttribute>().Single();
+
+        Assert.NotNull(authorize);
+        Assert.Equal(AuthorizationPolicies.SectionAccessSettings, authorize!.Policy);
+        Assert.Equal("profiles/{profileId:guid}/system-prompt", route.Template);
     }
 
     // ---------------------------------------------------------------------------
@@ -2793,6 +2860,50 @@ public class PageEvaluatorApiControllerTests
         string prompt = await CaptureRecommendPromptForCultureAsync(nodeId, "da-DK");
 
         Assert.Contains("Write the recommended value in Danish (Denmark) (da-dk).", prompt);
+    }
+
+    [Fact]
+    public async Task RecommendAsync_SystemPrompt_StartsWithThePrecedenceParagraph_AndKeepsTheLanguageLine()
+    {
+        // 005 FR-017 / QS-8: a profile system prompt ("Always reply in English", a tone or a format) must not
+        // override the recommendation's language or output format.
+        var nodeId = Guid.NewGuid();
+        GivenVaryingContent(nodeId, "da-DK");
+        GivenLanguages("en-US", "da-DK");
+
+        string prompt = await CaptureRecommendPromptForCultureAsync(nodeId, "da-DK");
+
+        Assert.StartsWith(PromptRules.Precedence, prompt);
+        Assert.Equal(prompt.IndexOf(PromptRules.Precedence, StringComparison.Ordinal),
+            prompt.LastIndexOf(PromptRules.Precedence, StringComparison.Ordinal));
+        // The FR-018 language line stays in place, after the field instructions.
+        Assert.True(prompt.IndexOf("Write the recommended value in Danish (Denmark) (da-dk).", StringComparison.Ordinal)
+            > prompt.IndexOf("Your task: generate a replacement value", StringComparison.Ordinal));
+    }
+
+    [Theory]
+    [InlineData("Umbraco.TextBox")]       // schema branch, plain-text guidance
+    [InlineData("Umbraco.MarkdownEditor")] // schema branch, Markdown guidance
+    [InlineData("Umbraco.Tags")]          // schema branch, Tags guidance
+    [InlineData("Umbraco.RichText")]      // rich-text branch (the editor schema is never used)
+    public async Task RecommendAsync_EveryEditorBranch_StartsWithThePrecedenceParagraphOnce(string editorAlias)
+    {
+        // 005 FR-017: the paragraph is shared by every branch of BuildRecommendSystemPrompt, not just plain text.
+        (string prompt, _) = await RecommendWithCmsSchemaAsync(editorAlias);
+
+        Assert.StartsWith(PromptRules.Precedence, prompt);
+        Assert.Equal(prompt.IndexOf(PromptRules.Precedence, StringComparison.Ordinal),
+            prompt.LastIndexOf(PromptRules.Precedence, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task RecommendAsync_InvariantDocumentWithoutASchema_StillStartsWithThePrecedenceParagraph()
+    {
+        // 005 FR-017: included unconditionally — no culture, no editor schema (third-party plain-text editor).
+        string prompt = await CaptureRecommendPromptForCultureAsync(Guid.NewGuid(), null);
+
+        Assert.StartsWith(PromptRules.Precedence, prompt);
+        Assert.Contains("plain text property", prompt);
     }
 
     [Fact]

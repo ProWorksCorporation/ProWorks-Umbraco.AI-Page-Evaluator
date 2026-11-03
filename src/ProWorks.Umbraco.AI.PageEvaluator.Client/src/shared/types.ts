@@ -146,6 +146,14 @@ export interface RecommendRequest {
   readonly properties: Record<string, string>;
 }
 
+/**
+ * Response body for GET /profiles/{profileId}/system-prompt (005 FR-012/FR-014): whether the profile has
+ * its own system prompt, which Umbraco.AI 17.5+ sends ahead of the evaluator's instructions. Never the text.
+ */
+export interface ProfileSystemPromptResponse {
+  hasSystemPrompt: boolean;
+}
+
 /** Response body for GET /profiles/{profileId}/sampling-support. */
 export interface SamplingSupportResponse {
   readonly temperatureSupported: boolean;

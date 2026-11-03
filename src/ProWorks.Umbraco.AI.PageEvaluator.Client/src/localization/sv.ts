@@ -84,6 +84,9 @@ export default {
     // 003-upgrade-umbraco-17-6: sampling-support notice under the profile picker
     samplingVariesNotice:
       "Den valda AI-profilen använder en modell som inte stöder deterministiska svar. Utvärderingspoängen kan variera mellan körningar.",
+    // 005-upgrade-cms-17-8-ai-17-6: profile system-prompt notice under the profile picker
+    profileSystemPromptNotice:
+      "Den valda AI-profilen har en egen systemprompt. Umbraco.AI skickar den före utvärderarens instruktioner vid varje utvärdering och rekommendation, vilket kan ändra eller förstöra resultaten. Använd en dedikerad AI-profil utan systemprompt för Page Evaluator för att få förutsägbara resultat.",
     // Workspace: list
     sectionLabel: 'Sidutvärderare',
     listHeadline: 'Konfigurationer för sidutvärderare',

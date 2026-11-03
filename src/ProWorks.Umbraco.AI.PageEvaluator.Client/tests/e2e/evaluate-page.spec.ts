@@ -6,11 +6,11 @@
  * active evaluator config and a rich-text `introText`) and "About Us" (`contentPage`, no config).
  * AI responses are mocked (see helpers.ts), so no AI provider is called.
  *
- * Rewritten in 003 onto @umbraco/playwright-testhelpers navigation: the original specs used
- * selectors that never matched a real backoffice.
+ * Rewritten in 003 onto testhelpers navigation (the original specs used selectors that never matched a
+ * real backoffice); moved to @umbraco-cms/acceptance-test-helpers in 005.
  */
 import { expect, type Page } from '@playwright/test';
-import { ConstantHelper, test } from '@umbraco/playwright-testhelpers';
+import { ConstantHelper, test } from '@umbraco-cms/acceptance-test-helpers';
 import {
   mockCachedEvaluation,
   mockEvaluate,

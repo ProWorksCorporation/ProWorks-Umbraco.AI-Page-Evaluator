@@ -50,6 +50,7 @@ public sealed partial class PageEvaluatorApiController : ControllerBase
     private readonly IOptions<PageEvaluatorOptions> _options;
     private readonly ISamplingSupportService _samplingSupport;
     private readonly ILanguageService _languageService;
+    private readonly IProfileSystemPromptService _profileSystemPrompt;
 
     public PageEvaluatorApiController(
         IPageEvaluationService evaluationService,
@@ -65,7 +66,8 @@ public sealed partial class PageEvaluatorApiController : ControllerBase
         IPropertyEditorSchemaService propertyEditorSchemaService,
         IOptions<PageEvaluatorOptions> options,
         ISamplingSupportService samplingSupport,
-        ILanguageService languageService)
+        ILanguageService languageService,
+        IProfileSystemPromptService profileSystemPrompt)
     {
         _evaluationService = evaluationService;
         _configService = configService;
@@ -81,6 +83,7 @@ public sealed partial class PageEvaluatorApiController : ControllerBase
         _options = options;
         _samplingSupport = samplingSupport;
         _languageService = languageService;
+        _profileSystemPrompt = profileSystemPrompt;
     }
 
     // ---------------------------------------------------------------------------
@@ -594,6 +597,26 @@ public sealed partial class PageEvaluatorApiController : ControllerBase
     }
 
     // ---------------------------------------------------------------------------
+    // GET /profiles/{profileId}/system-prompt  (005-upgrade-cms-17-8-ai-17-6 FR-012/FR-014,
+    // specs/005-upgrade-cms-17-8-ai-17-6/contracts/management-api.md)
+    // ---------------------------------------------------------------------------
+
+    /// <summary>
+    /// Reports whether the AI profile has its own system prompt, which Umbraco.AI 17.5+ sends ahead of the
+    /// evaluator's instructions, so the evaluator config screen can warn administrators. Returns only a
+    /// boolean, never the prompt text. Never 404s: an unknown profile is reported as having none.
+    /// </summary>
+    [HttpGet("profiles/{profileId:guid}/system-prompt")]
+    [Authorize(Policy = AuthorizationPolicies.SectionAccessSettings)]
+    public async Task<IActionResult> GetProfileSystemPromptAsync(
+        Guid profileId,
+        CancellationToken cancellationToken = default)
+    {
+        bool hasSystemPrompt = await _profileSystemPrompt.HasSystemPromptAsync(profileId, cancellationToken);
+        return Ok(new { hasSystemPrompt });
+    }
+
+    // ---------------------------------------------------------------------------
     // Private helpers
     // ---------------------------------------------------------------------------
 
@@ -762,6 +785,8 @@ public sealed partial class PageEvaluatorApiController : ControllerBase
         string? culture = null)
     {
         var sb = new System.Text.StringBuilder();
+        // FR-017: a profile system prompt (prepended by Umbraco.AI) must not override the language or format.
+        sb.AppendLine(PromptRules.Precedence);
         sb.AppendLine("You are an SEO and content assistant.");
         sb.AppendLine($"Your task: generate a replacement value for one specific field: \"{propertyType.Alias}\".");
         sb.AppendLine("Return ONLY the value for this field. Do not list, label, or generate values for any other fields.");
@@ -885,28 +910,9 @@ public sealed partial class PageEvaluatorApiController : ControllerBase
 
     private static string? ParseRecommendedValue(string responseText)
     {
-        string stripped = responseText.Trim();
-
-        int fenceStart = stripped.IndexOf("```json", StringComparison.OrdinalIgnoreCase);
-        if (fenceStart < 0) fenceStart = stripped.IndexOf("```", StringComparison.Ordinal);
-        if (fenceStart >= 0)
-        {
-            int contentStart = stripped.IndexOf('\n', fenceStart);
-            if (contentStart >= 0)
-            {
-                contentStart++;
-                int fenceEnd = stripped.IndexOf("```", contentStart, StringComparison.Ordinal);
-                if (fenceEnd > contentStart)
-                    stripped = stripped[contentStart..fenceEnd].Trim();
-            }
-        }
-        else
-        {
-            int jsonStart = stripped.IndexOf('{');
-            int jsonEnd = stripped.LastIndexOf('}');
-            if (jsonStart >= 0 && jsonEnd > jsonStart)
-                stripped = stripped[jsonStart..(jsonEnd + 1)].Trim();
-        }
+        // 005 FR-015: shared extractor handles preambles, closing remarks with braces and extra code blocks.
+        if (!JsonResponseExtractor.TryExtractObject(responseText, root => root.TryGetProperty("recommendedValue", out _), out string stripped))
+            return null;
 
         try
         {

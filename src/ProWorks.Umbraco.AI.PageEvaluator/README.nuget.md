@@ -10,11 +10,11 @@ Adds an **Evaluate Page** workspace action to the Umbraco content editor. Clicki
 
 | Dependency | Version |
 |---|---|
-| Umbraco CMS | 17.6.2+ (17.x) |
-| Umbraco.AI | 17.3.4+ (17.x) |
-
-Upgrade the CMS and Umbraco.AI first, then this package (on an older CMS the install fails with NU1605 "package downgrade" for `Umbraco.Cms`); the evaluation cache table is migrated automatically on first start.
+| Umbraco CMS | 17.8.0+ (17.x) |
+| Umbraco.AI | 17.6.1+ (17.x) |
 | .NET | 10 |
+
+Upgrade the CMS and Umbraco.AI first, then this package (on an older CMS the install fails with NU1605 "package downgrade" for `Umbraco.Cms`). Sites that can't upgrade yet can stay on 17.3.1. Existing configurations and cached results are kept.
 
 ## Quick Start
 
@@ -32,6 +32,9 @@ Upgrade the CMS and Umbraco.AI first, then this package (on an older CMS the ins
 - Tells you when scores may vary: a notice appears on the configuration screen and on reports when the selected AI model ignores the deterministic-output (temperature) setting, as OpenAI reasoning models and newer Claude models do
 - AI text recommendations for Fail and Warn checks — the recommendation panel shows the current field value alongside the AI suggestion so you can compare before applying or copying it to the clipboard; Rich Text can be applied directly (withheld if embedded blocks would be lost)
 - Multilingual aware: evaluations, recommendations, Apply and the cache follow the language you're viewing
+- Warns on the configuration screen when the selected AI profile has its own system prompt, which Umbraco.AI 17.5+ sends ahead of the evaluator's instructions; the evaluator's own format, language and tone rules are marked as taking precedence, but a dedicated profile with no system prompt gives the most predictable results
+- Shows Umbraco.AI's AI disclosure notice with evaluator output, following the site's Always / Dismissible / Off setting (default Always)
+- Localized "could not reach" message when the network drops, instead of a technical error
 
 ## About ProWorks
 

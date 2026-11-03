@@ -84,6 +84,9 @@ export default {
     // 003-upgrade-umbraco-17-6: sampling-support notice under the profile picker
     samplingVariesNotice:
       "Il profilo IA selezionato usa un modello che non supporta output deterministico. I punteggi della valutazione potrebbero variare tra un'esecuzione e l'altra.",
+    // 005-upgrade-cms-17-8-ai-17-6: profile system-prompt notice under the profile picker
+    profileSystemPromptNotice:
+      "Il profilo IA selezionato ha un proprio prompt di sistema. Umbraco.AI lo invia prima delle istruzioni del valutatore a ogni valutazione e raccomandazione, il che può modificare o compromettere i risultati. Per risultati prevedibili, usa per il Page Evaluator un profilo IA dedicato senza prompt di sistema.",
     // Workspace: list
     sectionLabel: 'Valutatore pagina',
     listHeadline: 'Configurazioni del valutatore pagina',

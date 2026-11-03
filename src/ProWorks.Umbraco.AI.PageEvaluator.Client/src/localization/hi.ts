@@ -84,6 +84,9 @@ export default {
     // 003-upgrade-umbraco-17-6: sampling-support notice under the profile picker
     samplingVariesNotice:
       "चुनी गई AI प्रोफ़ाइल ऐसे मॉडल का उपयोग करती है जो निर्धारित (deterministic) आउटपुट का समर्थन नहीं करता। दोबारा चलाने पर मूल्यांकन स्कोर बदल सकते हैं।",
+    // 005-upgrade-cms-17-8-ai-17-6: profile system-prompt notice under the profile picker
+    profileSystemPromptNotice:
+      "चयनित AI प्रोफ़ाइल का अपना सिस्टम प्रॉम्प्ट है। Umbraco.AI हर मूल्यांकन और सुझाव में इसे इवैल्युएटर के निर्देशों से पहले भेजता है, जिससे परिणाम बदल सकते हैं या बिगड़ सकते हैं। अनुमानित परिणामों के लिए, Page Evaluator के लिए बिना सिस्टम प्रॉम्प्ट वाली एक अलग AI प्रोफ़ाइल का उपयोग करें।",
     // Workspace: list
     sectionLabel: 'पेज मूल्यांकनकर्ता',
     listHeadline: 'पेज मूल्यांकनकर्ता कॉन्फ़िगरेशन',

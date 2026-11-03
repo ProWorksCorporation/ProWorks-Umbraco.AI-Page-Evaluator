@@ -3,7 +3,7 @@
  * Read-only against the TestSite's "Home Page Scoring Test" configuration.
  */
 import { expect } from '@playwright/test';
-import { test } from '@umbraco/playwright-testhelpers';
+import { test } from '@umbraco-cms/acceptance-test-helpers';
 
 test.describe('Prompt Builder', () => {
   test.beforeEach(async ({ umbracoUi }) => {

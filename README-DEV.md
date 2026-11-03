@@ -37,8 +37,8 @@ tests/
 ### Prerequisites
 
 - .NET 10 SDK
-- Node.js **24.13+** and npm **11+** (required by `@umbraco-cms/backoffice` 17.6 and `@umbraco-ui/uui` 2; `package.json` declares `engines`)
-- Umbraco CMS 17.6.2 / Umbraco.AI 17.3.4 (the TestSite already references these)
+- Node.js **24.13+** and npm **11+** (required by `@umbraco-cms/backoffice` 17.6+ and `@umbraco-ui/uui` 2; `package.json` declares `engines`)
+- Umbraco CMS 17.8.0 / Umbraco.AI 17.6.1 (the TestSite already references these; the package's floors are the same)
 - An Umbraco.AI-compatible AI provider API key (Anthropic recommended)
 
 ### Build the backoffice client
@@ -59,6 +59,9 @@ npm run build
 ```bash
 # Stop IIS Express if running, then:
 dotnet build src/ProWorks.Umbraco.AI.PageEvaluator.TestSite
+
+# Or run it on Kestrel (same URL, no IIS Express):
+dotnet run --project src/ProWorks.Umbraco.AI.PageEvaluator.TestSite --launch-profile Umbraco.Web.UI
 ```
 
 Open `https://localhost:44318/umbraco` in a browser.
@@ -86,10 +89,10 @@ dotnet test
 cd src/ProWorks.Umbraco.AI.PageEvaluator.Client
 npm run typecheck && npm run lint && npm test
 
-# E2E against the running TestSite (Playwright + @umbraco/playwright-testhelpers; see "E2E prerequisites")
-npx playwright install chromium   # first time only
-URL=https://localhost:44318 UMBRACO_URL=https://localhost:44318 \
-UMBRACO_USER_LOGIN=admin@example.com UMBRACO_USER_PASSWORD='SecureP@ssw0rd!' npm run test:e2e
+# E2E against the running TestSite (Playwright + @umbraco-cms/acceptance-test-helpers; see "E2E prerequisites")
+npx playwright install chromium   # first time, and after any @playwright/test upgrade
+URL=https://localhost:44318 \
+UMBRACO_USER_LOGIN=<automation user> UMBRACO_USER_PASSWORD='<password>' npm run test:e2e
 ```
 
 The server suite covers controller error handling (including the Umbraco.AI 17.1+ `Cancelled` category and culture validation), the evaluator chat executor (enforced schemas and the one-shot fallback), culture-aware content resolution, the per-culture cache repository, publish/unpublish invalidation, and the Umbraco.AI test feature. The client suite covers the API client's error typing, the rich-text block safeguard, the apply helper, the report and form elements, and localization key parity across all 10 languages.
@@ -102,7 +105,15 @@ The server suite covers controller error handling (including the Umbraco.AI 17.1
 | `landingPage` | the multilingual specs on "ProWorks AI Page Evaluator" (any name; recommendations enabled) |
 | `contentPage` | must have **no** active config: the About Us spec checks the button is hidden |
 
-The specs don't save anything to existing content. `tags-apply.spec.ts` needs a Tags property the TestSite doesn't have, so it creates a throwaway doc type, document and evaluator config (all prefixed `ZZ E2E`) through the Management API and deletes them again, even on failure. Note: the testhelpers' `umbracoApi` fixture doesn't work on CMS 17.6 (it expects the access token in localStorage; 17.6 uses HttpOnly cookies). Use `tests/e2e/management-api.ts` for test data instead.
+The specs don't save anything to existing content. `tags-apply.spec.ts` needs a Tags property the TestSite doesn't have, so it creates a throwaway doc type, document and evaluator config (all prefixed `ZZ E2E`) and deletes them again, even on failure.
+
+**E2E tooling (since 17.6.0).** The suite uses `@umbraco-cms/acceptance-test-helpers` `~17.8.0`, the helpers CMS's own acceptance tests use (npm `latest` is the v18 line, hence the tilde; import it under that exact name — the README's `@umbraco/acceptance-test-helpers` is only a tsconfig alias inside the CMS repo). It replaces the deprecated `@umbraco/playwright-testhelpers` and `@umbraco/json-models-builders`. Notes:
+
+- **`URL`** is the TestSite origin. The helpers build absolute URLs from it and default to `https://localhost:44339`, so `playwright.config.ts` falls back to `UMBRACO_URL`, then `https://localhost:44318`, and `auth.setup.ts` fails fast on a wrong host.
+- **`STORAGE_STATE_PATH`** is set by `playwright.config.ts` to `tests/e2e/.auth/user.json` (the old package misspelled it `STORAGE_STAGE_PATH`).
+- **Use a dedicated automation user.** Specs use `umbracoUi` and `new ApiHelpers(page)` but **not** the `umbracoApi` fixture: before each test it does a refresh-token grant and, if that fails, falls back to a password login, which with `AllowConcurrentLogins: false` signs the user out of every other session.
+- `tests/e2e/page-evaluator-api.ts` wraps `ApiHelpers` for the endpoints the helpers have no dedicated helper for (this package's configurations and Umbraco.AI's profiles), retries a 401 once after reloading the backoffice, and exposes `ensureAuthenticated()` — call it before using `helpers.dataType/documentType/document` directly, because those don't retry a 401 and fail with "Unexpected end of JSON input" once earlier specs have rotated the stored tokens.
+- `network-failure.spec.ts` simulates a dropped connection with `route.abort('internetdisconnected')`.
 
 Client test notes: the Vitest setup (`tests/setup/vitest.setup.ts`) loads `element-internals-polyfill` because happy-dom lacks `attachInternals()`, which UUI 2 form controls need; await `el.updateComplete` before asserting on a rendered `UmbLitElement`.
 
@@ -192,11 +203,13 @@ Modal opens → GET /evaluate/cached/{nodeId}?culture={viewed culture, if the pa
                 ├─ Filters to selected properties only (if PropertyAliases configured)
                 ├─ Strips HTML tags and truncates long values (2000 char limit)
                 ├─ Overlays simple draft text values for unsaved edits
-                ├─ Builds system prompt (config prompt + optional context + JSON format instructions)
+                ├─ Builds system prompt (config prompt + optional context + precedence
+                │   paragraph + JSON format instructions)
                 ├─ Adds defensive preamble to guard against prompt injection from content
                 └─ Calls the AI model via IEvaluatorChatExecutor → IAIChatService
                     (Temperature=0, enforced JSON schema; one-time fallback to JSON mode
-                     if the provider rejects the schema)
+                     if the provider rejects the schema; Umbraco.AI 17.5+ sends the AI
+                     profile's own system prompt, if it has one, ahead of ours)
                         │
                         ▼
                 Parses JSON response → EvaluationReport
@@ -212,7 +225,8 @@ Modal opens → GET /evaluate/cached/{nodeId}?culture={viewed culture, if the pa
                                         │
                                         ▼
                                 Shows current field value + AI suggestion side-by-side
-                                Apply (plain text / Tags) or Copy (RichText / TinyMCE)
+                                Apply (text, Tags, Rich Text unless embedded blocks
+                                would be lost) or Copy
 ```
 
 > Cache is automatically cleared for all nodes of a document type whenever its evaluator configuration is created, updated, activated, or deleted. Cache entries for individual nodes are also cleared when content is published.
@@ -223,7 +237,7 @@ Modal opens → GET /evaluate/cached/{nodeId}?culture={viewed culture, if the pa
 
 ### Property resolution
 
-Property values are resolved via Umbraco's `IApiContentBuilder` (the same service that powers the Content Delivery API) before being sent to the AI. This means:
+Property values are resolved by `CultureAwareContentPropertyResolver` for the viewed culture, using the Content Delivery API's property mapping (`IOutputExpansionStrategy.MapContentProperties`; nested pickers go through `IApiContentBuilder`) before being sent to the AI. This means:
 
 - **Rich text** → HTML stripped to plain text
 - **Media picker** → resolved metadata (name, alt text, dimensions, file type)
@@ -268,7 +282,7 @@ Both the evaluate and cached-evaluate responses also include a `propertyEditorAl
 | Editor alias | Recommendation | Apply to field |
 |---|---|---|
 | `Umbraco.TextBox`, `Umbraco.TextArea`, `Umbraco.Markdown`, `Umbraco.Tags` | Yes | Yes |
-| `Umbraco.RichText`, `Umbraco.TinyMCE` | Yes (copy only) | No |
+| `Umbraco.RichText`, `Umbraco.TinyMCE` | Yes | Yes, unless the recommendation drops or duplicates an embedded block (then Copy only) |
 | Editors in `AdditionalRecommendableEditorAliases` (see [Server configuration](#server-configuration)) | Yes | Yes |
 | All others (media pickers, block editors, pickers, etc.) | No | No |
 
@@ -276,13 +290,18 @@ The response also includes `additionalRecommendableEditorAliases` — the list f
 
 When `propertyEditorAliases` is unavailable (e.g. the document type was deleted), the frontend falls back to a value-content heuristic: properties whose raw value starts with `{`, `[`, or `umb://` are treated as complex and excluded.
 
-The response parser tries JSON first, then a Markdown numbered-list fallback, then stores the raw text for display if both fail.
+The response parser tries JSON first, then a Markdown numbered-list fallback, then stores the raw text for display if both fail. JSON is found by `Services/JsonResponseExtractor.cs` (shared with `POST /recommend`): it tries every fenced block, then every balanced top-level `{…}` object, and uses the first one with `checks` (or `recommendedValue`), so prose or code fences around the answer don't break parsing.
 
 ### Umbraco.AI integration
 
 - `IAIChatService` (from `Umbraco.AI.Core.Chat`) orchestrates AI calls via the `AIChatBuilder` fluent pattern. Never inject `IChatClient` or `IAIChatClientFactory` directly
 - Context resources with `InjectionMode.Always` are injected into the system prompt
-- `ChatOptions`: `Temperature = 0` for deterministic output, `ResponseFormat = Json` for structured responses, `Tools = []` to disable function calling
+- `ChatOptions`: `Temperature = 0` for deterministic output, `Tools = []` to disable function calling. Structured output comes from `WithOutputSchema(...)` (`ResponseFormat` stays null, because a non-null value cancels the schema); `ChatResponseFormat.Json` is only used on the no-schema fallback
+- Feature aliases `proworks-page-evaluator` (evaluate) and `proworks-page-evaluator-recommend` (recommend) appear in Umbraco.AI's audit log
+- **Profile system prompts (Umbraco.AI 17.5+)**: `AIProfileSystemPromptChatMiddleware` sends a profile's system prompt as the first system message of every call, ours included. The package never removes the middleware (that would be site-wide). Instead:
+  - the config form warns admins when the selected profile has one, via `GET /profiles/{profileId}/system-prompt`, which returns only `{ hasSystemPrompt }`, never the text;
+  - both prompts include `PromptRules.Precedence` unconditionally (evaluate: right before `--- REQUIRED OUTPUT FORMAT ---`; recommend: first line). It says the package's format, language and tone rules win and keeps report text neutral. It was added after the live QS-8 run in `specs/005-upgrade-cms-17-8-ai-17-6/quickstart.md` found an Anthropic "friendly tone" profile prompt leaking praise into reports. Change the wording only together with a QS-8 re-run
+- The report shows Umbraco.AI's `<uai-disclosure-notice location="page-evaluator">` (registered globally by Umbraco.AI, so no import), following the site's Always / Dismissible / Off setting
 - Uses `[ComposeAfter(typeof(UmbracoAIComposer))]` to ensure correct DI registration order
 
 ### Optimistic concurrency

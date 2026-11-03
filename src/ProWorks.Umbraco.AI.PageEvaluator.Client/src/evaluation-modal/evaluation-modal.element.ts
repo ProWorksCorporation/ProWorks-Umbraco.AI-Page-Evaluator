@@ -48,6 +48,11 @@ export class EvaluationModalElement extends UmbModalBaseElement<EvaluationModalD
       color: var(--uui-color-text-alt, #666);
     }
 
+    /* 005 FR-019: Umbraco.AI's disclosure notice; takes no space while hidden (:host not [visible]). */
+    .disclosure-notice[visible] {
+      margin: var(--uui-size-space-3, 12px) 0;
+    }
+
     .error-container {
       padding: var(--uui-size-space-4, 16px);
       background: var(--uui-color-danger-standalone, #b91c1c);
@@ -238,6 +243,17 @@ export class EvaluationModalElement extends UmbModalBaseElement<EvaluationModalD
     `;
   }
 
+  /**
+   * 005 FR-019/FR-020: Umbraco.AI's standard AI disclosure notice, shown wherever this modal shows AI output.
+   * The element is registered globally by Umbraco.AI's backoffice entry point (import map `@umbraco-ai/core`),
+   * like `<uai-profile-picker>`, so no import is needed. It follows the site-wide Always/Dismissible/Off
+   * setting itself and renders nothing when hidden. One `location` covers the report and its recommendation
+   * panels, so a single dismissal hides it for both.
+   */
+  private _renderDisclosureNotice(): TemplateResult {
+    return html`<uai-disclosure-notice class="disclosure-notice" location="page-evaluator"></uai-disclosure-notice>`;
+  }
+
   private _renderBody(): TemplateResult | typeof nothing {
     switch (this._modalState) {
       case 'idle':
@@ -254,6 +270,7 @@ export class EvaluationModalElement extends UmbModalBaseElement<EvaluationModalD
       case 'success':
         return html`
           ${this._renderCacheBar()}
+          ${this._renderDisclosureNotice()}
           <page-evaluator-report
             .report="${this._report}"
             .nodeId="${this.data?.nodeId ?? ''}"
@@ -269,6 +286,7 @@ export class EvaluationModalElement extends UmbModalBaseElement<EvaluationModalD
       case 'parse-failed':
         return html`
           ${this._renderCacheBar()}
+          ${this._renderDisclosureNotice()}
           <page-evaluator-warning
             .rawResponse="${this._report?.rawResponse ?? null}"></page-evaluator-warning>
         `;

@@ -120,6 +120,41 @@ public class PageEvaluationServiceTests
         Assert.Equal(2, report.Checks.Count);
     }
 
+    // 005 FR-015: a profile's own system prompt (Umbraco.AI 17.5+) can make the model wrap its JSON
+    // in prose or extra code blocks. Cases P2, P3, P5 and P8 from contracts/prompts-and-parsing.md.
+    [Theory]
+    [InlineData("Sure! Here's a friendly evaluation for you:\n{\"score\":{\"passed\":1,\"total\":2},\"checks\":[{\"checkNumber\":1,\"status\":\"Pass\",\"label\":\"Title\",\"explanation\":null},{\"checkNumber\":2,\"status\":\"Fail\",\"label\":\"Meta\",\"explanation\":\"Empty.\"}],\"suggestions\":null}")]
+    [InlineData("{\"score\":{\"passed\":1,\"total\":2},\"checks\":[{\"checkNumber\":1,\"status\":\"Pass\",\"label\":\"Title\",\"explanation\":null},{\"checkNumber\":2,\"status\":\"Fail\",\"label\":\"Meta\",\"explanation\":\"Empty.\"}],\"suggestions\":null}\n\nHappy to help further {just ask}!")]
+    [InlineData("For example, a good title looks like:\n```html\n<h1>{Brand} — Home</h1>\n```\nHere is the report:\n```json\n{\"score\":{\"passed\":1,\"total\":2},\"checks\":[{\"checkNumber\":1,\"status\":\"Pass\",\"label\":\"Title\",\"explanation\":null},{\"checkNumber\":2,\"status\":\"Fail\",\"label\":\"Meta\",\"explanation\":\"Empty.\"}],\"suggestions\":null}\n```")]
+    public async Task EvaluateAsync_WhenJsonIsWrappedInProseOrExtraBlocks_StillParses(string responseText)
+    {
+        const string documentTypeAlias = "blogPost";
+        _configService.GetActiveForDocumentTypeAsync(documentTypeAlias, Arg.Any<CancellationToken>())
+            .Returns(BuildConfig(documentTypeAlias));
+        MockChatResponse(responseText);
+
+        EvaluationReport report = await _sut.EvaluateAsync(Guid.NewGuid(), documentTypeAlias, new Dictionary<string, object?>());
+
+        Assert.False(report.ParseFailed);
+        Assert.Equal(2, report.Checks.Count);
+        Assert.Equal(CheckStatus.Fail, report.Checks[1].Status);
+        Assert.Equal(1, report.Score!.Passed);
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_WhenProfilePromptProducesProseOnly_FallsBackWithoutThrowing()
+    {
+        const string documentTypeAlias = "blogPost";
+        _configService.GetActiveForDocumentTypeAsync(documentTypeAlias, Arg.Any<CancellationToken>())
+            .Returns(BuildConfig(documentTypeAlias));
+        MockChatResponse("What a lovely page! The introduction is warm and the call to action {mostly} works.");
+
+        EvaluationReport report = await _sut.EvaluateAsync(Guid.NewGuid(), documentTypeAlias, new Dictionary<string, object?>());
+
+        Assert.True(report.ParseFailed);
+        Assert.Contains("lovely page", report.RawResponse);
+    }
+
     [Fact]
     public async Task EvaluateAsync_WhenJsonStatusIsLowercase_ParsesCorrectly()
     {
@@ -328,6 +363,44 @@ public class PageEvaluationServiceTests
                 msgs.Any(m => m.Role == ChatRole.System && m.Text != null
                     && m.Text.Contains("Tone Guidelines")
                     && m.Text.Contains("Always use active voice. Be concise."))),
+            Arg.Any<CancellationToken>());
+    }
+
+    // 005 FR-021 / US7: Umbraco.AI 17.4's live Content resource returns null data for an acting user without
+    // Browse access (ContentResourceType.ResolveDataAsync), and AIContextResourceTypeBase.FormatDataForLlm
+    // turns null into string.Empty. The evaluation must still succeed and send no restricted content.
+    [Fact]
+    public async Task EvaluateAsync_WhenAContentResourceIsNotVisibleToTheUser_SucceedsWithoutItsContent()
+    {
+        const string documentTypeAlias = "blogPost";
+        var contextId = Guid.NewGuid();
+        _configService.GetActiveForDocumentTypeAsync(documentTypeAlias, Arg.Any<CancellationToken>())
+            .Returns(BuildConfig(documentTypeAlias, contextId: contextId));
+
+        var resource = new AIContextResource
+        {
+            ResourceTypeId = "content",
+            Name = "Pricing page",
+            Description = null,
+            Settings = new { contentKey = Guid.NewGuid() },
+            InjectionMode = AIContextResourceInjectionMode.Always,
+        };
+        _contextService.GetContextAsync(contextId, Arg.Any<CancellationToken>())
+            .Returns(new AIContext { Alias = "live-content", Name = "Live content", Resources = { resource } });
+        _contextProcessor.ProcessResourceForLlmAsync(Arg.Any<AIResolvedResource>(), Arg.Any<CancellationToken>())
+            .Returns(string.Empty);
+
+        MockChatResponse("""{"score":{"passed":1,"total":1},"checks":[{"checkNumber":1,"status":"Pass","label":"T","explanation":null}],"suggestions":null}""");
+
+        EvaluationReport report = await _sut.EvaluateAsync(Guid.NewGuid(), documentTypeAlias, new Dictionary<string, object?>());
+
+        Assert.False(report.ParseFailed);
+        await _chatService.Received(1).GetChatResponseAsync(
+            Arg.Any<Action<AIChatBuilder>>(),
+            Arg.Is<IEnumerable<ChatMessage>>(msgs =>
+                msgs.Any(m => m.Role == ChatRole.System && m.Text != null
+                    && m.Text.Contains("### Pricing page")
+                    && !m.Text.Contains("contentKey"))),
             Arg.Any<CancellationToken>());
     }
 
@@ -1185,6 +1258,36 @@ public class PageEvaluationServiceTests
         var systemMsg = capturedMessages!.First(m => m.Role == ChatRole.System);
         // Schema must instruct the AI to produce an array, not the legacy singular string.
         Assert.Contains("propertyAliases", systemMsg.Text!);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task EvaluateAsync_SystemPrompt_HasThePrecedenceParagraphOnce_RightBeforeTheOutputFormat(bool scoring)
+    {
+        // 005 FR-017 / QS-8: a profile system prompt (prepended by Umbraco.AI) must not override the
+        // evaluator's output format, language or tone.
+        const string documentTypeAlias = "blogPost";
+        AIEvaluatorConfig config = BuildConfig(documentTypeAlias, scoringEnabled: scoring);
+        _configService.GetActiveForDocumentTypeAsync(documentTypeAlias, Arg.Any<CancellationToken>()).Returns(config);
+
+        string prompt = string.Empty;
+        _chatService.GetChatResponseAsync(
+                Arg.Any<Action<AIChatBuilder>>(),
+                Arg.Do<IEnumerable<ChatMessage>>(msgs => prompt = msgs.First(m => m.Role == ChatRole.System).Text ?? string.Empty),
+                Arg.Any<CancellationToken>())
+            .Returns(new ChatResponse(new ChatMessage(ChatRole.Assistant,
+                """{"score":{"passed":1,"total":1},"checks":[{"checkNumber":1,"status":"Pass","label":"T","explanation":null}],"suggestions":null}""")));
+
+        await _sut.EvaluateAsync(Guid.NewGuid(), documentTypeAlias, new Dictionary<string, object?>());
+
+        int first = prompt.IndexOf(PromptRules.Precedence, StringComparison.Ordinal);
+        Assert.True(first >= 0, "The precedence paragraph is missing.");
+        Assert.Equal(first, prompt.LastIndexOf(PromptRules.Precedence, StringComparison.Ordinal));
+        // The admin's evaluator prompt keeps its own criteria: the paragraph comes after it.
+        Assert.True(prompt.IndexOf(config.PromptText, StringComparison.Ordinal) < first);
+        string between = prompt[(first + PromptRules.Precedence.Length)..prompt.IndexOf("--- REQUIRED OUTPUT FORMAT ---", StringComparison.Ordinal)];
+        Assert.True(string.IsNullOrWhiteSpace(between), $"Expected only whitespace before the output format, got: {between}");
     }
 
     // ---------------------------------------------------------------------------
