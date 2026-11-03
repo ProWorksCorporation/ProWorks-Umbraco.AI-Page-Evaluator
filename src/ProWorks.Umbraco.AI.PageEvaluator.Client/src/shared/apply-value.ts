@@ -1,4 +1,5 @@
 import { UmbVariantId } from '@umbraco-cms/backoffice/variant';
+import { UmbDataPathPropertyValueQuery } from '@umbraco-cms/backoffice/validation';
 import type { UMB_DOCUMENT_WORKSPACE_CONTEXT } from '@umbraco-cms/backoffice/document';
 import { createEmptyBlocks, normaliseBlockMarkup, type RichTextBlocks } from './rte-blocks.js';
 
@@ -65,12 +66,21 @@ function currentBlocks(value: unknown): RichTextBlocks | null {
   return isRichTextBlocks(value.blocks) ? value.blocks : null;
 }
 
+/** The part of the workspace's validation messages manager (`UMB_VALIDATION_CONTEXT.TYPE.messages`) Apply needs. */
+export interface ValidationMessageRemover {
+  removeMessagesByPath(path: string): void;
+}
+
 /**
  * Applies `value` to the property `alias`.
  *
  * @param viewedCulture The culture the editor is viewing, or `null`. It is only used when both the
  *   document and the property vary by culture; otherwise the invariant slot is written (writing a
  *   culture to an invariant property would create a stray variant entry).
+ * @param validationMessages The workspace's validation messages. After a successful write, the messages at the
+ *   property's data path are removed: `umb-property` pushes a programmatic value into the editor without telling its
+ *   server-validation binder, so an earlier "Value cannot be empty" would otherwise stay on the field after Apply
+ *   (typing clears it through the control's `change` event). The next Save validates again.
  * @returns `true` on success, `false` if the workspace rejected the write. Existing content is untouched on failure.
  */
 export async function applyRecommendedValue(
@@ -79,6 +89,7 @@ export async function applyRecommendedValue(
   editorAlias: string | undefined,
   value: unknown,
   viewedCulture: string | null,
+  validationMessages?: ValidationMessageRemover,
 ): Promise<boolean> {
   try {
     const property = await ctx.structure.getPropertyStructureByAlias(alias);
@@ -102,6 +113,10 @@ export async function applyRecommendedValue(
     }
 
     await ctx.setPropertyValue(alias, writeValue, variantId);
+    // Same data path as core's content-workspace-property element.
+    validationMessages?.removeMessagesByPath(
+      `$.values[${UmbDataPathPropertyValueQuery({ alias, culture: variantId.culture, segment: variantId.segment })}].value`,
+    );
     return true;
   } catch {
     return false;

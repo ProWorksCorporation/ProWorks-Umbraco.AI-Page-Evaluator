@@ -461,7 +461,7 @@ public class PageEvaluatorApiControllerTests
         IActionResult result = await _sut.CreateConfigurationAsync(request);
 
         var unprocessable = Assert.IsType<UnprocessableEntityObjectResult>(result);
-        Assert.NotNull(unprocessable.Value);
+        AssertProblemDetailsLike(unprocessable, 422, "Evaluator configuration name is required.");
     }
 
     // ---------------------------------------------------------------------------
@@ -527,7 +527,7 @@ public class PageEvaluatorApiControllerTests
         IActionResult result = await _sut.UpdateConfigurationAsync(id, request);
 
         var conflict = Assert.IsType<ConflictObjectResult>(result);
-        Assert.NotNull(conflict.Value);
+        AssertProblemDetailsLike(conflict, 409);
     }
 
     [Fact]
@@ -570,7 +570,7 @@ public class PageEvaluatorApiControllerTests
 
         IActionResult result = await _sut.UpdateConfigurationAsync(id, request);
 
-        Assert.IsType<UnprocessableEntityObjectResult>(result);
+        AssertProblemDetailsLike(Assert.IsType<UnprocessableEntityObjectResult>(result), 422, "Name is required.");
     }
 
     [Fact]
@@ -995,6 +995,22 @@ public class PageEvaluatorApiControllerTests
     // ---------------------------------------------------------------------------
     // Helpers
     // ---------------------------------------------------------------------------
+
+    /// <summary>
+    /// Umbraco's backoffice interceptor discards any non-2xx (non-401/403/404) body that lacks <c>type</c>,
+    /// <c>title</c> and <c>status</c> and shows a generic "fatal server error" instead (see CLAUDE.md, Controller).
+    /// </summary>
+    private static void AssertProblemDetailsLike(ObjectResult result, int status, string? title = null)
+    {
+        using System.Text.Json.JsonDocument doc = System.Text.Json.JsonDocument.Parse(System.Text.Json.JsonSerializer.Serialize(result.Value));
+        System.Text.Json.JsonElement root = doc.RootElement;
+        Assert.Equal("Error", root.GetProperty("type").GetString());
+        Assert.Equal(status, root.GetProperty("status").GetInt32());
+        string? actualTitle = root.GetProperty("title").GetString();
+        Assert.False(string.IsNullOrWhiteSpace(actualTitle));
+        if (title is not null)
+            Assert.Equal(title, actualTitle);
+    }
 
     private static AIEvaluatorConfig BuildConfig(string documentTypeAlias)
         => new()
@@ -1788,7 +1804,7 @@ public class PageEvaluatorApiControllerTests
             CheckLabel = "Test",
         });
 
-        Assert.IsType<BadRequestObjectResult>(result);
+        AssertProblemDetailsLike(Assert.IsType<BadRequestObjectResult>(result), 400);
     }
 
     [Fact]
@@ -1865,7 +1881,7 @@ public class PageEvaluatorApiControllerTests
             CheckLabel = "Some check",
         });
 
-        Assert.IsType<BadRequestObjectResult>(result);
+        AssertProblemDetailsLike(Assert.IsType<BadRequestObjectResult>(result), 400);
     }
 
     [Fact]

@@ -1,6 +1,7 @@
 import { html, css, nothing, type TemplateResult, customElement, state } from '@umbraco-cms/backoffice/external/lit';
 import { UmbModalBaseElement } from '@umbraco-cms/backoffice/modal';
 import { UMB_DOCUMENT_WORKSPACE_CONTEXT } from '@umbraco-cms/backoffice/document';
+import { UMB_VALIDATION_CONTEXT } from '@umbraco-cms/backoffice/validation';
 import { ApiError, getCachedEvaluation, evaluatePage } from '../shared/api-client.js';
 import { localizationKeyForError, shouldHideErrorDetail } from '../shared/error-category.js';
 import type { EvaluationReportResponse } from '../shared/types.js';
@@ -69,6 +70,8 @@ export class EvaluationModalElement extends UmbModalBaseElement<EvaluationModalD
   @state() private _errorType: string | null = null;
   private _inFlight = false;
   private _workspaceContext: typeof UMB_DOCUMENT_WORKSPACE_CONTEXT.TYPE | undefined;
+  /** The document workspace's validation context (resolved through the workspace action that opened the modal). */
+  private _validationContext: typeof UMB_VALIDATION_CONTEXT.TYPE | undefined;
 
   private readonly _onRecApply = (e: Event): void => {
     const detail = (e as CustomEvent<RecApplyEventDetail>).detail;
@@ -81,6 +84,9 @@ export class EvaluationModalElement extends UmbModalBaseElement<EvaluationModalD
     super.connectedCallback();
     this.consumeContext(UMB_DOCUMENT_WORKSPACE_CONTEXT, (ctx) => {
       this._workspaceContext = ctx;
+    });
+    this.consumeContext(UMB_VALIDATION_CONTEXT, (ctx) => {
+      this._validationContext = ctx;
     });
     this.addEventListener('page-evaluator-rec-apply', this._onRecApply);
     void this._checkCacheAndLoad();
@@ -208,6 +214,8 @@ export class EvaluationModalElement extends UmbModalBaseElement<EvaluationModalD
           detail.value,
           // FR-018c: the helper writes the viewed culture only for culture-varying properties.
           this.data?.culture ?? null,
+          // Clears the field's stale validation messages after the write (QS-3 l).
+          this._validationContext?.messages,
         )
       : false;
     if (ok || !this.isConnected) return;

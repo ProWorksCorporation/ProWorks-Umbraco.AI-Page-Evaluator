@@ -174,3 +174,43 @@ describe('applyRecommendedValue — culture targeting (FR-018c)', () => {
     expect(getPropertyValue.mock.calls[0]?.[1]?.culture).toBe('da-DK');
   });
 });
+
+describe('applyRecommendedValue — stale validation messages (QS-3 l, CMS 17.8 validation)', () => {
+  // umb-property pushes a programmatic value into the editor without telling its server-validation binder, so a
+  // "Value cannot be empty" from an earlier Save stayed on the field after Apply (typing clears it via 'change').
+  // The helper removes the messages at the property's data path — the path core builds with
+  // UmbDataPathPropertyValueQuery — and the next Save validates again.
+  const remover = () => ({ removeMessagesByPath: vi.fn((_path: string): void => undefined) });
+
+  it('removes the messages of the written culture variant', async () => {
+    const { ctx } = fakeContext({ documentVariesByCulture: true, properties: [{ alias: 'title', variesByCulture: true }] });
+    const messages = remover();
+
+    await applyRecommendedValue(asCtx(ctx), 'title', 'Umbraco.TextBox', 'Hej', 'da-DK', messages);
+
+    expect(messages.removeMessagesByPath).toHaveBeenCalledWith(
+      "$.values[?(@.alias == 'title' && @.culture == 'da-DK' && @.segment == null)].value",
+    );
+  });
+
+  it('removes the invariant slot’s messages for an invariant property', async () => {
+    const { ctx } = fakeContext({ documentVariesByCulture: true, properties: [{ alias: 'sku', variesByCulture: false }] });
+    const messages = remover();
+
+    await applyRecommendedValue(asCtx(ctx), 'sku', 'Umbraco.TextBox', 'ABC', 'da-DK', messages);
+
+    expect(messages.removeMessagesByPath).toHaveBeenCalledWith(
+      "$.values[?(@.alias == 'sku' && @.culture == null && @.segment == null)].value",
+    );
+  });
+
+  it('leaves the messages alone when the write fails', async () => {
+    const { ctx } = fakeContext({ properties: [{ alias: 'title', variesByCulture: false }], setThrows: true });
+    const messages = remover();
+
+    const ok = await applyRecommendedValue(asCtx(ctx), 'title', 'Umbraco.TextBox', 'x', null, messages);
+
+    expect(ok).toBe(false);
+    expect(messages.removeMessagesByPath).not.toHaveBeenCalled();
+  });
+});

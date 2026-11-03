@@ -1,26 +1,27 @@
-import { css as k, property as v, state as m, customElement as A, nothing as c, html as o } from "@umbraco-cms/backoffice/external/lit";
-import { UmbModalBaseElement as F } from "@umbraco-cms/backoffice/modal";
-import { UMB_DOCUMENT_WORKSPACE_CONTEXT as T } from "@umbraco-cms/backoffice/document";
-import { r as N, A as w, g as M, e as D } from "./entry-point-BftmZJyD.js";
-import { l as C, s as B } from "./error-category-TUEjuh5i.js";
-import { UmbVariantId as O } from "@umbraco-cms/backoffice/variant";
+import { css as k, property as v, state as h, customElement as A, nothing as c, html as o } from "@umbraco-cms/backoffice/external/lit";
+import { UmbModalBaseElement as T } from "@umbraco-cms/backoffice/modal";
+import { UMB_DOCUMENT_WORKSPACE_CONTEXT as F } from "@umbraco-cms/backoffice/document";
+import { UmbDataPathPropertyValueQuery as N, UMB_VALIDATION_CONTEXT as M } from "@umbraco-cms/backoffice/validation";
+import { r as D, A as w, g as B, e as O } from "./entry-point-DOo7Wyva.js";
+import { l as C, s as I } from "./error-category-TUEjuh5i.js";
+import { UmbVariantId as L } from "@umbraco-cms/backoffice/variant";
 import { UmbLitElement as E } from "@umbraco-cms/backoffice/lit-element";
-function I() {
+function U() {
   return { layout: {}, contentData: [], settingsData: [], expose: [] };
 }
-const S = /<umb-rte-block(?:-inline)?\b[^>]*>/gi, L = /\bdata-content-(?:key|id)\s*=\s*"([^"]*)"/i, U = /(<umb-rte-block(-inline)?\b[^>]*>)\s*(<\/umb-rte-block\2>)/gi;
+const S = /<umb-rte-block(?:-inline)?\b[^>]*>/gi, j = /\bdata-content-(?:key|id)\s*=\s*"([^"]*)"/i, V = /(<umb-rte-block(-inline)?\b[^>]*>)\s*(<\/umb-rte-block\2>)/gi;
 function P(e) {
   const t = [];
   for (const i of e.matchAll(S)) {
-    const r = L.exec(i[0])?.[1];
+    const r = j.exec(i[0])?.[1];
     r && t.push(r);
   }
   return t;
 }
-function j(e) {
-  return e.replace(S, (t) => t.replace(/\bdata-content-id(\s*=)/i, "data-content-key$1")).replace(U, "$1<!--Umbraco-Block-->$3");
+function W(e) {
+  return e.replace(S, (t) => t.replace(/\bdata-content-id(\s*=)/i, "data-content-key$1")).replace(V, "$1<!--Umbraco-Block-->$3");
 }
-function W(e, t) {
+function K(e, t) {
   const i = P(t), r = new Set(i);
   if (r.size !== i.length) return !1;
   const a = new Set(P(e));
@@ -29,11 +30,11 @@ function W(e, t) {
     if (!r.has(s)) return !1;
   return !0;
 }
-const K = /* @__PURE__ */ new Set(["Umbraco.RichText", "Umbraco.TinyMCE"]);
-function _(e) {
-  return e !== void 0 && K.has(e);
+const G = /* @__PURE__ */ new Set(["Umbraco.RichText", "Umbraco.TinyMCE"]);
+function y(e) {
+  return e !== void 0 && G.has(e);
 }
-function V(e) {
+function H(e) {
   let t;
   if (Array.isArray(e))
     t = e;
@@ -51,33 +52,35 @@ function V(e) {
   const i = t.map((r) => String(r).trim()).filter((r) => r.length > 0);
   return [...new Set(i)];
 }
-function G(e) {
+function X(e) {
   return typeof e == "object" && e !== null && "layout" in e && "contentData" in e && Array.isArray(e.contentData);
 }
-function H(e) {
-  return typeof e != "object" || e === null || !("blocks" in e) ? null : G(e.blocks) ? e.blocks : null;
+function Y(e) {
+  return typeof e != "object" || e === null || !("blocks" in e) ? null : X(e.blocks) ? e.blocks : null;
 }
-async function Y(e, t, i, r, a) {
+async function q(e, t, i, r, a, s) {
   try {
-    const s = await e.structure.getPropertyStructureByAlias(t), n = a !== null && e.getVariesByCulture() === !0 && s?.variesByCulture === !0 ? a : null, l = O.Create({ culture: n, segment: null });
-    let h = r;
-    if (_(i)) {
-      const b = e.getPropertyValue(t, l);
-      h = {
+    const n = await e.structure.getPropertyStructureByAlias(t), l = a !== null && e.getVariesByCulture() === !0 && n?.variesByCulture === !0 ? a : null, m = L.Create({ culture: l, segment: null });
+    let f = r;
+    if (y(i)) {
+      const _ = e.getPropertyValue(t, m);
+      f = {
         // Recommendations for rich text are always HTML strings; anything else is not applicable markup.
-        markup: j(typeof r == "string" ? r : ""),
-        blocks: H(b) ?? I()
+        markup: W(typeof r == "string" ? r : ""),
+        blocks: Y(_) ?? U()
       };
-    } else i === "Umbraco.Tags" && (h = V(r));
-    return await e.setPropertyValue(t, h, l), !0;
+    } else i === "Umbraco.Tags" && (f = H(r));
+    return await e.setPropertyValue(t, f, m), s?.removeMessagesByPath(
+      `$.values[${N({ alias: t, culture: m.culture, segment: m.segment })}].value`
+    ), !0;
   } catch {
     return !1;
   }
 }
-var q = Object.defineProperty, J = Object.getOwnPropertyDescriptor, d = (e, t, i, r) => {
-  for (var a = r > 1 ? void 0 : r ? J(t, i) : t, s = e.length - 1, n; s >= 0; s--)
+var J = Object.defineProperty, Q = Object.getOwnPropertyDescriptor, d = (e, t, i, r) => {
+  for (var a = r > 1 ? void 0 : r ? Q(t, i) : t, s = e.length - 1, n; s >= 0; s--)
     (n = e[s]) && (a = (r ? n(t, i, a) : n(a)) || a);
-  return r && a && q(t, i, a), a;
+  return r && a && J(t, i, a), a;
 };
 let u = class extends E {
   constructor() {
@@ -96,7 +99,7 @@ let u = class extends E {
   }
   render() {
     if (!this.report) return c;
-    const { checks: e, suggestions: t, overallScore: i, axisScores: r } = this.report, a = i !== null || r !== null && r.length > 0, s = e.filter((p) => p.status === "Pass").length, n = e.filter((p) => p.status === "Warn").length, l = e.filter((p) => p.status === "Fail").length, h = e.length, b = e.filter((p) => p.status === "Fail" || p.status === "Warn"), y = e.filter((p) => p.status === "Pass");
+    const { checks: e, suggestions: t, overallScore: i, axisScores: r } = this.report, a = i !== null || r !== null && r.length > 0, s = e.filter((p) => p.status === "Pass").length, n = e.filter((p) => p.status === "Warn").length, l = e.filter((p) => p.status === "Fail").length, m = e.length, f = e.filter((p) => p.status === "Fail" || p.status === "Warn"), _ = e.filter((p) => p.status === "Pass");
     return o`
       ${this.report.samplingSettingsIgnored === !0 ? o`<div class="sampling-notice" role="status">
             <uui-icon name="icon-info"></uui-icon>
@@ -104,9 +107,9 @@ let u = class extends E {
           </div>` : c}
       ${a ? this._renderScoring(i, r) : c}
 
-      ${h > 0 ? o`
+      ${m > 0 ? o`
             <div class="score-row">
-              <span class="score-total">${h} ${this.localize.term("evaluatePage_reportChecks")}</span>
+              <span class="score-total">${m} ${this.localize.term("evaluatePage_reportChecks")}</span>
               <span class="score-pill score-pill--pass">
                 <uui-icon name="icon-check"></uui-icon>${s} ${this.localize.term("evaluatePage_reportPassed")}
               </span>
@@ -127,23 +130,23 @@ let u = class extends E {
             </uui-box>
           ` : c}
 
-      ${b.length > 0 ? o`
-            <p class="section-title">${this.localize.term("evaluatePage_reportAttentionItems")} (${b.length})</p>
+      ${f.length > 0 ? o`
+            <p class="section-title">${this.localize.term("evaluatePage_reportAttentionItems")} (${f.length})</p>
             <ul class="check-list">
-              ${b.map((p) => this._renderCheck(p))}
+              ${f.map((p) => this._renderCheck(p))}
             </ul>
           ` : c}
 
-      ${y.length > 0 ? o`
-            <p class="section-title">${this.localize.term("evaluatePage_reportPassingItems")} (${y.length})</p>
+      ${_.length > 0 ? o`
+            <p class="section-title">${this.localize.term("evaluatePage_reportPassingItems")} (${_.length})</p>
             <ul class="check-list">
-              ${y.map((p) => this._renderCheck(p))}
+              ${_.map((p) => this._renderCheck(p))}
             </ul>
           ` : c}
     `;
   }
   _renderSuggestions(e) {
-    const t = te(e);
+    const t = ie(e);
     if (t.length === 1)
       return o`<p style="margin:0; font-size: var(--uui-type-small-size, 0.875rem); line-height: 1.5;">${z(t[0] ?? "")}</p>`;
     const i = t[0] ?? "", r = i.endsWith(":"), a = r ? t.slice(1) : t;
@@ -159,7 +162,7 @@ let u = class extends E {
       ${e !== null ? o`
             <div class="overall-score-row">
               <span class="overall-score-label">${this.localize.term("evaluatePage_overallScore")}</span>
-              <uui-tag color=${Q(e)} look="primary">
+              <uui-tag color=${ee(e)} look="primary">
                 ${e.toFixed(1)} / 5
               </uui-tag>
             </div>
@@ -177,9 +180,9 @@ let u = class extends E {
   _renderAxis(e) {
     return o`
       <li class="axis-item">
-        <uui-tag color=${Z(e.score)} look="primary">${e.score} / 5</uui-tag>
+        <uui-tag color=${te(e.score)} look="primary">${e.score} / 5</uui-tag>
         <div class="axis-body">
-          <div class="axis-name">${X(e.name)}</div>
+          <div class="axis-name">${Z(e.name)}</div>
           ${e.feedback ? o`<div class="axis-feedback">${e.feedback}</div>` : c}
         </div>
       </li>
@@ -207,8 +210,8 @@ let u = class extends E {
    */
   _canApply(e, t) {
     const i = this.propertyEditorAliases[e];
-    if (_(i))
-      return t !== null && W(this._currentMarkup(e), t);
+    if (y(i))
+      return t !== null && K(this._currentMarkup(e), t);
     if (i !== void 0)
       return u._FULL_RECOMMEND_EDITORS.has(i) || this._isAdditionalEditor(i);
     const r = this.properties[e];
@@ -228,11 +231,11 @@ let u = class extends E {
   }
   /** The string sent to /recommend as a property's current value (rich text → its markup). */
   _recommendInputValue(e, t) {
-    return _(this.propertyEditorAliases[e]) ? this._currentMarkup(e) : typeof t == "string" ? t : JSON.stringify(t ?? "");
+    return y(this.propertyEditorAliases[e]) ? this._currentMarkup(e) : typeof t == "string" ? t : JSON.stringify(t ?? "");
   }
   _resolveCurrentValue(e) {
     const t = this.properties[e];
-    return t == null ? "" : typeof t == "string" ? t : Array.isArray(t) ? t.join(", ") : _(this.propertyEditorAliases[e]) ? this._currentMarkup(e) : "";
+    return t == null ? "" : typeof t == "string" ? t : Array.isArray(t) ? t.join(", ") : y(this.propertyEditorAliases[e]) ? this._currentMarkup(e) : "";
   }
   _recCurrentLabel(e) {
     const t = this.propertyNames[e];
@@ -249,7 +252,7 @@ let u = class extends E {
         <uui-icon
           class="check-icon"
           data-status="${e.status}"
-          name="${ee(e.status)}"></uui-icon>
+          name="${re(e.status)}"></uui-icon>
         <div class="check-body">
           <div class="check-label">${e.label}</div>
           ${e.explanation ? o`<div class="check-explanation">${e.explanation}</div>` : c}
@@ -308,15 +311,15 @@ let u = class extends E {
     }
   }
   _renderRecBox(e, t, i, r, a) {
-    const s = this._copiedAliases.get(e.checkNumber)?.has(t) ?? !1, n = this._applyFailedAliases.get(e.checkNumber)?.has(t) ?? !1, l = !a && i !== null && _(this.propertyEditorAliases[t]), h = this._resolveCurrentValue(t);
+    const s = this._copiedAliases.get(e.checkNumber)?.has(t) ?? !1, n = this._applyFailedAliases.get(e.checkNumber)?.has(t) ?? !1, l = !a && i !== null && y(this.propertyEditorAliases[t]), m = this._resolveCurrentValue(t);
     return o`
       <div class="rec-box ${r ? "applied" : ""}">
-        ${h ? o`
+        ${m ? o`
               <div class="rec-current-label">
                 <uui-icon name="icon-edit"></uui-icon>
                 ${this._recCurrentLabel(t)}
               </div>
-              <div class="rec-current-text">${h}</div>
+              <div class="rec-current-text">${m}</div>
               <hr class="rec-section-divider" />
             ` : c}
         <div class="rec-label ${r ? "applied" : ""}">
@@ -387,7 +390,7 @@ let u = class extends E {
       )
     };
     try {
-      const i = await N(t);
+      const i = await D(t);
       if (!this.isConnected) return;
       this._setRecState(e.checkNumber, { kind: "result", values: i.recommendedValues });
     } catch (i) {
@@ -762,30 +765,30 @@ d([
   v({ attribute: !1 })
 ], u.prototype, "recommendationsEnabled", 2);
 d([
-  m()
+  h()
 ], u.prototype, "_recStates", 2);
 d([
-  m()
+  h()
 ], u.prototype, "_appliedAliases", 2);
 d([
-  m()
+  h()
 ], u.prototype, "_copiedAliases", 2);
 d([
-  m()
+  h()
 ], u.prototype, "_applyFailedAliases", 2);
 u = d([
   A("page-evaluator-report")
 ], u);
-function X(e) {
+function Z(e) {
   return e.replace(/_/g, " ").replace(/\b\w/g, (t) => t.toUpperCase());
 }
-function Q(e) {
+function ee(e) {
   return e >= 4 ? "positive" : e >= 2.5 ? "warning" : "danger";
 }
-function Z(e) {
+function te(e) {
   return e >= 4 ? "positive" : e >= 3 ? "warning" : "danger";
 }
-function ee(e) {
+function re(e) {
   switch (e) {
     case "Pass":
       return "icon-check";
@@ -795,7 +798,7 @@ function ee(e) {
       return "icon-alert";
   }
 }
-function te(e) {
+function ie(e) {
   const t = e.split(`
 `).map((l) => l.trim()).filter(Boolean), i = t.filter((l) => /^\d+\.\s+/.test(l));
   if (i.length > 1)
@@ -816,10 +819,10 @@ function z(e) {
   const t = e.split(/\*\*([^*]+)\*\*/g);
   return o`${t.map((i, r) => r % 2 === 1 ? o`<strong>${i}</strong>` : i)}`;
 }
-var re = Object.defineProperty, ie = Object.getOwnPropertyDescriptor, R = (e, t, i, r) => {
-  for (var a = r > 1 ? void 0 : r ? ie(t, i) : t, s = e.length - 1, n; s >= 0; s--)
+var ae = Object.defineProperty, se = Object.getOwnPropertyDescriptor, R = (e, t, i, r) => {
+  for (var a = r > 1 ? void 0 : r ? se(t, i) : t, s = e.length - 1, n; s >= 0; s--)
     (n = e[s]) && (a = (r ? n(t, i, a) : n(a)) || a);
-  return r && a && re(t, i, a), a;
+  return r && a && ae(t, i, a), a;
 };
 let x = class extends E {
   constructor() {
@@ -875,17 +878,17 @@ R([
 x = R([
   A("page-evaluator-warning")
 ], x);
-var ae = Object.defineProperty, se = Object.getOwnPropertyDescriptor, f = (e, t, i, r) => {
-  for (var a = r > 1 ? void 0 : r ? se(t, i) : t, s = e.length - 1, n; s >= 0; s--)
+var oe = Object.defineProperty, ne = Object.getOwnPropertyDescriptor, b = (e, t, i, r) => {
+  for (var a = r > 1 ? void 0 : r ? ne(t, i) : t, s = e.length - 1, n; s >= 0; s--)
     (n = e[s]) && (a = (r ? n(t, i, a) : n(a)) || a);
-  return r && a && ae(t, i, a), a;
+  return r && a && oe(t, i, a), a;
 };
 const $ = {
   sending: "evaluatePage_progressSendingData",
   waiting: "evaluatePage_progressWaitingForAI",
   rendering: "evaluatePage_progressRendering"
 };
-let g = class extends F {
+let g = class extends T {
   constructor() {
     super(...arguments), this._modalState = "idle", this._progressKey = "", this._report = null, this._errorDetail = null, this._errorCategory = null, this._errorType = null, this._inFlight = !1, this._onRecApply = (e) => {
       const t = e.detail;
@@ -893,8 +896,10 @@ let g = class extends F {
     };
   }
   connectedCallback() {
-    super.connectedCallback(), this.consumeContext(T, (e) => {
+    super.connectedCallback(), this.consumeContext(F, (e) => {
       this._workspaceContext = e;
+    }), this.consumeContext(M, (e) => {
+      this._validationContext = e;
     }), this.addEventListener("page-evaluator-rec-apply", this._onRecApply), this._checkCacheAndLoad();
   }
   disconnectedCallback() {
@@ -908,7 +913,7 @@ let g = class extends F {
         return;
       }
       try {
-        const t = await M(e.nodeId, e.culture);
+        const t = await B(e.nodeId, e.culture);
         if (t) {
           if (!this.isConnected) return;
           this._report = t, this._modalState = t.parseFailed ? "parse-failed" : "success";
@@ -930,7 +935,7 @@ let g = class extends F {
     try {
       if (this._modalState = "loading", this._progressKey = $.sending, await this._tick(), !this.isConnected) return;
       this._progressKey = $.waiting;
-      const t = await D({
+      const t = await O({
         nodeId: e.nodeId,
         documentTypeAlias: e.documentTypeAlias,
         culture: e.culture,
@@ -940,7 +945,7 @@ let g = class extends F {
       this._report = t, this._modalState = t.parseFailed ? "parse-failed" : "success";
     } catch (t) {
       if (!this.isConnected) return;
-      const i = t instanceof w ? t : null, r = i?.type ?? null, a = i?.category ?? null, s = B({ type: r });
+      const i = t instanceof w ? t : null, r = i?.type ?? null, a = i?.category ?? null, s = I({ type: r });
       !s && i?.status === 422 ? (this._modalState = "guardrail-blocked", this._errorDetail = i.detail) : (this._modalState = "error", this._errorDetail = s ? null : i?.detail ?? null, this._errorCategory = a, this._errorType = r);
     } finally {
       this._inFlight = !1;
@@ -973,13 +978,15 @@ let g = class extends F {
    */
   async _applyRecommendation(e, t) {
     const i = this._workspaceContext;
-    i && await Y(
+    i && await q(
       i,
       t.propertyAlias,
       this._report?.propertyEditorAliases[t.propertyAlias],
       t.value,
       // FR-018c: the helper writes the viewed culture only for culture-varying properties.
-      this.data?.culture ?? null
+      this.data?.culture ?? null,
+      // Clears the field's stale validation messages after the write (QS-3 l).
+      this._validationContext?.messages
     ) || !this.isConnected || e?.dispatchEvent(
       new CustomEvent("page-evaluator-rec-apply-failed", {
         detail: { propertyAlias: t.propertyAlias, checkNumber: t.checkNumber }
@@ -1125,28 +1132,28 @@ g.styles = k`
       color: var(--uui-color-danger-contrast, #fff);
     }
   `;
-f([
-  m()
+b([
+  h()
 ], g.prototype, "_modalState", 2);
-f([
-  m()
+b([
+  h()
 ], g.prototype, "_progressKey", 2);
-f([
-  m()
+b([
+  h()
 ], g.prototype, "_report", 2);
-f([
-  m()
+b([
+  h()
 ], g.prototype, "_errorDetail", 2);
-f([
-  m()
+b([
+  h()
 ], g.prototype, "_errorCategory", 2);
-f([
-  m()
+b([
+  h()
 ], g.prototype, "_errorType", 2);
-g = f([
+g = b([
   A("page-evaluator-modal")
 ], g);
 export {
   g as EvaluationModalElement
 };
-//# sourceMappingURL=evaluation-modal.element-hpH5lzHq.js.map
+//# sourceMappingURL=evaluation-modal.element-wQcSNUUS.js.map

@@ -166,7 +166,7 @@ public sealed partial class PageEvaluatorApiController : ControllerBase
         }
         catch (ArgumentException ex)
         {
-            return UnprocessableEntity(new { errors = new Dictionary<string, string[]> { [ex.ParamName ?? "config"] = [ex.Message] } });
+            return UnprocessableEntity(new { type = "Error", title = ex.Message, status = StatusCodes.Status422UnprocessableEntity, errors = new Dictionary<string, string[]> { [ex.ParamName ?? "config"] = [ex.Message] } });
         }
     }
 
@@ -213,7 +213,8 @@ public sealed partial class PageEvaluatorApiController : ControllerBase
         }
         catch (DbUpdateConcurrencyException)
         {
-            return Conflict(new { title = "This configuration was modified by another user. Please reload and try again." });
+            // type/title/status: without them the backoffice interceptor replaces the body with its generic "fatal server error".
+            return Conflict(new { type = "Error", title = "This configuration was modified by another user. Please reload and try again.", status = StatusCodes.Status409Conflict });
         }
         catch (InvalidOperationException ex)
         {
@@ -221,7 +222,7 @@ public sealed partial class PageEvaluatorApiController : ControllerBase
         }
         catch (ArgumentException ex)
         {
-            return UnprocessableEntity(new { errors = new Dictionary<string, string[]> { [ex.ParamName ?? "config"] = [ex.Message] } });
+            return UnprocessableEntity(new { type = "Error", title = ex.Message, status = StatusCodes.Status422UnprocessableEntity, errors = new Dictionary<string, string[]> { [ex.ParamName ?? "config"] = [ex.Message] } });
         }
     }
 
@@ -454,7 +455,7 @@ public sealed partial class PageEvaluatorApiController : ControllerBase
             return cultureError;
 
         if (request.PropertyAliases.Count == 0)
-            return BadRequest(new { title = "PropertyAliases must contain at least one alias." });
+            return BadRequest(new { type = "Error", title = "PropertyAliases must contain at least one alias.", status = StatusCodes.Status400BadRequest });
 
         IContentType? contentType = _contentTypeService.Get(content.ContentType.Alias);
 
@@ -465,7 +466,7 @@ public sealed partial class PageEvaluatorApiController : ControllerBase
             IPropertyType? propType = contentType?.CompositionPropertyTypes
                 .FirstOrDefault(p => p.Alias == alias);
             if (propType is null)
-                return BadRequest(new { title = $"Property '{alias}' not found on document type '{content.ContentType.Alias}'." });
+                return BadRequest(new { type = "Error", title = $"Property '{alias}' not found on document type '{content.ContentType.Alias}'.", status = StatusCodes.Status400BadRequest });
             propertyTypes[alias] = propType;
         }
 
