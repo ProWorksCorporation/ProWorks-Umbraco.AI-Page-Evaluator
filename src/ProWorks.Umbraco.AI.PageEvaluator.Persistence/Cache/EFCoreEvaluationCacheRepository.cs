@@ -46,7 +46,9 @@ public sealed class EFCoreEvaluationCacheRepository : IEvaluationCacheRepository
             Culture = entity.Culture,
             DocumentTypeAlias = entity.DocumentTypeAlias,
             Report = report,
-            CachedAt = entity.CachedAt,
+            // Always written as DateTime.UtcNow, but providers read it back as Kind = Unspecified; without this the
+            // cached response has no "Z" and the browser shows "Last evaluated" off by the UTC offset.
+            CachedAt = DateTime.SpecifyKind(entity.CachedAt, DateTimeKind.Utc),
         };
     }
 
@@ -57,10 +59,20 @@ public sealed class EFCoreEvaluationCacheRepository : IEvaluationCacheRepository
         using IEfCoreScope<UmbracoAIPageEvaluatorDbContext> scope = _scopeProvider.CreateScope();
         await scope.ExecuteWithContextAsync<object?>(async db =>
         {
-            EvaluationCacheEntity? existing = await db.EvaluationCache
-                .FirstOrDefaultAsync(e => e.NodeId == entry.NodeId && e.Culture == entry.Culture, cancellationToken);
+            // Write first, never read-then-write: on SQLite, Umbraco's scope transactions are deferred, and this save
+            // runs right after the AI call — exactly when Umbraco.AI's background jobs (CompleteAuditLog, RecordUsage)
+            // commit. A transaction that has already read can't upgrade to a write once another connection has
+            // committed (SQLITE_BUSY_SNAPSHOT), and Microsoft.Data.Sqlite retries that until the 30 s command timeout,
+            // failing the evaluation. A first statement that writes takes the write lock directly.
+            int updated = await db.EvaluationCache
+                .Where(e => e.NodeId == entry.NodeId && e.Culture == entry.Culture)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(e => e.DocumentTypeAlias, entry.DocumentTypeAlias)
+                    .SetProperty(e => e.ReportJson, reportJson)
+                    .SetProperty(e => e.CachedAt, entry.CachedAt),
+                    cancellationToken);
 
-            if (existing is null)
+            if (updated == 0)
             {
                 db.EvaluationCache.Add(new EvaluationCacheEntity
                 {
@@ -70,15 +82,9 @@ public sealed class EFCoreEvaluationCacheRepository : IEvaluationCacheRepository
                     ReportJson = reportJson,
                     CachedAt = entry.CachedAt,
                 });
-            }
-            else
-            {
-                existing.DocumentTypeAlias = entry.DocumentTypeAlias;
-                existing.ReportJson = reportJson;
-                existing.CachedAt = entry.CachedAt;
+                await db.SaveChangesAsync(cancellationToken);
             }
 
-            await db.SaveChangesAsync(cancellationToken);
             return null;
         });
 

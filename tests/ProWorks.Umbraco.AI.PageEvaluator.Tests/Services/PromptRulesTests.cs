@@ -27,6 +27,6 @@ public class PromptRulesTests
     {
         // Both prompts insert it with one AppendLine; a line break would split it from the rules it introduces.
         Assert.DoesNotContain('\n', PromptRules.Precedence);
-        Assert.Equal(PromptRules.Precedence.Trim(), PromptRules.Precedence);
+        Assert.Equal(PromptRules.Precedence, PromptRules.Precedence.Trim());
     }
 }
