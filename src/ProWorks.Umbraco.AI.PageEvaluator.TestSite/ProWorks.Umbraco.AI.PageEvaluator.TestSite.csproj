@@ -7,18 +7,20 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Umbraco.AI.Agent" Version="17.1.7" />
-    <PackageReference Include="Umbraco.AI.Agent.Copilot" Version="17.0.5" />
-    <PackageReference Include="Umbraco.AI.Anthropic" Version="17.1.0" />
-    <PackageReference Include="Umbraco.AI.OpenAI" Version="17.2.0" />
-    <PackageReference Include="Umbraco.AI.Prompt" Version="17.2.3" />
-    <PackageReference Include="Umbraco.AI.Startup" Version="17.3.5" />
-    <PackageReference Include="Umbraco.Cms" Version="17.6.2" />
-    <PackageReference Include="Umbraco.Cms.DevelopmentMode.Backoffice" Version="17.6.2" />
-    <PackageReference Include="Umbraco.AI" Version="17.3.5" />
-    <PackageReference Include="uSync" Version="17.3.5" />
-    <!-- Pin Microsoft.Extensions.AI packages to 10.7.0 — required by Umbraco.AI.Core 17.0.0
-         (range [10.7.0, 10.999.999)) and Anthropic 12.29.1. All three packages must be the same version. -->
+    <!-- Latest mutually compatible Umbraco.AI set for CMS 17.8 (005 FR-005): Agent 17.4.1 needs
+         Umbraco.AI.Startup >= 17.6.1, and the Umbraco.AI 17.6.1 meta-package pins Startup to exactly [17.6.1]. -->
+    <PackageReference Include="Umbraco.AI.Agent" Version="17.4.1" />
+    <PackageReference Include="Umbraco.AI.Agent.Copilot" Version="17.2.0" />
+    <PackageReference Include="Umbraco.AI.Anthropic" Version="17.1.3" />
+    <PackageReference Include="Umbraco.AI.OpenAI" Version="17.3.1" />
+    <PackageReference Include="Umbraco.AI.Prompt" Version="17.4.0" />
+    <PackageReference Include="Umbraco.AI.Startup" Version="17.6.1" />
+    <PackageReference Include="Umbraco.Cms" Version="17.8.0" />
+    <PackageReference Include="Umbraco.Cms.DevelopmentMode.Backoffice" Version="17.8.0" />
+    <PackageReference Include="Umbraco.AI" Version="17.6.1" />
+    <PackageReference Include="uSync" Version="17.5.2" />
+    <!-- Pin Microsoft.Extensions.AI packages to 10.7.0, required by Umbraco.AI.Core 17.6.1
+         (range [10.7.0, 11)) and Anthropic 12.29.1. All three packages must be the same version. -->
     <PackageReference Include="Microsoft.Extensions.AI" Version="10.7.0" />
     <PackageReference Include="Microsoft.Extensions.AI.Abstractions" Version="10.7.0" />
     <PackageReference Include="Microsoft.Extensions.AI.OpenAI" Version="10.7.0" />
@@ -33,7 +35,7 @@
 
   <ItemGroup>
     <!-- Required by dotnet-ef when this project is used as the startup project for migrations -->
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.10">
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.12">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>

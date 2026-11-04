@@ -41,6 +41,8 @@ public sealed class PageEvaluatorComposer : IComposer
         builder.Services.AddScoped<IPageEvaluationService, PageEvaluationService>();
         // Reads provider capability metadata only (no AI call); scoped like IAIProfileService's consumers.
         builder.Services.AddScoped<ISamplingSupportService, SamplingSupportService>();
+        // 005 FR-012: reads whether a profile has its own system prompt (Umbraco.AI 17.5+ sends it first).
+        builder.Services.AddScoped<IProfileSystemPromptService, ProfileSystemPromptService>();
         // FR-017: provider-enforced response schemas with a one-shot fallback; the support cache is
         // process-wide so a rejected profile version isn't retried on every request.
         builder.Services.AddSingleton<IStructuredOutputSupportCache, StructuredOutputSupportCache>();

@@ -1,6 +1,7 @@
 import { html, css, nothing, type TemplateResult, customElement, state } from '@umbraco-cms/backoffice/external/lit';
 import { UmbModalBaseElement } from '@umbraco-cms/backoffice/modal';
 import { UMB_DOCUMENT_WORKSPACE_CONTEXT } from '@umbraco-cms/backoffice/document';
+import { UMB_VALIDATION_CONTEXT } from '@umbraco-cms/backoffice/validation';
 import { ApiError, getCachedEvaluation, evaluatePage } from '../shared/api-client.js';
 import { localizationKeyForError, shouldHideErrorDetail } from '../shared/error-category.js';
 import type { EvaluationReportResponse } from '../shared/types.js';
@@ -48,6 +49,11 @@ export class EvaluationModalElement extends UmbModalBaseElement<EvaluationModalD
       color: var(--uui-color-text-alt, #666);
     }
 
+    /* 005 FR-019: Umbraco.AI's disclosure notice; takes no space while hidden (:host not [visible]). */
+    .disclosure-notice[visible] {
+      margin: var(--uui-size-space-3, 12px) 0;
+    }
+
     .error-container {
       padding: var(--uui-size-space-4, 16px);
       background: var(--uui-color-danger-standalone, #b91c1c);
@@ -64,6 +70,8 @@ export class EvaluationModalElement extends UmbModalBaseElement<EvaluationModalD
   @state() private _errorType: string | null = null;
   private _inFlight = false;
   private _workspaceContext: typeof UMB_DOCUMENT_WORKSPACE_CONTEXT.TYPE | undefined;
+  /** The document workspace's validation context (resolved through the workspace action that opened the modal). */
+  private _validationContext: typeof UMB_VALIDATION_CONTEXT.TYPE | undefined;
 
   private readonly _onRecApply = (e: Event): void => {
     const detail = (e as CustomEvent<RecApplyEventDetail>).detail;
@@ -76,6 +84,9 @@ export class EvaluationModalElement extends UmbModalBaseElement<EvaluationModalD
     super.connectedCallback();
     this.consumeContext(UMB_DOCUMENT_WORKSPACE_CONTEXT, (ctx) => {
       this._workspaceContext = ctx;
+    });
+    this.consumeContext(UMB_VALIDATION_CONTEXT, (ctx) => {
+      this._validationContext = ctx;
     });
     this.addEventListener('page-evaluator-rec-apply', this._onRecApply);
     void this._checkCacheAndLoad();
@@ -203,6 +214,8 @@ export class EvaluationModalElement extends UmbModalBaseElement<EvaluationModalD
           detail.value,
           // FR-018c: the helper writes the viewed culture only for culture-varying properties.
           this.data?.culture ?? null,
+          // Clears the field's stale validation messages after the write (QS-3 l).
+          this._validationContext?.messages,
         )
       : false;
     if (ok || !this.isConnected) return;
@@ -238,6 +251,17 @@ export class EvaluationModalElement extends UmbModalBaseElement<EvaluationModalD
     `;
   }
 
+  /**
+   * 005 FR-019/FR-020: Umbraco.AI's standard AI disclosure notice, shown wherever this modal shows AI output.
+   * The element is registered globally by Umbraco.AI's backoffice entry point (import map `@umbraco-ai/core`),
+   * like `<uai-profile-picker>`, so no import is needed. It follows the site-wide Always/Dismissible/Off
+   * setting itself and renders nothing when hidden. One `location` covers the report and its recommendation
+   * panels, so a single dismissal hides it for both.
+   */
+  private _renderDisclosureNotice(): TemplateResult {
+    return html`<uai-disclosure-notice class="disclosure-notice" location="page-evaluator"></uai-disclosure-notice>`;
+  }
+
   private _renderBody(): TemplateResult | typeof nothing {
     switch (this._modalState) {
       case 'idle':
@@ -254,6 +278,7 @@ export class EvaluationModalElement extends UmbModalBaseElement<EvaluationModalD
       case 'success':
         return html`
           ${this._renderCacheBar()}
+          ${this._renderDisclosureNotice()}
           <page-evaluator-report
             .report="${this._report}"
             .nodeId="${this.data?.nodeId ?? ''}"
@@ -269,6 +294,7 @@ export class EvaluationModalElement extends UmbModalBaseElement<EvaluationModalD
       case 'parse-failed':
         return html`
           ${this._renderCacheBar()}
+          ${this._renderDisclosureNotice()}
           <page-evaluator-warning
             .rawResponse="${this._report?.rawResponse ?? null}"></page-evaluator-warning>
         `;

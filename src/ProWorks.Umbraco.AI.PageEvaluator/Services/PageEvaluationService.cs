@@ -251,6 +251,8 @@ public sealed partial class PageEvaluationService : IPageEvaluationService
         sb.AppendLine();
         sb.AppendLine("For each check, set propertyAliases to an array of Umbraco property aliases that this check is about (e.g., [\"metaDescription\"], [\"pageTitle\", \"browserTitle\"]). Set propertyAliases to null or an empty array for structural or computed checks that do not map to any editable property (e.g., 'Page has no H1 tag').");
         sb.AppendLine();
+        // FR-017: after the admin's criteria, so it only overrides a profile prompt's tone/persona/language/format.
+        sb.AppendLine(PromptRules.Precedence);
         sb.AppendLine("--- REQUIRED OUTPUT FORMAT ---");
         sb.AppendLine("You MUST respond with ONLY a valid JSON object. Do not include any text, explanation, or markdown outside the JSON object.");
         if (config.ScoringEnabled)
@@ -319,8 +321,10 @@ public sealed partial class PageEvaluationService : IPageEvaluationService
 
     private static EvaluationReport? TryParseJson(string text)
     {
-        // Extract JSON from the response — handles preamble text before a code fence.
-        string stripped = ExtractJson(text.Trim());
+        // Extract the report object from the response: handles preambles, closing remarks with braces and
+        // extra code blocks (005 FR-015). No object with "checks" → fall through to the Markdown parser.
+        if (!JsonResponseExtractor.TryExtractObject(text, root => root.TryGetProperty("checks", out _), out string stripped))
+            return null;
 
         try
         {
@@ -436,43 +440,6 @@ public sealed partial class PageEvaluationService : IPageEvaluationService
         {
             return null;
         }
-    }
-
-    /// <summary>
-    /// Extracts a JSON object from arbitrary text.
-    /// Handles three cases in priority order:
-    /// 1. A ```json … ``` code fence anywhere in the text.
-    /// 2. A plain ``` … ``` code fence anywhere in the text.
-    /// 3. The substring from the first '{' to the last '}' (bare JSON).
-    /// Returns the original text unchanged when none of the patterns match.
-    /// </summary>
-    private static string ExtractJson(string text)
-    {
-        // 1 & 2: code fence (```json or ```) — search anywhere in the text.
-        int fenceStart = text.IndexOf("```json", StringComparison.OrdinalIgnoreCase);
-        if (fenceStart < 0)
-            fenceStart = text.IndexOf("```", StringComparison.Ordinal);
-
-        if (fenceStart >= 0)
-        {
-            int contentStart = text.IndexOf('\n', fenceStart);
-            if (contentStart >= 0)
-            {
-                contentStart++; // skip the newline itself
-                // The closing fence must come after the content start.
-                int fenceEnd = text.IndexOf("```", contentStart, StringComparison.Ordinal);
-                if (fenceEnd > contentStart)
-                    return text[contentStart..fenceEnd].Trim();
-            }
-        }
-
-        // 3: bare JSON — take from first '{' to last '}'.
-        int jsonStart = text.IndexOf('{');
-        int jsonEnd = text.LastIndexOf('}');
-        if (jsonStart >= 0 && jsonEnd > jsonStart)
-            return text[jsonStart..(jsonEnd + 1)].Trim();
-
-        return text;
     }
 
     /// <summary>

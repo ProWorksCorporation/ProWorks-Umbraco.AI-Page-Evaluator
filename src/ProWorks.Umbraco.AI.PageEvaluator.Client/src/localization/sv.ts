@@ -49,8 +49,6 @@ export default {
       "Den här språkversionen av sidan har inget innehåll ännu, så det finns inget att utvärdera.",
     invalidCultureMessage:
       "Det valda språket kunde inte utvärderas. Läs in sidan igen och försök på nytt.",
-    samplingVariesNotice:
-      "Den här rapporten togs fram av en AI-modell som inte stöder deterministiska svar, så poängen kan variera om du kör utvärderingen igen.",
     rteApplyBlockedMessage:
       "Det här förslaget skulle ta bort inbäddat innehåll (block eller media) från fältet, så det kan inte tillämpas automatiskt. Kopiera det och redigera manuellt i stället.",
     applyFailedMessage:
@@ -84,6 +82,9 @@ export default {
     // 003-upgrade-umbraco-17-6: sampling-support notice under the profile picker
     samplingVariesNotice:
       "Den valda AI-profilen använder en modell som inte stöder deterministiska svar. Utvärderingspoängen kan variera mellan körningar.",
+    // 005-upgrade-cms-17-8-ai-17-6: profile system-prompt notice under the profile picker
+    profileSystemPromptNotice:
+      "Den valda AI-profilen har en egen systemprompt. Umbraco.AI skickar den före utvärderarens instruktioner vid varje utvärdering och rekommendation, vilket kan ändra eller förstöra resultaten. Använd en dedikerad AI-profil utan systemprompt för Page Evaluator för att få förutsägbara resultat.",
     // Workspace: list
     sectionLabel: 'Sidutvärderare',
     listHeadline: 'Konfigurationer för sidutvärderare',

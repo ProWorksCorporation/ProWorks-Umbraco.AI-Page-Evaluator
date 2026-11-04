@@ -1,11 +1,14 @@
 import { customElement, state, property, html, css, nothing, type PropertyValues, type TemplateResult } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
+import { localizationKeyForError, shouldHideErrorDetail } from '../shared/error-category.js';
 import {
+  ApiError,
   apiClient,
   BEARER,
   createConfiguration,
   fetchDocTypeProperties,
   getConfiguration,
+  getProfileSystemPrompt,
   getSamplingSupport,
   updateConfiguration,
 } from '../shared/api-client.js';
@@ -45,6 +48,8 @@ export class EvaluatorFormElement extends UmbLitElement {
   @state() _errors: Record<string, string> = {};
   /** FR-015a: false when the selected profile's model ignores temperature; null = unknown/not loaded. */
   @state() _temperatureSupported: boolean | null = null;
+  /** 005 FR-012: true when the selected profile has its own system prompt; null = unknown/not loaded. */
+  @state() _profileHasSystemPrompt: boolean | null = null;
 
   @state() private _loadError: string | null = null;
   @state() private _promptBuilderOpen = false;
@@ -64,8 +69,9 @@ export class EvaluatorFormElement extends UmbLitElement {
       display: block;
     }
 
-    /* FR-015a notice: core's own inline-notice pattern (no alert element exists in 17.6; research R12.4). */
-    .sampling-notice {
+    /* Profile notices (sampling support FR-015a; 005 profile system prompt FR-012): core's own inline-notice
+       pattern — there is still no alert element in CMS 17.8 / UUI 2.1 (005 research R12). */
+    .profile-notice {
       display: flex;
       align-items: flex-start;
       gap: var(--uui-size-space-2);
@@ -78,7 +84,7 @@ export class EvaluatorFormElement extends UmbLitElement {
       font-size: var(--uui-type-small-size);
     }
 
-    .sampling-notice uui-icon {
+    .profile-notice uui-icon {
       flex-shrink: 0;
       margin-top: 2px;
     }
@@ -228,6 +234,7 @@ export class EvaluatorFormElement extends UmbLitElement {
     this._docTypeShowSuggestions = false;
     this._profileId = '';
     this._temperatureSupported = null;
+    this._profileHasSystemPrompt = null;
     this._contextId = '';
     this._promptText = '';
     this._scoringEnabled = false;
@@ -259,6 +266,8 @@ export class EvaluatorFormElement extends UmbLitElement {
       this._documentTypeAlias = config.documentTypeAlias;
       this._profileId = config.profileId;
       void this.refreshSamplingSupport(config.profileId);
+      // FR-013: re-checked on every open, so a prompt added to the profile after saving is still flagged.
+      void this.refreshProfileSystemPrompt(config.profileId);
       this._contextId = config.contextId ?? '';
       this._promptText = config.promptText;
       this._scoringEnabled = config.scoringEnabled;
@@ -312,7 +321,8 @@ export class EvaluatorFormElement extends UmbLitElement {
       });
       if (!this.isConnected) return;
       if (this._docTypeDisplayName !== query) return;
-      if (result.response.ok && result.data) {
+      // CMS 17.8+: `response` is optional on the result type (undefined when no HTTP response arrived).
+      if (result.response?.ok && result.data) {
         const data = result.data as { items: Array<{ id: string; name: string; alias?: string }> };
         this._docTypeSuggestions = data.items;
         this._docTypeShowSuggestions = data.items.length > 0;
@@ -332,7 +342,7 @@ export class EvaluatorFormElement extends UmbLitElement {
         url: `/umbraco/management/api/v1/document-type/${encodeURIComponent(id)}`,
       });
       if (!this.isConnected) return;
-      if (result.response.ok && result.data) {
+      if (result.response?.ok && result.data) {
         const detail = result.data as { alias: string };
         this._documentTypeAlias = detail.alias;
         this._propertyAliases = [];
@@ -355,7 +365,27 @@ export class EvaluatorFormElement extends UmbLitElement {
   private _onProfileChange(profileId: string): void {
     this._profileId = profileId;
     this._temperatureSupported = null;
-    if (profileId) void this.refreshSamplingSupport(profileId);
+    this._profileHasSystemPrompt = null;
+    if (profileId) {
+      void this.refreshSamplingSupport(profileId);
+      void this.refreshProfileSystemPrompt(profileId);
+    }
+  }
+
+  /**
+   * Loads whether the given profile has its own system prompt (005 FR-012/FR-013), which Umbraco.AI 17.5+
+   * sends ahead of the evaluator's instructions. Same stale-response rule as `refreshSamplingSupport`; any
+   * failure (including a network drop) just hides the notice — it is a background lookup (FR-010).
+   */
+  async refreshProfileSystemPrompt(profileId: string): Promise<void> {
+    try {
+      const { hasSystemPrompt } = await getProfileSystemPrompt(profileId);
+      if (!this.isConnected || this._profileId !== profileId) return;
+      this._profileHasSystemPrompt = hasSystemPrompt;
+    } catch {
+      if (!this.isConnected || this._profileId !== profileId) return;
+      this._profileHasSystemPrompt = null;
+    }
   }
 
   /**
@@ -423,8 +453,13 @@ export class EvaluatorFormElement extends UmbLitElement {
       );
     } catch (err: unknown) {
       if (!this.isConnected) return;
-      if (err instanceof Error) {
-        this._errors['_form'] = err.message;
+      // Reassign (never mutate) the @state object: this runs after an await, so an in-place write would not
+      // re-render and the save error (including the 409 conflict message) would never be shown.
+      if (err instanceof ApiError && shouldHideErrorDetail(err)) {
+        // 005 FR-010: a network drop (or gateway failure) gets the localized message, never raw text.
+        this._errors = { ...this._errors, _form: this.localize.term(localizationKeyForError(err, 'evaluatePage_connectivityMessage')) };
+      } else if (err instanceof Error) {
+        this._errors = { ...this._errors, _form: err.message };
       }
     } finally {
       this.dispatchEvent(new CustomEvent('evaluator-save-end', { bubbles: true, composed: true }));
@@ -532,9 +567,15 @@ export class EvaluatorFormElement extends UmbLitElement {
             </uai-profile-picker>
             ${this._errors['profileId'] ? html`<uui-form-validation-message>${this._errors['profileId']}</uui-form-validation-message>` : nothing}
             ${this._temperatureSupported === false
-              ? html`<div class="sampling-notice" role="status">
+              ? html`<div class="profile-notice" role="status">
                   <uui-icon name="icon-info"></uui-icon>
                   <span>${this.localize.term('evaluatorConfig_samplingVariesNotice')}</span>
+                </div>`
+              : nothing}
+            ${this._profileHasSystemPrompt === true
+              ? html`<div class="profile-notice" role="status">
+                  <uui-icon name="icon-info"></uui-icon>
+                  <span>${this.localize.term('evaluatorConfig_profileSystemPromptNotice')}</span>
                 </div>`
               : nothing}
           </div>

@@ -49,8 +49,6 @@ export default {
       "This language version of the page has no content yet, so there is nothing to evaluate.",
     invalidCultureMessage:
       "The selected language could not be evaluated. Reload the page and try again.",
-    samplingVariesNotice:
-      "This report was produced by an AI model that does not support deterministic output, so scores may vary if you re-run the evaluation.",
     rteApplyBlockedMessage:
       "This suggestion would remove embedded content (blocks or media) from the field, so it can't be applied automatically. Copy it and edit by hand instead.",
     applyFailedMessage:
@@ -84,6 +82,9 @@ export default {
     // 003-upgrade-umbraco-17-6: sampling-support notice under the profile picker
     samplingVariesNotice:
       "The selected AI profile uses a model that does not support deterministic output. Evaluation scores may vary between re-runs.",
+    // 005-upgrade-cms-17-8-ai-17-6: profile system-prompt notice under the profile picker
+    profileSystemPromptNotice:
+      "The selected AI profile has its own system prompt. Umbraco.AI sends it ahead of the evaluator's instructions on every evaluation and recommendation, which can change or break the results. For predictable results, use a dedicated AI profile with no system prompt for the Page Evaluator.",
     // Workspace: list
     sectionLabel: 'Page Evaluator',
     listHeadline: 'Page Evaluator Configurations',

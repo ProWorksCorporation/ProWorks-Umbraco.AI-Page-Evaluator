@@ -155,8 +155,10 @@ public sealed class EFCoreAIEvaluatorConfigRepository : IAIEvaluatorConfigReposi
                 .FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
             if (target is null) return null;
 
+            // Exclude the target: ExecuteUpdateAsync bypasses the change tracker, so deactivating it here would leave
+            // the tracked entity reading IsActive = true and the assignment below would save nothing.
             await db.EvaluatorConfigs
-                .Where(e => e.DocumentTypeAlias == target.DocumentTypeAlias && e.IsActive)
+                .Where(e => e.DocumentTypeAlias == target.DocumentTypeAlias && e.IsActive && e.Id != id)
                 .ExecuteUpdateAsync(s => s.SetProperty(e => e.IsActive, false), cancellationToken);
 
             target.IsActive = true;

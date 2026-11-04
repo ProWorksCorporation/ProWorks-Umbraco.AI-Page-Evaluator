@@ -13,6 +13,7 @@ import { setupServer } from 'msw/node';
 import { http, HttpResponse } from 'msw';
 import type { EvaluatorConfigItem, EvaluatorConfigListResponse } from '../../src/shared/types.js';
 import {
+  ApiError,
   getConfigurations,
   getConfiguration,
   createConfiguration,
@@ -192,5 +193,53 @@ describe('DELETE /configurations/{id}', () => {
     );
 
     await expect(deleteConfiguration('unknown-id')).rejects.toThrow('API 404');
+  });
+});
+
+// 005 US3 / FR-010: network failure on the real CMS 17.8 umbHttpClient (resolves { response: undefined }).
+describe('network failure — every configuration call rejects with ApiError(0, NetworkError)', () => {
+  const updateBody = {
+    name: 'Updated',
+    description: null,
+    documentTypeAlias: 'blogPost',
+    profileId: mockConfig.profileId,
+    contextId: null,
+    promptText: 'Evaluate.',
+    version: 1,
+  } as unknown as Parameters<typeof updateConfiguration>[1];
+  const createBody = { ...updateBody } as unknown as Parameters<typeof createConfiguration>[0];
+
+  it.each([
+    ['getConfigurations', () => {
+      server.use(http.get(`${BASE}/configurations`, () => HttpResponse.error()));
+      return getConfigurations();
+    }],
+    ['getConfiguration', () => {
+      server.use(http.get(`${BASE}/configurations/:id`, () => HttpResponse.error()));
+      return getConfiguration(mockConfig.id);
+    }],
+    ['createConfiguration', () => {
+      server.use(http.post(`${BASE}/configurations`, () => HttpResponse.error()));
+      return createConfiguration(createBody);
+    }],
+    ['updateConfiguration', () => {
+      server.use(http.put(`${BASE}/configurations/:id`, () => HttpResponse.error()));
+      return updateConfiguration(mockConfig.id, updateBody);
+    }],
+    ['deleteConfiguration', () => {
+      server.use(http.delete(`${BASE}/configurations/:id`, () => HttpResponse.error()));
+      return deleteConfiguration(mockConfig.id);
+    }],
+  ] as const)('%s', async (_name, call) => {
+    let caught: unknown;
+    try {
+      await call();
+    } catch (err) {
+      caught = err;
+    }
+
+    expect(caught).toBeInstanceOf(ApiError);
+    expect((caught as ApiError).status).toBe(0);
+    expect((caught as ApiError).type).toBe('NetworkError');
   });
 });

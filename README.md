@@ -34,11 +34,11 @@ An Umbraco 17 backoffice package that adds an **Evaluate Page** button to the co
 
 | Dependency | Version |
 |---|---|
-| Umbraco CMS | 17.6.2 or later 17.x |
-| Umbraco.AI | 17.3.4 or later 17.x (Core/Startup; with Anthropic 17.1+, OpenAI 17.2+, Agent 17.1+) |
+| Umbraco CMS | 17.8.0 or later 17.x |
+| Umbraco.AI | 17.6.1 or later 17.x (Core/Startup; tested with Anthropic 17.1.3, OpenAI 17.3.1, Prompt 17.4.0, Agent 17.4.1, Agent.Copilot 17.2.0) |
 | .NET | 10 |
 
-**Upgrading from 17.0.x of this package?** Upgrade Umbraco CMS to 17.6.2+ and the Umbraco.AI packages to 17.3.4+ first, then this package. The package depends on `Umbraco.Cms` 17.6.2+, so on an older site the install fails with `NU1605: Detected package downgrade: Umbraco.Cms from 17.6.2 to …`: upgrade the platform first rather than working around that error. On first start the package migrates its evaluation cache table (existing cached results are kept).
+**Upgrading from an earlier version of this package?** Package 17.6.0 requires Umbraco CMS 17.8.0+ and Umbraco.AI 17.6.1+ (and brings EF Core 10.0.12, which CMS 17.8 requires). Upgrade the platform first, then this package. The package depends on `Umbraco.Cms` 17.8.0+, so on an older site the install fails with `NU1605: Detected package downgrade: Umbraco.Cms from 17.8.0 to …`: upgrade the platform rather than working around that error. Sites that can't upgrade yet can stay on package 17.3.1 (CMS 17.6.2+ / Umbraco.AI 17.3.4+). Existing evaluator configurations and cached results are kept; any pending evaluation-cache migration runs on first start.
 
 **Unattended installs:** use **17.3.1 or later** if your site installs or upgrades unattended alongside a package that publishes content during install (for example a starter kit such as Clean). Earlier versions could abort the unattended install with `no such table: umbracoAIEvaluationCache` ([#25](https://github.com/ProWorksCorporation/ProWorks-Umbraco.AI-Page-Evaluator/issues/25)); restarting the site worked around it.
 
@@ -136,13 +136,29 @@ Umbraco.AI 17.3 adds optional prompt caching for Anthropic profiles (**AI > Prof
 
 ### Usage and audit reporting
 
-Evaluations and recommendations run under two different inline-chat aliases (`proworks-page-evaluator` and `proworks-page-evaluator-recommend`), so they appear as separate feature identities in the Umbraco.AI **audit log** and can be filtered separately. Umbraco.AI's usage statistics group by provider, model, profile and user rather than by feature — to see evaluation and recommendation costs separately there, give each its own AI profile.
+Evaluations and recommendations run under two different inline-chat aliases (`proworks-page-evaluator` and `proworks-page-evaluator-recommend`), so they appear as separate feature identities in the Umbraco.AI **audit log** and can be filtered separately. Since Umbraco.AI 17.6 the audit log also shows these aliases by name. Umbraco.AI's usage statistics group by provider, model, profile and user rather than by feature — to see evaluation and recommendation costs separately there, give each its own AI profile.
+
+### AI profiles with their own system prompt
+
+Since Umbraco.AI 17.5, a chat profile's own **System prompt** (AI > Profiles > your profile) is sent ahead of the evaluator's instructions on **every** call made through that profile, evaluations and recommendations included. A profile prompt such as "reply in a friendly, conversational tone" or "always reply in English" can therefore change the report, override the language a recommendation should be written in, or — on models that don't enforce the response format — stop the result from being read as a structured report. Umbraco.AI can only switch this behaviour off site-wide, which would also affect Copilot, prompts and agents, so the package leaves it on.
+
+What the package does about it:
+
+- The evaluator configuration screen shows a notice under the AI profile picker when the selected profile has its own system prompt. The notice is checked again every time you open a configuration, so it also appears if a prompt is added to the profile later.
+- The evaluator's own instructions tell the model that their output format, language and tone rules take precedence over earlier instructions about tone, persona, language or format, and that report explanations and suggestions are written in a neutral, professional tone. Without this, a friendly-tone profile prompt made Claude add remarks such as "great work!" to report explanations. Because this rule comes last, it also applies if your own evaluator prompt asks for a different tone. It doesn't change the style of recommended field values.
+- The package reads AI responses tolerantly: an answer wrapped in friendly text, closing remarks or extra code blocks is still read as a structured report or recommendation.
+
+**Recommendation:** give the Page Evaluator a dedicated AI profile with **no** system prompt.
+
+### AI disclosure notice
+
+The evaluation report (and the raw AI output shown when a response can't be read as a report) displays Umbraco.AI's standard AI disclosure notice ("Responses are AI-generated and may be inaccurate."). It follows the site-wide **Disclosure notice** setting in Umbraco.AI: **Always** (the default, so editors see it after upgrading), **Dismissible** (an editor can dismiss it; the dismissal is remembered in their browser and covers the report and its recommendations), or **Off**.
 
 ### Scores may vary on some AI models
 
 The evaluator asks for deterministic output (`temperature = 0`) so that re-running an evaluation on unchanged content gives the same scores. Since Umbraco.AI 17.3, providers declare which models accept that setting and Umbraco.AI silently drops it for the ones that don't — for example OpenAI's reasoning models (o-series, GPT-5) and newer Claude models. On those models, scores can differ between re-runs of the same page.
 
-The package tells you when this applies: the evaluator configuration screen shows a notice under the AI profile picker when the selected profile's model ignores the setting, and every report produced by such a model (fresh or cached) carries the same notice. For the most repeatable scores, use a profile whose model supports temperature.
+The package tells administrators when this applies: the evaluator configuration screen shows a notice under the AI profile picker when the selected profile's model ignores the setting. For the most repeatable scores, use a profile whose model supports temperature. Since 17.6.0 the report itself no longer shows this notice, so content editors aren't worried by something they can't act on; the API still returns `samplingSettingsIgnored` with each report.
 
 ---
 

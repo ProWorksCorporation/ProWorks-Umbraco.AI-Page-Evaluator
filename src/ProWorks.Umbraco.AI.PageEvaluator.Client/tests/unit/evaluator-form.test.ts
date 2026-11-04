@@ -254,3 +254,141 @@ describe('evaluator-form.element — sampling-support notice', () => {
     expect(el._temperatureSupported ?? null).toBeNull();
   });
 });
+
+// ---------------------------------------------------------------------------
+// Save failure messaging (005-upgrade-cms-17-8-ai-17-6 FR-010: never raw technical text on a network drop)
+// ---------------------------------------------------------------------------
+
+describe('evaluator-form.element — save failures', () => {
+  it('shows the localized connectivity message, not the raw error, when the network drops on save', async () => {
+    server.use(http.post(`${BASE}/configurations`, () => HttpResponse.error()));
+    const el = renderForm({ documentTypeAlias: 'blogPost', profileId: 'a1b2', promptText: 'Evaluate.' });
+
+    await el.submit?.();
+
+    expect(el._errors?.['_form']).toBe('evaluatePage_connectivityMessage');
+  });
+
+  it('keeps the server message for other save failures (e.g. a 409 concurrency conflict)', async () => {
+    server.use(
+      http.post(`${BASE}/configurations`, () =>
+        HttpResponse.json({ title: 'This configuration was modified by another user.' }, { status: 409 }),
+      ),
+    );
+    const el = renderForm({ documentTypeAlias: 'blogPost', profileId: 'a1b2', promptText: 'Evaluate.' });
+
+    await el.submit?.();
+
+    expect(el._errors?.['_form']).toContain('This configuration was modified by another user.');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Profile system-prompt notice (005-upgrade-cms-17-8-ai-17-6 FR-012/FR-013, contracts/ui-notices.md §1)
+// ---------------------------------------------------------------------------
+
+type PromptNoticeForm = SamplingForm & {
+  configId?: string | null;
+  _profileHasSystemPrompt?: boolean | null;
+  refreshProfileSystemPrompt?: (profileId: string) => Promise<void>;
+  _onProfileChange?: (profileId: string) => void;
+  _loadConfig?: (id: string) => Promise<void>;
+};
+
+const settle = (ms = 20): Promise<void> => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+describe('evaluator-form.element — profile system-prompt notice', () => {
+  it('records hasSystemPrompt=true for a profile with its own system prompt', async () => {
+    server.use(http.get(`${BASE}/profiles/p-friendly/system-prompt`, () => HttpResponse.json({ hasSystemPrompt: true })));
+    const el = renderForm({ profileId: 'p-friendly' }) as PromptNoticeForm;
+
+    await el.refreshProfileSystemPrompt?.('p-friendly');
+
+    expect(el._profileHasSystemPrompt).toBe(true);
+  });
+
+  it('records hasSystemPrompt=false for a profile without one', async () => {
+    server.use(http.get(`${BASE}/profiles/p-plain/system-prompt`, () => HttpResponse.json({ hasSystemPrompt: false })));
+    const el = renderForm({ profileId: 'p-plain' }) as PromptNoticeForm;
+
+    await el.refreshProfileSystemPrompt?.('p-plain');
+
+    expect(el._profileHasSystemPrompt).toBe(false);
+  });
+
+  it('hides the notice without an error message when the lookup fails (background lookup, FR-010)', async () => {
+    server.use(http.get(`${BASE}/profiles/p-broken/system-prompt`, () => HttpResponse.error()));
+    const el = renderForm({ profileId: 'p-broken' }) as PromptNoticeForm;
+    el._profileHasSystemPrompt = true;
+
+    await el.refreshProfileSystemPrompt?.('p-broken');
+
+    expect(el._profileHasSystemPrompt).toBeNull();
+    expect(el._errors?.['profileId']).toBeUndefined();
+  });
+
+  it('discards a stale response when the selected profile changed while the lookup was in flight', async () => {
+    server.use(
+      http.get(`${BASE}/profiles/p-old/system-prompt`, async () => {
+        await settle(30);
+        return HttpResponse.json({ hasSystemPrompt: true });
+      }),
+    );
+    const el = renderForm({ profileId: 'p-old' }) as PromptNoticeForm;
+
+    const pending = el.refreshProfileSystemPrompt?.('p-old');
+    el._profileId = 'p-new';
+    await pending;
+
+    expect(el._profileHasSystemPrompt ?? null).toBeNull();
+  });
+
+  it('hides the notice immediately and refreshes both notices when the profile changes', async () => {
+    let promptLookups = 0;
+    let samplingLookups = 0;
+    server.use(
+      http.get(`${BASE}/profiles/p-next/system-prompt`, async () => {
+        promptLookups++;
+        await settle(10);
+        return HttpResponse.json({ hasSystemPrompt: true });
+      }),
+      http.get(`${BASE}/profiles/p-next/sampling-support`, () => {
+        samplingLookups++;
+        return HttpResponse.json({ temperatureSupported: false });
+      }),
+    );
+    const el = renderForm({ profileId: 'p-prev' }) as PromptNoticeForm;
+    el._profileHasSystemPrompt = true;
+
+    el._onProfileChange?.('p-next');
+    expect(el._profileHasSystemPrompt).toBeNull();
+
+    await settle(40);
+    expect(promptLookups).toBe(1);
+    expect(samplingLookups).toBe(1);
+    expect(el._profileHasSystemPrompt).toBe(true);
+    expect(el._temperatureSupported).toBe(false);
+  });
+
+  it('looks the notice up again when an existing configuration is opened (FR-013)', async () => {
+    const config = {
+      id: 'cfg-1', name: 'Home', description: null, documentTypeAlias: 'home', profileId: 'p-later',
+      profileName: 'Later', contextId: null, contextName: null, promptText: 'Evaluate.', isActive: true,
+      scoringEnabled: false, recommendationsEnabled: true, version: 3, propertyAliases: [],
+      dateCreated: '2026-11-02T00:00:00', dateModified: '2026-11-02T00:00:00',
+    } as unknown as EvaluatorConfigItem;
+    server.use(
+      http.get(`${BASE}/configurations/cfg-1`, () => HttpResponse.json(config)),
+      http.get(`${BASE}/profiles/p-later/system-prompt`, () => HttpResponse.json({ hasSystemPrompt: true })),
+      http.get(`${BASE}/profiles/p-later/sampling-support`, () => HttpResponse.json({ temperatureSupported: true })),
+      http.get(`${BASE}/document-type/home/properties`, () => HttpResponse.json({ name: 'Home', properties: [] })),
+    );
+    const el = renderForm({}) as PromptNoticeForm;
+    el.configId = 'cfg-1';
+
+    await el._loadConfig?.('cfg-1');
+    await settle(40);
+
+    expect(el._profileHasSystemPrompt).toBe(true);
+  });
+});

@@ -222,21 +222,17 @@ describe('evaluation-report.element — recommendation errors', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Variability notice on the report (003-upgrade-umbraco-17-6 FR-015b)
+// No variability notice on the editor's report (17.6.0: admin-only, on the configuration screen).
+// It was added in 003 (FR-015b) but worried content editors without giving them anything to act on; the
+// server still records samplingSettingsIgnored with the cached report.
 // ---------------------------------------------------------------------------
 
 describe('evaluation-report.element — variability notice', () => {
-  it('shows the notice when the report was produced by a model that ignores temperature', async () => {
-    const el = await renderReport(buildReport({ samplingSettingsIgnored: true }));
-
-    const notice = query(el, '[role="status"]');
-    expect(notice?.textContent).toContain('evaluatePage_samplingVariesNotice');
-  });
-
-  it.each([false, null])('does not show the notice when samplingSettingsIgnored is %s', async (value) => {
+  it.each([true, false, null])('shows no variability notice to editors (samplingSettingsIgnored = %s)', async (value) => {
     const el = await renderReport(buildReport({ samplingSettingsIgnored: value }));
 
-    expect(getText(el)).not.toContain('evaluatePage_samplingVariesNotice');
+    expect(getText(el)).not.toMatch(/samplingVariesNotice|scores may vary/i);
+    expect(query(el, '.sampling-notice')).toBeNull();
   });
 });
 

@@ -1,6 +1,41 @@
 <!--
 SYNC IMPACT REPORT
 ==================
+Version change: 1.3.0 → 1.4.0
+Bump rationale: MINOR — the "Package Version Constraints (NON-NEGOTIABLE)" section is materially
+  changed (EF Core pin, CMS/Umbraco.AI range floors) and the Technology Stack is updated for the
+  005-upgrade-cms-17-8-ai-17-6 feature (Umbraco CMS 17.8.0, Umbraco.AI 17.6.1, UUI 2.1.1).
+
+Approval: EF Core 10.0.10 → 10.0.12 and the RCL ranges CMS [17.8.0, 18.0.0) / Umbraco.AI
+  [17.6.1, 18.0.0) were explicitly approved by the maintainer (Jason Prothero) on 2026-11-02,
+  before implementation (analysis finding C3). Per Governance, this amendment PR still requires a
+  second maintainer's approval before merge.
+
+Changes:
+  - Technology Stack: EF Core 10.0.10 → 10.0.12; UUI 2.0.2 → 2.1.1 (the version CMS 17.8.x peers);
+    CMS platform line updated to 17.8.x.
+  - Package Version Constraints:
+      - EF Core MUST be 10.0.12 (required by Umbraco.Cms.Persistence.EFCore 17.8.0).
+      - Microsoft.Extensions.AI* rationale re-pointed at Umbraco.AI.Core 17.6.1 (pin unchanged at 10.7.0).
+      - CMS and Umbraco.AI ranges on the RCL: [17.8.0, 18.0.0) and [17.6.1, 18.0.0).
+  - Principle II: e2e tooling is @umbraco-cms/acceptance-test-helpers (replaces the wrong
+    "@umbraco-cms/playwright-testhelpers" name and the deprecated @umbraco/playwright-testhelpers);
+    the e2e specs run green, so the v1.3.0 deferred TODO is resolved. The MUSTs are unchanged.
+
+Removed sections: None
+Modified principles: II (tooling name and status only; no rule changed)
+
+Templates reviewed:
+  ✅ .specify/templates/plan-template.md — no change needed.
+  ✅ .specify/templates/spec-template.md — no change needed.
+  ✅ .specify/templates/tasks-template.md — no change needed.
+
+Deferred TODOs: None.
+-->
+
+<!--
+PRIOR SYNC IMPACT REPORT (v1.2.1 → v1.3.0, retained for history)
+==================
 Version change: 1.2.1 → 1.3.0
 Bump rationale: MINOR — the "Package Version Constraints (NON-NEGOTIABLE)" section is materially
   changed (new EF Core pin, new CMS/Umbraco.AI range rule) and the Technology Stack is updated for
@@ -147,16 +182,16 @@ complete until its accompanying tests exist and pass.
 
 **Aspirational test layer (TypeScript — client-side):**
 
-- Status (2026-09-24): Vitest unit tests and MSW integration tests exist and run green; a Playwright
-  e2e harness (`playwright.config.ts`, testhelpers auth setup) exists but its specs still need
-  rewriting against the real backoffice. The layer is no longer "zero tests" but remains
-  aspirational until the e2e specs pass.
+- Status (2026-11-02): Vitest unit tests and MSW integration tests exist and run green, and the
+  Playwright e2e specs run against the real backoffice on `@umbraco-cms/acceptance-test-helpers`
+  (which replaced the deprecated `@umbraco/playwright-testhelpers` and
+  `@umbraco/json-models-builders` in 17.6.0). The MUSTs below still apply to new client code.
 - Before any significant new TypeScript feature is added, the following MUST be established:
   - **Unit tests** (Vitest) for Umbraco context consumers, property editor logic,
     AI evaluation utilities, and pure TypeScript helpers.
   - **Integration tests** using MSW (Mock Service Worker) for code that calls the
     Umbraco Management API or an external AI provider endpoint.
-  - **E2E tests** (Playwright via `@umbraco-cms/playwright-testhelpers`) for each
+  - **E2E tests** (Playwright via `@umbraco-cms/acceptance-test-helpers`) for each
     user-facing extension point (workspace actions, modals, config workspace).
 - Until these are established, extra care MUST be taken to test TypeScript changes
   manually in the test site before merging.
@@ -298,13 +333,13 @@ can cause symbol conflicts with CMS internals.
 
 - **Language**: TypeScript 5.x (`strict: true`, `noUncheckedIndexedAccess: true`) + C# .NET 10
 - **Build Tool**: Vite 7.x in `build.lib` mode, ES module output; Node ≥ 24.13 / npm ≥ 11 (required by
-  `@umbraco-cms/backoffice` 17.6 and UUI 2)
+  `@umbraco-cms/backoffice` 17.6+ and UUI 2)
 - **UI Framework**: Lit 3.x web components; React, Vue, and Angular MUST NOT appear in
   extension code. Lit MUST be imported via `@umbraco-cms/backoffice/external/lit`.
-- **CMS Platform**: Umbraco v17; all APIs used MUST be published in the Umbraco v17
+- **CMS Platform**: Umbraco v17 (17.8.x minimum); all APIs used MUST be published in the Umbraco v17
   package docs or the `@umbraco-cms/backoffice` typings
-- **Server**: ASP.NET Core (Umbraco RCL), EF Core 10.0.10, SQLite (dev) / SQL Server (prod)
-- **UI Library**: `@umbraco-ui/uui` 2.0.2 (the version CMS 17.6.x ships); CMS 17.6.0 is unsupported
+- **Server**: ASP.NET Core (Umbraco RCL), EF Core 10.0.12, SQLite (dev) / SQL Server (prod)
+- **UI Library**: `@umbraco-ui/uui` 2.1.1 (the version CMS 17.8.x peers)
 - **AI Integration**: Calls to AI providers MUST be proxied via a server-side Umbraco API
   controller using `IAIChatService` (from `Umbraco.AI.Core.Chat`). Injecting
   `IChatClient` or `IAIChatClientFactory` directly is FORBIDDEN. Direct browser-to-provider
@@ -324,7 +359,7 @@ testing against the full Umbraco.AI ecosystem. Upgrading past these pins has cau
 `MissingMethodException` and `TypeLoadException` failures in production.
 
 - **`Microsoft.Extensions.AI*`** (all packages in this family) MUST be pinned to
-  `10.7.0` (required by `Umbraco.AI.Core 17.3.4`'s `[10.7.0, 10.999.999)` range and
+  `10.7.0` (required by `Umbraco.AI.Core 17.6.1`'s `[10.7.0, 11)` range and
   Anthropic SDK `12.29.1` floor). Historical context: an earlier `10.3.0` pin existed
   because `10.4.1` changed `McpServerToolCallContent.set_Arguments`'s signature
   (`MissingMethodException` in `Umbraco.AI.Anthropic 1.3.0`) and pulled `OpenAI SDK 2.9.1`,
@@ -334,10 +369,10 @@ testing against the full Umbraco.AI ecosystem. Upgrading past these pins has cau
 - **`Microsoft.Extensions.AI`** and **`Microsoft.Extensions.AI.Abstractions`** MUST
   always be the same version — mismatches cause
   `TypeLoadException: FunctionApprovalRequestContent`.
-- **EF Core** MUST be `10.0.10` (required by `Umbraco.Cms.Persistence.EFCore 17.6.2`; approved
-  2026-09-24).
+- **EF Core** MUST be `10.0.12` (required by `Umbraco.Cms.Persistence.EFCore 17.8.0`; approved
+  2026-11-02).
 - **CMS and Umbraco.AI ranges** MUST be declared directly on the packable RCL
-  (`Umbraco.Cms.*` `[17.6.2, 18.0.0)`, `Umbraco.AI.Core`/`Umbraco.AI.Startup` `[17.3.4, 18.0.0)`).
+  (`Umbraco.Cms.*` `[17.8.0, 18.0.0)`, `Umbraco.AI.Core`/`Umbraco.AI.Startup` `[17.6.1, 18.0.0)`).
   The Core/Persistence project references are `PrivateAssets="all"`, so without these the NuGet
   package declares no CMS dependency and resolves CMS packages to Umbraco.AI's lower floor.
 
@@ -383,4 +418,4 @@ removes or redefines a Core Principle.
 All PRs and code reviews MUST verify compliance with each Core Principle. Complexity
 violations MUST be documented in the Complexity Tracking table of the relevant feature plan.
 
-**Version**: 1.3.0 | **Ratified**: 2026-03-30 | **Last Amended**: 2026-09-24
+**Version**: 1.4.0 | **Ratified**: 2026-03-30 | **Last Amended**: 2026-11-02

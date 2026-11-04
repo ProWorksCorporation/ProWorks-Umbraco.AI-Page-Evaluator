@@ -21,6 +21,7 @@ Adds an **Evaluate Page** workspace action to the Umbraco content editor. Clicki
 - Multilingual aware: evaluates, recommends and applies in the language you're viewing; publishing one language clears only that language's cached result
 - Workspace action hidden automatically on unconfigured document types
 - Prompt builder in configuration to help with setup
-- Tells you when scores may vary: a notice appears on the configuration screen and on reports when the selected AI model ignores the deterministic-output (temperature) setting, as OpenAI reasoning models and newer Claude models do
+- Tells administrators when scores may vary: a notice appears on the configuration screen when the selected AI model ignores the deterministic-output (temperature) setting, as OpenAI reasoning models and newer Claude models do
 - AI text recommendations for Fail and Warn checks — shows the current field value alongside the suggestion; apply directly to plain text, Tags and Rich Text fields (Rich Text Apply is withheld if the suggestion would drop embedded blocks), or copy to clipboard. Third-party editor aliases can be enabled for recommendations via `appsettings.json`
-- Requires Umbraco CMS 17.6.2+ and Umbraco.AI 17.3.4+
+- Warns when the selected AI profile has its own system prompt (sent ahead of the evaluator's instructions since Umbraco.AI 17.5), and shows Umbraco.AI's AI disclosure notice with evaluator output
+- Requires Umbraco CMS 17.8.0+ and Umbraco.AI 17.6.1+ (package 17.3.1 remains available for CMS 17.6.2+ / Umbraco.AI 17.3.4+)

@@ -49,8 +49,6 @@ export default {
       "Questa versione linguistica della pagina non ha ancora contenuti, quindi non c'è nulla da valutare.",
     invalidCultureMessage:
       "Non è stato possibile valutare la lingua selezionata. Ricarica la pagina e riprova.",
-    samplingVariesNotice:
-      "Questo report è stato generato da un modello di IA che non supporta output deterministico, quindi i punteggi potrebbero variare se esegui di nuovo la valutazione.",
     rteApplyBlockedMessage:
       "Questo suggerimento rimuoverebbe contenuti incorporati (blocchi o media) dal campo, quindi non può essere applicato automaticamente. Copialo e modifica il campo manualmente.",
     applyFailedMessage:
@@ -84,6 +82,9 @@ export default {
     // 003-upgrade-umbraco-17-6: sampling-support notice under the profile picker
     samplingVariesNotice:
       "Il profilo IA selezionato usa un modello che non supporta output deterministico. I punteggi della valutazione potrebbero variare tra un'esecuzione e l'altra.",
+    // 005-upgrade-cms-17-8-ai-17-6: profile system-prompt notice under the profile picker
+    profileSystemPromptNotice:
+      "Il profilo IA selezionato ha un proprio prompt di sistema. Umbraco.AI lo invia prima delle istruzioni del valutatore a ogni valutazione e raccomandazione, il che può modificare o compromettere i risultati. Per risultati prevedibili, usa per il Page Evaluator un profilo IA dedicato senza prompt di sistema.",
     // Workspace: list
     sectionLabel: 'Valutatore pagina',
     listHeadline: 'Configurazioni del valutatore pagina',

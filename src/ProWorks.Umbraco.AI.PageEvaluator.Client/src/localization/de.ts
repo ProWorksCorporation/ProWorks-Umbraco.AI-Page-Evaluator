@@ -49,8 +49,6 @@ export default {
       "Diese Sprachversion der Seite hat noch keinen Inhalt, daher gibt es nichts auszuwerten.",
     invalidCultureMessage:
       "Die ausgewählte Sprache konnte nicht ausgewertet werden. Laden Sie die Seite neu und versuchen Sie es erneut.",
-    samplingVariesNotice:
-      "Dieser Bericht wurde von einem KI-Modell erstellt, das keine deterministische Ausgabe unterstützt. Die Bewertungen können daher abweichen, wenn Sie die Auswertung erneut ausführen.",
     rteApplyBlockedMessage:
       "Dieser Vorschlag würde eingebettete Inhalte (Blöcke oder Medien) aus dem Feld entfernen und kann daher nicht automatisch übernommen werden. Kopieren Sie ihn und bearbeiten Sie das Feld stattdessen manuell.",
     applyFailedMessage:
@@ -84,6 +82,9 @@ export default {
     // 003-upgrade-umbraco-17-6: sampling-support notice under the profile picker
     samplingVariesNotice:
       "Das ausgewählte KI-Profil verwendet ein Modell, das keine deterministische Ausgabe unterstützt. Die Bewertungen können zwischen wiederholten Auswertungen abweichen.",
+    // 005-upgrade-cms-17-8-ai-17-6: profile system-prompt notice under the profile picker
+    profileSystemPromptNotice:
+      "Das ausgewählte KI-Profil hat einen eigenen System-Prompt. Umbraco.AI sendet ihn bei jeder Bewertung und Empfehlung vor den Anweisungen des Evaluators, was die Ergebnisse verändern oder unbrauchbar machen kann. Verwenden Sie für vorhersehbare Ergebnisse ein eigenes KI-Profil ohne System-Prompt für den Page Evaluator.",
     // Workspace: list
     sectionLabel: 'Seitenbewerter',
     listHeadline: 'Seitenbewerter-Konfigurationen',

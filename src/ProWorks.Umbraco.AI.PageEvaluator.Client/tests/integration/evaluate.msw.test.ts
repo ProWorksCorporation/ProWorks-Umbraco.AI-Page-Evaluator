@@ -11,6 +11,7 @@ import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest';
 import { setupServer } from 'msw/node';
 import { http, HttpResponse } from 'msw';
 import { ApiError, evaluatePage, getCachedEvaluation, recommend } from '../../src/shared/api-client.js';
+import { localizationKeyForError } from '../../src/shared/error-category.js';
 import type { EvaluatePageRequest, EvaluationReportResponse } from '../../src/shared/types.js';
 
 const BASE = '/umbraco/management/api/v1/page-evaluator';
@@ -210,6 +211,40 @@ describe('error typing — gateway types and throwOnError', () => {
     expect(err).toBeInstanceOf(ApiError);
     expect((err as ApiError).status).toBe(0);
     expect((err as ApiError).type).toBe('NetworkError');
+  });
+
+  // 005 US3 / FR-010: on CMS 17.8 the real umbHttpClient resolves { response: undefined } for a
+  // network failure; every editor-facing call must still surface the localized connectivity message.
+  it.each([
+    ['getCachedEvaluation', () => {
+      server.use(http.get(`${BASE}/evaluate/cached/:nodeId`, () => HttpResponse.error()));
+      return getCachedEvaluation(evaluateRequest.nodeId, 'da-DK');
+    }],
+    ['recommend', () => {
+      server.use(http.post(`${BASE}/recommend`, () => HttpResponse.error()));
+      return recommend({
+        nodeId: evaluateRequest.nodeId,
+        propertyAliases: ['metaDescription'],
+        checkLabel: 'Meta description',
+        checkExplanation: null,
+        culture: null,
+        properties: {},
+      });
+    }],
+    ['evaluatePage', () => {
+      server.use(http.post(`${BASE}/evaluate`, () => HttpResponse.error()));
+      return evaluatePage(evaluateRequest);
+    }],
+  ] as const)('%s maps a network failure to the localized connectivity message', async (_name, call) => {
+    const err = await rejectionOf(call());
+
+    expect(err).toBeInstanceOf(ApiError);
+    const apiErr = err as ApiError;
+    expect(apiErr.status).toBe(0);
+    expect(apiErr.type).toBe('NetworkError');
+    expect(localizationKeyForError({ type: apiErr.type, category: apiErr.category }, 'evaluatePage_aiErrorMessage')).toBe(
+      'evaluatePage_connectivityMessage',
+    );
   });
 });
 

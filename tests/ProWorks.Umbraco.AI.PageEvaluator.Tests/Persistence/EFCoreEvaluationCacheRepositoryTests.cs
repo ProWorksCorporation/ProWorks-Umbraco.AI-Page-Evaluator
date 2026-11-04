@@ -67,6 +67,29 @@ public sealed class EFCoreEvaluationCacheRepositoryTests : IDisposable
     }
 
     [Fact]
+    public async Task GetAsync_ReturnsCachedAtAsUtc()
+    {
+        // Regression (005 scratch-site validation): providers read DateTime back as Kind = Unspecified, so the
+        // cached-report endpoint serialised CachedAt without a "Z" and the browser showed "Last evaluated" in UTC
+        // wall-clock time as if it were local time (off by the UTC offset). Values are always written as UtcNow.
+        var nodeId = Guid.NewGuid();
+        DateTime written = DateTime.UtcNow;
+        EvaluationCacheEntry entry = Entry(nodeId, "", "s");
+        await _sut.SaveAsync(new EvaluationCacheEntry
+        {
+            NodeId = entry.NodeId, Culture = entry.Culture, DocumentTypeAlias = entry.DocumentTypeAlias,
+            Report = entry.Report, CachedAt = written,
+        });
+
+        EvaluationCacheEntry? read = await _sut.GetAsync(nodeId, "");
+
+        Assert.NotNull(read);
+        Assert.Equal(DateTimeKind.Utc, read.CachedAt.Kind);
+        Assert.Equal(written, read.CachedAt, TimeSpan.FromMilliseconds(1));
+        Assert.EndsWith("Z", System.Text.Json.JsonSerializer.Serialize(read.CachedAt).Trim('"'));
+    }
+
+    [Fact]
     public async Task SaveAsync_UpsertsOnNodeAndCulture()
     {
         var nodeId = Guid.NewGuid();

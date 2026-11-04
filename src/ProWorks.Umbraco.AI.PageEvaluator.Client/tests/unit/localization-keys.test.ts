@@ -32,6 +32,14 @@ describe('localization files', () => {
     expect(keysOf(localization)).toEqual(expected);
   });
 
+  // 17.6.0: the "scores may vary" notice is admin-only. The form's unit tests render key names, so they wouldn't
+  // notice the configuration screen's text disappearing; this guards it, and that the report's key stays removed.
+  it.each(Object.entries({ en, ...others }))('%s keeps the admin "scores may vary" text and not the report one', (_culture, localization) => {
+    const l = localization as Localization;
+    expect(l['evaluatorConfig']?.['samplingVariesNotice']?.trim()).toBeTruthy();
+    expect(l['evaluatePage']).not.toHaveProperty('samplingVariesNotice');
+  });
+
   it.each(Object.entries({ en, ...others }))('%s has no empty values', (_culture, localization) => {
     for (const [section, entries] of Object.entries(localization as Localization)) {
       for (const [key, value] of Object.entries(entries)) {

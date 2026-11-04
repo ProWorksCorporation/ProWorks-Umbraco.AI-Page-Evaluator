@@ -75,3 +75,8 @@ export async function mockRecommend(page: Page, recommendedValues: Record<string
 export async function mockSamplingSupport(page: Page, temperatureSupported: boolean): Promise<void> {
   await page.route(`**${API}/profiles/*/sampling-support`, (route) => json(route, 200, { temperatureSupported }));
 }
+
+/** 005 FR-012: whether the selected profile has its own system prompt. */
+export async function mockProfileSystemPrompt(page: Page, hasSystemPrompt: boolean): Promise<void> {
+  await page.route(`**${API}/profiles/*/system-prompt`, (route) => json(route, 200, { hasSystemPrompt }));
+}

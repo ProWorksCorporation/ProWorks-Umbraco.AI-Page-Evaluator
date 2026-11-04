@@ -49,8 +49,6 @@ export default {
       "पेज के इस भाषा संस्करण में अभी कोई सामग्री नहीं है, इसलिए मूल्यांकन के लिए कुछ नहीं है।",
     invalidCultureMessage:
       "चुनी गई भाषा का मूल्यांकन नहीं किया जा सका। पेज को फिर से लोड करें और दोबारा प्रयास करें।",
-    samplingVariesNotice:
-      "यह रिपोर्ट ऐसे AI मॉडल ने बनाई है जो निर्धारित (deterministic) आउटपुट का समर्थन नहीं करता, इसलिए मूल्यांकन दोबारा चलाने पर स्कोर बदल सकते हैं।",
     rteApplyBlockedMessage:
       "यह सुझाव फ़ील्ड से एम्बेडेड सामग्री (ब्लॉक या मीडिया) हटा देगा, इसलिए इसे स्वचालित रूप से लागू नहीं किया जा सकता। इसे कॉपी करें और हाथ से संपादित करें।",
     applyFailedMessage:
@@ -84,6 +82,9 @@ export default {
     // 003-upgrade-umbraco-17-6: sampling-support notice under the profile picker
     samplingVariesNotice:
       "चुनी गई AI प्रोफ़ाइल ऐसे मॉडल का उपयोग करती है जो निर्धारित (deterministic) आउटपुट का समर्थन नहीं करता। दोबारा चलाने पर मूल्यांकन स्कोर बदल सकते हैं।",
+    // 005-upgrade-cms-17-8-ai-17-6: profile system-prompt notice under the profile picker
+    profileSystemPromptNotice:
+      "चयनित AI प्रोफ़ाइल का अपना सिस्टम प्रॉम्प्ट है। Umbraco.AI हर मूल्यांकन और सुझाव में इसे इवैल्युएटर के निर्देशों से पहले भेजता है, जिससे परिणाम बदल सकते हैं या बिगड़ सकते हैं। अनुमानित परिणामों के लिए, Page Evaluator के लिए बिना सिस्टम प्रॉम्प्ट वाली एक अलग AI प्रोफ़ाइल का उपयोग करें।",
     // Workspace: list
     sectionLabel: 'पेज मूल्यांकनकर्ता',
     listHeadline: 'पेज मूल्यांकनकर्ता कॉन्फ़िगरेशन',

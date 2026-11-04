@@ -5,12 +5,17 @@
  * Uses Umbraco's shared `umbHttpClient` singleton (re-exported as `apiClient`), which the
  * backoffice configures with Bearer auth before any extension `onInit` runs.
  *
- * Error handling (specs/003-upgrade-umbraco-17-6/contracts/error-responses.md, research R12.3):
+ * Error handling (specs/003-upgrade-umbraco-17-6/contracts/error-responses.md, research R12.3;
+ * specs/005-upgrade-cms-17-8-ai-17-6/contracts/client-network-errors.md):
  * `umbHttpClient` is created with `throwOnError: true`, which would reject with the raw error
  * body and bypass `checkResult`. Every call here therefore passes `throwOnError: false`, so
  * non-2xx responses come back as `{ error, response }` and are turned into a typed `ApiError`
- * (`status`, `detail`, `category`, `type`). A fetch-level failure (network drop, no response)
- * becomes `ApiError(0, …, null, 'NetworkError')`.
+ * (`status`, `detail`, `category`, `type`).
+ *
+ * A fetch-level failure (network drop, no response) becomes `ApiError(0, …, null, 'NetworkError')`.
+ * Since CMS 17.8.0 the regenerated client RESOLVES that case as `{ error, response: undefined }`
+ * instead of rejecting with a `TypeError` (the 17.6 shape, still handled); it also resolves a 2xx
+ * whose body failed to parse as `{ error, response(ok) }`, which `checkResult` treats as a failure.
  *
  * Constitution Principle I: all functions are fully typed; no `any`.
  * Constitution Principle IV: AI calls are always server-side — this client only
@@ -25,6 +30,7 @@ import type {
   EvaluationReportResponse,
   EvaluatorConfigItem,
   EvaluatorConfigListResponse,
+  ProfileSystemPromptResponse,
   RecommendRequest,
   RecommendResponse,
   SamplingSupportResponse,
@@ -57,11 +63,17 @@ export class ApiError extends Error {
   }
 }
 
+/** What `apiClient` resolves with (`response` is undefined when no HTTP response arrived — CMS 17.8+). */
 interface ApiResult {
   readonly data?: unknown;
   readonly error?: unknown;
-  readonly response: Response;
+  readonly response?: Response;
 }
+
+/** A result that has an HTTP response; `send()` guarantees this shape to every caller. */
+type SentResult = ApiResult & { readonly response: Response };
+
+const NETWORK_FAILURE_FALLBACK_MESSAGE = 'Network request failed';
 
 function stringField(value: unknown, field: string): string | null {
   if (value === null || typeof value !== 'object' || !(field in value)) return null;
@@ -69,32 +81,47 @@ function stringField(value: unknown, field: string): string | null {
   return typeof fieldValue === 'string' ? fieldValue : null;
 }
 
-function toApiError(result: ApiResult): ApiError {
+function messageOf(error: unknown): string {
+  return error instanceof Error && error.message.length > 0 ? error.message : NETWORK_FAILURE_FALLBACK_MESSAGE;
+}
+
+function toApiError(result: SentResult): ApiError {
   const err = result.error;
+  if (err instanceof Error) {
+    // A 2xx whose body failed to parse/validate (CMS 17.8+): keep the parser's message.
+    return new ApiError(result.response.status, err.message, null, null);
+  }
   const title = stringField(err, 'title');
   const detail =
     title ?? (typeof err === 'string' && err.length > 0 ? err : err ? JSON.stringify(err) : `HTTP ${result.response.status}`);
   return new ApiError(result.response.status, detail, stringField(err, 'category'), stringField(err, 'type'));
 }
 
-function checkResult<T>(result: ApiResult): T {
-  if (!result.response.ok) throw toApiError(result);
+function checkResult<T>(result: SentResult): T {
+  if (!result.response.ok || result.error !== undefined) throw toApiError(result);
   return result.data as T;
 }
 
 /**
- * Runs one `apiClient` call and converts a fetch-level failure (the promise rejecting with a
- * `TypeError` because no response arrived) into `ApiError(0, …, 'NetworkError')`.
+ * Runs one `apiClient` call and converts a fetch-level failure into
+ * `ApiError(0, …, 'NetworkError')`, whichever shape the client uses for it: a resolved result
+ * without a `response` (CMS 17.8+) or a rejected `TypeError` (CMS 17.6).
  */
-async function send(call: () => Promise<ApiResult>): Promise<ApiResult> {
+async function send(call: () => Promise<ApiResult>): Promise<SentResult> {
+  let result: ApiResult;
   try {
-    return await call();
+    result = await call();
   } catch (err) {
     if (err instanceof TypeError) {
       throw new ApiError(0, err.message, null, NETWORK_ERROR_TYPE);
     }
     throw err;
   }
+  const { response } = result;
+  if (response === undefined) {
+    throw new ApiError(0, messageOf(result.error), null, NETWORK_ERROR_TYPE);
+  }
+  return { data: result.data, error: result.error, response };
 }
 
 // ---------------------------------------------------------------------------
@@ -176,7 +203,7 @@ export async function deleteConfiguration(id: string): Promise<void> {
       url: `${BASE}/configurations/${encodeURIComponent(id)}`,
     }),
   );
-  if (!result.response.ok) throw toApiError(result);
+  if (!result.response.ok || result.error !== undefined) throw toApiError(result);
 }
 
 // ---------------------------------------------------------------------------
@@ -239,6 +266,21 @@ export async function getSamplingSupport(profileId: string): Promise<SamplingSup
     }),
   );
   return checkResult<SamplingSupportResponse>(result);
+}
+
+/**
+ * Whether the profile has its own system prompt (005 FR-012): Umbraco.AI 17.5+ sends it ahead of the
+ * evaluator's instructions on every call, so the config form warns administrators.
+ */
+export async function getProfileSystemPrompt(profileId: string): Promise<ProfileSystemPromptResponse> {
+  const result = await send(() =>
+    apiClient.get({
+      security: BEARER,
+      throwOnError: false,
+      url: `${BASE}/profiles/${encodeURIComponent(profileId)}/system-prompt`,
+    }),
+  );
+  return checkResult<ProfileSystemPromptResponse>(result);
 }
 
 // ---------------------------------------------------------------------------

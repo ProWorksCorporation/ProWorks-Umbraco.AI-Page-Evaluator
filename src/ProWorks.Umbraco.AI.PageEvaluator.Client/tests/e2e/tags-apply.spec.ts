@@ -4,19 +4,20 @@
  * The Tags editor stores string[]. Before 003 the value went through Umbraco.AI's applyValueChange, which
  * JSON.parse()d the recommendation into that array; the package now writes directly and converts it itself
  * (shared/apply-value.ts). The TestSite has no doc type with a Tags property, so this spec creates its own
- * throwaway doc type, document and evaluator config through the Management API, and removes them again.
- * AI responses are mocked.
+ * throwaway doc type, document and evaluator config, and removes them again. AI responses are mocked.
+ *
+ * 005 (FR-023/FR-024): data setup uses @umbraco-cms/acceptance-test-helpers' API helpers (data type, document
+ * type, document) via `new ApiHelpers(page)`, and `page-evaluator-api.ts` for the evaluator config — see that
+ * file for why the `umbracoApi` fixture is not used.
  */
 import { existsSync, readdirSync, rmSync } from 'fs';
 import { dirname, join, resolve } from 'path';
 import { fileURLToPath } from 'url';
 import { expect } from '@playwright/test';
-import { DocumentBuilder, DocumentTypeBuilder } from '@umbraco/json-models-builders';
-import { ConstantHelper, test } from '@umbraco/playwright-testhelpers';
-import { API, mockCachedEvaluation, mockRecommend, mockReport } from './helpers';
-import { ManagementApi } from './management-api';
+import { ConstantHelper, DocumentTypeBuilder, test } from '@umbraco-cms/acceptance-test-helpers';
+import { mockCachedEvaluation, mockRecommend, mockReport } from './helpers';
+import { PageEvaluatorApi } from './page-evaluator-api';
 
-const MGMT = '/umbraco/management/api/v1';
 const DOC_TYPE_ALIAS = 'zzE2eTagsPage';
 const DOC_NAME = 'ZZ E2E Tags Doc';
 
@@ -26,29 +27,25 @@ interface Created {
   configId: string;
 }
 
-async function createTestData(api: ManagementApi): Promise<Created> {
-  const dataTypes = await api.get<{ items: { id: string; name: string }[] }>(`${MGMT}/filter/data-type?skip=0&take=20&name=Tags`);
-  const tags = dataTypes.items.find((d) => d.name === 'Tags');
-  expect(tags, 'the core "Tags" data type').toBeDefined();
+async function createTestData(api: PageEvaluatorApi): Promise<Created> {
+  const tags = (await api.helpers.dataType.getByName('Tags')) as { id: string } | undefined;
+  expect(tags?.id, 'the core "Tags" data type').toBeDefined();
 
   const containerId = crypto.randomUUID();
-  const docTypeId = await api.create(`${MGMT}/document-type`, new DocumentTypeBuilder()
+  // Keep the builder (not createDocumentTypeWithPropertyEditor): the fixed alias zzE2eTagsPage matters.
+  const docTypeId = await api.helpers.documentType.create(new DocumentTypeBuilder()
     .withName('ZZ E2E Tags Page').withAlias(DOC_TYPE_ALIAS).withAllowedAsRoot(true)
     .addContainer().withName('Content').withId(containerId).withType('Group').done()
     .addProperty().withContainerId(containerId).withAlias('tags').withName('Tags').withDataTypeId(tags!.id).done()
     .build());
-  const docId = await api.create(`${MGMT}/document`, new DocumentBuilder()
-    .withDocumentTypeId(docTypeId)
-    .addVariant().withName(DOC_NAME).done()
-    .addValue().withAlias('tags').withValue(['old tag']).done()
-    .build());
+  // createDocumentWithTags writes the value under the `tags` alias used above.
+  const docId = await api.helpers.document.createDocumentWithTags(DOC_NAME, docTypeId, ['old tag']);
 
-  const profiles = await api.get<{ items: { id: string }[] }>('/umbraco/ai/management/api/v1/profiles?skip=0&take=1');
-  const configId = await api.create(`${API}/configurations`, {
+  const configId = await api.createConfig({
     name: 'ZZ E2E Tags config',
     description: 'Temporary: tags-apply.spec.ts',
     documentTypeAlias: DOC_TYPE_ALIAS,
-    profileId: profiles.items[0]!.id,
+    profileId: await api.firstProfileId(),
     contextId: null,
     promptText: 'Evaluate the tags.',
     propertyAliases: null,
@@ -58,10 +55,11 @@ async function createTestData(api: ManagementApi): Promise<Created> {
   return { docTypeId, docId, configId };
 }
 
-async function deleteTestData(api: ManagementApi, created: Partial<Created>): Promise<void> {
-  if (created.configId) await api.delete(`${API}/configurations/${created.configId}`);
-  if (created.docId) await api.delete(`${MGMT}/document/${created.docId}`);
-  if (created.docTypeId) await api.delete(`${MGMT}/document-type/${created.docTypeId}`);
+async function deleteTestData(api: PageEvaluatorApi, created: Partial<Created>): Promise<void> {
+  await api.ensureAuthenticated();
+  if (created.configId) await api.deleteConfig(created.configId);
+  if (created.docId) await api.helpers.document.delete(created.docId);
+  if (created.docTypeId) await api.helpers.documentType.delete(created.docTypeId);
   removeUSyncArtifacts();
 }
 
@@ -87,8 +85,9 @@ for (const [label, recommended] of [
   ['a comma-separated string', 'headless CMS, cms strategy'],
 ] as const) {
   test(`applies a Tags recommendation given as ${label} as separate tags`, async ({ umbracoUi }) => {
-    const api = new ManagementApi(umbracoUi.page);
-    await umbracoUi.goToBackOffice(); // establishes the page's origin for relative API paths
+    const api = new PageEvaluatorApi(umbracoUi.page);
+    // Fresh token cookies before the helpers' data-type/document calls (they don't retry a 401).
+    await api.ensureAuthenticated();
     let created: Partial<Created> = {};
     try {
       created = await createTestData(api);

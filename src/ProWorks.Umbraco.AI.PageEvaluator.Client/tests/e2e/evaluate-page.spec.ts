@@ -6,11 +6,11 @@
  * active evaluator config and a rich-text `introText`) and "About Us" (`contentPage`, no config).
  * AI responses are mocked (see helpers.ts), so no AI provider is called.
  *
- * Rewritten in 003 onto @umbraco/playwright-testhelpers navigation: the original specs used
- * selectors that never matched a real backoffice.
+ * Rewritten in 003 onto testhelpers navigation (the original specs used selectors that never matched a
+ * real backoffice); moved to @umbraco-cms/acceptance-test-helpers in 005.
  */
 import { expect, type Page } from '@playwright/test';
-import { ConstantHelper, test } from '@umbraco/playwright-testhelpers';
+import { ConstantHelper, test } from '@umbraco-cms/acceptance-test-helpers';
 import {
   mockCachedEvaluation,
   mockEvaluate,
@@ -90,13 +90,15 @@ test.describe('Evaluate Page', () => {
     await expect(umbracoUi.page.getByRole('button', { name: 'Retry' })).toBeVisible();
   });
 
-  test('shows the variability notice on a report produced by a model that ignores temperature', async ({ umbracoUi }) => {
+  test('does not show the variability notice to editors, even when the model ignored temperature', async ({ umbracoUi }) => {
+    // 17.6.0: the "scores may vary" notice is admin-only (configuration screen); it worried content editors.
     await mockCachedEvaluation(umbracoUi.page, mockReport({ samplingSettingsIgnored: true }));
 
     await umbracoUi.content.goToContentWithName('Home');
     await umbracoUi.page.getByRole('button', { name: 'Evaluate Page' }).click();
 
-    await expect(umbracoUi.page.getByRole('status').filter({ hasText: /scores may vary/i })).toBeVisible({ timeout: 15000 });
+    await expect(umbracoUi.page.getByText(/Last evaluated/)).toBeVisible({ timeout: 15000 });
+    await expect(umbracoUi.page.getByRole('status').filter({ hasText: /scores may vary/i })).toHaveCount(0);
   });
 
   test('applies a rich-text recommendation into the editor', async ({ umbracoUi }) => {

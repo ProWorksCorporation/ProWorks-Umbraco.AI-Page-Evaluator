@@ -119,7 +119,8 @@ export interface EvaluationReportResponse {
   /**
    * True when the AI model that produced this report is declared to ignore the temperature setting,
    * so scores may vary between re-runs (FR-015b). Persisted with the cached report; null for reports
-   * cached before this field existed.
+   * cached before this field existed. Not shown on the report since 17.6.0 (the notice is admin-only, on the
+   * configuration screen).
    */
   readonly samplingSettingsIgnored: boolean | null;
   /** The culture this report covers (lower-cased ISO code); null for invariant documents. */
@@ -144,6 +145,14 @@ export interface RecommendRequest {
   readonly checkLabel: string;
   readonly checkExplanation: string | null;
   readonly properties: Record<string, string>;
+}
+
+/**
+ * Response body for GET /profiles/{profileId}/system-prompt (005 FR-012/FR-014): whether the profile has
+ * its own system prompt, which Umbraco.AI 17.5+ sends ahead of the evaluator's instructions. Never the text.
+ */
+export interface ProfileSystemPromptResponse {
+  hasSystemPrompt: boolean;
 }
 
 /** Response body for GET /profiles/{profileId}/sampling-support. */
