@@ -187,4 +187,50 @@ export default {
     categoryAccessibilityVisibility: 'Accessibility & Visibility',
     categoryCallsToAction: 'Calls to Action',
   },
+  // 006: Copilot frontend tools and the evaluate_page server tool (Umbraco.AI admin labels: uaiTool_{toolName}Label)
+  uaiTool: {
+    evaluateCurrentPageLabel: 'Evaluate current page',
+    evaluateCurrentPageDescription:
+      'Evaluates the page open in the editor with its Page Evaluator checks, using the values on screen for the language being viewed.',
+    recommendPageValuesLabel: 'Recommend page values',
+    recommendPageValuesDescription:
+      "Suggests better values for fields named by failed or warning checks in the page's evaluation.",
+    applyPageRecommendationLabel: 'Apply page recommendation',
+    applyPageRecommendationDescription:
+      'Writes an accepted recommendation into its field after the user approves. The change is not saved.',
+    evaluatePageLabel: 'Evaluate page',
+    evaluatePageDescription: 'Evaluates the latest saved version of a page, by its id, with its Page Evaluator checks.',
+  },
+  // 006: tool scopes shown when granting tools to an agent
+  uaiToolScope: {
+    pageEvaluatorReadLabel: 'Page Evaluator (Read)',
+    pageEvaluatorReadDescription: 'Evaluate pages and get recommended values, without changing content',
+    pageEvaluatorWriteLabel: 'Page Evaluator (Write)',
+    pageEvaluatorWriteDescription:
+      'Apply accepted recommendations to the open page (staged, not saved), after the user approves',
+  },
+  uaiToolScopeDomain: {
+    pageEvaluator: 'Page Evaluator',
+  },
+  // 006: approval prompt before the Copilot apply tool writes a value
+  pageEvaluatorCopilot: {
+    applyApprovalTitle: 'Apply recommendation',
+    applyApprovalMessage: 'Write the recommended value into the field? It will be staged in the editor, not saved.',
+  },
+  // 006: settings of the Umbraco Automate "Evaluate Page" step
+  pageEvaluatorAutomate: {
+    contentKeyLabel: 'Page',
+    contentKeyDescription: 'The key of the page to evaluate. Can be a binding, such as ${ trigger.contentKey }.',
+    cultureLabel: 'Language',
+    cultureDescription:
+      'ISO code of the language to evaluate, such as en-US. Required for pages that vary by language.',
+    passThresholdLabel: 'Pass threshold',
+    passThresholdDescription: 'Optional. The lowest overall score (1–5, the same scale as the report) that passes.',
+    failOnAnyFailedCheckLabel: 'Fail on any failed check',
+    failOnAnyFailedCheckDescription:
+      'On by default. A failed check fails the page even when the score meets the threshold. Warnings never do.',
+    reportLanguageLabel: 'Report language',
+    reportLanguageDescription:
+      "Language of the emailed report and messages. Automatic uses the page's language when it is supported, otherwise English.",
+  },
 };

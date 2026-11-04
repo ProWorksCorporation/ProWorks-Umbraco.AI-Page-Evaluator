@@ -12,7 +12,7 @@
     <AddRazorSupportForMvc>false</AddRazorSupportForMvc>
     <!-- NuGet packaging -->
     <PackageId>ProWorks.Umbraco.AI.PageEvaluator</PackageId>
-    <Version>17.6.0</Version>
+    <Version>17.6.1</Version>
     <Authors>ProWorks, Jason Prothero</Authors>
     <Company>ProWorks Corporation</Company>
     <PackageTags>umbraco;umbraco-marketplace;umbraco-cms;umbraco-ai;ai;page-evaluator;backoffice</PackageTags>
@@ -21,7 +21,7 @@
     <Copyright>Copyright (c) $([System.DateTime]::UtcNow.ToString(`yyyy`)) ProWorks Corporation</Copyright>
     <PackageReadmeFile>README.nuget.md</PackageReadmeFile>
     <PackageProjectUrl>https://github.com/ProWorksCorporation/ProWorks-Umbraco.AI-Page-Evaluator</PackageProjectUrl>
-    <PackageReleaseNotes>17.6.0: Upgraded to Umbraco CMS 17.8.0+ and Umbraco.AI 17.6.1+ (sites that can't upgrade yet can stay on 17.3.1). Also: warns admins when an AI profile has its own system prompt; shows Umbraco.AI's AI disclosure notice on reports; fixes intermittent "database is locked" errors on SQLite, re-activating an active configuration turning it off, the wrong "Last evaluated" time, and configuration save errors not being shown.</PackageReleaseNotes>
+    <PackageReleaseNotes>17.6.1: Adds Copilot tools: editors can evaluate the open page, get recommendations for failing checks and apply them after approving (values are staged, never saved); grant the Page Evaluator tool scopes per agent. Adds an evaluate_page agent tool and two optional add-on packages: ProWorks.Umbraco.AI.PageEvaluator.Automate (an "Evaluate Page" step for Umbraco Automate) and ProWorks.Umbraco.AI.PageEvaluator.Deploy (Umbraco Deploy support for evaluator configurations). Also: the 10-per-minute evaluation limit now applies to every caller without app.UseRateLimiter(); fixes intermittent "database is locked" errors when saving, activating or deleting evaluator configurations on SQLite.</PackageReleaseNotes>
     <RepositoryUrl>https://github.com/ProWorksCorporation/ProWorks-Umbraco.AI-Page-Evaluator</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
   </PropertyGroup>

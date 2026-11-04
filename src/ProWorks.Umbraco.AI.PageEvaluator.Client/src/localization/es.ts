@@ -187,4 +187,53 @@ export default {
     categoryAccessibilityVisibility: 'Accesibilidad y visibilidad',
     categoryCallsToAction: 'Llamadas a la acción',
   },
+  // 006: Copilot frontend tools and the evaluate_page server tool (Umbraco.AI admin labels: uaiTool_{toolName}Label)
+  uaiTool: {
+    evaluateCurrentPageLabel: 'Evaluar la página actual',
+    evaluateCurrentPageDescription:
+      'Evalúa la página abierta en el editor con sus comprobaciones de Page Evaluator, usando los valores en pantalla para el idioma que se está viendo.',
+    recommendPageValuesLabel: 'Recomendar valores de la página',
+    recommendPageValuesDescription:
+      'Sugiere mejores valores para los campos señalados por comprobaciones fallidas o con advertencias en la evaluación de la página.',
+    applyPageRecommendationLabel: 'Aplicar recomendación de la página',
+    applyPageRecommendationDescription:
+      'Escribe una recomendación aceptada en su campo después de que el usuario la apruebe. El cambio no se guarda.',
+    evaluatePageLabel: 'Evaluar página',
+    evaluatePageDescription:
+      'Evalúa la última versión guardada de una página, por su id, con sus comprobaciones de Page Evaluator.',
+  },
+  // 006: tool scopes shown when granting tools to an agent
+  uaiToolScope: {
+    pageEvaluatorReadLabel: 'Page Evaluator (lectura)',
+    pageEvaluatorReadDescription: 'Evaluar páginas y obtener valores recomendados, sin modificar el contenido',
+    pageEvaluatorWriteLabel: 'Page Evaluator (escritura)',
+    pageEvaluatorWriteDescription:
+      'Aplicar recomendaciones aceptadas a la página abierta (preparadas, sin guardar), tras la aprobación del usuario',
+  },
+  uaiToolScopeDomain: {
+    pageEvaluator: 'Page Evaluator',
+  },
+  // 006: approval prompt before the Copilot apply tool writes a value
+  pageEvaluatorCopilot: {
+    applyApprovalTitle: 'Aplicar recomendación',
+    applyApprovalMessage: '¿Escribir el valor recomendado en el campo? Quedará preparado en el editor, sin guardar.',
+  },
+  // 006: settings of the Umbraco Automate "Evaluate Page" step
+  pageEvaluatorAutomate: {
+    contentKeyLabel: 'Página',
+    contentKeyDescription:
+      'La clave de la página que se evaluará. Puede ser un enlace (binding), como ${ trigger.contentKey }.',
+    cultureLabel: 'Idioma',
+    cultureDescription:
+      'Código ISO del idioma que se evaluará, como es-ES. Obligatorio para las páginas que varían por idioma.',
+    passThresholdLabel: 'Umbral de aprobación',
+    passThresholdDescription:
+      'Opcional. La puntuación global mínima (de 1 a 5, la misma escala que el informe) para aprobar.',
+    failOnAnyFailedCheckLabel: 'Suspender si falla alguna comprobación',
+    failOnAnyFailedCheckDescription:
+      'Activado de forma predeterminada. Una comprobación fallida suspende la página aunque la puntuación alcance el umbral. Las advertencias nunca lo hacen.',
+    reportLanguageLabel: 'Idioma del informe',
+    reportLanguageDescription:
+      'Idioma del informe enviado por correo y de los mensajes. Automático usa el idioma de la página si está disponible; si no, inglés.',
+  },
 };

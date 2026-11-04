@@ -51,13 +51,40 @@ public sealed partial class PageEvaluationService : IPageEvaluationService
         string? culture = null,
         CancellationToken cancellationToken = default)
     {
-        AIEvaluatorConfig? config = await _configService.GetActiveForDocumentTypeAsync(documentTypeAlias, cancellationToken);
-        if (config is null)
-            throw new InvalidOperationException($"No active evaluator configuration found for document type '{documentTypeAlias}'.");
+        AIEvaluatorConfig config = await GetActiveConfigAsync(documentTypeAlias, cancellationToken);
 
         // FR-018a: the viewed culture's content (plus invariant properties), overlaid with unsaved text drafts.
         IReadOnlyDictionary<string, object?> resolvedProperties = _propertyResolver.Resolve(nodeId, culture, properties);
 
+        return await EvaluateResolvedAsync(nodeId, documentTypeAlias, config, resolvedProperties, cancellationToken);
+    }
+
+    public async Task<EvaluationReport> EvaluateSavedAsync(
+        Guid nodeId,
+        string documentTypeAlias,
+        string? culture,
+        CancellationToken cancellationToken = default)
+    {
+        AIEvaluatorConfig config = await GetActiveConfigAsync(documentTypeAlias, cancellationToken);
+
+        // 006 research R2: the latest saved draft only (no on-screen values, no published version).
+        IReadOnlyDictionary<string, object?> resolvedProperties = _propertyResolver.ResolveSaved(nodeId, culture);
+
+        return await EvaluateResolvedAsync(nodeId, documentTypeAlias, config, resolvedProperties, cancellationToken);
+    }
+
+    private async Task<AIEvaluatorConfig> GetActiveConfigAsync(string documentTypeAlias, CancellationToken cancellationToken)
+        => await _configService.GetActiveForDocumentTypeAsync(documentTypeAlias, cancellationToken)
+            ?? throw new InvalidOperationException($"No active evaluator configuration found for document type '{documentTypeAlias}'.");
+
+    /// <summary>Shared by both entry points: property filter, cleaning, the AI call and logging.</summary>
+    private async Task<EvaluationReport> EvaluateResolvedAsync(
+        Guid nodeId,
+        string documentTypeAlias,
+        AIEvaluatorConfig config,
+        IReadOnlyDictionary<string, object?> resolvedProperties,
+        CancellationToken cancellationToken)
+    {
         // Filter properties if the config specifies which aliases to include.
         if (config.PropertyAliases is { Count: > 0 })
         {

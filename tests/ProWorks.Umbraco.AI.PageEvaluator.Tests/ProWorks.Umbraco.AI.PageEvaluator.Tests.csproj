@@ -12,6 +12,9 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\ProWorks.Umbraco.AI.PageEvaluator.Core\ProWorks.Umbraco.AI.PageEvaluator.Core.csproj" />
     <ProjectReference Include="..\..\src\ProWorks.Umbraco.AI.PageEvaluator.Persistence\ProWorks.Umbraco.AI.PageEvaluator.Persistence.csproj" />
+    <!-- MigrationSnapshotTests: the provider migrations assemblies and their design-time factories -->
+    <ProjectReference Include="..\..\src\ProWorks.Umbraco.AI.PageEvaluator.Persistence.Sqlite\ProWorks.Umbraco.AI.PageEvaluator.Persistence.Sqlite.csproj" />
+    <ProjectReference Include="..\..\src\ProWorks.Umbraco.AI.PageEvaluator.Persistence.SqlServer\ProWorks.Umbraco.AI.PageEvaluator.Persistence.SqlServer.csproj" />
     <ProjectReference Include="..\..\src\ProWorks.Umbraco.AI.PageEvaluator\ProWorks.Umbraco.AI.PageEvaluator.csproj" />
   </ItemGroup>
 

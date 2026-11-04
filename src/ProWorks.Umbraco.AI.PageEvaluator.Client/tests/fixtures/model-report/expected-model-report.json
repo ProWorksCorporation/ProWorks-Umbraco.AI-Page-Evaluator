@@ -1,0 +1,60 @@
+{
+  "success": true,
+  "page": {
+    "nodeId": "3e4f5a6b-7c8d-4e9f-a0b1-c2d3e4f5a6b7",
+    "name": "ProWorks AI Page Evaluator",
+    "documentTypeAlias": "landingPage",
+    "culture": "da-dk"
+  },
+  "configName": "Landing page checks",
+  "evaluatedAt": "2026-11-03T10:15:00.000Z",
+  "fromCache": true,
+  "outOfDate": true,
+  "outOfDateReasons": ["savedSinceEvaluation", "unsavedChanges"],
+  "parseFailed": false,
+  "scoring": {
+    "overallScore": 3.5,
+    "axisScores": [
+      { "name": "SEO", "score": 3, "feedback": "The meta description is missing." },
+      { "name": "Readability", "score": 4, "feedback": null }
+    ]
+  },
+  "checks": [
+    {
+      "id": 1,
+      "title": "Meta description present",
+      "status": "Fail",
+      "explanation": "The meta description is empty.",
+      "propertyAliases": ["metaDescription"]
+    },
+    {
+      "id": 2,
+      "title": "Title and hero image",
+      "status": "Warn",
+      "explanation": "The title is generic and the hero image has no alt text.",
+      "propertyAliases": ["title", "heroImage"]
+    },
+    {
+      "id": 3,
+      "title": "Introduction",
+      "status": "Pass",
+      "explanation": null,
+      "propertyAliases": ["introText"]
+    },
+    {
+      "id": 4,
+      "title": "Keywords",
+      "status": "Warn",
+      "explanation": "Add keywords that match the meta description.",
+      "propertyAliases": ["metaDescription", "keywords"]
+    }
+  ],
+  "suggestions": "Write a meta description of about 150 characters.",
+  "recommendationsEnabled": true,
+  "recommendable": [
+    { "propertyAlias": "metaDescription", "propertyName": "Meta description", "checkId": 1, "checkStatus": "Fail", "canApply": true },
+    { "propertyAlias": "title", "propertyName": "Title", "checkId": 2, "checkStatus": "Warn", "canApply": true },
+    { "propertyAlias": "keywords", "propertyName": "Keywords", "checkId": 4, "checkStatus": "Warn", "canApply": true }
+  ],
+  "note": "This report may not reflect the latest changes. Offer to run a fresh evaluation before recommending."
+}

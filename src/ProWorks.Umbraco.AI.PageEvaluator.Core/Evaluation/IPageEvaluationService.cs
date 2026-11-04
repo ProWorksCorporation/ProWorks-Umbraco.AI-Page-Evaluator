@@ -39,6 +39,24 @@ public interface IPageEvaluationService
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Evaluates the node's <b>latest saved draft</b> for <paramref name="culture"/> (no on-screen values): used by
+    /// the <c>evaluate_page</c> server tool and the Automate step (006 research R2). Shares the property filter,
+    /// cleaning and AI call with <see cref="EvaluateAsync"/>.
+    /// </summary>
+    /// <param name="nodeId">The Umbraco content node GUID being evaluated.</param>
+    /// <param name="documentTypeAlias">The document type alias of the node.</param>
+    /// <param name="culture">Lower-cased ISO culture, or <see langword="null"/> for invariant documents.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when no active EvaluatorConfiguration exists for the given document type alias.
+    /// </exception>
+    Task<EvaluationReport> EvaluateSavedAsync(
+        Guid nodeId,
+        string documentTypeAlias,
+        string? culture,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Evaluates using a pre-resolved config and properties, returning raw strings alongside the
     /// structured report. Useful for test transcripts and diagnostic tooling.
     /// </summary>

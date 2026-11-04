@@ -19,6 +19,9 @@
     <PackageReference Include="Umbraco.Cms.DevelopmentMode.Backoffice" Version="17.8.0" />
     <PackageReference Include="Umbraco.AI" Version="17.6.1" />
     <PackageReference Include="uSync" Version="17.5.2" />
+    <!-- 006 (owner decision D7): Umbraco Automate for the "Evaluate Page" step. 17.5.1 is the add-on's floor
+         (older versions continue a run after a failed step); it supports CMS [17.6.0, 18). -->
+    <PackageReference Include="Umbraco.Automate" Version="17.5.1" />
     <!-- Pin Microsoft.Extensions.AI packages to 10.7.0, required by Umbraco.AI.Core 17.6.1
          (range [10.7.0, 11)) and Anthropic 12.29.1. All three packages must be the same version. -->
     <PackageReference Include="Microsoft.Extensions.AI" Version="10.7.0" />
@@ -28,6 +31,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ProWorks.Umbraco.AI.PageEvaluator\ProWorks.Umbraco.AI.PageEvaluator.csproj" />
+    <ProjectReference Include="..\ProWorks.Umbraco.AI.PageEvaluator.Automate\ProWorks.Umbraco.AI.PageEvaluator.Automate.csproj" />
     <!-- Both migration assemblies must be present to match what the NuGet package bundles in lib/net10.0/ -->
     <ProjectReference Include="..\ProWorks.Umbraco.AI.PageEvaluator.Persistence.Sqlite\ProWorks.Umbraco.AI.PageEvaluator.Persistence.Sqlite.csproj" />
     <ProjectReference Include="..\ProWorks.Umbraco.AI.PageEvaluator.Persistence.SqlServer\ProWorks.Umbraco.AI.PageEvaluator.Persistence.SqlServer.csproj" />

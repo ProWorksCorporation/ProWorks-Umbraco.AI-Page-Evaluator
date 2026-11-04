@@ -1,5 +1,6 @@
 using ProWorks.Umbraco.AI.PageEvaluator.Evaluators;
 using ProWorks.Umbraco.AI.PageEvaluator.Persistence.Evaluators;
+using Umbraco.AI.Core.Versioning;
 using Xunit;
 
 namespace ProWorks.Umbraco.AI.PageEvaluator.Tests.Persistence;
@@ -218,6 +219,58 @@ public class AIEvaluatorConfigEntityFactoryTests
         var domain = AIEvaluatorConfigEntityFactory.ToDomain(entity);
 
         Assert.Null(domain.PropertyAliases);
+    }
+
+
+    // ---------------------------------------------------------------------------
+    // IsDeployManaged (006 data-model §2) and IAIVersionableEntity (research R10)
+    // ---------------------------------------------------------------------------
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void ToDomain_CarriesIsDeployManaged(bool managed)
+    {
+        var entity = BuildEntity(scoringEnabled: false);
+        entity.IsDeployManaged = managed;
+
+        Assert.Equal(managed, AIEvaluatorConfigEntityFactory.ToDomain(entity).IsDeployManaged);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void ToEntity_CarriesIsDeployManaged(bool managed)
+    {
+        var domain = BuildDomain(scoringEnabled: false);
+        domain.IsDeployManaged = managed;
+
+        Assert.Equal(managed, AIEvaluatorConfigEntityFactory.ToEntity(domain).IsDeployManaged);
+    }
+
+    [Fact]
+    public void ApplyToEntity_CarriesIsDeployManaged()
+    {
+        var entity = BuildEntity(scoringEnabled: false);
+        var domain = BuildDomain(scoringEnabled: false);
+        domain.IsDeployManaged = true;
+
+        AIEvaluatorConfigEntityFactory.ApplyToEntity(domain, entity);
+
+        Assert.True(entity.IsDeployManaged);
+    }
+
+    [Fact]
+    public void IsDeployManaged_DefaultsToFalse()
+    {
+        Assert.False(BuildDomain(scoringEnabled: false).IsDeployManaged);
+        Assert.False(BuildEntity(scoringEnabled: false).IsDeployManaged);
+    }
+
+    [Fact]
+    public void AIEvaluatorConfig_IsAnIAIVersionableEntity()
+    {
+        Assert.True(typeof(IAIVersionableEntity).IsAssignableFrom(typeof(AIEvaluatorConfig)));
     }
 
 }

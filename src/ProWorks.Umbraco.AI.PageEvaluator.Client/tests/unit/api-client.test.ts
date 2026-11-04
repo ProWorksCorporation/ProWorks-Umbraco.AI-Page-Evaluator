@@ -35,6 +35,7 @@ import {
   recommend,
   updateConfiguration,
 } from '../../src/shared/api-client.js';
+import { localizationKeyForError } from '../../src/shared/error-category.js';
 import type {
   CreateEvaluatorConfigRequest,
   EvaluatePageRequest,
@@ -177,5 +178,30 @@ describe('api-client — 404 → null branches still work', () => {
         throwOnError: false,
       }),
     );
+  });
+});
+
+describe('api-client — 429 from the shared evaluation limit (006 contracts/management-api.md §2)', () => {
+  const tooMany = {
+    type: 'Error',
+    title: 'Too many evaluation requests. Please wait a minute and try again.',
+    status: 429,
+    category: 'temporaryRetryable',
+  };
+
+  it.each([
+    ['evaluatePage', () => evaluatePage(evaluateRequest)],
+    ['recommend', () => recommend(recommendRequest)],
+  ])('%s rejects with ApiError(429, temporaryRetryable) → the existing retry message', async (_name, invoke) => {
+    httpMock.post.mockResolvedValue({ error: tooMany, response: new Response(null, { status: 429 }) });
+
+    const err = await rejectionOf(invoke());
+
+    expect(err).toBeInstanceOf(ApiError);
+    const apiError = err as ApiError;
+    expect(apiError.status).toBe(429);
+    expect(apiError.category).toBe('temporaryRetryable');
+    expect(apiError.type).toBe('Error');
+    expect(localizationKeyForError(apiError, 'evaluatePage_aiErrorMessage')).toBe('evaluatePage_temporaryRetryableMessage');
   });
 });

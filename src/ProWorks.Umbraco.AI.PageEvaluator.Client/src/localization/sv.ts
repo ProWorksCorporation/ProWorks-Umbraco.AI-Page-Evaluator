@@ -187,4 +187,52 @@ export default {
     categoryAccessibilityVisibility: 'Tillgänglighet och synlighet',
     categoryCallsToAction: 'Uppmaningar till handling',
   },
+  // 006: Copilot frontend tools and the evaluate_page server tool (Umbraco.AI admin labels: uaiTool_{toolName}Label)
+  uaiTool: {
+    evaluateCurrentPageLabel: 'Utvärdera aktuell sida',
+    evaluateCurrentPageDescription:
+      'Utvärderar sidan som är öppen i redigeraren med dess Page Evaluator-kontroller och använder värdena på skärmen för det språk som visas.',
+    recommendPageValuesLabel: 'Rekommendera värden för sidan',
+    recommendPageValuesDescription:
+      'Föreslår bättre värden för fält som pekas ut av kontroller som misslyckades eller gav varningar i sidans utvärdering.',
+    applyPageRecommendationLabel: 'Tillämpa sidrekommendation',
+    applyPageRecommendationDescription:
+      'Skriver en accepterad rekommendation i fältet efter att användaren har godkänt den. Ändringen sparas inte.',
+    evaluatePageLabel: 'Utvärdera sida',
+    evaluatePageDescription:
+      'Utvärderar den senast sparade versionen av en sida utifrån dess id med dess Page Evaluator-kontroller.',
+  },
+  // 006: tool scopes shown when granting tools to an agent
+  uaiToolScope: {
+    pageEvaluatorReadLabel: 'Page Evaluator (läsa)',
+    pageEvaluatorReadDescription: 'Utvärdera sidor och hämta rekommenderade värden utan att ändra innehåll',
+    pageEvaluatorWriteLabel: 'Page Evaluator (skriva)',
+    pageEvaluatorWriteDescription:
+      'Tillämpa accepterade rekommendationer på den öppna sidan (förberedda, inte sparade) efter att användaren har godkänt',
+  },
+  uaiToolScopeDomain: {
+    pageEvaluator: 'Page Evaluator',
+  },
+  // 006: approval prompt before the Copilot apply tool writes a value
+  pageEvaluatorCopilot: {
+    applyApprovalTitle: 'Tillämpa rekommendation',
+    applyApprovalMessage: 'Skriva det rekommenderade värdet i fältet? Det förbereds i redigeraren och sparas inte.',
+  },
+  // 006: settings of the Umbraco Automate "Evaluate Page" step
+  pageEvaluatorAutomate: {
+    contentKeyLabel: 'Sida',
+    contentKeyDescription:
+      'Nyckeln för sidan som ska utvärderas. Kan vara en bindning, till exempel ${ trigger.contentKey }.',
+    cultureLabel: 'Språk',
+    cultureDescription:
+      'ISO-kod för språket som ska utvärderas, till exempel sv-SE. Krävs för sidor som varierar per språk.',
+    passThresholdLabel: 'Gräns för godkänt',
+    passThresholdDescription: 'Valfritt. Den lägsta totalpoängen (1–5, samma skala som rapporten) som ger godkänt.',
+    failOnAnyFailedCheckLabel: 'Underkänn vid varje misslyckad kontroll',
+    failOnAnyFailedCheckDescription:
+      'På som standard. En misslyckad kontroll underkänner sidan även om poängen når gränsen. Varningar gör det aldrig.',
+    reportLanguageLabel: 'Rapportspråk',
+    reportLanguageDescription:
+      'Språket i den e-postade rapporten och i meddelandena. Automatiskt använder sidans språk om det stöds, annars engelska.',
+  },
 };

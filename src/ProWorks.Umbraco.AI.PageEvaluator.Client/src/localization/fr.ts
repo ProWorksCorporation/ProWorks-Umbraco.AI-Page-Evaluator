@@ -187,4 +187,53 @@ export default {
     categoryAccessibilityVisibility: 'Accessibilité et visibilité',
     categoryCallsToAction: "Appels à l'action",
   },
+  // 006: Copilot frontend tools and the evaluate_page server tool (Umbraco.AI admin labels: uaiTool_{toolName}Label)
+  uaiTool: {
+    evaluateCurrentPageLabel: 'Évaluer la page actuelle',
+    evaluateCurrentPageDescription:
+      "Évalue la page ouverte dans l'éditeur avec ses vérifications Page Evaluator, en utilisant les valeurs affichées pour la langue consultée.",
+    recommendPageValuesLabel: 'Recommander des valeurs pour la page',
+    recommendPageValuesDescription:
+      "Propose de meilleures valeurs pour les champs signalés par des vérifications en échec ou en avertissement dans l'évaluation de la page.",
+    applyPageRecommendationLabel: 'Appliquer une recommandation',
+    applyPageRecommendationDescription:
+      "Écrit une recommandation acceptée dans son champ après l'approbation de l'utilisateur. La modification n'est pas enregistrée.",
+    evaluatePageLabel: 'Évaluer une page',
+    evaluatePageDescription:
+      "Évalue la dernière version enregistrée d'une page, à partir de son id, avec ses vérifications Page Evaluator.",
+  },
+  // 006: tool scopes shown when granting tools to an agent
+  uaiToolScope: {
+    pageEvaluatorReadLabel: 'Page Evaluator (lecture)',
+    pageEvaluatorReadDescription: 'Évaluer des pages et obtenir des valeurs recommandées, sans modifier le contenu',
+    pageEvaluatorWriteLabel: 'Page Evaluator (écriture)',
+    pageEvaluatorWriteDescription:
+      "Appliquer les recommandations acceptées à la page ouverte (en attente, non enregistrées), après l'approbation de l'utilisateur",
+  },
+  uaiToolScopeDomain: {
+    pageEvaluator: 'Page Evaluator',
+  },
+  // 006: approval prompt before the Copilot apply tool writes a value
+  pageEvaluatorCopilot: {
+    applyApprovalTitle: 'Appliquer la recommandation',
+    applyApprovalMessage:
+      "Écrire la valeur recommandée dans le champ ? Elle sera mise en attente dans l'éditeur, sans être enregistrée.",
+  },
+  // 006: settings of the Umbraco Automate "Evaluate Page" step
+  pageEvaluatorAutomate: {
+    contentKeyLabel: 'Page',
+    contentKeyDescription: 'La clé de la page à évaluer. Peut être une liaison, par exemple ${ trigger.contentKey }.',
+    cultureLabel: 'Langue',
+    cultureDescription:
+      'Code ISO de la langue à évaluer, par exemple fr-FR. Obligatoire pour les pages qui varient selon la langue.',
+    passThresholdLabel: 'Seuil de réussite',
+    passThresholdDescription:
+      'Facultatif. Le score global minimal (de 1 à 5, la même échelle que le rapport) pour réussir.',
+    failOnAnyFailedCheckLabel: 'Échouer si une vérification échoue',
+    failOnAnyFailedCheckDescription:
+      'Activé par défaut. Une vérification en échec fait échouer la page même si le score atteint le seuil. Les avertissements, jamais.',
+    reportLanguageLabel: 'Langue du rapport',
+    reportLanguageDescription:
+      "Langue du rapport envoyé par e-mail et des messages. Automatique utilise la langue de la page si elle est prise en charge, sinon l'anglais.",
+  },
 };

@@ -1,7 +1,8 @@
 import "@umbraco-cms/backoffice/extension-registry";
-import { o as r, l as t } from "./entry-point-BHYSU-3A.js";
+import { m as s, o as t, n as i } from "./entry-point-D__xAncy.js";
 export {
-  r as onInit,
-  t as onUnload
+  s as copilotToolManifests,
+  t as onInit,
+  i as onUnload
 };
 //# sourceMappingURL=entry-point.js.map

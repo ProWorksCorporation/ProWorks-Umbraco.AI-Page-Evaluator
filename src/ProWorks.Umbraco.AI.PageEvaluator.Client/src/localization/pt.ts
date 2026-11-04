@@ -187,4 +187,53 @@ export default {
     categoryAccessibilityVisibility: 'Acessibilidade e visibilidade',
     categoryCallsToAction: 'Chamadas para ação',
   },
+  // 006: Copilot frontend tools and the evaluate_page server tool (Umbraco.AI admin labels: uaiTool_{toolName}Label)
+  uaiTool: {
+    evaluateCurrentPageLabel: 'Avaliar a página atual',
+    evaluateCurrentPageDescription:
+      'Avalia a página aberta no editor com as verificações do Page Evaluator, usando os valores no ecrã para o idioma visualizado.',
+    recommendPageValuesLabel: 'Recomendar valores para a página',
+    recommendPageValuesDescription:
+      'Sugere melhores valores para os campos indicados por verificações falhadas ou com avisos na avaliação da página.',
+    applyPageRecommendationLabel: 'Aplicar recomendação à página',
+    applyPageRecommendationDescription:
+      'Escreve uma recomendação aceite no respetivo campo depois de o utilizador a aprovar. A alteração não é guardada.',
+    evaluatePageLabel: 'Avaliar página',
+    evaluatePageDescription:
+      'Avalia a última versão guardada de uma página, pelo seu id, com as verificações do Page Evaluator.',
+  },
+  // 006: tool scopes shown when granting tools to an agent
+  uaiToolScope: {
+    pageEvaluatorReadLabel: 'Page Evaluator (leitura)',
+    pageEvaluatorReadDescription: 'Avaliar páginas e obter valores recomendados, sem alterar o conteúdo',
+    pageEvaluatorWriteLabel: 'Page Evaluator (escrita)',
+    pageEvaluatorWriteDescription:
+      'Aplicar recomendações aceites à página aberta (preparadas, não guardadas), após a aprovação do utilizador',
+  },
+  uaiToolScopeDomain: {
+    pageEvaluator: 'Page Evaluator',
+  },
+  // 006: approval prompt before the Copilot apply tool writes a value
+  pageEvaluatorCopilot: {
+    applyApprovalTitle: 'Aplicar recomendação',
+    applyApprovalMessage: 'Escrever o valor recomendado no campo? Ficará preparado no editor, sem ser guardado.',
+  },
+  // 006: settings of the Umbraco Automate "Evaluate Page" step
+  pageEvaluatorAutomate: {
+    contentKeyLabel: 'Página',
+    contentKeyDescription:
+      'A chave da página a avaliar. Pode ser uma associação (binding), por exemplo ${ trigger.contentKey }.',
+    cultureLabel: 'Idioma',
+    cultureDescription:
+      'Código ISO do idioma a avaliar, por exemplo pt-PT. Obrigatório para páginas que variam por idioma.',
+    passThresholdLabel: 'Limiar de aprovação',
+    passThresholdDescription:
+      'Opcional. A pontuação global mínima (de 1 a 5, a mesma escala do relatório) para aprovar.',
+    failOnAnyFailedCheckLabel: 'Reprovar se alguma verificação falhar',
+    failOnAnyFailedCheckDescription:
+      'Ativado por predefinição. Uma verificação falhada reprova a página mesmo que a pontuação atinja o limiar. Os avisos nunca o fazem.',
+    reportLanguageLabel: 'Idioma do relatório',
+    reportLanguageDescription:
+      'Idioma do relatório enviado por e-mail e das mensagens. Automático usa o idioma da página se for suportado; caso contrário, inglês.',
+  },
 };

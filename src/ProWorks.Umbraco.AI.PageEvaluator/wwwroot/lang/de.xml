@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<language alias="de" intName="German (DE)" localName="Deutsch (DE)" lcid="" culture="de-DE">
+  <area alias="proworksPageEvaluator">
+    <key alias="reportTitle">Seitenbewertung</key>
+    <key alias="reportPage">Seite</key>
+    <key alias="reportLanguage">Sprache</key>
+    <key alias="reportConfiguration">Konfiguration</key>
+    <key alias="reportEvaluatedAt">Bewertet am</key>
+    <key alias="reportFromCache">Aus einer früheren Bewertung derselben gespeicherten Version übernommen</key>
+    <key alias="reportOverallScore">Gesamtbewertung</key>
+    <key alias="reportScoreOutOf">{score} / 5</key>
+    <key alias="reportAxisScores">Bewertungsübersicht</key>
+    <key alias="reportChecks">Prüfungen</key>
+    <key alias="reportStatusPass">Bestanden</key>
+    <key alias="reportStatusFail">Fehlgeschlagen</key>
+    <key alias="reportStatusWarn">Warnung</key>
+    <key alias="reportVerdictPassed">Bestanden</key>
+    <key alias="reportVerdictFailed">Nicht bestanden</key>
+    <key alias="reportVerdictNone">Keine Bestehensregel festgelegt</key>
+    <key alias="reportVerdictScoreMissing">Nicht bestanden: Die KI hat keine Gesamtbewertung geliefert</key>
+    <key alias="reportParseFailed">Die KI-Antwort konnte nicht als strukturierter Bericht formatiert werden. Verfeinern Sie den Bewertungs-Prompt, um die strukturierte Ausgabe zu verbessern.</key>
+    <key alias="reportOpenInUmbraco">In Umbraco öffnen</key>
+    <key alias="reportInvariant">Alle Sprachen</key>
+    <key alias="summaryScored">{page}: Gesamtbewertung {score}/5; {passed} bestanden, {failed} fehlgeschlagen, {warnings} Warnungen. {verdict}.</key>
+    <key alias="summaryUnscored">{page}: {passed} bestanden, {failed} fehlgeschlagen, {warnings} Warnungen. {verdict}.</key>
+    <key alias="summaryParseFailed">{page}: Die KI-Antwort konnte nicht als Bericht gelesen werden. {verdict}.</key>
+    <key alias="errorInvalidContentKey">Die Seiteneinstellung "{value}" ist kein gültiger Inhaltsschlüssel. Binden Sie sie an den Inhaltsschlüssel des Auslösers oder geben Sie den Schlüssel einer Seite ein.</key>
+    <key alias="errorContentNotFound">Es gibt keine Seite mit dem Schlüssel {key}.</key>
+    <key alias="errorCultureRequired">Die Seite "{page}" variiert nach Sprache, daher ist die Einstellung Sprache erforderlich.</key>
+    <key alias="errorInvalidCulture">Die Sprache "{culture}" ist auf dieser Website nicht konfiguriert.</key>
+    <key alias="errorCultureNotCreated">Die Seite "{page}" hat noch keine Version "{culture}", daher gibt es nichts auszuwerten.</key>
+    <key alias="errorNoActiveConfig">Für den Dokumenttyp "{documentType}" gibt es keine aktive Page-Evaluator-Konfiguration.</key>
+    <key alias="errorThresholdNeedsScoring">Ein Bestehensschwellenwert ist festgelegt, aber in der Bewertungskonfiguration "{config}" ist die Punktevergabe deaktiviert. Aktivieren Sie die Punktevergabe oder entfernen Sie den Schwellenwert.</key>
+    <key alias="errorGuardrailBlocked">Die Bewertung wurde durch eine Umbraco.AI-Guardrail-Richtlinie blockiert: {message}</key>
+    <key alias="errorProviderUnavailable">Der KI-Anbieter ist vorübergehend nicht verfügbar. Bitte versuchen Sie es in Kürze erneut.</key>
+    <key alias="errorProviderConfiguration">Die KI-Verbindung erfordert Aufmerksamkeit. Wenden Sie sich an Ihren Administrator, um die Anmeldedaten oder die Konfiguration des KI-Profils zu überprüfen.</key>
+    <key alias="errorUnexpected">Die Bewertung konnte wegen eines unerwarteten Fehlers nicht abgeschlossen werden. Details finden Sie im Umbraco-Protokoll.</key>
+  </area>
+</language>

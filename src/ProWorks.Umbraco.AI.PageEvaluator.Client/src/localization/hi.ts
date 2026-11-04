@@ -187,4 +187,52 @@ export default {
     categoryAccessibilityVisibility: 'पहुँच-योग्यता और दृश्यता',
     categoryCallsToAction: 'कॉल टू एक्शन',
   },
+  // 006: Copilot frontend tools and the evaluate_page server tool (Umbraco.AI admin labels: uaiTool_{toolName}Label)
+  uaiTool: {
+    evaluateCurrentPageLabel: 'वर्तमान पेज का मूल्यांकन करें',
+    evaluateCurrentPageDescription:
+      'एडिटर में खुले पेज का उसकी Page Evaluator जाँचों से मूल्यांकन करता है, और देखी जा रही भाषा के लिए स्क्रीन पर मौजूद मानों का उपयोग करता है।',
+    recommendPageValuesLabel: 'पेज के लिए मानों की सिफ़ारिश करें',
+    recommendPageValuesDescription:
+      'पेज के मूल्यांकन में विफल या चेतावनी वाली जाँचों द्वारा बताए गए फ़ील्ड के लिए बेहतर मान सुझाता है।',
+    applyPageRecommendationLabel: 'पेज की सिफ़ारिश लागू करें',
+    applyPageRecommendationDescription:
+      'उपयोगकर्ता की स्वीकृति के बाद स्वीकार की गई सिफ़ारिश को उसके फ़ील्ड में लिखता है। बदलाव सहेजा नहीं जाता।',
+    evaluatePageLabel: 'पेज का मूल्यांकन करें',
+    evaluatePageDescription:
+      'किसी पेज के अंतिम सहेजे गए संस्करण का, उसकी id से, उसकी Page Evaluator जाँचों के साथ मूल्यांकन करता है।',
+  },
+  // 006: tool scopes shown when granting tools to an agent
+  uaiToolScope: {
+    pageEvaluatorReadLabel: 'Page Evaluator (पढ़ना)',
+    pageEvaluatorReadDescription: 'सामग्री बदले बिना पेजों का मूल्यांकन करना और सुझाए गए मान प्राप्त करना',
+    pageEvaluatorWriteLabel: 'Page Evaluator (लिखना)',
+    pageEvaluatorWriteDescription:
+      'उपयोगकर्ता की स्वीकृति के बाद, स्वीकार की गई सिफ़ारिशें खुले पेज पर लागू करना (तैयार, सहेजी नहीं गईं)',
+  },
+  uaiToolScopeDomain: {
+    pageEvaluator: 'Page Evaluator',
+  },
+  // 006: approval prompt before the Copilot apply tool writes a value
+  pageEvaluatorCopilot: {
+    applyApprovalTitle: 'सिफ़ारिश लागू करें',
+    applyApprovalMessage: 'सुझाया गया मान फ़ील्ड में लिखें? यह एडिटर में तैयार रहेगा, सहेजा नहीं जाएगा।',
+  },
+  // 006: settings of the Umbraco Automate "Evaluate Page" step
+  pageEvaluatorAutomate: {
+    contentKeyLabel: 'पेज',
+    contentKeyDescription:
+      'मूल्यांकन किए जाने वाले पेज की key। यह एक बाइंडिंग हो सकती है, जैसे ${ trigger.contentKey }।',
+    cultureLabel: 'भाषा',
+    cultureDescription:
+      'मूल्यांकन की जाने वाली भाषा का ISO कोड, जैसे hi-IN। भाषा के अनुसार बदलने वाले पेजों के लिए आवश्यक।',
+    passThresholdLabel: 'पास सीमा',
+    passThresholdDescription: 'वैकल्पिक। पास होने के लिए न्यूनतम कुल स्कोर (1–5, रिपोर्ट वाला ही पैमाना)।',
+    failOnAnyFailedCheckLabel: 'किसी भी जाँच के विफल होने पर फ़ेल करें',
+    failOnAnyFailedCheckDescription:
+      'डिफ़ॉल्ट रूप से चालू। कोई जाँच विफल होने पर पेज फ़ेल हो जाता है, भले ही स्कोर सीमा तक पहुँच जाए। चेतावनियाँ ऐसा कभी नहीं करतीं।',
+    reportLanguageLabel: 'रिपोर्ट की भाषा',
+    reportLanguageDescription:
+      'ईमेल की गई रिपोर्ट और संदेशों की भाषा। स्वचालित विकल्प समर्थित होने पर पेज की भाषा का उपयोग करता है, अन्यथा अंग्रेज़ी का।',
+  },
 };

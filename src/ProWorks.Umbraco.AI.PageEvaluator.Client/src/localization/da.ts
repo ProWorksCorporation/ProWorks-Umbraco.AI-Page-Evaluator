@@ -187,4 +187,52 @@ export default {
     categoryAccessibilityVisibility: 'Tilgængelighed og synlighed',
     categoryCallsToAction: 'Call-to-actions',
   },
+  // 006: Copilot frontend tools and the evaluate_page server tool (Umbraco.AI admin labels: uaiTool_{toolName}Label)
+  uaiTool: {
+    evaluateCurrentPageLabel: 'Evaluer den aktuelle side',
+    evaluateCurrentPageDescription:
+      'Evaluerer siden, der er åben i editoren, med dens Page Evaluator-tjek og bruger værdierne på skærmen for det viste sprog.',
+    recommendPageValuesLabel: 'Anbefal værdier for siden',
+    recommendPageValuesDescription:
+      'Foreslår bedre værdier for felter, som fejlede tjek eller tjek med advarsler i sidens evaluering peger på.',
+    applyPageRecommendationLabel: 'Anvend sideanbefaling',
+    applyPageRecommendationDescription:
+      'Skriver en accepteret anbefaling i dens felt, når brugeren har godkendt den. Ændringen gemmes ikke.',
+    evaluatePageLabel: 'Evaluer side',
+    evaluatePageDescription:
+      'Evaluerer den senest gemte version af en side ud fra dens id med dens Page Evaluator-tjek.',
+  },
+  // 006: tool scopes shown when granting tools to an agent
+  uaiToolScope: {
+    pageEvaluatorReadLabel: 'Page Evaluator (læse)',
+    pageEvaluatorReadDescription: 'Evaluere sider og hente anbefalede værdier uden at ændre indhold',
+    pageEvaluatorWriteLabel: 'Page Evaluator (skrive)',
+    pageEvaluatorWriteDescription:
+      'Anvende accepterede anbefalinger på den åbne side (klargjort, ikke gemt), når brugeren har godkendt',
+  },
+  uaiToolScopeDomain: {
+    pageEvaluator: 'Page Evaluator',
+  },
+  // 006: approval prompt before the Copilot apply tool writes a value
+  pageEvaluatorCopilot: {
+    applyApprovalTitle: 'Anvend anbefaling',
+    applyApprovalMessage: 'Skriv den anbefalede værdi i feltet? Den klargøres i editoren og gemmes ikke.',
+  },
+  // 006: settings of the Umbraco Automate "Evaluate Page" step
+  pageEvaluatorAutomate: {
+    contentKeyLabel: 'Side',
+    contentKeyDescription:
+      'Nøglen til den side, der skal evalueres. Kan være en binding, f.eks. ${ trigger.contentKey }.',
+    cultureLabel: 'Sprog',
+    cultureDescription:
+      'ISO-kode for det sprog, der skal evalueres, f.eks. da-DK. Påkrævet for sider, der varierer efter sprog.',
+    passThresholdLabel: 'Beståelsesgrænse',
+    passThresholdDescription: 'Valgfri. Den laveste samlede score (1–5, samme skala som rapporten), der består.',
+    failOnAnyFailedCheckLabel: 'Afvis ved ethvert fejlet tjek',
+    failOnAnyFailedCheckDescription:
+      'Slået til som standard. Et fejlet tjek afviser siden, selv om scoren når grænsen. Advarsler gør aldrig.',
+    reportLanguageLabel: 'Rapportsprog',
+    reportLanguageDescription:
+      'Sproget i den mailede rapport og i meddelelserne. Automatisk bruger sidens sprog, hvis det understøttes, ellers engelsk.',
+  },
 };

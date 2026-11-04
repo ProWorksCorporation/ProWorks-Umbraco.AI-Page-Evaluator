@@ -15,6 +15,9 @@
     <!-- Core Umbraco interfaces (IContentTypeService, etc.) -->
     <!-- Verify version against target Umbraco installation before building -->
     <PackageReference Include="Umbraco.Cms.Core" Version="[17.8.0, 18.0.0)" />
+    <!-- IAIVersionableEntity and the AIEntitySaved/DeletedNotification bases (006 research R10).
+         Same range as the RCL, which already depends on it. -->
+    <PackageReference Include="Umbraco.AI.Core" Version="[17.6.1, 18.0.0)" />
   </ItemGroup>
 
 </Project>

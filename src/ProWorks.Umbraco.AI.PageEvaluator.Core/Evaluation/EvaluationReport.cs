@@ -92,6 +92,14 @@ public sealed record EvaluationReport
     /// </summary>
     public IReadOnlyList<string> AdditionalRecommendableEditorAliases { get; init; } = [];
 
+    /// <summary>
+    /// <see langword="true"/> when the page was saved after this report was produced (006 data-model §1): for a
+    /// saved-draft result, the node's <c>UpdateDate</c> differs from the cached <c>SourceUpdateDate</c>; for an
+    /// on-screen result, <c>UpdateDate</c> is later than <see cref="CachedAt"/>. Always <see langword="false"/> for a
+    /// fresh on-screen evaluation. Set at response time — never stored in the evaluation cache.
+    /// </summary>
+    public bool SavedSinceEvaluation { get; init; }
+
     /// <summary>Creates a successfully parsed report.</summary>
     public static EvaluationReport Parsed(
         EvaluationScore? score,
@@ -153,4 +161,11 @@ public sealed record EvaluationReport
     /// </summary>
     public EvaluationReport WithAdditionalRecommendableEditorAliases(IReadOnlyList<string> aliases) =>
         this with { AdditionalRecommendableEditorAliases = aliases };
+
+    /// <summary>
+    /// Returns a copy of this report with <see cref="SavedSinceEvaluation"/> set.
+    /// Response time only — call after the cache write, never store it in the cache.
+    /// </summary>
+    public EvaluationReport WithSavedSinceEvaluation(bool savedSinceEvaluation) =>
+        this with { SavedSinceEvaluation = savedSinceEvaluation };
 }

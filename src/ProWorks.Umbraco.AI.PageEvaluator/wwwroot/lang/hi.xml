@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!-- Umbraco core ships no Hindi language file, so CMS never merges this file into ILocalizedTextService;
+     PageEvaluatorTextService reads it directly from the package (see its remarks). -->
+<language alias="hi" intName="Hindi" localName="हिन्दी" lcid="" culture="hi-IN">
+  <area alias="proworksPageEvaluator">
+    <key alias="reportTitle">पेज मूल्यांकन</key>
+    <key alias="reportPage">पेज</key>
+    <key alias="reportLanguage">भाषा</key>
+    <key alias="reportConfiguration">कॉन्फ़िगरेशन</key>
+    <key alias="reportEvaluatedAt">मूल्यांकन का समय</key>
+    <key alias="reportFromCache">उसी सहेजे गए संस्करण के पिछले मूल्यांकन से पुनः उपयोग किया गया</key>
+    <key alias="reportOverallScore">कुल स्कोर</key>
+    <key alias="reportScoreOutOf">{score} / 5</key>
+    <key alias="reportAxisScores">स्कोर विवरण</key>
+    <key alias="reportChecks">जाँचें</key>
+    <key alias="reportStatusPass">सफल</key>
+    <key alias="reportStatusFail">असफल</key>
+    <key alias="reportStatusWarn">चेतावनी</key>
+    <key alias="reportVerdictPassed">उत्तीर्ण</key>
+    <key alias="reportVerdictFailed">उत्तीर्ण नहीं</key>
+    <key alias="reportVerdictNone">कोई उत्तीर्ण नियम सेट नहीं है</key>
+    <key alias="reportVerdictScoreMissing">उत्तीर्ण नहीं: AI ने कोई कुल स्कोर नहीं दिया</key>
+    <key alias="reportParseFailed">AI की प्रतिक्रिया को एक संरचित रिपोर्ट के रूप में फ़ॉर्मेट नहीं किया जा सका। संरचित आउटपुट को बेहतर बनाने के लिए मूल्यांकनकर्ता प्रॉम्प्ट को परिष्कृत करें।</key>
+    <key alias="reportOpenInUmbraco">Umbraco में खोलें</key>
+    <key alias="reportInvariant">सभी भाषाएँ</key>
+    <key alias="summaryScored">{page}: कुल स्कोर {score}/5; {passed} सफल, {failed} असफल, {warnings} चेतावनियाँ। {verdict}।</key>
+    <key alias="summaryUnscored">{page}: {passed} सफल, {failed} असफल, {warnings} चेतावनियाँ। {verdict}।</key>
+    <key alias="summaryParseFailed">{page}: AI की प्रतिक्रिया को रिपोर्ट के रूप में पढ़ा नहीं जा सका। {verdict}।</key>
+    <key alias="errorInvalidContentKey">पेज सेटिंग "{value}" एक मान्य कंटेंट कुंजी नहीं है। इसे ट्रिगर की कंटेंट कुंजी से बाइंड करें या किसी पेज की कुंजी दर्ज करें।</key>
+    <key alias="errorContentNotFound">कुंजी {key} वाला कोई पेज मौजूद नहीं है।</key>
+    <key alias="errorCultureRequired">पेज "{page}" भाषा के अनुसार बदलता है, इसलिए भाषा सेटिंग आवश्यक है।</key>
+    <key alias="errorInvalidCulture">भाषा "{culture}" इस साइट पर कॉन्फ़िगर नहीं है।</key>
+    <key alias="errorCultureNotCreated">पेज "{page}" का अभी कोई "{culture}" संस्करण नहीं है, इसलिए मूल्यांकन के लिए कुछ नहीं है।</key>
+    <key alias="errorNoActiveConfig">दस्तावेज़ प्रकार "{documentType}" के लिए कोई सक्रिय Page Evaluator कॉन्फ़िगरेशन मौजूद नहीं है।</key>
+    <key alias="errorThresholdNeedsScoring">एक उत्तीर्ण सीमा सेट है, लेकिन मूल्यांकनकर्ता कॉन्फ़िगरेशन "{config}" में स्कोरिंग बंद है। स्कोरिंग चालू करें या सीमा हटा दें।</key>
+    <key alias="errorGuardrailBlocked">Umbraco.AI गार्डरेल नीति द्वारा मूल्यांकन को अवरुद्ध कर दिया गया था: {message}</key>
+    <key alias="errorProviderUnavailable">AI प्रदाता अस्थायी रूप से अनुपलब्ध है। कृपया कुछ ही देर में फिर से प्रयास करें।</key>
+    <key alias="errorProviderConfiguration">AI कनेक्शन पर ध्यान देने की आवश्यकता है। कृपया AI प्रोफ़ाइल की क्रेडेंशियल या कॉन्फ़िगरेशन जाँचने के लिए अपने व्यवस्थापक से संपर्क करें।</key>
+    <key alias="errorUnexpected">एक अप्रत्याशित त्रुटि के कारण मूल्यांकन पूरा नहीं हो सका। विवरण के लिए Umbraco लॉग देखें।</key>
+  </area>
+</language>

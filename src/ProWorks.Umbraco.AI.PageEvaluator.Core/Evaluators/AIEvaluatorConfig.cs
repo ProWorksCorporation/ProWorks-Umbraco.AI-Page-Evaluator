@@ -1,11 +1,15 @@
+using Umbraco.AI.Core.Versioning;
+
 namespace ProWorks.Umbraco.AI.PageEvaluator.Evaluators;
 
 /// <summary>
 /// Domain model representing a saved AI Page Evaluator configuration.
 /// Mapped to/from <c>AIEvaluatorConfigEntity</c> by <c>AIEvaluatorConfigEntityFactory</c>.
 /// Not persisted directly — use <see cref="IAIEvaluatorConfigRepository"/> for persistence.
+/// Implements Umbraco.AI's <see cref="IAIVersionableEntity"/> (the members already existed) so the Deploy add-on's
+/// connector base and the Saved/Deleted notification bases accept it.
 /// </summary>
-public sealed class AIEvaluatorConfig
+public sealed class AIEvaluatorConfig : IAIVersionableEntity
 {
     public Guid Id { get; set; }
 
@@ -72,4 +76,11 @@ public sealed class AIEvaluatorConfig
     /// Set to false to hide all recommendation UI for this evaluator configuration.
     /// </summary>
     public bool RecommendationsEnabled { get; set; } = true;
+
+    /// <summary>
+    /// True when a Deploy import created or adopted this configuration. Only deploy-managed configurations may be
+    /// removed by Deploy's schema clean-up. Never part of the deploy artifact, never shown in the backoffice and
+    /// preserved by backoffice edits.
+    /// </summary>
+    public bool IsDeployManaged { get; set; }
 }

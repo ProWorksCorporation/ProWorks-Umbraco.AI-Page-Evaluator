@@ -187,4 +187,54 @@ export default {
     categoryAccessibilityVisibility: 'Barrierefreiheit & Sichtbarkeit',
     categoryCallsToAction: 'Handlungsaufforderungen',
   },
+  // 006: Copilot frontend tools and the evaluate_page server tool (Umbraco.AI admin labels: uaiTool_{toolName}Label)
+  uaiTool: {
+    evaluateCurrentPageLabel: 'Aktuelle Seite bewerten',
+    evaluateCurrentPageDescription:
+      'Bewertet die im Editor geöffnete Seite mit ihren Page-Evaluator-Prüfungen anhand der angezeigten Werte der aktuell angezeigten Sprache.',
+    recommendPageValuesLabel: 'Werte für die Seite empfehlen',
+    recommendPageValuesDescription:
+      'Schlägt bessere Werte für Felder vor, die in der Bewertung der Seite von fehlgeschlagenen Prüfungen oder Prüfungen mit Warnung genannt werden.',
+    applyPageRecommendationLabel: 'Seitenempfehlung übernehmen',
+    applyPageRecommendationDescription:
+      'Schreibt eine akzeptierte Empfehlung in ihr Feld, nachdem der Benutzer zugestimmt hat. Die Änderung wird nicht gespeichert.',
+    evaluatePageLabel: 'Seite bewerten',
+    evaluatePageDescription:
+      'Bewertet die zuletzt gespeicherte Version einer Seite anhand ihrer ID mit ihren Page-Evaluator-Prüfungen.',
+  },
+  // 006: tool scopes shown when granting tools to an agent
+  uaiToolScope: {
+    pageEvaluatorReadLabel: 'Page Evaluator (Lesen)',
+    pageEvaluatorReadDescription: 'Seiten bewerten und empfohlene Werte abrufen, ohne Inhalte zu ändern',
+    pageEvaluatorWriteLabel: 'Page Evaluator (Schreiben)',
+    pageEvaluatorWriteDescription:
+      'Akzeptierte Empfehlungen nach Zustimmung des Benutzers in die geöffnete Seite übernehmen (vorgemerkt, nicht gespeichert)',
+  },
+  uaiToolScopeDomain: {
+    pageEvaluator: 'Page Evaluator',
+  },
+  // 006: approval prompt before the Copilot apply tool writes a value
+  pageEvaluatorCopilot: {
+    applyApprovalTitle: 'Empfehlung übernehmen',
+    applyApprovalMessage:
+      'Den empfohlenen Wert in das Feld schreiben? Er wird im Editor vorgemerkt, aber nicht gespeichert.',
+  },
+  // 006: settings of the Umbraco Automate "Evaluate Page" step
+  pageEvaluatorAutomate: {
+    contentKeyLabel: 'Seite',
+    contentKeyDescription:
+      'Der Schlüssel der zu bewertenden Seite. Kann eine Bindung sein, z. B. ${ trigger.contentKey }.',
+    cultureLabel: 'Sprache',
+    cultureDescription:
+      'ISO-Code der zu bewertenden Sprache, z. B. de-DE. Erforderlich für Seiten, die nach Sprache variieren.',
+    passThresholdLabel: 'Bestehensschwelle',
+    passThresholdDescription:
+      'Optional. Die niedrigste Gesamtpunktzahl (1–5, dieselbe Skala wie im Bericht), mit der die Seite besteht.',
+    failOnAnyFailedCheckLabel: 'Bei jeder fehlgeschlagenen Prüfung durchfallen',
+    failOnAnyFailedCheckDescription:
+      'Standardmäßig aktiviert. Eine fehlgeschlagene Prüfung lässt die Seite durchfallen, auch wenn die Punktzahl die Schwelle erreicht. Warnungen nie.',
+    reportLanguageLabel: 'Berichtssprache',
+    reportLanguageDescription:
+      'Sprache des per E-Mail gesendeten Berichts und der Meldungen. Automatisch verwendet die Sprache der Seite, sofern unterstützt, sonst Englisch.',
+  },
 };

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<language alias="es" intName="Spanish" localName="español" lcid="" culture="es-ES">
+  <area alias="proworksPageEvaluator">
+    <key alias="reportTitle">Evaluación de la página</key>
+    <key alias="reportPage">Página</key>
+    <key alias="reportLanguage">Idioma</key>
+    <key alias="reportConfiguration">Configuración</key>
+    <key alias="reportEvaluatedAt">Evaluada</key>
+    <key alias="reportFromCache">Reutilizada de una evaluación anterior de la misma versión guardada</key>
+    <key alias="reportOverallScore">Puntuación general</key>
+    <key alias="reportScoreOutOf">{score} / 5</key>
+    <key alias="reportAxisScores">Desglose de la puntuación</key>
+    <key alias="reportChecks">Comprobaciones</key>
+    <key alias="reportStatusPass">Aprobada</key>
+    <key alias="reportStatusFail">Fallida</key>
+    <key alias="reportStatusWarn">Advertencia</key>
+    <key alias="reportVerdictPassed">Aprobada</key>
+    <key alias="reportVerdictFailed">No aprobada</key>
+    <key alias="reportVerdictNone">Sin regla de aprobación</key>
+    <key alias="reportVerdictScoreMissing">No aprobada: la IA no dio una puntuación general</key>
+    <key alias="reportParseFailed">La respuesta de la IA no se pudo formatear como un informe estructurado. Ajuste el prompt del evaluador para mejorar la salida estructurada.</key>
+    <key alias="reportOpenInUmbraco">Abrir en Umbraco</key>
+    <key alias="reportInvariant">Todos los idiomas</key>
+    <key alias="summaryScored">{page}: puntuación general {score}/5; {passed} aprobadas, {failed} fallidas, {warnings} advertencias. {verdict}.</key>
+    <key alias="summaryUnscored">{page}: {passed} aprobadas, {failed} fallidas, {warnings} advertencias. {verdict}.</key>
+    <key alias="summaryParseFailed">{page}: la respuesta de la IA no se pudo leer como un informe. {verdict}.</key>
+    <key alias="errorInvalidContentKey">El ajuste de página "{value}" no es una clave de contenido válida. Vincúlelo a la clave de contenido del desencadenador o introduzca la clave de una página.</key>
+    <key alias="errorContentNotFound">No existe ninguna página con la clave {key}.</key>
+    <key alias="errorCultureRequired">La página "{page}" varía según el idioma, por lo que el ajuste Idioma es obligatorio.</key>
+    <key alias="errorInvalidCulture">El idioma "{culture}" no está configurado en este sitio.</key>
+    <key alias="errorCultureNotCreated">La página "{page}" todavía no tiene una versión "{culture}", así que no hay nada que evaluar.</key>
+    <key alias="errorNoActiveConfig">No existe ninguna configuración activa del Page Evaluator para el tipo de documento "{documentType}".</key>
+    <key alias="errorThresholdNeedsScoring">Hay un umbral de aprobación, pero la configuración del evaluador "{config}" tiene la puntuación desactivada. Active la puntuación o borre el umbral.</key>
+    <key alias="errorGuardrailBlocked">La evaluación fue bloqueada por una política de barreras de protección de Umbraco.AI: {message}</key>
+    <key alias="errorProviderUnavailable">El proveedor de IA no está disponible temporalmente. Vuelva a intentarlo en un momento.</key>
+    <key alias="errorProviderConfiguration">La conexión de IA necesita atención. Póngase en contacto con su administrador para revisar las credenciales o la configuración del perfil de IA.</key>
+    <key alias="errorUnexpected">La evaluación no se pudo completar por un error inesperado. Consulte el registro de Umbraco para obtener más detalles.</key>
+  </area>
+</language>

@@ -36,6 +36,12 @@ describe('localizationKeyForError', () => {
     expect(localizationKeyForError({ type: 'Error', category }, FALLBACK)).toBe(key);
   });
 
+  it('maps the shared evaluation limit (429, temporaryRetryable) to the existing retry message (006)', () => {
+    expect(localizationKeyForError({ type: 'Error', category: 'temporaryRetryable' }, FALLBACK)).toBe(
+      'evaluatePage_temporaryRetryableMessage',
+    );
+  });
+
   it('falls back for unknown or missing values', () => {
     expect(localizationKeyForError({ type: 'Error', category: 'somethingNew' }, FALLBACK)).toBe(FALLBACK);
     expect(localizationKeyForError({ type: null, category: null }, FALLBACK)).toBe(FALLBACK);

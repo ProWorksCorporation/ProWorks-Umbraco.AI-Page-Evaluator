@@ -359,4 +359,26 @@ public class EvaluationReportTests
 
         Assert.Null(restored!.SamplingSettingsIgnored);
     }
+
+    // ---------------------------------------------------------------------------
+    // WithSavedSinceEvaluation (006 data-model §1, response time only)
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public void SavedSinceEvaluation_DefaultsToFalse()
+    {
+        Assert.False(EvaluationReport.Parsed(new EvaluationScore(1, 1), [], null).SavedSinceEvaluation);
+        Assert.False(EvaluationReport.Failed("raw").SavedSinceEvaluation);
+    }
+
+    [Fact]
+    public void WithSavedSinceEvaluation_ReturnsCopy_WithoutMutatingTheOriginal()
+    {
+        var original = EvaluationReport.Parsed(new EvaluationScore(1, 1), [], null);
+
+        var copy = original.WithSavedSinceEvaluation(true);
+
+        Assert.True(copy.SavedSinceEvaluation);
+        Assert.False(original.SavedSinceEvaluation);
+    }
 }

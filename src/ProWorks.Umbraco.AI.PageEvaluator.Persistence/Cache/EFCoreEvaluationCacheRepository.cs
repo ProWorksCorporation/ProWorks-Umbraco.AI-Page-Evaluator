@@ -49,6 +49,9 @@ public sealed class EFCoreEvaluationCacheRepository : IEvaluationCacheRepository
             // Always written as DateTime.UtcNow, but providers read it back as Kind = Unspecified; without this the
             // cached response has no "Z" and the browser shows "Last evaluated" off by the UTC offset.
             CachedAt = DateTime.SpecifyKind(entity.CachedAt, DateTimeKind.Utc),
+            SourceUpdateDate = entity.SourceUpdateDate is { } source
+                ? DateTime.SpecifyKind(source, DateTimeKind.Utc)
+                : null,
         };
     }
 
@@ -69,7 +72,8 @@ public sealed class EFCoreEvaluationCacheRepository : IEvaluationCacheRepository
                 .ExecuteUpdateAsync(s => s
                     .SetProperty(e => e.DocumentTypeAlias, entry.DocumentTypeAlias)
                     .SetProperty(e => e.ReportJson, reportJson)
-                    .SetProperty(e => e.CachedAt, entry.CachedAt),
+                    .SetProperty(e => e.CachedAt, entry.CachedAt)
+                    .SetProperty(e => e.SourceUpdateDate, entry.SourceUpdateDate),
                     cancellationToken);
 
             if (updated == 0)
@@ -81,6 +85,7 @@ public sealed class EFCoreEvaluationCacheRepository : IEvaluationCacheRepository
                     DocumentTypeAlias = entry.DocumentTypeAlias,
                     ReportJson = reportJson,
                     CachedAt = entry.CachedAt,
+                    SourceUpdateDate = entry.SourceUpdateDate,
                 });
                 await db.SaveChangesAsync(cancellationToken);
             }

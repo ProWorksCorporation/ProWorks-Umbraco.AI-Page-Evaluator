@@ -157,5 +157,61 @@ public sealed class EFCoreEvaluationCacheRepositoryTests : IDisposable
         Assert.Equal(1, RowCount());
     }
 
+    [Fact]
+    public async Task SourceUpdateDate_RoundTripsAsUtc()
+    {
+        // 006 data-model §1: saved-draft evaluations store the node's UpdateDate; read back as UTC like CachedAt.
+        var nodeId = Guid.NewGuid();
+        var source = new DateTime(2026, 11, 3, 10, 15, 30, 123, DateTimeKind.Utc);
+        EvaluationCacheEntry entry = Entry(nodeId, "", "s");
+        await _sut.SaveAsync(new EvaluationCacheEntry
+        {
+            NodeId = entry.NodeId, Culture = entry.Culture, DocumentTypeAlias = entry.DocumentTypeAlias,
+            Report = entry.Report, CachedAt = entry.CachedAt, SourceUpdateDate = source,
+        });
+
+        EvaluationCacheEntry? read = await _sut.GetAsync(nodeId, "");
+
+        Assert.NotNull(read);
+        Assert.NotNull(read.SourceUpdateDate);
+        Assert.Equal(DateTimeKind.Utc, read.SourceUpdateDate!.Value.Kind);
+        Assert.Equal(source, read.SourceUpdateDate.Value, TimeSpan.FromMilliseconds(1));
+    }
+
+    [Fact]
+    public async Task SourceUpdateDate_IsNullForOnScreenEntries()
+    {
+        var nodeId = Guid.NewGuid();
+        await _sut.SaveAsync(Entry(nodeId, "", "on-screen"));
+
+        EvaluationCacheEntry? read = await _sut.GetAsync(nodeId, "");
+
+        Assert.NotNull(read);
+        Assert.Null(read.SourceUpdateDate);
+    }
+
+    [Fact]
+    public async Task SaveAsync_WriteFirstUpsert_UpdatesSourceUpdateDateOnAnExistingRow()
+    {
+        var nodeId = Guid.NewGuid();
+        var first = new DateTime(2026, 11, 1, 8, 0, 0, DateTimeKind.Utc);
+        var second = new DateTime(2026, 11, 2, 9, 30, 0, 500, DateTimeKind.Utc);
+        EvaluationCacheEntry entry = Entry(nodeId, "da-dk", "s");
+        EvaluationCacheEntry With(DateTime? source) => new()
+        {
+            NodeId = entry.NodeId, Culture = entry.Culture, DocumentTypeAlias = entry.DocumentTypeAlias,
+            Report = entry.Report, CachedAt = entry.CachedAt, SourceUpdateDate = source,
+        };
+
+        await _sut.SaveAsync(With(first));
+        await _sut.SaveAsync(With(second));
+        Assert.Equal(1, RowCount());
+        Assert.Equal(second, (await _sut.GetAsync(nodeId, "da-dk"))!.SourceUpdateDate!.Value, TimeSpan.FromMilliseconds(1));
+
+        // An on-screen re-evaluation of the same (node, culture) clears the marker again.
+        await _sut.SaveAsync(With(null));
+        Assert.Null((await _sut.GetAsync(nodeId, "da-dk"))!.SourceUpdateDate);
+    }
+
     public void Dispose() => _connection.Dispose();
 }

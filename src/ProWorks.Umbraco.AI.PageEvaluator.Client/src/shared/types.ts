@@ -125,6 +125,12 @@ export interface EvaluationReportResponse {
   readonly samplingSettingsIgnored: boolean | null;
   /** The culture this report covers (lower-cased ISO code); null for invariant documents. */
   readonly culture: string | null;
+  /**
+   * True when the page was saved after this result was produced (006 data-model §1). Computed by the server at
+   * response time, never cached; always false for a fresh POST /evaluate. Optional so a response from an older
+   * server still parses. The Evaluate Page modal doesn't use it in 17.6.1.
+   */
+  readonly savedSinceEvaluation?: boolean;
 }
 
 /** Request body for POST /evaluate. */

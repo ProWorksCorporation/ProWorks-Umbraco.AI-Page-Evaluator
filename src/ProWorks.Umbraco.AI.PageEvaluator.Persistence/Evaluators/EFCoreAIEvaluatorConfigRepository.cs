@@ -71,10 +71,17 @@ public sealed class EFCoreAIEvaluatorConfigRepository : IAIEvaluatorConfigReposi
 
     public async Task SaveAsync(AIEvaluatorConfig config, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(config);
+        string? propertyAliases = AIEvaluatorConfigEntityFactory.SerializePropertyAliases(config.PropertyAliases);
+        DateTime now = DateTime.UtcNow;
+
         using IEfCoreScope<UmbracoAIPageEvaluatorDbContext> scope = _scopeProvider.CreateScope();
         await scope.ExecuteWithContextAsync<object?>(async db =>
         {
-            // Active-one rule: deactivate all existing configs for this alias before saving.
+            // Write-first (17.6.1): on SQLite a deferred transaction that reads before its first write fails with
+            // "database is locked" when another connection commits in between (CLAUDE.md "Evaluation Cache").
+
+            // Active-one rule: deactivate all other configs for this alias before saving.
             if (config.IsActive)
             {
                 await db.EvaluatorConfigs
@@ -84,24 +91,44 @@ public sealed class EFCoreAIEvaluatorConfigRepository : IAIEvaluatorConfigReposi
                         cancellationToken);
             }
 
-            AIEvaluatorConfigEntity? existing = await db.EvaluatorConfigs
-                .FirstOrDefaultAsync(e => e.Id == config.Id, cancellationToken);
+            // Update in place; the client-supplied Version is the concurrency check (same fields as ApplyToEntity:
+            // DateCreated and CreatedByUserId are never changed by an update).
+            int updated = await db.EvaluatorConfigs
+                .Where(e => e.Id == config.Id && e.Version == config.Version)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(e => e.Name, config.Name)
+                    .SetProperty(e => e.Description, config.Description)
+                    .SetProperty(e => e.DocumentTypeAlias, config.DocumentTypeAlias)
+                    .SetProperty(e => e.ProfileId, config.ProfileId)
+                    .SetProperty(e => e.ContextId, config.ContextId)
+                    .SetProperty(e => e.PromptText, config.PromptText)
+                    .SetProperty(e => e.IsActive, config.IsActive)
+                    .SetProperty(e => e.DateModified, now)
+                    .SetProperty(e => e.ModifiedByUserId, config.ModifiedByUserId)
+                    .SetProperty(e => e.Version, e => e.Version + 1)
+                    .SetProperty(e => e.PropertyAliases, propertyAliases)
+                    .SetProperty(e => e.ScoringEnabled, config.ScoringEnabled)
+                    .SetProperty(e => e.RecommendationsEnabled, config.RecommendationsEnabled)
+                    .SetProperty(e => e.IsDeployManaged, config.IsDeployManaged),
+                    cancellationToken);
 
-            if (existing is null)
+            if (updated == 0)
             {
+                // The UPDATE above already took the write lock (SQLite does so even when no row matches), so this read
+                // can't hit SQLITE_BUSY_SNAPSHOT. A row with another Version is a concurrent edit (409 in the
+                // controller); no row at all is a new configuration.
+                if (await db.EvaluatorConfigs.AnyAsync(e => e.Id == config.Id, cancellationToken))
+                {
+                    throw new DbUpdateConcurrencyException(
+                        $"Evaluator configuration '{config.Id}' was changed by someone else (expected Version {config.Version}).");
+                }
+
                 AIEvaluatorConfigEntity newEntity = AIEvaluatorConfigEntityFactory.ToEntity(config);
                 newEntity.IsActive = true; // new records are always active
                 db.EvaluatorConfigs.Add(newEntity);
-            }
-            else
-            {
-                // Set the original Version to the client-supplied value so EF Core's
-                // concurrency check (WHERE Version = @original) detects conflicts.
-                db.Entry(existing).Property(e => e.Version).OriginalValue = config.Version;
-                AIEvaluatorConfigEntityFactory.ApplyToEntity(config, existing);
+                await db.SaveChangesAsync(cancellationToken);
             }
 
-            await db.SaveChangesAsync(cancellationToken);
             return null;
         });
 
@@ -113,32 +140,21 @@ public sealed class EFCoreAIEvaluatorConfigRepository : IAIEvaluatorConfigReposi
         using IEfCoreScope<UmbracoAIPageEvaluatorDbContext> scope = _scopeProvider.CreateScope();
         await scope.ExecuteWithContextAsync<object?>(async db =>
         {
-            AIEvaluatorConfigEntity? entity = await db.EvaluatorConfigs
-                .FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
+            // Write-first (17.6.1), no read: if the target is active, first promote the most recently modified other
+            // config of its document type (resolved inside the statement), then delete the target. Both statements
+            // affect nothing when the config doesn't exist.
+            await db.EvaluatorConfigs
+                .Where(e => e.Id == db.EvaluatorConfigs
+                    .Where(c => c.Id != id
+                        && db.EvaluatorConfigs.Any(t => t.Id == id && t.IsActive && t.DocumentTypeAlias == c.DocumentTypeAlias))
+                    .OrderByDescending(c => c.DateModified)
+                    .Select(c => c.Id)
+                    .FirstOrDefault())
+                .ExecuteUpdateAsync(s => s.SetProperty(e => e.IsActive, true), cancellationToken);
 
-            if (entity is null)
-                return null;
-
-            bool wasActive = entity.IsActive;
-            string alias = entity.DocumentTypeAlias;
-
-            db.EvaluatorConfigs.Remove(entity);
-            await db.SaveChangesAsync(cancellationToken);
-
-            // If the deleted record was active, promote the next most-recent one.
-            if (wasActive)
-            {
-                AIEvaluatorConfigEntity? next = await db.EvaluatorConfigs
-                    .Where(e => e.DocumentTypeAlias == alias)
-                    .OrderByDescending(e => e.DateModified)
-                    .FirstOrDefaultAsync(cancellationToken);
-
-                if (next is not null)
-                {
-                    next.IsActive = true;
-                    await db.SaveChangesAsync(cancellationToken);
-                }
-            }
+            await db.EvaluatorConfigs
+                .Where(e => e.Id == id)
+                .ExecuteDeleteAsync(cancellationToken);
 
             return null;
         });
@@ -151,18 +167,18 @@ public sealed class EFCoreAIEvaluatorConfigRepository : IAIEvaluatorConfigReposi
         using IEfCoreScope<UmbracoAIPageEvaluatorDbContext> scope = _scopeProvider.CreateScope();
         await scope.ExecuteWithContextAsync<object?>(async db =>
         {
-            AIEvaluatorConfigEntity? target = await db.EvaluatorConfigs
-                .FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
-            if (target is null) return null;
-
-            // Exclude the target: ExecuteUpdateAsync bypasses the change tracker, so deactivating it here would leave
-            // the tracked entity reading IsActive = true and the assignment below would save nothing.
+            // Write-first, no read (the deploy import calls this; see the note above the deploy methods): two UPDATEs,
+            // the document type resolved inside the statement. Both affect nothing when the config doesn't exist.
+            // The target is excluded from the bulk deactivate (regression in ≤ 17.3.1: activating an active config
+            // deactivated it).
             await db.EvaluatorConfigs
-                .Where(e => e.DocumentTypeAlias == target.DocumentTypeAlias && e.IsActive && e.Id != id)
-                .ExecuteUpdateAsync(s => s.SetProperty(e => e.IsActive, false), cancellationToken);
+                .Where(e => e.Id == id && !e.IsActive)
+                .ExecuteUpdateAsync(s => s.SetProperty(e => e.IsActive, true), cancellationToken);
 
-            target.IsActive = true;
-            await db.SaveChangesAsync(cancellationToken);
+            await db.EvaluatorConfigs
+                .Where(e => e.IsActive && e.Id != id
+                    && db.EvaluatorConfigs.Any(t => t.Id == id && t.DocumentTypeAlias == e.DocumentTypeAlias))
+                .ExecuteUpdateAsync(s => s.SetProperty(e => e.IsActive, false), cancellationToken);
             return null;
         });
 
@@ -175,4 +191,141 @@ public sealed class EFCoreAIEvaluatorConfigRepository : IAIEvaluatorConfigReposi
         return await scope.ExecuteWithContextAsync(async db =>
             await db.EvaluatorConfigs.AnyAsync(e => e.DocumentTypeAlias == documentTypeAlias, cancellationToken));
     }
+
+    // -------------------------------------------------------------------------
+    // Deploy import (006). Every transaction below starts with its write: on SQLite, Umbraco's scope transactions
+    // are DEFERRED, and one that has read can't take the write lock once another connection has committed
+    // (SQLITE_BUSY_SNAPSHOT → "database is locked"). Any read happens in its own scope first.
+    // -------------------------------------------------------------------------
+
+    public async Task SetInactiveAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        using IEfCoreScope<UmbracoAIPageEvaluatorDbContext> scope = _scopeProvider.CreateScope();
+        await scope.ExecuteWithContextAsync(async db =>
+            await db.EvaluatorConfigs
+                .Where(e => e.Id == id && e.IsActive)
+                .ExecuteUpdateAsync(s => s.SetProperty(e => e.IsActive, false), cancellationToken));
+
+        scope.Complete();
+    }
+
+    public async Task UpdateDeployedFieldsAsync(AIEvaluatorConfig config, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+        string? propertyAliases = AIEvaluatorConfigEntityFactory.SerializePropertyAliases(config.PropertyAliases);
+        DateTime now = DateTime.UtcNow;
+
+        using IEfCoreScope<UmbracoAIPageEvaluatorDbContext> scope = _scopeProvider.CreateScope();
+        int updated = await scope.ExecuteWithContextAsync(async db =>
+            await db.EvaluatorConfigs
+                .Where(e => e.Id == config.Id && e.Version == config.Version) // the concurrency check, in the UPDATE
+                .ExecuteUpdateAsync(s => s
+                    // SET expressions read the row's previous values: a row moving to another type is stored inactive.
+                    .SetProperty(e => e.IsActive, e => e.IsActive && e.DocumentTypeAlias == config.DocumentTypeAlias)
+                    .SetProperty(e => e.Name, config.Name)
+                    .SetProperty(e => e.Description, config.Description)
+                    .SetProperty(e => e.DocumentTypeAlias, config.DocumentTypeAlias)
+                    .SetProperty(e => e.ProfileId, config.ProfileId)
+                    .SetProperty(e => e.ContextId, config.ContextId)
+                    .SetProperty(e => e.PromptText, config.PromptText)
+                    .SetProperty(e => e.PropertyAliases, propertyAliases)
+                    .SetProperty(e => e.ScoringEnabled, config.ScoringEnabled)
+                    .SetProperty(e => e.RecommendationsEnabled, config.RecommendationsEnabled)
+                    .SetProperty(e => e.IsDeployManaged, config.IsDeployManaged)
+                    .SetProperty(e => e.ModifiedByUserId, config.ModifiedByUserId)
+                    .SetProperty(e => e.DateModified, now)
+                    .SetProperty(e => e.Version, e => e.Version + 1),
+                    cancellationToken));
+
+        if (updated == 0)
+        {
+            // Nothing committed; disposing the scope uncompleted rolls the (empty) transaction back.
+            throw new DbUpdateConcurrencyException(
+                $"Evaluator configuration '{config.Id}' was not found at Version {config.Version}; it was changed or deleted concurrently.");
+        }
+
+        scope.Complete();
+    }
+
+    public async Task InsertWithIdAsync(AIEvaluatorConfig config, CancellationToken cancellationToken = default)
+    {
+        if (config.Id == Guid.Empty)
+            throw new ArgumentException("A configuration inserted with its own id needs a non-empty Id.", nameof(config));
+
+        using IEfCoreScope<UmbracoAIPageEvaluatorDbContext> scope = _scopeProvider.CreateScope();
+        await scope.ExecuteWithContextAsync<object?>(async db =>
+        {
+            db.EvaluatorConfigs.Add(AIEvaluatorConfigEntityFactory.ToEntity(config));
+            await db.SaveChangesAsync(cancellationToken);
+            return null;
+        });
+
+        scope.Complete();
+    }
+
+    public async Task<bool> DeleteWithoutPromotionAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        using IEfCoreScope<UmbracoAIPageEvaluatorDbContext> scope = _scopeProvider.CreateScope();
+        int deleted = await scope.ExecuteWithContextAsync(async db =>
+            await db.EvaluatorConfigs
+                .Where(e => e.Id == id)
+                .ExecuteDeleteAsync(cancellationToken));
+
+        scope.Complete();
+        return deleted > 0;
+    }
+
+    public async Task<AIEvaluatorConfig> ReplaceIdAsync(Guid existingId, Guid newId, CancellationToken cancellationToken = default)
+    {
+        // Read in its own scope, before the write transaction starts.
+        AIEvaluatorConfigEntity existing;
+        using (IEfCoreScope<UmbracoAIPageEvaluatorDbContext> readScope = _scopeProvider.CreateScope())
+        {
+            existing = await readScope.ExecuteWithContextAsync(async db =>
+                await db.EvaluatorConfigs
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(e => e.Id == existingId, cancellationToken))
+                ?? throw new InvalidOperationException($"Evaluator configuration '{existingId}' not found.");
+            readScope.Complete();
+        }
+
+        AIEvaluatorConfigEntity copy = CopyWithId(existing, newId);
+        copy.IsDeployManaged = true;
+
+        // One SaveChanges = one transaction: the INSERT of the copy and the DELETE of the original commit together or
+        // not at all. The DELETE matches the Version read above, so a concurrent edit or delete of the original makes
+        // it affect no row (DbUpdateConcurrencyException) and rolls the copy back too.
+        using IEfCoreScope<UmbracoAIPageEvaluatorDbContext> scope = _scopeProvider.CreateScope();
+        await scope.ExecuteWithContextAsync<object?>(async db =>
+        {
+            db.EvaluatorConfigs.Add(copy);
+            db.EvaluatorConfigs.Remove(existing);
+            await db.SaveChangesAsync(cancellationToken);
+            return null;
+        });
+
+        scope.Complete();
+        return AIEvaluatorConfigEntityFactory.ToDomain(copy);
+    }
+
+    private static AIEvaluatorConfigEntity CopyWithId(AIEvaluatorConfigEntity source, Guid id) => new()
+    {
+        Id = id,
+        Name = source.Name,
+        Description = source.Description,
+        DocumentTypeAlias = source.DocumentTypeAlias,
+        ProfileId = source.ProfileId,
+        ContextId = source.ContextId,
+        PromptText = source.PromptText,
+        IsActive = source.IsActive,
+        DateCreated = source.DateCreated,
+        DateModified = source.DateModified,
+        CreatedByUserId = source.CreatedByUserId,
+        ModifiedByUserId = source.ModifiedByUserId,
+        Version = source.Version,
+        PropertyAliases = source.PropertyAliases,
+        ScoringEnabled = source.ScoringEnabled,
+        RecommendationsEnabled = source.RecommendationsEnabled,
+        IsDeployManaged = source.IsDeployManaged,
+    };
 }

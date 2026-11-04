@@ -24,4 +24,7 @@ Adds an **Evaluate Page** workspace action to the Umbraco content editor. Clicki
 - Tells administrators when scores may vary: a notice appears on the configuration screen when the selected AI model ignores the deterministic-output (temperature) setting, as OpenAI reasoning models and newer Claude models do
 - AI text recommendations for Fail and Warn checks — shows the current field value alongside the suggestion; apply directly to plain text, Tags and Rich Text fields (Rich Text Apply is withheld if the suggestion would drop embedded blocks), or copy to clipboard. Third-party editor aliases can be enabled for recommendations via `appsettings.json`
 - Warns when the selected AI profile has its own system prompt (sent ahead of the evaluator's instructions since Umbraco.AI 17.5), and shows Umbraco.AI's AI disclosure notice with evaluator output
+- Copilot tools (17.6.1): evaluate the open page, get recommendations for failing checks and apply them after approving, without leaving Copilot (values are staged, never saved)
+- `evaluate_page` agent tool for agents without an open page
+- Optional add-on packages: **ProWorks.Umbraco.AI.PageEvaluator.Automate** (an "Evaluate Page" step for Umbraco Automate review-before-release flows, with an email-ready report) and **ProWorks.Umbraco.AI.PageEvaluator.Deploy** (Umbraco Deploy support for evaluator configurations)
 - Requires Umbraco CMS 17.8.0+ and Umbraco.AI 17.6.1+ (package 17.3.1 remains available for CMS 17.6.2+ / Umbraco.AI 17.3.4+)

@@ -3,12 +3,9 @@ using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using ProWorks.Umbraco.AI.PageEvaluator.Configuration;
 using ProWorks.Umbraco.AI.PageEvaluator.Evaluation;
 using ProWorks.Umbraco.AI.PageEvaluator.Evaluators;
 using ProWorks.Umbraco.AI.PageEvaluator.Services;
@@ -36,7 +33,8 @@ namespace ProWorks.Umbraco.AI.PageEvaluator.Controllers;
 [Route("umbraco/management/api/v1/page-evaluator")]
 public sealed partial class PageEvaluatorApiController : ControllerBase
 {
-    private readonly IPageEvaluationService _evaluationService;
+    private readonly IContentEvaluationService _contentEvaluation;
+    private readonly IEvaluationRateLimiter _rateLimiter;
     private readonly IAIEvaluatorConfigService _configService;
     private readonly IAIProfileService _profileService;
     private readonly IAIContextService _contextService;
@@ -47,13 +45,13 @@ public sealed partial class PageEvaluatorApiController : ControllerBase
     private readonly IAuthorizationService _authorizationService;
     private readonly IEvaluatorChatExecutor _chatExecutor;
     private readonly IPropertyEditorSchemaService _propertyEditorSchemaService;
-    private readonly IOptions<PageEvaluatorOptions> _options;
     private readonly ISamplingSupportService _samplingSupport;
     private readonly ILanguageService _languageService;
     private readonly IProfileSystemPromptService _profileSystemPrompt;
 
     public PageEvaluatorApiController(
-        IPageEvaluationService evaluationService,
+        IContentEvaluationService contentEvaluation,
+        IEvaluationRateLimiter rateLimiter,
         IAIEvaluatorConfigService configService,
         IAIProfileService profileService,
         IAIContextService contextService,
@@ -64,12 +62,12 @@ public sealed partial class PageEvaluatorApiController : ControllerBase
         IAuthorizationService authorizationService,
         IEvaluatorChatExecutor chatExecutor,
         IPropertyEditorSchemaService propertyEditorSchemaService,
-        IOptions<PageEvaluatorOptions> options,
         ISamplingSupportService samplingSupport,
         ILanguageService languageService,
         IProfileSystemPromptService profileSystemPrompt)
     {
-        _evaluationService = evaluationService;
+        _contentEvaluation = contentEvaluation;
+        _rateLimiter = rateLimiter;
         _configService = configService;
         _profileService = profileService;
         _contextService = contextService;
@@ -80,7 +78,6 @@ public sealed partial class PageEvaluatorApiController : ControllerBase
         _authorizationService = authorizationService;
         _chatExecutor = chatExecutor;
         _propertyEditorSchemaService = propertyEditorSchemaService;
-        _options = options;
         _samplingSupport = samplingSupport;
         _languageService = languageService;
         _profileSystemPrompt = profileSystemPrompt;
@@ -286,38 +283,17 @@ public sealed partial class PageEvaluatorApiController : ControllerBase
         [FromQuery] string? culture = null,
         CancellationToken cancellationToken = default)
     {
-        // Verify the content node exists and the requesting user has Browse access.
-        IContent? content = _contentService.GetById(nodeId);
-        if (content is null)
-            return NotFound(new { title = $"Content node '{nodeId}' not found." });
+        // 006 research R1: node (404) → Browse (403) → culture (400) → cache, shared with the server tool.
+        ContentEvaluationResult result = await _contentEvaluation.GetCachedAsync(
+            nodeId, culture, CanBrowseAsync, cancellationToken);
 
-        AuthorizationResult authResult = await _authorizationService.AuthorizeAsync(
-            User,
-            ContentPermissionResource.WithKeys(ActionBrowse.ActionLetter, nodeId),
-            AuthorizationPolicies.ContentPermissionByResource);
-        if (!authResult.Succeeded)
-            return StatusCode(StatusCodes.Status403Forbidden,
-                new { title = "You do not have permission to view the cached evaluation for this content node." });
-
-        (string? normalisedCulture, IActionResult? cultureError) = await NormaliseCultureAsync(content, culture);
-        if (cultureError is not null)
-            return cultureError;
-
-        // Legacy '' rows are never returned for culture-varying documents: the lookup is by exact culture.
-        EvaluationCacheEntry? entry = await _cacheRepository.GetAsync(nodeId, normalisedCulture!, cancellationToken);
-        if (entry is null)
-            return NotFound(new { title = $"No cached evaluation for node '{nodeId}'." });
-
-        AIEvaluatorConfig? activeConfig = await _configService.GetActiveForDocumentTypeAsync(entry.DocumentTypeAlias, cancellationToken);
-        bool recommendationsEnabled = activeConfig?.RecommendationsEnabled ?? true;
-        IReadOnlyDictionary<string, string> editorAliases = BuildPropertyEditorAliases(entry.DocumentTypeAlias);
-        IReadOnlyDictionary<string, string> propertyNames = BuildPropertyNames(entry.DocumentTypeAlias);
-        return Ok(entry.Report.WithCachedAt(entry.CachedAt)
-            .WithCulture(NullIfInvariant(normalisedCulture!))
-            .WithPropertyEditorAliases(editorAliases)
-            .WithPropertyNames(propertyNames)
-            .WithRecommendationsEnabled(recommendationsEnabled)
-            .WithAdditionalRecommendableEditorAliases(_options.Value.AdditionalRecommendableEditorAliases));
+        return result.Status switch
+        {
+            ContentEvaluationStatus.Ok => Ok(result.Report),
+            ContentEvaluationStatus.Forbidden => StatusCode(StatusCodes.Status403Forbidden,
+                new { title = "You do not have permission to view the cached evaluation for this content node." }),
+            _ => RejectedResult(result),
+        };
     }
 
     // ---------------------------------------------------------------------------
@@ -330,70 +306,42 @@ public sealed partial class PageEvaluatorApiController : ControllerBase
     /// with <c>cachedAt</c> set to the current UTC time.
     /// Returns 404 when the content node does not exist or no active evaluator is configured.
     /// Returns 403 when the requesting user lacks Browse permission on the content node.
+    /// Returns 429 when the user's shared evaluation budget (10 per minute) is used up.
     /// Returns 502 on AI provider failure.
     /// </summary>
     [HttpPost("evaluate")]
-    [EnableRateLimiting("PageEvaluatorEvaluate")]
     [RequestSizeLimit(1 * 1024 * 1024)] // 1 MB cap on the evaluation request body
     public async Task<IActionResult> EvaluateAsync(
         [FromBody] EvaluatePageRequest request,
         CancellationToken cancellationToken = default)
     {
-        // Verify the content node exists and the requesting user has Browse access.
-        IContent? content = _contentService.GetById(request.NodeId);
-        if (content is null)
-            return NotFound(new { title = $"Content node '{request.NodeId}' not found." });
-
-        AuthorizationResult authResult = await _authorizationService.AuthorizeAsync(
-            User,
-            ContentPermissionResource.WithKeys(ActionBrowse.ActionLetter, request.NodeId),
-            AuthorizationPolicies.ContentPermissionByResource);
-        if (!authResult.Succeeded)
-            return StatusCode(StatusCodes.Status403Forbidden,
-                new { title = "You do not have permission to evaluate this content node." });
-
-        (string? normalisedCulture, IActionResult? cultureError) = await NormaliseCultureAsync(content, request.Culture);
-        if (cultureError is not null)
-            return cultureError;
-        string culture = normalisedCulture!;
-
-        // Use the canonical alias from the content node, not the client-supplied value.
-        string documentTypeAlias = content.ContentType.Alias;
-
         try
         {
-            EvaluationReport report = await _evaluationService.EvaluateAsync(
+            // 006 research R1: node (404) → Browse (403) → culture (400) → active config (404) → per-user limit (429)
+            // → AI call → cache write. The canonical document type alias comes from the content node.
+            ContentEvaluationResult result = await _contentEvaluation.EvaluateDraftValuesAsync(
                 request.NodeId,
-                documentTypeAlias,
+                request.Culture,
                 request.Properties,
-                NullIfInvariant(culture),
+                CanBrowseAsync,
+                beforeAiCall: (_, _) =>
+                {
+                    EnsureWithinRateLimit();
+                    return Task.CompletedTask;
+                },
                 cancellationToken);
 
-            DateTime cachedAt = DateTime.UtcNow;
-            await _cacheRepository.SaveAsync(new EvaluationCacheEntry
+            return result.Status switch
             {
-                NodeId = request.NodeId,
-                Culture = culture,
-                DocumentTypeAlias = documentTypeAlias,
-                Report = report,
-                CachedAt = cachedAt,
-            }, cancellationToken);
-
-            // A pre-upgrade row has no culture; it's never shown for a culture-varying document, so
-            // discard it as soon as a culture-specific result exists (data-model.md §1).
-            if (culture.Length > 0)
-                await _cacheRepository.DeleteAsync(request.NodeId, string.Empty, cancellationToken);
-
-            AIEvaluatorConfig? activeConfig = await _configService.GetActiveForDocumentTypeAsync(documentTypeAlias, cancellationToken);
-            bool recommendationsEnabled = activeConfig?.RecommendationsEnabled ?? true;
-            IReadOnlyDictionary<string, string> editorAliases = BuildPropertyEditorAliases(documentTypeAlias);
-            IReadOnlyDictionary<string, string> propertyNames = BuildPropertyNames(documentTypeAlias);
-            return Ok(report.WithCachedAt(cachedAt)
-                .WithCulture(NullIfInvariant(culture))
-                .WithPropertyEditorAliases(editorAliases)
-                .WithPropertyNames(propertyNames)
-                .WithRecommendationsEnabled(recommendationsEnabled)
-                .WithAdditionalRecommendableEditorAliases(_options.Value.AdditionalRecommendableEditorAliases));
+                ContentEvaluationStatus.Ok => Ok(result.Report),
+                ContentEvaluationStatus.Forbidden => StatusCode(StatusCodes.Status403Forbidden,
+                    new { title = "You do not have permission to evaluate this content node." }),
+                _ => RejectedResult(result),
+            };
+        }
+        catch (RateLimitExceededException)
+        {
+            return TooManyRequests();
         }
         catch (InvalidOperationException ex)
         {
@@ -423,7 +371,6 @@ public sealed partial class PageEvaluatorApiController : ControllerBase
     // ---------------------------------------------------------------------------
 
     [HttpPost("recommend")]
-    [EnableRateLimiting("PageEvaluatorEvaluate")]
     [RequestSizeLimit(1 * 1024 * 1024)]
     public async Task<IActionResult> RecommendAsync(
         [FromBody] RecommendRequest request,
@@ -450,9 +397,10 @@ public sealed partial class PageEvaluatorApiController : ControllerBase
             return StatusCode(StatusCodes.Status403Forbidden,
                 new { title = "Recommendations are not enabled for this evaluator configuration." });
 
-        (string? normalisedCulture, IActionResult? cultureError) = await NormaliseCultureAsync(content, request.Culture);
-        if (cultureError is not null)
-            return cultureError;
+        ContentCultureRules.Normalised culture = await ContentCultureRules.NormaliseAsync(content, request.Culture, _languageService);
+        if (culture.Status != ContentEvaluationStatus.Ok)
+            return CultureError(ContentCultureRules.Category(culture.Status), culture.Message!);
+        string normalisedCulture = culture.Culture!;
 
         if (request.PropertyAliases.Count == 0)
             return BadRequest(new { type = "Error", title = "PropertyAliases must contain at least one alias.", status = StatusCodes.Status400BadRequest });
@@ -469,6 +417,11 @@ public sealed partial class PageEvaluatorApiController : ControllerBase
                 return BadRequest(new { type = "Error", title = $"Property '{alias}' not found on document type '{content.ContentType.Alias}'.", status = StatusCodes.Status400BadRequest });
             propertyTypes[alias] = propType;
         }
+
+        // 006 research R4: one per-user budget with POST /evaluate and the evaluate_page server tool,
+        // charged after the 404/403/400 checks and before any AI call.
+        if (!_rateLimiter.TryAcquire(RateLimitKey()))
+            return TooManyRequests();
 
         // Resolve JSON schemas.
         var schemas = new Dictionary<string, JsonObject?>(propertyTypes.Count);
@@ -493,7 +446,7 @@ public sealed partial class PageEvaluatorApiController : ControllerBase
             foreach ((string alias, IPropertyType propType) in propertyTypes)
             {
                 string? recommended = await GetRecommendationAsync(
-                    config, request, propType, schemas[alias], NullIfInvariant(normalisedCulture!), cancellationToken);
+                    config, request, propType, schemas[alias], ContentCultureRules.NullIfInvariant(normalisedCulture), cancellationToken);
                 recommendedValues[alias] = recommended;
             }
             return Ok(new RecommendResponse { RecommendedValues = recommendedValues });
@@ -621,55 +574,60 @@ public sealed partial class PageEvaluatorApiController : ControllerBase
     // Private helpers
     // ---------------------------------------------------------------------------
 
-    private IReadOnlyDictionary<string, string> BuildPropertyEditorAliases(string documentTypeAlias)
+    /// <summary>
+    /// The endpoints' <c>authorize</c> delegate for <see cref="IContentEvaluationService"/>: Browse permission on the
+    /// node for the requesting backoffice user.
+    /// </summary>
+    private async Task<bool> CanBrowseAsync(Guid nodeId, CancellationToken cancellationToken)
     {
-        IContentType? contentType = _contentTypeService.Get(documentTypeAlias);
-        if (contentType is null)
-            return new Dictionary<string, string>();
-
-        return contentType.CompositionPropertyTypes
-            .ToDictionary(p => p.Alias, p => p.PropertyEditorAlias);
+        AuthorizationResult authResult = await _authorizationService.AuthorizeAsync(
+            User,
+            ContentPermissionResource.WithKeys(ActionBrowse.ActionLetter, nodeId),
+            AuthorizationPolicies.ContentPermissionByResource);
+        return authResult.Succeeded;
     }
 
-    private IReadOnlyDictionary<string, string> BuildPropertyNames(string documentTypeAlias)
+    /// <summary>Maps a non-Ok, non-Forbidden <see cref="ContentEvaluationResult"/> to the existing error responses.</summary>
+    private IActionResult RejectedResult(ContentEvaluationResult result) => result.Status switch
     {
-        IContentType? contentType = _contentTypeService.Get(documentTypeAlias);
-        if (contentType is null)
-            return new Dictionary<string, string>();
+        ContentEvaluationStatus.InvalidCulture or ContentEvaluationStatus.CultureNotCreated
+            => CultureError(ContentCultureRules.Category(result.Status), result.Message!),
+        // NodeNotFound, NotCached and NoActiveConfig: 404 { title } (the interceptor rebuilds 404 bodies anyway).
+        _ => NotFound(new { title = result.Message }),
+    };
 
-        return contentType.CompositionPropertyTypes
-            .ToDictionary(p => p.Alias, p => p.Name);
+    /// <summary>
+    /// The per-user rate-limit key: the backoffice user key, falling back to the client IP (006 research R4).
+    /// </summary>
+    private string RateLimitKey()
+        => HttpContext.User.Identity?.GetUserKey()?.ToString()
+            ?? HttpContext.Connection.RemoteIpAddress?.ToString()
+            ?? "anonymous";
+
+    private void EnsureWithinRateLimit()
+    {
+        if (!_rateLimiter.TryAcquire(RateLimitKey()))
+            throw new RateLimitExceededException();
     }
 
     /// <summary>
-    /// Normalises the requested culture for a content node (contracts/management-api.md §1):
-    /// invariant document types always use <see cref="string.Empty"/> (the supplied value is ignored);
-    /// culture-varying ones need a configured language that exists on the node. The result is the
-    /// lower-cased ISO code used as the cache key.
+    /// 429 with the problem-details-like body the backoffice interceptor passes through; the client maps
+    /// <c>temporaryRetryable</c> to its localized "try again shortly" message.
     /// </summary>
-    private async Task<(string? Culture, IActionResult? Error)> NormaliseCultureAsync(IContent content, string? requested)
-    {
-        if (!content.ContentType.VariesByCulture())
-            return (string.Empty, null);
+    private ObjectResult TooManyRequests()
+        => StatusCode(StatusCodes.Status429TooManyRequests, new
+        {
+            type = "Error",
+            title = "Too many evaluation requests. Please wait a minute and try again.",
+            status = StatusCodes.Status429TooManyRequests,
+            category = "temporaryRetryable",
+        });
 
-        if (string.IsNullOrWhiteSpace(requested))
-            return (null, CultureError("invalidCulture", "A culture is required for this document type because it varies by culture."));
-
-        IEnumerable<ILanguage> languages = await _languageService.GetAllAsync();
-        ILanguage? language = languages.FirstOrDefault(l => string.Equals(l.IsoCode, requested, StringComparison.OrdinalIgnoreCase));
-        if (language is null)
-            return (null, CultureError("invalidCulture", $"'{requested}' is not a configured language."));
-
-        if (!content.IsCultureAvailable(language.IsoCode))
-            return (null, CultureError("cultureNotCreated", $"This page has no content in '{language.IsoCode}' yet."));
-
-        return (language.IsoCode.ToLowerInvariant(), null);
-    }
+    /// <summary>Thrown by the evaluate gate to abort before the AI call; caught in <see cref="EvaluateAsync"/>.</summary>
+    private sealed class RateLimitExceededException : Exception;
 
     private ObjectResult CultureError(string category, string title)
         => BadRequest(new { type = "Error", title, status = StatusCodes.Status400BadRequest, category });
-
-    private static string? NullIfInvariant(string culture) => culture.Length == 0 ? null : culture;
 
     private static string CultureDisplayName(string culture)
     {

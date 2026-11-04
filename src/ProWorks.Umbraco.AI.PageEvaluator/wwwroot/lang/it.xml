@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<language alias="it" intName="Italian" localName="italiano" lcid="" culture="it-IT">
+  <area alias="proworksPageEvaluator">
+    <key alias="reportTitle">Valutazione della pagina</key>
+    <key alias="reportPage">Pagina</key>
+    <key alias="reportLanguage">Lingua</key>
+    <key alias="reportConfiguration">Configurazione</key>
+    <key alias="reportEvaluatedAt">Valutata il</key>
+    <key alias="reportFromCache">Riutilizzata da una valutazione precedente della stessa versione salvata</key>
+    <key alias="reportOverallScore">Punteggio complessivo</key>
+    <key alias="reportScoreOutOf">{score} / 5</key>
+    <key alias="reportAxisScores">Ripartizione del punteggio</key>
+    <key alias="reportChecks">Controlli</key>
+    <key alias="reportStatusPass">Superato</key>
+    <key alias="reportStatusFail">Fallito</key>
+    <key alias="reportStatusWarn">Avviso</key>
+    <key alias="reportVerdictPassed">Superata</key>
+    <key alias="reportVerdictFailed">Non superata</key>
+    <key alias="reportVerdictNone">Nessuna regola di superamento impostata</key>
+    <key alias="reportVerdictScoreMissing">Non superata: l'IA non ha fornito un punteggio complessivo</key>
+    <key alias="reportParseFailed">La risposta dell'IA non è stata formattata come report strutturato. Affina il prompt del valutatore per migliorare l'output strutturato.</key>
+    <key alias="reportOpenInUmbraco">Apri in Umbraco</key>
+    <key alias="reportInvariant">Tutte le lingue</key>
+    <key alias="summaryScored">{page}: punteggio complessivo {score}/5; {passed} superati, {failed} falliti, {warnings} avvisi. {verdict}.</key>
+    <key alias="summaryUnscored">{page}: {passed} superati, {failed} falliti, {warnings} avvisi. {verdict}.</key>
+    <key alias="summaryParseFailed">{page}: la risposta dell'IA non è stata letta come report. {verdict}.</key>
+    <key alias="errorInvalidContentKey">L'impostazione della pagina "{value}" non è una chiave di contenuto valida. Collegala alla chiave di contenuto del trigger o inserisci la chiave di una pagina.</key>
+    <key alias="errorContentNotFound">Non esiste alcuna pagina con la chiave {key}.</key>
+    <key alias="errorCultureRequired">La pagina "{page}" varia in base alla lingua, quindi l'impostazione Lingua è obbligatoria.</key>
+    <key alias="errorInvalidCulture">La lingua "{culture}" non è configurata su questo sito.</key>
+    <key alias="errorCultureNotCreated">La pagina "{page}" non ha ancora una versione "{culture}", quindi non c'è nulla da valutare.</key>
+    <key alias="errorNoActiveConfig">Non esiste alcuna configurazione attiva del Page Evaluator per il tipo di documento "{documentType}".</key>
+    <key alias="errorThresholdNeedsScoring">È impostata una soglia di superamento, ma la configurazione del valutatore "{config}" ha il punteggio disattivato. Attiva il punteggio o rimuovi la soglia.</key>
+    <key alias="errorGuardrailBlocked">La valutazione è stata bloccata da una policy guardrail di Umbraco.AI: {message}</key>
+    <key alias="errorProviderUnavailable">Il provider IA è temporaneamente non disponibile. Riprova tra un momento.</key>
+    <key alias="errorProviderConfiguration">La connessione IA richiede attenzione. Contatta l'amministratore per verificare le credenziali o la configurazione del profilo IA.</key>
+    <key alias="errorUnexpected">Non è stato possibile completare la valutazione a causa di un errore imprevisto. Consulta il log di Umbraco per i dettagli.</key>
+  </area>
+</language>

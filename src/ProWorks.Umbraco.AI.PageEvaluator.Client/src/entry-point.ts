@@ -21,9 +21,100 @@ import {
   PageEvaluatorActiveConfigCondition,
   PROWORKS_AI_ACTIVE_CONFIG_CONDITION_ALIAS,
 } from './workspace-action/page-evaluator-active-config.condition.js';
+import type { PageEvaluatorFrontendToolManifest } from './copilot/types.js';
 
 /** Alias for the Umbraco.AI Addons menu. */
 const UAI_ADDONS_MENU_ALIAS = 'Uai.Menu.Addons';
+
+/**
+ * Copilot frontend tools (006 US1, contracts/copilot-tools.md, research R5). Registered unconditionally: on a site
+ * without Umbraco.AI Agent.UI the registry keeps the unknown `uaiAgentFrontendTool` type and nothing ever loads the
+ * lazy `api` chunks. Admins see the tools only after granting the `page-evaluator-read`/`-write` scopes to an agent.
+ * Labels come from the `uaiTool_*` localization keys; `description` is the English instruction for the model.
+ */
+const copilotTools: PageEvaluatorFrontendToolManifest[] = [
+  {
+    type: 'uaiAgentFrontendTool',
+    alias: 'ProWorks.AI.PageEvaluator.Tool.EvaluateCurrentPage',
+    name: 'Page Evaluator Evaluate Current Page Tool',
+    api: () => import('./copilot/evaluate-current-page.tool.api.js'),
+    meta: {
+      toolName: 'evaluate_current_page',
+      description:
+        "Evaluates the page open in the editor against the site's Page Evaluator checks, using the values on screen (unsaved changes included) for the language being viewed. Returns the score, each check's status and explanation, and which fields can be improved. Returns the cached result when one exists unless fresh is true; if the result is marked outOfDate, tell the user and offer a fresh evaluation.",
+      parameters: {
+        type: 'object',
+        properties: {
+          fresh: { type: 'boolean', description: 'Run a new evaluation instead of returning the cached result.' },
+        },
+        additionalProperties: false,
+      },
+      scope: 'page-evaluator-read',
+      isDestructive: false,
+    },
+  },
+  {
+    type: 'uaiAgentFrontendTool',
+    alias: 'ProWorks.AI.PageEvaluator.Tool.RecommendPageValues',
+    name: 'Page Evaluator Recommend Page Values Tool',
+    api: () => import('./copilot/recommend-page-values.tool.api.js'),
+    meta: {
+      toolName: 'recommend_page_values',
+      description:
+        "Gets AI-recommended values for fields named by failed or warning checks in the current Page Evaluator report for the open page. Only fields listed in the report's 'recommendable' list are allowed. Returns a reference for each recommendation; show the value to the user, and pass the reference to apply_page_recommendation only if they accept it.",
+      parameters: {
+        type: 'object',
+        required: ['propertyAliases'],
+        properties: {
+          propertyAliases: {
+            type: 'array',
+            minItems: 1,
+            items: { type: 'string' },
+            description: "Aliases from the report's recommendable list.",
+          },
+        },
+        additionalProperties: false,
+      },
+      scope: 'page-evaluator-read',
+      isDestructive: false,
+    },
+  },
+  {
+    type: 'uaiAgentFrontendTool',
+    alias: 'ProWorks.AI.PageEvaluator.Tool.ApplyPageRecommendation',
+    name: 'Page Evaluator Apply Page Recommendation Tool',
+    api: () => import('./copilot/apply-page-recommendation.tool.api.js'),
+    meta: {
+      toolName: 'apply_page_recommendation',
+      description:
+        'Writes one accepted Page Evaluator recommendation into its field on the open page, exactly as recommended. The change is staged in the editor and NOT saved; the user must click Save. Only call this after the user has seen the value and agreed. Requires a reference from recommend_page_values.',
+      parameters: {
+        type: 'object',
+        required: ['reference'],
+        properties: {
+          reference: { type: 'string', description: 'The reference returned by recommend_page_values.' },
+        },
+        additionalProperties: false,
+      },
+      scope: 'page-evaluator-write',
+      // Permission metadata only; the approval prompt comes from `approval` (research R5).
+      isDestructive: true,
+      approval: {
+        config: {
+          title: '#pageEvaluatorCopilot_applyApprovalTitle',
+          message: '#pageEvaluatorCopilot_applyApprovalMessage',
+        },
+      },
+    },
+  },
+];
+
+/**
+ * The Copilot tool manifests as registry entries. `uaiAgentFrontendTool` is declared by `@umbraco-ai/agent-ui`, which
+ * this package must not depend on (spec FR-012), so the global `UmbExtensionManifest` union doesn't know the type.
+ * This is the single cast allowed by the plan's Complexity Tracking; the manifests themselves are fully typed above.
+ */
+export const copilotToolManifests = copilotTools as unknown as UmbExtensionManifest[];
 
 /**
  * All extension manifests for this package.
@@ -240,6 +331,11 @@ const manifests: UmbExtensionManifest[] = [
         element: m.EvaluatorFormElement,
       })),
   },
+
+  // ---------------------------------------------------------------------------
+  // 006 US1 — Copilot frontend tools
+  // ---------------------------------------------------------------------------
+  ...copilotToolManifests,
 ];
 
 export const onInit: UmbEntryPointOnInit = (): void => {

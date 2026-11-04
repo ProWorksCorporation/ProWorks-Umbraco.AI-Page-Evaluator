@@ -10,7 +10,7 @@
     "SyncContributorsFromRepository": false
   },
   "Category": "Artificial Intelligence",
-  "Description": "An Umbraco 17 backoffice package that adds an Evaluate Page button to the content editor toolbar. When clicked, it sends the current page's content to an AI model and returns a structured quality report directly inside the backoffice, including scored checks, warnings, and actionable suggestions.",
+  "Description": "An Umbraco 17 backoffice package that adds an Evaluate Page button to the content editor toolbar. When clicked, it sends the current page's content to an AI model and returns a structured quality report directly inside the backoffice, including scored checks, warnings, and actionable suggestions. Copilot can evaluate the open page and apply recommendations after approval, and optional add-ons add an Umbraco Automate \"Evaluate Page\" step and Umbraco Deploy support.",
   "DiscussionForumUrl": "https://github.com/ProWorksCorporation/ProWorks-Umbraco.AI-Page-Evaluator/issues",
   "DocumentationUrl": "https://github.com/ProWorksCorporation/ProWorks-Umbraco.AI-Page-Evaluator",
   "LicenseTypes": ["Free"],
@@ -48,7 +48,10 @@
     "backoffice",
     "ai",
     "umbraco.ai",
-    "editorial experience"
+    "editorial experience",
+    "copilot",
+    "automate",
+    "deploy"
   ],
   "VideoUrl": ""
 }
