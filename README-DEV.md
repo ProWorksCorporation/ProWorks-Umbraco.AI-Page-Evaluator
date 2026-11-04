@@ -156,7 +156,8 @@ dotnet nuget push ./nupkg/ProWorks.Umbraco.AI.PageEvaluator.*.nupkg \
 
 Before publishing, update the `<Version>` in
 `src/ProWorks.Umbraco.AI.PageEvaluator/ProWorks.Umbraco.AI.PageEvaluator.csproj`
-and update `<PackageReleaseNotes>` to describe what changed.
+and replace `<PackageReleaseNotes>` with a brief note for that version only (lead with the main
+change, then list key fixes briefly). Don't keep earlier versions' notes: nuget.org shows each version's own.
 
 ### Database migrations
 
