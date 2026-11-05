@@ -224,9 +224,9 @@ export default {
     contentKeyLabel: 'Side',
     contentKeyDescription:
       'Nøkkelen til siden som skal evalueres. Kan være en binding, for eksempel ${ trigger.contentKey }.',
-    cultureLabel: 'Språk',
+    cultureLabel: 'Sidens språk',
     cultureDescription:
-      'ISO-kode for språket som skal evalueres, for eksempel nb-NO. Påkrevd for sider som varierer etter språk.',
+      'Hvilken språkversjon av siden som skal evalueres: en språkkode som nb-NO eller en binding til utløserens språk. Påkrevd for sider som varierer etter språk. E-postens språk velges under Rapportspråk.',
     passThresholdLabel: 'Terskel for bestått',
     passThresholdDescription:
       'Valgfritt. Den laveste samlede poengsummen (1–5, samme skala som rapporten) som gir bestått.',

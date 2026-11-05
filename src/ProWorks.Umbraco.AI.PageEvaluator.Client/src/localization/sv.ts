@@ -223,9 +223,9 @@ export default {
     contentKeyLabel: 'Sida',
     contentKeyDescription:
       'Nyckeln för sidan som ska utvärderas. Kan vara en bindning, till exempel ${ trigger.contentKey }.',
-    cultureLabel: 'Språk',
+    cultureLabel: 'Sidans språk',
     cultureDescription:
-      'ISO-kod för språket som ska utvärderas, till exempel sv-SE. Krävs för sidor som varierar per språk.',
+      'Vilken språkversion av sidan som ska utvärderas: en språkkod som sv-SE eller en bindning till utlösarens språk. Krävs för sidor som varierar per språk. E-postens språk väljs under Rapportspråk.',
     passThresholdLabel: 'Gräns för godkänt',
     passThresholdDescription: 'Valfritt. Den lägsta totalpoängen (1–5, samma skala som rapporten) som ger godkänt.',
     failOnAnyFailedCheckLabel: 'Underkänn vid varje misslyckad kontroll',

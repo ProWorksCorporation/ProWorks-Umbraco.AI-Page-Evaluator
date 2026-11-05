@@ -78,7 +78,7 @@ dotnet run --project src/ProWorks.Umbraco.AI.PageEvaluator.TestSite --launch-pro
 
 Open `https://localhost:44318/umbraco` in a browser.
 
-The TestSite also runs **Umbraco Automate** (for the Automate add-on). Automate keeps its data in its own database, so `appsettings.Development.json` has a second connection string (`umbracoAutomateDbDSN`, `Umbraco.Automate.sqlite.db`, git-ignored). It also sets `Umbraco:CMS:WebRouting:UmbracoApplicationUrl`, because Automate runs without an HTTP request and the emailed report's "Open in Umbraco" link needs the site address.
+The TestSite also runs **Umbraco Automate** (for the Automate add-on). Automate keeps its data in its own database, so `appsettings.Development.json` has a second connection string (`umbracoAutomateDbDSN`, `Umbraco.Automate.sqlite.db`, git-ignored). It also configures mail under `Umbraco:CMS:Global:Smtp` as a **pickup directory** (`C:\temp\umbraco-mail`; create the folder once), so Automate's Send Email writes `.eml` files you can open in a mail client instead of sending real email. And it sets `Umbraco:CMS:WebRouting:UmbracoApplicationUrl`, because Automate runs without an HTTP request and the emailed report's "Open in Umbraco" link needs the site address.
 
 | Setting | Value |
 |---|---|

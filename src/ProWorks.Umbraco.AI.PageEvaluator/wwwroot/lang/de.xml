@@ -26,7 +26,7 @@
     <key alias="summaryParseFailed">{page}: Die KI-Antwort konnte nicht als Bericht gelesen werden. {verdict}.</key>
     <key alias="errorInvalidContentKey">Die Seiteneinstellung "{value}" ist kein gültiger Inhaltsschlüssel. Binden Sie sie an den Inhaltsschlüssel des Auslösers oder geben Sie den Schlüssel einer Seite ein.</key>
     <key alias="errorContentNotFound">Es gibt keine Seite mit dem Schlüssel {key}.</key>
-    <key alias="errorCultureRequired">Die Seite "{page}" variiert nach Sprache, daher ist die Einstellung Sprache erforderlich.</key>
+    <key alias="errorCultureRequired">Die Seite "{page}" variiert nach Sprache, daher ist die Einstellung Seitensprache erforderlich.</key>
     <key alias="errorInvalidCulture">Die Sprache "{culture}" ist auf dieser Website nicht konfiguriert.</key>
     <key alias="errorCultureNotCreated">Die Seite "{page}" hat noch keine Version "{culture}", daher gibt es nichts auszuwerten.</key>
     <key alias="errorNoActiveConfig">Für den Dokumenttyp "{documentType}" gibt es keine aktive Page-Evaluator-Konfiguration.</key>

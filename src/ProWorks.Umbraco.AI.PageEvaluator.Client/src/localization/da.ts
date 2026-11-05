@@ -223,9 +223,9 @@ export default {
     contentKeyLabel: 'Side',
     contentKeyDescription:
       'Nøglen til den side, der skal evalueres. Kan være en binding, f.eks. ${ trigger.contentKey }.',
-    cultureLabel: 'Sprog',
+    cultureLabel: 'Sidens sprog',
     cultureDescription:
-      'ISO-kode for det sprog, der skal evalueres, f.eks. da-DK. Påkrævet for sider, der varierer efter sprog.',
+      'Hvilken sprogversion af siden der skal evalueres: en sprogkode som da-DK eller en binding til triggerens sprog. Påkrævet for sider, der varierer efter sprog. E-mailens sprog vælges under Rapportsprog.',
     passThresholdLabel: 'Beståelsesgrænse',
     passThresholdDescription: 'Valgfri. Den laveste samlede score (1–5, samme skala som rapporten), der består.',
     failOnAnyFailedCheckLabel: 'Afvis ved ethvert fejlet tjek',

@@ -224,9 +224,9 @@ export default {
     contentKeyLabel: 'Pagina',
     contentKeyDescription:
       'La chiave della pagina da valutare. Può essere un binding, ad esempio ${ trigger.contentKey }.',
-    cultureLabel: 'Lingua',
+    cultureLabel: 'Lingua della pagina',
     cultureDescription:
-      'Codice ISO della lingua da valutare, ad esempio it-IT. Obbligatorio per le pagine che variano in base alla lingua.',
+      'Versione linguistica della pagina da valutare: un codice lingua come it-IT o un binding alle lingue del trigger. Obbligatorio per le pagine che variano in base alla lingua. La lingua dell’email si sceglie in Lingua del report.',
     passThresholdLabel: 'Soglia di superamento',
     passThresholdDescription:
       'Facoltativa. Il punteggio complessivo minimo (da 1 a 5, la stessa scala del report) per superare la valutazione.',

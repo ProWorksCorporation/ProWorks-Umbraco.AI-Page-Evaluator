@@ -625,4 +625,89 @@ public class EvaluatePageActionTests
         Assert.Equal(3.75m, output.OverallScore);
         Assert.True(output.Passed);
     }
+
+    // -------------------------------------------------------------------------
+    // Stored settings, as Automate saves and reads them back (live-test finding, 2026-11-05)
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Automate's real settings resolver (internal <c>EditableModelResolver</c>), so the settings go through the same
+    /// JSON options and single-value-array converter as a live run (<c>ActionStepBody</c> → <c>ResolveSettings</c>).
+    /// </summary>
+    private EvaluatePageAction CreateActionWithAutomatesResolver()
+    {
+        Type resolverType = typeof(IEditableModelResolver).Assembly
+            .GetType("Umbraco.Automate.Core.Settings.EditableModelResolver", throwOnError: true)!;
+        var references = Substitute.For<IConfigurationReferenceResolver>();
+        references.ContainsReference(Arg.Any<string?>()).Returns(false);
+        // No `$Key:Path` references in these settings: values pass through unchanged, as with the real resolver.
+        references.Resolve(Arg.Any<object?>(), Arg.Any<Type>(), Arg.Any<bool>()).Returns(call => call.ArgAt<object?>(0));
+        var resolver = (IEditableModelResolver)Activator.CreateInstance(
+            resolverType, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, [references], null)!;
+
+        var routing = Substitute.For<IOptionsMonitor<WebRoutingSettings>>();
+        routing.CurrentValue.Returns(_routing);
+        var text = new TestText.Echo();
+        return new EvaluatePageAction(
+            new ActionInfrastructure(resolver), _scopeFactory, _authorizer, text, new EvaluationReportHtmlRenderer(text),
+            new BackofficeLinkBuilder(routing, Substitute.For<IHostingEnvironment>()), NullLogger<EvaluatePageAction>.Instance);
+    }
+
+    /// <summary>The step's settings dictionary as Automate deserializes it from the stored automation definition.</summary>
+    private EvaluatePageSettings ResolveStored(string settingsJson)
+    {
+        Dictionary<string, object?> stored = JsonSerializer.Deserialize<Dictionary<string, object?>>(settingsJson)!;
+        return Assert.IsType<EvaluatePageSettings>(CreateActionWithAutomatesResolver().ResolveSettings(stored));
+    }
+
+    // The dropdown editor stores its value as an array: [] for "Automatic", ["da"] for a language. These are the shapes
+    // the TestSite's automation actually stored.
+    [Theory]
+    [InlineData("""{"contentKey":"${ trigger.contentKey }","culture":"de-DE","passThreshold":3.5,"failOnAnyFailedCheck":true,"reportLanguage":[]}""", null)]
+    [InlineData("""{"contentKey":"${ trigger.contentKey }","culture":"en-US","passThreshold":null,"failOnAnyFailedCheck":true,"reportLanguage":["da"]}""", "da")]
+    [InlineData("""{"contentKey":"${ trigger.contentKey }","culture":"en-US","reportLanguage":"da"}""", "da")]
+    [InlineData("""{"contentKey":"${ trigger.contentKey }","culture":"en-US"}""", null)]
+    public void StoredSettings_ResolveTheReportLanguageDropdownValue(string settingsJson, string? expected)
+    {
+        EvaluatePageSettings settings = ResolveStored(settingsJson);
+
+        Assert.Equal(expected, string.IsNullOrEmpty(settings.ReportLanguage) ? null : settings.ReportLanguage);
+    }
+
+    [Fact]
+    public void StoredSettings_ResolveEveryField_AsSavedByTheAutomateEditor()
+    {
+        EvaluatePageSettings settings = ResolveStored(
+            """{"contentKey":"${ trigger.contentKey }","culture":"${ trigger.cultures[0] }","passThreshold":3.5,"failOnAnyFailedCheck":false,"reportLanguage":["da"]}""");
+
+        Assert.Equal("${ trigger.contentKey }", settings.ContentKey);
+        Assert.Equal("${ trigger.cultures[0] }", settings.Culture);
+        Assert.Equal(3.5m, settings.PassThreshold);
+        Assert.False(settings.FailOnAnyFailedCheck);
+        Assert.Equal("da", settings.ReportLanguage);
+    }
+
+    [Fact]
+    public void StoredSettings_MissingFailOnAnyFailedCheck_KeepsTheDefaultOn()
+    {
+        EvaluatePageSettings settings = ResolveStored("""{"contentKey":"${ trigger.contentKey }"}""");
+
+        Assert.True(settings.FailOnAnyFailedCheck);
+        Assert.Null(settings.PassThreshold);
+    }
+
+    [Theory]
+    [InlineData("""{"contentKey":"3e4f5a6b-7c8d-4e9f-a0b1-c2d3e4f5a6b7","culture":"da-DK","reportLanguage":[]}""", "da:")]  // Automatic → the page's language
+    [InlineData("""{"contentKey":"3e4f5a6b-7c8d-4e9f-a0b1-c2d3e4f5a6b7","culture":"en-US","reportLanguage":["da"]}""", "da:")] // chosen language wins
+    [InlineData("""{"contentKey":"3e4f5a6b-7c8d-4e9f-a0b1-c2d3e4f5a6b7","culture":"en-US","reportLanguage":[]}""", "en:")]
+    public async Task StoredSettings_DriveTheReportLanguage_EndToEnd(string settingsJson, string summaryPrefix)
+    {
+        EvaluatePageSettings settings = ResolveStored(settingsJson);
+        string evaluatedCulture = settings.Culture!.ToLowerInvariant();
+        Returns(Ok(Report(4, CheckStatus.Pass), culture: evaluatedCulture));
+
+        EvaluatePageOutput output = Output(await Run(settings));
+
+        Assert.StartsWith(summaryPrefix, output.Summary);
+    }
 }

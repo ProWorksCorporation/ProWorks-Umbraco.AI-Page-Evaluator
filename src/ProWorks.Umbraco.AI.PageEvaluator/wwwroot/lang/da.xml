@@ -26,7 +26,7 @@
     <key alias="summaryParseFailed">{page}: AI-svaret kunne ikke læses som en rapport. {verdict}.</key>
     <key alias="errorInvalidContentKey">Sideindstillingen "{value}" er ikke en gyldig indholdsnøgle. Bind den til udløserens indholdsnøgle, eller angiv en sides nøgle.</key>
     <key alias="errorContentNotFound">Der findes ingen side med nøglen {key}.</key>
-    <key alias="errorCultureRequired">Siden "{page}" varierer efter sprog, så indstillingen Sprog er påkrævet.</key>
+    <key alias="errorCultureRequired">Siden "{page}" varierer efter sprog, så indstillingen Sidens sprog er påkrævet.</key>
     <key alias="errorInvalidCulture">Sproget "{culture}" er ikke konfigureret på dette website.</key>
     <key alias="errorCultureNotCreated">Siden "{page}" har endnu ingen "{culture}"-version, så der er intet at evaluere.</key>
     <key alias="errorNoActiveConfig">Der findes ingen aktiv Page Evaluator-konfiguration for dokumenttypen "{documentType}".</key>

@@ -26,7 +26,7 @@
     <key alias="summaryParseFailed">{page}: AI-svaret kunde inte läsas som en rapport. {verdict}.</key>
     <key alias="errorInvalidContentKey">Sidinställningen "{value}" är inte en giltig innehållsnyckel. Bind den till utlösarens innehållsnyckel eller ange en sidas nyckel.</key>
     <key alias="errorContentNotFound">Det finns ingen sida med nyckeln {key}.</key>
-    <key alias="errorCultureRequired">Sidan "{page}" varierar efter språk, så inställningen Språk är obligatorisk.</key>
+    <key alias="errorCultureRequired">Sidan "{page}" varierar efter språk, så inställningen Sidans språk är obligatorisk.</key>
     <key alias="errorInvalidCulture">Språket "{culture}" är inte konfigurerat på den här webbplatsen.</key>
     <key alias="errorCultureNotCreated">Sidan "{page}" har ingen "{culture}"-version ännu, så det finns inget att utvärdera.</key>
     <key alias="errorNoActiveConfig">Det finns ingen aktiv Page Evaluator-konfiguration för dokumenttypen "{documentType}".</key>

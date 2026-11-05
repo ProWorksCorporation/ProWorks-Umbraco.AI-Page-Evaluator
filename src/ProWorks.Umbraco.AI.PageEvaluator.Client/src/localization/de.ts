@@ -224,9 +224,9 @@ export default {
     contentKeyLabel: 'Seite',
     contentKeyDescription:
       'Der Schlüssel der zu bewertenden Seite. Kann eine Bindung sein, z. B. ${ trigger.contentKey }.',
-    cultureLabel: 'Sprache',
+    cultureLabel: 'Seitensprache',
     cultureDescription:
-      'ISO-Code der zu bewertenden Sprache, z. B. de-DE. Erforderlich für Seiten, die nach Sprache variieren.',
+      'Welche Sprachversion der Seite bewertet wird: ein Sprachcode wie de-DE oder eine Bindung an die Sprachen des Auslösers. Erforderlich für Seiten, die nach Sprache variieren. Die Sprache der E-Mail legen Sie unter Berichtssprache fest.',
     passThresholdLabel: 'Bestehensschwelle',
     passThresholdDescription:
       'Optional. Die niedrigste Gesamtpunktzahl (1–5, dieselbe Skala wie im Bericht), mit der die Seite besteht.',

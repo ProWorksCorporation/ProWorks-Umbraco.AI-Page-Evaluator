@@ -32,7 +32,7 @@
     <!-- Step errors -->
     <key alias="errorInvalidContentKey">The page setting "{value}" is not a valid content key. Bind it to the trigger's content key or enter a page key.</key>
     <key alias="errorContentNotFound">No page with the key {key} exists.</key>
-    <key alias="errorCultureRequired">The page "{page}" varies by language, so the Language setting is required.</key>
+    <key alias="errorCultureRequired">The page "{page}" varies by language, so the Page language setting is required.</key>
     <key alias="errorInvalidCulture">The language "{culture}" is not configured on this site.</key>
     <key alias="errorCultureNotCreated">The page "{page}" has no "{culture}" version yet, so there is nothing to evaluate.</key>
     <key alias="errorNoActiveConfig">No active Page Evaluator configuration exists for the document type "{documentType}".</key>

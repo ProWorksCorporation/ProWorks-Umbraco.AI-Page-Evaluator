@@ -192,12 +192,18 @@ The optional **ProWorks.Umbraco.AI.PageEvaluator.Automate** package adds an **Ev
 dotnet add package ProWorks.Umbraco.AI.PageEvaluator.Automate
 ```
 
+![An Automate flow with the Evaluate Page step: evaluate, email the report, request approval, then publish or notify the editor](images/Automate-Evaluate-Page-Flow.png)
+
 Two typical flows:
 
 - **Flow 1, review before release:** Content Saved → Evaluate Page → Send Email (body `${ steps.evaluate.reportHtml }`) → Request Approval → Switch on `approved` → Publish Content / Notify Editor. The gate only holds when release goes through the automation, e.g. when editors don't have the Publish permission.
 - **Flow 2, publish pages that pass:** Content Saved → Evaluate Page with a **Pass threshold** (the report's 1–5 scale) → Switch on `${ steps.evaluate.passed }` → Publish Content, or Send Email + Request Approval → Publish / Notify Editor. **Fail on any failed check** is on by default (warnings never fail a page), and a threshold with no score in the report never passes. Branch on `passed` rather than comparing the score in a numeric Switch: Automate parses numbers with the server's culture, so `3.5` vs `3,5` matters.
 
-The workspace's service account needs Browse on the pages (and Publish for flows that publish), and the report's "Open in Umbraco" link needs `Umbraco:CMS:WebRouting:UmbracoApplicationUrl`. Settings, outputs, error categories and both flows step by step: [Automate package README](src/ProWorks.Umbraco.AI.PageEvaluator.Automate/README.nuget.md).
+On multilingual sites, Publish Content's **Cultures** field takes fixed culture codes (e.g. `en-US,da-DK`), not bindings: `${ trigger.cultures[0] }` there fails with `InvalidCulture`.
+
+Before the first flow: give your user group the **Automation** section, make the workspace's service account an **API user**, and configure Umbraco's mail settings under `Umbraco:CMS:Global:Smtp` (Send Email fails without them). The workspace's service account needs Browse on the pages (and Publish for flows that publish), and the report's "Open in Umbraco" link needs `Umbraco:CMS:WebRouting:UmbracoApplicationUrl`. ![The Evaluate Page step's outputs in the binding picker](images/Automate-Evaluate-Page-Binding.png)
+
+Settings, outputs, error categories and both flows step by step: [Automate package README](src/ProWorks.Umbraco.AI.PageEvaluator.Automate/README.nuget.md).
 
 ---
 

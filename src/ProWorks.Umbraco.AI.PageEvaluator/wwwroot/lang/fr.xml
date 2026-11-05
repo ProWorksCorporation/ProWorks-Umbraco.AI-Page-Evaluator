@@ -26,7 +26,7 @@
     <key alias="summaryParseFailed">{page} : la réponse de l'IA n'a pas pu être lue comme un rapport. {verdict}.</key>
     <key alias="errorInvalidContentKey">Le paramètre de page "{value}" n'est pas une clé de contenu valide. Liez-le à la clé de contenu du déclencheur ou saisissez la clé d'une page.</key>
     <key alias="errorContentNotFound">Aucune page avec la clé {key} n'existe.</key>
-    <key alias="errorCultureRequired">La page "{page}" varie selon la langue, le paramètre Langue est donc obligatoire.</key>
+    <key alias="errorCultureRequired">La page "{page}" varie selon la langue, le paramètre Langue de la page est donc obligatoire.</key>
     <key alias="errorInvalidCulture">La langue "{culture}" n'est pas configurée sur ce site.</key>
     <key alias="errorCultureNotCreated">La page "{page}" n'a pas encore de version "{culture}", il n'y a donc rien à évaluer.</key>
     <key alias="errorNoActiveConfig">Aucune configuration active du Page Evaluator n'existe pour le type de document "{documentType}".</key>

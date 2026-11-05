@@ -223,9 +223,9 @@ export default {
   pageEvaluatorAutomate: {
     contentKeyLabel: 'Page',
     contentKeyDescription: 'La clé de la page à évaluer. Peut être une liaison, par exemple ${ trigger.contentKey }.',
-    cultureLabel: 'Langue',
+    cultureLabel: 'Langue de la page',
     cultureDescription:
-      'Code ISO de la langue à évaluer, par exemple fr-FR. Obligatoire pour les pages qui varient selon la langue.',
+      'Version linguistique de la page à évaluer : un code de langue comme fr-FR ou une liaison vers les langues du déclencheur. Obligatoire pour les pages qui varient selon la langue. La langue de l’e-mail se choisit dans Langue du rapport.',
     passThresholdLabel: 'Seuil de réussite',
     passThresholdDescription:
       'Facultatif. Le score global minimal (de 1 à 5, la même échelle que le rapport) pour réussir.',

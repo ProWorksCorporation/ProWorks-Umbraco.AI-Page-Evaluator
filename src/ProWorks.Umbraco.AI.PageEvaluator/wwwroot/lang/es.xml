@@ -26,7 +26,7 @@
     <key alias="summaryParseFailed">{page}: la respuesta de la IA no se pudo leer como un informe. {verdict}.</key>
     <key alias="errorInvalidContentKey">El ajuste de página "{value}" no es una clave de contenido válida. Vincúlelo a la clave de contenido del desencadenador o introduzca la clave de una página.</key>
     <key alias="errorContentNotFound">No existe ninguna página con la clave {key}.</key>
-    <key alias="errorCultureRequired">La página "{page}" varía según el idioma, por lo que el ajuste Idioma es obligatorio.</key>
+    <key alias="errorCultureRequired">La página "{page}" varía según el idioma, por lo que el ajuste Idioma de la página es obligatorio.</key>
     <key alias="errorInvalidCulture">El idioma "{culture}" no está configurado en este sitio.</key>
     <key alias="errorCultureNotCreated">La página "{page}" todavía no tiene una versión "{culture}", así que no hay nada que evaluar.</key>
     <key alias="errorNoActiveConfig">No existe ninguna configuración activa del Page Evaluator para el tipo de documento "{documentType}".</key>

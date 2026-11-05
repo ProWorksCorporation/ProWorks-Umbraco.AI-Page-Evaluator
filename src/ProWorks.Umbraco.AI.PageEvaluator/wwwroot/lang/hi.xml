@@ -28,7 +28,7 @@
     <key alias="summaryParseFailed">{page}: AI की प्रतिक्रिया को रिपोर्ट के रूप में पढ़ा नहीं जा सका। {verdict}।</key>
     <key alias="errorInvalidContentKey">पेज सेटिंग "{value}" एक मान्य कंटेंट कुंजी नहीं है। इसे ट्रिगर की कंटेंट कुंजी से बाइंड करें या किसी पेज की कुंजी दर्ज करें।</key>
     <key alias="errorContentNotFound">कुंजी {key} वाला कोई पेज मौजूद नहीं है।</key>
-    <key alias="errorCultureRequired">पेज "{page}" भाषा के अनुसार बदलता है, इसलिए भाषा सेटिंग आवश्यक है।</key>
+    <key alias="errorCultureRequired">पेज "{page}" भाषा के अनुसार बदलता है, इसलिए “पेज की भाषा” सेटिंग आवश्यक है।</key>
     <key alias="errorInvalidCulture">भाषा "{culture}" इस साइट पर कॉन्फ़िगर नहीं है।</key>
     <key alias="errorCultureNotCreated">पेज "{page}" का अभी कोई "{culture}" संस्करण नहीं है, इसलिए मूल्यांकन के लिए कुछ नहीं है।</key>
     <key alias="errorNoActiveConfig">दस्तावेज़ प्रकार "{documentType}" के लिए कोई सक्रिय Page Evaluator कॉन्फ़िगरेशन मौजूद नहीं है।</key>

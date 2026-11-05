@@ -25,6 +25,9 @@ Automate needs its own database connection: add a `umbracoAutomateDbDSN` connect
 
 ### Before you build a flow
 
+- **Automate access.** In **Users → User groups**, give your group the **Automation** section, then create a **workspace** in the Automation section. Its user groups decide who can open it and who can approve its requests.
+- **Service account.** A workspace's service account must be an **API user** (Users → Create → API user); Automate rejects regular users. Add it to a group with the permissions below.
+- **Email.** Automate's Send Email step uses Umbraco's mail settings, `Umbraco:CMS:Global:Smtp` (note the nesting: a `Global` section at the root of `appsettings.json` is ignored). Without them every run fails with "Email sender is not configured". For testing, `"DeliveryMethod": "SpecifiedPickupDirectory"` with a `PickupDirectoryLocation` and a `From` address writes `.eml` files to disk.
 - **Service account permissions.** Automate runs steps as the workspace's service account. That account needs **Browse** on every page the step evaluates (a denial fails the step as *Authentication*), plus **Publish** if the flow publishes.
 - **An active evaluator configuration** for each document type you evaluate (AI → Add-ons → Page Evaluator). Turn **scoring** on if you use a pass threshold.
 - **Site URL.** The report's "Open in Umbraco" link uses `Umbraco:CMS:WebRouting:UmbracoApplicationUrl` (for example `https://www.example.com/`), falling back to the URL the site was first requested on. Automations run in the background, so set the URL explicitly; without one, the link is left out.
@@ -35,12 +38,14 @@ Automate needs its own database connection: add a `umbracoAutomateDbDSN` connect
 | Setting | Description |
 |---|---|
 | **Page** | The content key of the page. Defaults to `${ trigger.contentKey }`; keep that for Content Saved / Content Published triggers. |
-| **Language** | The culture to evaluate, e.g. `${ trigger.cultures[0] }`, or `${ loop.item }` inside a *For Each* over `${ trigger.cultures }`. Required for pages that vary by language; ignored for invariant pages. |
+| **Page language** | Which language version of the page to evaluate, e.g. `${ trigger.cultures[0] }`, or `${ loop.item }` inside a *For Each* over `${ trigger.cultures }`. Required for pages that vary by language; ignored for invariant pages. Not the email's language: that's **Report language**. |
 | **Pass threshold** | Optional. The minimum overall score, on the same **1–5** scale as the report (decimals allowed, e.g. `3.5`). Requires scoring on the configuration; otherwise the step fails as *ConfigurationError* before calling the AI. |
 | **Fail on any failed check** | On by default. A page with any check in *Fail* status doesn't pass. Warnings never fail a page. |
 | **Report language** | The language of the summary, HTML report and error messages: English, Español, Français, Dansk, Deutsch, Norsk bokmål, Svenska, Italiano, हिन्दी or Português. **Automatic** uses the page's language when it is one of these, otherwise English. The AI's own explanations stay in the language of your evaluator prompt. |
 
 The settings contain no environment-specific IDs, so automations move between environments with Automate's Deploy support.
+
+**What is evaluated.** The step evaluates the page's latest **saved** version, not what's published. Pages linked from it (content pickers, blocks) are read as their saved versions too, so the reviewer sees the release as it will look once everything currently saved is published. The Evaluate Page button on a published page shows linked pages' published versions, so the two can differ when a linked page has unpublished changes.
 
 ## Outputs
 
@@ -63,7 +68,7 @@ Bind them in later steps as `${ steps.<alias>.<output> }`, where `<alias>` is th
 
 ### When the step fails
 
-The run stops with a categorised, localized message (in the report language):
+The run stops with a categorised, localized message. Its language is the **Report language**; with Automatic, it's the **Page language**'s when that's one of the supported languages, otherwise English (set Report language to English if you want admin-facing errors in English regardless of the page):
 
 | Situation | Category |
 |---|---|
@@ -78,12 +83,15 @@ The run stops with a categorised, localized message (in the report language):
 ## Flow 1: email the report and ask for approval
 
 1. **Trigger: Content Saved**, filtered to the document types you evaluate.
-2. **Evaluate Page** (alias `evaluate`): Page `${ trigger.contentKey }`, Language `${ trigger.cultures[0] }` (multilingual sites).
+2. **Evaluate Page** (alias `evaluate`): Page `${ trigger.contentKey }`, Page language `${ trigger.cultures[0] }` (multilingual sites).
 3. **Send Email** to the reviewers: subject `Review: ${ steps.evaluate.summary }`, body `${ steps.evaluate.reportHtml }`.
-4. **Request Approval** (alias `approval`), e.g. "Publish this page? Score ${ steps.evaluate.overallScore }/5".
-5. **Switch** on `${ steps.approval.approved }`:
-   - `true` → **Publish Content** (`${ trigger.contentKey }`).
-   - `false` → **Notify Editor** with `${ steps.approval.comment }`.
+4. **Request Approval** (alias `approval`), e.g. "Publish this page? Score ${ steps.evaluate.overallScore }/5". It has its own **approved** and **rejected** outputs, so no Switch is needed:
+   - **approved** → **Publish Content** (Content Key `${ trigger.contentKey }`; Cultures: see below).
+   - **rejected** → **Notify Editor** (Content Key `${ trigger.contentKey }`, Message `Reviewer's comment: ${ steps.approval.comment }`, Severity Warning) **and** a **Send Email** to the editors. Notify Editor is a live toast shown only to people who have that page open at that moment, so the email is what reliably reaches them. Content Saved doesn't output who saved the page, so use a fixed address or team mailbox.
+
+Reviewers approve or reject under **Automation → Approvals** (users in the workspace's groups). A run waiting for a decision shows as *Suspended*; a rejected run ends as *Rejected*. If the run view still says "Running" after a decision, reload it.
+
+**Multilingual pages:** Publish Content's **Cultures** setting does **not** accept bindings, unlike Evaluate Page's **Page language**. A binding such as `${ trigger.cultures[0] }` is passed through as literal text, and the publish fails with `InvalidCulture`. Enter the culture codes yourself, comma-separated (e.g. `en-US` or `en-US,da-DK`), or leave it empty for pages that don't vary by language. To publish exactly the language that was reviewed, create one automation per language, and use the same fixed code in Evaluate Page's **Page language** and in Publish Content's **Cultures**.
 
 **The gate only holds when release goes through the automation.** Automate triggers run after the save, so they can't stop an editor from pressing Publish. To make the approval binding, remove the **Publish** permission from the editors' user group and let the automation's service account publish.
 
@@ -93,7 +101,9 @@ The run stops with a categorised, localized message (in the report language):
 2. **Evaluate Page** (alias `evaluate`) with **Pass threshold** `3.5` and **Fail on any failed check** on.
 3. **Switch** on `${ steps.evaluate.passed }`:
    - `true` → **Publish Content**.
-   - `false` → **Send Email** (`${ steps.evaluate.reportHtml }`) + **Request Approval** → **Switch** on `approved` → **Publish Content** or **Notify Editor**, as in flow 1.
+   - `false` → **Send Email** (`${ steps.evaluate.reportHtml }`) + **Request Approval** → **approved**: Publish Content / **rejected**: Notify Editor + email, as in flow 1.
+
+An **If** step on `${ steps.evaluate.passed }` **Equals** `true` works the same as the Switch.
 
 How `passed` is worked out:
 

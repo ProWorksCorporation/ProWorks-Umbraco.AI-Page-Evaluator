@@ -22,7 +22,24 @@
   "LookingForMaintainer": false,
   "PackagesByAuthor": [],
   "RelatedPackages": [],
-  "Screenshots": [],
+  "Screenshots": [
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/ProWorksCorporation/ProWorks-Umbraco.AI-Page-Evaluator/refs/heads/main/images/Automate-Evaluate-Page-Flow.png",
+      "Caption": "Review before release: Content Saved, Evaluate Page, Send Email, Request Approval, then Publish Content or Notify Editor"
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/ProWorksCorporation/ProWorks-Umbraco.AI-Page-Evaluator/refs/heads/main/images/Automate-Evaluate-Page.png",
+      "Caption": "The Evaluate Page step under AI in Automate's action picker"
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/ProWorksCorporation/ProWorks-Umbraco.AI-Page-Evaluator/refs/heads/main/images/Automate-Evaluate-Page-Binding.png",
+      "Caption": "Step outputs available to later steps: score, pass/fail, check counts, summary and the email-ready report"
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/ProWorksCorporation/ProWorks-Umbraco.AI-Page-Evaluator/refs/heads/main/images/Automate-Evaluate-Page-Success.png",
+      "Caption": "A completed run with the step's score, verdict and summary"
+    }
+  ],
   "Tags": [
     "ai",
     "umbraco.ai",

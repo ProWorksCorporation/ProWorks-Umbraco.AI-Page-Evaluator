@@ -122,14 +122,15 @@ test.describe('Automate step', () => {
       await expect(page.getByRole('heading', { name: 'Evaluate Page', level: 3 })).toBeVisible({ timeout: 15000 });
 
       // The fields' accessible names come from the localized labels.
-      const pageField = page.getByRole('textbox', { name: 'Field for Page' });
+      // exact: Playwright matches names by substring, and "Field for Page language" also contains "Field for Page".
+      const pageField = page.getByRole('textbox', { name: 'Field for Page', exact: true });
       await expect(pageField).toBeVisible();
-      await expect(page.getByRole('textbox', { name: 'Field for Language' })).toBeVisible();
+      await expect(page.getByRole('textbox', { name: 'Field for Page language', exact: true })).toBeVisible();
       await expect(page.getByRole('spinbutton', { name: 'Pass threshold' })).toBeVisible();
       await expect(page.getByRole('switch', { name: 'Toggle for Fail on any failed check' })).toBeChecked();
       await expect(page.getByRole('combobox', { name: 'Field for Report language' })).toBeVisible();
       // Localized descriptions too, and no raw `#pageEvaluatorAutomate_…` keys anywhere.
-      await expect(page.getByText('ISO code of the language to evaluate')).toBeVisible();
+      await expect(page.getByText('Which language version of the page to evaluate')).toBeVisible();
       await expect(page.getByText('The lowest overall score (1–5')).toBeVisible();
       await expect(page.getByText(/pageEvaluatorAutomate_/)).toHaveCount(0);
     } finally {

@@ -221,9 +221,9 @@ export default {
   pageEvaluatorAutomate: {
     contentKeyLabel: 'Page',
     contentKeyDescription: 'The key of the page to evaluate. Can be a binding, such as ${ trigger.contentKey }.',
-    cultureLabel: 'Language',
+    cultureLabel: 'Page language',
     cultureDescription:
-      'ISO code of the language to evaluate, such as en-US. Required for pages that vary by language.',
+      'Which language version of the page to evaluate: a culture code such as en-US, or a binding to the trigger’s cultures. Required for pages that vary by language. The email’s language is set under Report language.',
     passThresholdLabel: 'Pass threshold',
     passThresholdDescription: 'Optional. The lowest overall score (1–5, the same scale as the report) that passes.',
     failOnAnyFailedCheckLabel: 'Fail on any failed check',

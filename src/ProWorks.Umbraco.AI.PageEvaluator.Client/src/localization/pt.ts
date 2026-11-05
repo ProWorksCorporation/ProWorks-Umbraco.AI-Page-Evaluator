@@ -223,9 +223,9 @@ export default {
     contentKeyLabel: 'Página',
     contentKeyDescription:
       'A chave da página a avaliar. Pode ser uma associação (binding), por exemplo ${ trigger.contentKey }.',
-    cultureLabel: 'Idioma',
+    cultureLabel: 'Idioma da página',
     cultureDescription:
-      'Código ISO do idioma a avaliar, por exemplo pt-PT. Obrigatório para páginas que variam por idioma.',
+      'Versão de idioma da página a avaliar: um código de idioma como pt-PT ou uma ligação aos idiomas do acionador. Obrigatório para páginas que variam por idioma. O idioma do e-mail escolhe-se em Idioma do relatório.',
     passThresholdLabel: 'Limiar de aprovação',
     passThresholdDescription:
       'Opcional. A pontuação global mínima (de 1 a 5, a mesma escala do relatório) para aprovar.',
