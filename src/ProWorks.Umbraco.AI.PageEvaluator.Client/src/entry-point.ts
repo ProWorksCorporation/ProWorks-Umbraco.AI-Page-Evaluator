@@ -9,22 +9,28 @@
  * Constitution Principle IV: manifest-driven, no global state mutations.
  */
 
-import { umbExtensionsRegistry } from '@umbraco-cms/backoffice/extension-registry';
-import type { UmbEntryPointOnInit, UmbEntryPointOnUnload } from '@umbraco-cms/backoffice/extension-api';
+import { umbExtensionsRegistry } from "@umbraco-cms/backoffice/extension-registry";
+import type {
+  UmbEntryPointOnInit,
+  UmbEntryPointOnUnload,
+} from "@umbraco-cms/backoffice/extension-api";
 // Type-only import: pulls `ManifestLocalization` into the global `UmbExtensionManifestMap`
 // union (declaration merging only applies to files TypeScript actually includes in the
 // program — this package doesn't import runtime code from `@umbraco-cms/backoffice/localization`,
 // so without this the compiler falls back to checking our 'localization' manifest literal
 // against the generic `ManifestBase` and rejects the `meta` property).
-import type {} from '@umbraco-cms/backoffice/localization';
+import type {} from "@umbraco-cms/backoffice/localization";
 import {
   PageEvaluatorActiveConfigCondition,
   PROWORKS_AI_ACTIVE_CONFIG_CONDITION_ALIAS,
-} from './workspace-action/page-evaluator-active-config.condition.js';
-import type { PageEvaluatorFrontendToolManifest } from './copilot/types.js';
+} from "./workspace-action/page-evaluator-active-config.condition.js";
+import type {
+  PageEvaluatorFrontendToolManifest,
+  PageEvaluatorToolRendererManifest,
+} from "./copilot/types.js";
 
 /** Alias for the Umbraco.AI Addons menu. */
-const UAI_ADDONS_MENU_ALIAS = 'Uai.Menu.Addons';
+const UAI_ADDONS_MENU_ALIAS = "Uai.Menu.Addons";
 
 /**
  * Copilot frontend tools (006 US1, contracts/copilot-tools.md, research R5). Registered unconditionally: on a site
@@ -34,77 +40,117 @@ const UAI_ADDONS_MENU_ALIAS = 'Uai.Menu.Addons';
  */
 const copilotTools: PageEvaluatorFrontendToolManifest[] = [
   {
-    type: 'uaiAgentFrontendTool',
-    alias: 'ProWorks.AI.PageEvaluator.Tool.EvaluateCurrentPage',
-    name: 'Page Evaluator Evaluate Current Page Tool',
-    api: () => import('./copilot/evaluate-current-page.tool.api.js'),
+    type: "uaiAgentFrontendTool",
+    alias: "ProWorks.AI.PageEvaluator.Tool.EvaluateCurrentPage",
+    name: "Page Evaluator Evaluate Current Page Tool",
+    api: () => import("./copilot/evaluate-current-page.tool.api.js"),
     meta: {
-      toolName: 'evaluate_current_page',
+      toolName: "evaluate_current_page",
       description:
-        "Evaluates the page open in the editor against the site's Page Evaluator checks, using the values on screen (unsaved changes included) for the language being viewed. Returns the score, each check's status and explanation, and which fields can be improved. Returns the cached result when one exists unless fresh is true; if the result is marked outOfDate, tell the user and offer a fresh evaluation.",
+        "Evaluates the page open in the editor against the site's Page Evaluator checks, using the values on screen (unsaved changes included) for the language being viewed. Returns the score (overall and per dimension, on a 1–5 scale where 5 is best), each check's status and explanation, and which fields can be improved. Returns the cached result when one exists (no new AI call) unless fresh is true; do not set fresh unless the user asks for a new evaluation; if the result is marked outOfDate, tell the user and offer a fresh evaluation. To fix failing checks, always use recommend_page_values and then apply_page_recommendation; never write those fields with other editing tools (such as set_value), and never save or publish the page for this.",
       parameters: {
-        type: 'object',
+        type: "object",
         properties: {
-          fresh: { type: 'boolean', description: 'Run a new evaluation instead of returning the cached result.' },
+          fresh: {
+            type: "boolean",
+            description:
+              'Only set this to true when the user explicitly asks for a new evaluation (for example "run it again", "rescore" or "evaluate it fresh"). Otherwise leave it out: the tool returns the cached result and marks it outOfDate when the page has changed, so you can tell the user and offer a fresh run.',
+          },
         },
         additionalProperties: false,
       },
-      scope: 'page-evaluator-read',
+      scope: "page-evaluator-read",
       isDestructive: false,
     },
   },
   {
-    type: 'uaiAgentFrontendTool',
-    alias: 'ProWorks.AI.PageEvaluator.Tool.RecommendPageValues',
-    name: 'Page Evaluator Recommend Page Values Tool',
-    api: () => import('./copilot/recommend-page-values.tool.api.js'),
+    type: "uaiAgentFrontendTool",
+    alias: "ProWorks.AI.PageEvaluator.Tool.RecommendPageValues",
+    name: "Page Evaluator Recommend Page Values Tool",
+    api: () => import("./copilot/recommend-page-values.tool.api.js"),
     meta: {
-      toolName: 'recommend_page_values',
+      toolName: "recommend_page_values",
       description:
-        "Gets AI-recommended values for fields named by failed or warning checks in the current Page Evaluator report for the open page. Only fields listed in the report's 'recommendable' list are allowed. Returns a reference for each recommendation; show the value to the user, and pass the reference to apply_page_recommendation only if they accept it.",
+        "Gets AI-recommended values for fields named by failed or warning checks in the current Page Evaluator report for the open page. Only fields listed in the report's 'recommendable' list are allowed. Use this whenever the user asks to fix or improve the failing checks, instead of editing the fields with other tools (such as set_value). Fixing is two steps: call this now, show each value to the user exactly as written and ask which to apply; then, after the user replies, call apply_page_recommendation. Never save or publish the page for this. Returns a reference for each recommendation.",
       parameters: {
-        type: 'object',
-        required: ['propertyAliases'],
+        type: "object",
+        required: ["propertyAliases"],
         properties: {
           propertyAliases: {
-            type: 'array',
+            type: "array",
             minItems: 1,
-            items: { type: 'string' },
+            items: { type: "string" },
             description: "Aliases from the report's recommendable list.",
           },
         },
         additionalProperties: false,
       },
-      scope: 'page-evaluator-read',
+      scope: "page-evaluator-read",
       isDestructive: false,
     },
   },
   {
-    type: 'uaiAgentFrontendTool',
-    alias: 'ProWorks.AI.PageEvaluator.Tool.ApplyPageRecommendation',
-    name: 'Page Evaluator Apply Page Recommendation Tool',
-    api: () => import('./copilot/apply-page-recommendation.tool.api.js'),
+    type: "uaiAgentFrontendTool",
+    alias: "ProWorks.AI.PageEvaluator.Tool.ApplyPageRecommendation",
+    name: "Page Evaluator Apply Page Recommendation Tool",
+    api: () => import("./copilot/apply-page-recommendation.tool.api.js"),
     meta: {
-      toolName: 'apply_page_recommendation',
+      toolName: "apply_page_recommendation",
       description:
-        'Writes one accepted Page Evaluator recommendation into its field on the open page, exactly as recommended. The change is staged in the editor and NOT saved; the user must click Save. Only call this after the user has seen the value and agreed. Requires a reference from recommend_page_values.',
+        'Writes one accepted Page Evaluator recommendation into its field on the open page, exactly as recommended. The change is staged in the editor and NOT saved; the user must click Save. Only call this after you have shown the user the exact value in this conversation and they agreed to it in a later message; never in the same turn as recommend_page_values. Requires a reference from recommend_page_values. Applies one value per call: when the user accepts several (for example "apply both"), call this tool once for each accepted reference, one after another, without asking for new recommendations in between.',
       parameters: {
-        type: 'object',
-        required: ['reference'],
+        type: "object",
+        required: ["reference"],
         properties: {
-          reference: { type: 'string', description: 'The reference returned by recommend_page_values.' },
+          reference: {
+            type: "string",
+            description: "The reference returned by recommend_page_values.",
+          },
         },
         additionalProperties: false,
       },
-      scope: 'page-evaluator-write',
+      scope: "page-evaluator-write",
       // Permission metadata only; the approval prompt comes from `approval` (research R5).
       isDestructive: true,
       approval: {
         config: {
-          title: '#pageEvaluatorCopilot_applyApprovalTitle',
-          message: '#pageEvaluatorCopilot_applyApprovalMessage',
+          title: "#pageEvaluatorCopilot_applyApprovalTitle",
+          message: "#pageEvaluatorCopilot_applyApprovalMessage",
         },
       },
+    },
+  },
+];
+
+/**
+ * Chat renderers for the recommend and apply tools (contracts/copilot-tools.md "Tool renderers"). They show the
+ * recommended values in the conversation ourselves: Agent.UI's approval prompt is static text that can't show the
+ * value, and live testing (2026-11-05) showed models applying without showing it, whatever the tool description and
+ * the result's `nextStep` said. Like the tools, they're inert on a site without Agent.UI; the element chunks load
+ * only when Copilot renders one of these tool calls. `label` is plain text (Agent.UI shows it unlocalized).
+ */
+const copilotToolRenderers: PageEvaluatorToolRendererManifest[] = [
+  {
+    type: "uaiAgentToolRenderer",
+    alias: "ProWorks.AI.PageEvaluator.ToolRenderer.RecommendPageValues",
+    name: "Page Evaluator Recommend Page Values Tool Renderer",
+    element: () =>
+      import("./copilot/renderers/recommendations-renderer.element.js"),
+    meta: {
+      toolName: "recommend_page_values",
+      label: "Recommend page values",
+      icon: "icon-lightbulb",
+    },
+  },
+  {
+    type: "uaiAgentToolRenderer",
+    alias: "ProWorks.AI.PageEvaluator.ToolRenderer.ApplyPageRecommendation",
+    name: "Page Evaluator Apply Page Recommendation Tool Renderer",
+    element: () => import("./copilot/renderers/apply-renderer.element.js"),
+    meta: {
+      toolName: "apply_page_recommendation",
+      label: "Apply page recommendation",
+      icon: "icon-edit",
     },
   },
 ];
@@ -114,7 +160,15 @@ const copilotTools: PageEvaluatorFrontendToolManifest[] = [
  * this package must not depend on (spec FR-012), so the global `UmbExtensionManifest` union doesn't know the type.
  * This is the single cast allowed by the plan's Complexity Tracking; the manifests themselves are fully typed above.
  */
-export const copilotToolManifests = copilotTools as unknown as UmbExtensionManifest[];
+export const copilotToolManifests =
+  copilotTools as unknown as UmbExtensionManifest[];
+
+/**
+ * The renderer manifests as registry entries. `uaiAgentToolRenderer` is declared by `@umbraco-ai/agent-ui` too, so
+ * this is the same single, commented cast as {@link copilotToolManifests} (plan Complexity Tracking).
+ */
+export const copilotToolRendererManifests =
+  copilotToolRenderers as unknown as UmbExtensionManifest[];
 
 /**
  * All extension manifests for this package.
@@ -129,94 +183,94 @@ const manifests: UmbExtensionManifest[] = [
   // Localization: English default translations for all package UI strings.
   // ---------------------------------------------------------------------------
   {
-    type: 'localization',
-    alias: 'ProWorks.AI.PageEvaluator.Localization.En',
-    name: 'Page Evaluator English Localization',
+    type: "localization",
+    alias: "ProWorks.AI.PageEvaluator.Localization.En",
+    name: "Page Evaluator English Localization",
     meta: {
-      culture: 'en',
+      culture: "en",
     },
-    js: () => import('./localization/en.js'),
+    js: () => import("./localization/en.js"),
   },
   {
-    type: 'localization',
-    alias: 'ProWorks.AI.PageEvaluator.Localization.Es',
-    name: 'Page Evaluator Spanish Localization',
+    type: "localization",
+    alias: "ProWorks.AI.PageEvaluator.Localization.Es",
+    name: "Page Evaluator Spanish Localization",
     meta: {
-      culture: 'es',
+      culture: "es",
     },
-    js: () => import('./localization/es.js'),
+    js: () => import("./localization/es.js"),
   },
   {
-    type: 'localization',
-    alias: 'ProWorks.AI.PageEvaluator.Localization.Fr',
-    name: 'Page Evaluator French Localization',
+    type: "localization",
+    alias: "ProWorks.AI.PageEvaluator.Localization.Fr",
+    name: "Page Evaluator French Localization",
     meta: {
-      culture: 'fr',
+      culture: "fr",
     },
-    js: () => import('./localization/fr.js'),
+    js: () => import("./localization/fr.js"),
   },
   {
-    type: 'localization',
-    alias: 'ProWorks.AI.PageEvaluator.Localization.Da',
-    name: 'Page Evaluator Danish Localization',
+    type: "localization",
+    alias: "ProWorks.AI.PageEvaluator.Localization.Da",
+    name: "Page Evaluator Danish Localization",
     meta: {
-      culture: 'da',
+      culture: "da",
     },
-    js: () => import('./localization/da.js'),
+    js: () => import("./localization/da.js"),
   },
   {
-    type: 'localization',
-    alias: 'ProWorks.AI.PageEvaluator.Localization.De',
-    name: 'Page Evaluator German Localization',
+    type: "localization",
+    alias: "ProWorks.AI.PageEvaluator.Localization.De",
+    name: "Page Evaluator German Localization",
     meta: {
-      culture: 'de',
+      culture: "de",
     },
-    js: () => import('./localization/de.js'),
+    js: () => import("./localization/de.js"),
   },
   {
-    type: 'localization',
-    alias: 'ProWorks.AI.PageEvaluator.Localization.Nb',
-    name: 'Page Evaluator Norwegian Localization',
+    type: "localization",
+    alias: "ProWorks.AI.PageEvaluator.Localization.Nb",
+    name: "Page Evaluator Norwegian Localization",
     meta: {
-      culture: 'nb',
+      culture: "nb",
     },
-    js: () => import('./localization/nb.js'),
+    js: () => import("./localization/nb.js"),
   },
   {
-    type: 'localization',
-    alias: 'ProWorks.AI.PageEvaluator.Localization.Sv',
-    name: 'Page Evaluator Swedish Localization',
+    type: "localization",
+    alias: "ProWorks.AI.PageEvaluator.Localization.Sv",
+    name: "Page Evaluator Swedish Localization",
     meta: {
-      culture: 'sv',
+      culture: "sv",
     },
-    js: () => import('./localization/sv.js'),
+    js: () => import("./localization/sv.js"),
   },
   {
-    type: 'localization',
-    alias: 'ProWorks.AI.PageEvaluator.Localization.It',
-    name: 'Page Evaluator Italian Localization',
+    type: "localization",
+    alias: "ProWorks.AI.PageEvaluator.Localization.It",
+    name: "Page Evaluator Italian Localization",
     meta: {
-      culture: 'it',
+      culture: "it",
     },
-    js: () => import('./localization/it.js'),
+    js: () => import("./localization/it.js"),
   },
   {
-    type: 'localization',
-    alias: 'ProWorks.AI.PageEvaluator.Localization.Hi',
-    name: 'Page Evaluator Hindi Localization',
+    type: "localization",
+    alias: "ProWorks.AI.PageEvaluator.Localization.Hi",
+    name: "Page Evaluator Hindi Localization",
     meta: {
-      culture: 'hi',
+      culture: "hi",
     },
-    js: () => import('./localization/hi.js'),
+    js: () => import("./localization/hi.js"),
   },
   {
-    type: 'localization',
-    alias: 'ProWorks.AI.PageEvaluator.Localization.Pt',
-    name: 'Page Evaluator Portuguese Localization',
+    type: "localization",
+    alias: "ProWorks.AI.PageEvaluator.Localization.Pt",
+    name: "Page Evaluator Portuguese Localization",
     meta: {
-      culture: 'pt',
+      culture: "pt",
     },
-    js: () => import('./localization/pt.js'),
+    js: () => import("./localization/pt.js"),
   },
 
   // ---------------------------------------------------------------------------
@@ -227,26 +281,26 @@ const manifests: UmbExtensionManifest[] = [
   // the current document type. Registered before the workspaceAction so it is
   // available when the action's conditions are evaluated.
   {
-    type: 'condition',
+    type: "condition",
     alias: PROWORKS_AI_ACTIVE_CONFIG_CONDITION_ALIAS,
-    name: 'Page Evaluator Has Active Config Condition',
+    name: "Page Evaluator Has Active Config Condition",
     api: PageEvaluatorActiveConfigCondition,
   },
 
   {
-    type: 'workspaceAction',
-    kind: 'default',
-    alias: 'ProWorks.AI.PageEvaluator.WorkspaceAction',
-    name: 'Page Evaluator Workspace Action',
-    api: () => import('./workspace-action/page-evaluator-action.api.js'),
+    type: "workspaceAction",
+    kind: "default",
+    alias: "ProWorks.AI.PageEvaluator.WorkspaceAction",
+    name: "Page Evaluator Workspace Action",
+    api: () => import("./workspace-action/page-evaluator-action.api.js"),
     meta: {
-      label: 'Evaluate Page',
-      look: 'secondary',
+      label: "Evaluate Page",
+      look: "secondary",
     },
     conditions: [
       {
-        alias: 'Umb.Condition.WorkspaceAlias',
-        match: 'Umb.Workspace.Document',
+        alias: "Umb.Condition.WorkspaceAlias",
+        match: "Umb.Workspace.Document",
       },
       {
         alias: PROWORKS_AI_ACTIVE_CONFIG_CONDITION_ALIAS,
@@ -255,11 +309,11 @@ const manifests: UmbExtensionManifest[] = [
   },
 
   {
-    type: 'modal',
-    alias: 'ProWorks.AI.PageEvaluator.Modal.Evaluation',
-    name: 'Page Evaluator Evaluation Modal',
+    type: "modal",
+    alias: "ProWorks.AI.PageEvaluator.Modal.Evaluation",
+    name: "Page Evaluator Evaluation Modal",
     element: () =>
-      import('./evaluation-modal/evaluation-modal.element.js').then((m) => ({
+      import("./evaluation-modal/evaluation-modal.element.js").then((m) => ({
         element: m.EvaluationModalElement,
       })),
   } as UmbExtensionManifest,
@@ -269,28 +323,30 @@ const manifests: UmbExtensionManifest[] = [
   // ---------------------------------------------------------------------------
 
   {
-    type: 'menuItem',
-    alias: 'ProWorks.AI.PageEvaluator.MenuItem',
-    name: 'Page Evaluator Menu Item',
+    type: "menuItem",
+    alias: "ProWorks.AI.PageEvaluator.MenuItem",
+    name: "Page Evaluator Menu Item",
     meta: {
-      label: 'Page Evaluator',
-      icon: 'icon-settings',
-      entityType: 'evaluator-config',
+      label: "Page Evaluator",
+      icon: "icon-settings",
+      entityType: "evaluator-config",
       menus: [UAI_ADDONS_MENU_ALIAS],
     },
   },
 
   {
-    type: 'workspace',
-    alias: 'ProWorks.AI.PageEvaluator.Workspace',
-    name: 'Page Evaluator Workspace',
+    type: "workspace",
+    alias: "ProWorks.AI.PageEvaluator.Workspace",
+    name: "Page Evaluator Workspace",
     meta: {
-      entityType: 'evaluator-config',
+      entityType: "evaluator-config",
     },
     element: () =>
-      import('./evaluator-config/evaluator-config-workspace.element.js').then((m) => ({
-        element: m.EvaluatorConfigWorkspaceElement,
-      })),
+      import("./evaluator-config/evaluator-config-workspace.element.js").then(
+        (m) => ({
+          element: m.EvaluatorConfigWorkspaceElement,
+        }),
+      ),
   },
 
   // ---------------------------------------------------------------------------
@@ -302,44 +358,49 @@ const manifests: UmbExtensionManifest[] = [
   // Discovery: the test runner searches for repositories with
   //   alias starting "Uai.Repository.TestFeatureEntity." AND meta.feature matching our feature ID.
   {
-    type: 'repository',
-    alias: 'Uai.Repository.TestFeatureEntity.ProworksPageEvaluator',
-    name: 'Page Evaluator Test Feature Entity Repository',
+    type: "repository",
+    alias: "Uai.Repository.TestFeatureEntity.ProworksPageEvaluator",
+    name: "Page Evaluator Test Feature Entity Repository",
     meta: {
-      feature: 'proworks-page-evaluator',
+      feature: "proworks-page-evaluator",
     },
-    api: () => import('./test/page-evaluator-test-entity.repository.js'),
+    api: () => import("./test/page-evaluator-test-entity.repository.js"),
   } as UmbExtensionManifest,
 
   {
-    type: 'workspaceView',
-    alias: 'ProWorks.AI.PageEvaluator.Workspace.Form',
-    name: 'Page Evaluator Form View',
+    type: "workspaceView",
+    alias: "ProWorks.AI.PageEvaluator.Workspace.Form",
+    name: "Page Evaluator Form View",
     meta: {
-      label: 'Configuration',
-      pathname: 'edit',
-      icon: 'icon-settings',
+      label: "Configuration",
+      pathname: "edit",
+      icon: "icon-settings",
     },
     conditions: [
       {
-        alias: 'Umb.Condition.WorkspaceAlias',
-        match: 'ProWorks.AI.PageEvaluator.Workspace',
+        alias: "Umb.Condition.WorkspaceAlias",
+        match: "ProWorks.AI.PageEvaluator.Workspace",
       },
     ],
     element: () =>
-      import('./evaluator-config/evaluator-form.element.js').then((m) => ({
+      import("./evaluator-config/evaluator-form.element.js").then((m) => ({
         element: m.EvaluatorFormElement,
       })),
   },
 
   // ---------------------------------------------------------------------------
-  // 006 US1 — Copilot frontend tools
+  // 006 US1 — Copilot frontend tools and their chat renderers
   // ---------------------------------------------------------------------------
   ...copilotToolManifests,
+  ...copilotToolRendererManifests,
 ];
 
 export const onInit: UmbEntryPointOnInit = (): void => {
-  console.log('[ProWorks.AI.PageEvaluator] onInit called — registering', manifests.length, 'extensions');
+  console.log(
+    "[ProWorks.AI.PageEvaluator] onInit called — registering",
+    manifests.length,
+    "extensions",
+  );
   umbExtensionsRegistry.registerMany(manifests);
   // umbHttpClient (used by apiClient) is pre-configured with Bearer auth by Umbraco's
   // app.element before any extension onInit runs — no further setup needed here.

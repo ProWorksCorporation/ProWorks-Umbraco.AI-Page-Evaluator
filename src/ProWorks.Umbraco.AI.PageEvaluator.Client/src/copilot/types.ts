@@ -6,7 +6,8 @@
  * `src/copilot/` may import `@umbraco-ai/*` (checked by `copilot-manifests.test.ts`).
  */
 import { UmbContextToken } from '@umbraco-cms/backoffice/context-api';
-import type { ManifestApi, UmbApi } from '@umbraco-cms/backoffice/extension-api';
+import type { UmbControllerHostElement } from '@umbraco-cms/backoffice/controller-api';
+import type { ManifestApi, ManifestElement, UmbApi } from '@umbraco-cms/backoffice/extension-api';
 import type { RecommendableField } from '../shared/recommend-eligibility.js';
 import type { CheckStatus } from '../shared/types.js';
 
@@ -38,6 +39,41 @@ export interface PageEvaluatorFrontendToolManifest extends ManifestApi<PageEvalu
     isDestructive?: boolean;
     /** Drives the approval prompt before `execute` runs. */
     approval?: PageEvaluatorToolApproval;
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Agent.UI tool renderers (mirrors `ManifestUaiAgentToolRenderer` / `UaiAgentToolElementProps`)
+// ---------------------------------------------------------------------------
+
+/**
+ * Status Agent.UI passes to a renderer element. `uai-tool-renderer` maps the tool call's `completed` to `complete`;
+ * a denied approval and an aborted run arrive as `error` (with `result` `{ error: string }` or the string `Aborted`).
+ */
+export type PageEvaluatorToolStatus = 'pending' | 'streaming' | 'awaiting_approval' | 'executing' | 'complete' | 'error';
+
+/**
+ * Props Agent.UI sets on a renderer element after constructing it. `args` is the JSON-parsed arguments (`{}` or
+ * `{ raw }` until they have streamed in) and `result` the JSON-parsed tool result.
+ */
+export interface PageEvaluatorToolElementProps {
+  args: Record<string, unknown>;
+  status: PageEvaluatorToolStatus;
+  result?: unknown;
+}
+
+/** Manifest of type `uaiAgentToolRenderer`: Agent.UI renders `element` in the chat for every call of `toolName`. */
+export interface PageEvaluatorToolRendererManifest
+  extends ManifestElement<UmbControllerHostElement & PageEvaluatorToolElementProps> {
+  type: 'uaiAgentToolRenderer';
+  kind?: 'default';
+  meta: {
+    /** Tool name that matches the tool call's name. */
+    toolName: string;
+    /** Display label; Agent.UI also uses it in its fallback approval title. */
+    label?: string;
+    /** Umbraco icon name. */
+    icon?: string;
   };
 }
 
@@ -93,7 +129,14 @@ export interface ModelAxisScore {
   readonly feedback: string | null;
 }
 
+/** The report's score range. Stated explicitly: without it, models guess the maximum from the highest axis score. */
+export interface ModelScoreScale {
+  readonly min: 1;
+  readonly max: 5;
+}
+
 export interface ModelScoring {
+  readonly scale: ModelScoreScale;
   readonly overallScore: number | null;
   readonly axisScores: readonly ModelAxisScore[];
 }

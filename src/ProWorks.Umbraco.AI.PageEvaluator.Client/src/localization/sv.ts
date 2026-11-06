@@ -1,45 +1,45 @@
 export default {
   evaluatePage: {
     // Workspace action
-    actionLabel: 'Utvärdera sida',
+    actionLabel: "Utvärdera sida",
 
     // Modal: chrome
-    modalHeadline: 'Sidutvärdering',
-    rerunButton: 'Kör utvärdering igen',
-    closeButton: 'Stäng',
-    lastEvaluated: 'Senast utvärderad:',
+    modalHeadline: "Sidutvärdering",
+    rerunButton: "Kör utvärdering igen",
+    closeButton: "Stäng",
+    lastEvaluated: "Senast utvärderad:",
 
     // Modal: progress
-    progressSendingData: 'Skickar siddata…',
-    progressWaitingForAI: 'Väntar på AI-svar…',
-    progressRendering: 'Skapar rapport…',
+    progressSendingData: "Skickar siddata…",
+    progressWaitingForAI: "Väntar på AI-svar…",
+    progressRendering: "Skapar rapport…",
 
     // Modal: report sections
-    reportScore: 'Poäng',
-    reportChecks: 'kontroller',
-    reportPassed: 'godkända',
-    reportWarning: 'varning',
-    reportWarnings: 'varningar',
-    reportFailed: 'underkända',
-    reportPassingItems: 'Godkända objekt',
-    reportAttentionItems: 'Objekt som kräver uppmärksamhet',
-    reportSuggestions: 'Förslag',
+    reportScore: "Poäng",
+    reportChecks: "kontroller",
+    reportPassed: "godkända",
+    reportWarning: "varning",
+    reportWarnings: "varningar",
+    reportFailed: "underkända",
+    reportPassingItems: "Godkända objekt",
+    reportAttentionItems: "Objekt som kräver uppmärksamhet",
+    reportSuggestions: "Förslag",
 
     // Modal: parse failure warning
     parseFailedWarning:
-      'AI-svaret kunde inte formateras som en strukturerad rapport. Rådata visas nedan.',
-    parseFailedLinkText: 'Finjustera utvärderarens prompt',
-    parseFailedSuffix: 'för att förbättra den strukturerade utdata.',
+      "AI-svaret kunde inte formateras som en strukturerad rapport. Rådata visas nedan.",
+    parseFailedLinkText: "Finjustera utvärderarens prompt",
+    parseFailedSuffix: "för att förbättra den strukturerade utdata.",
 
     // Modal: AI error
     aiErrorMessage:
-      'Utvärderingen kunde inte slutföras. AI-leverantören returnerade ett fel.',
+      "Utvärderingen kunde inte slutföras. AI-leverantören returnerade ett fel.",
     temporaryRetryableMessage:
-      'AI-leverantören är tillfälligt otillgänglig. Försök igen om en stund.',
+      "AI-leverantören är tillfälligt otillgänglig. Försök igen om en stund.",
     connectivityMessage:
-      'Det gick inte att nå AI-leverantören. Kontrollera din anslutning och försök igen.',
+      "Det gick inte att nå AI-leverantören. Kontrollera din anslutning och försök igen.",
     authenticationConfigurationMessage:
-      'AI-anslutningen behöver åtgärdas. Kontakta din administratör för att kontrollera AI-profilens autentiseringsuppgifter eller konfiguration.',
+      "AI-anslutningen behöver åtgärdas. Kontakta din administratör för att kontrollera AI-profilens autentiseringsuppgifter eller konfiguration.",
     // 003-upgrade-umbraco-17-6: gateway/culture errors, variability notice, rich-text Apply
     gatewayTimeoutMessage:
       "Utvärderingen tog längre tid än din nätverksgateway tillåter och avbröts därför. Försök igen. Om det fortsätter att hända ber du administratören att höja tidsgränsen för proxy eller CDN för backoffice.",
@@ -53,29 +53,29 @@ export default {
       "Det här förslaget skulle ta bort inbäddat innehåll (block eller media) från fältet, så det kan inte tillämpas automatiskt. Kopiera det och redigera manuellt i stället.",
     applyFailedMessage:
       "Förslaget kunde inte tillämpas på det här fältet. Ditt befintliga innehåll har inte ändrats.",
-    retryButton: 'Försök igen',
+    retryButton: "Försök igen",
 
     // Modal: guardrail block
     guardrailBlockedMessage:
-      'Utvärderingen blockerades av en Umbraco.AI-guardrail-policy. Granska guardrail-reglerna som är konfigurerade på AI-profilen.',
+      "Utvärderingen blockerades av en Umbraco.AI-guardrail-policy. Granska guardrail-reglerna som är konfigurerade på AI-profilen.",
 
     // Modal: dimensional scoring
-    overallScore: 'Totalpoäng',
-    axisScores: 'Poängfördelning',
+    overallScore: "Totalpoäng",
+    axisScores: "Poängfördelning",
 
     // Recommendations
-    recGenerate: 'Generera rekommendation',
-    recGenerating: 'Genererar rekommendation…',
-    recCurrent: 'Nuvarande värde',
-    recCurrentFor: 'Nuvarande värde för',
-    recSuggested: 'Föreslaget värde',
-    recSuggestedFor: 'Föreslaget värde för',
-    recApply: 'Tillämpa på fält',
-    recApplied: 'Tillämpad på fält',
-    recRegenerate: 'Generera igen',
-    recCopy: 'Kopiera',
-    recCopied: 'Kopierad',
-    recError: 'Det gick inte att generera en rekommendation. Försök igen.',
+    recGenerate: "Generera rekommendation",
+    recGenerating: "Genererar rekommendation…",
+    recCurrent: "Nuvarande värde",
+    recCurrentFor: "Nuvarande värde för",
+    recSuggested: "Föreslaget värde",
+    recSuggestedFor: "Föreslaget värde för",
+    recApply: "Tillämpa på fält",
+    recApplied: "Tillämpad på fält",
+    recRegenerate: "Generera igen",
+    recCopy: "Kopiera",
+    recCopied: "Kopierad",
+    recError: "Det gick inte att generera en rekommendation. Försök igen.",
   },
 
   evaluatorConfig: {
@@ -86,153 +86,194 @@ export default {
     profileSystemPromptNotice:
       "Den valda AI-profilen har en egen systemprompt. Umbraco.AI skickar den före utvärderarens instruktioner vid varje utvärdering och rekommendation, vilket kan ändra eller förstöra resultaten. Använd en dedikerad AI-profil utan systemprompt för Page Evaluator för att få förutsägbara resultat.",
     // Workspace: list
-    sectionLabel: 'Sidutvärderare',
-    listHeadline: 'Konfigurationer för sidutvärderare',
-    createButton: 'Skapa ny',
-    activeLabel: 'Aktiv',
-    inactiveLabel: 'Inaktiv',
-    activateButton: 'Aktivera',
-    editButton: 'Redigera',
-    deleteButton: 'Ta bort',
-    emptyState: 'Inga utvärderarkonfigurationer hittades. Skapa en för att komma igång.',
-    loadError: 'Det gick inte att läsa in utvärderarkonfigurationerna.',
-    formLoadError: 'Det gick inte att läsa in utvärderarkonfigurationen.',
-    activateError: 'Det gick inte att aktivera utvärderarkonfigurationen.',
-    deleteError: 'Det gick inte att ta bort utvärderarkonfigurationen.',
-    tableHeaderName: 'Namn',
-    tableHeaderProfile: 'Profil',
-    tableHeaderStatus: 'Status',
-    tableHeaderActions: 'Åtgärder',
+    sectionLabel: "Sidutvärderare",
+    listHeadline: "Konfigurationer för sidutvärderare",
+    createButton: "Skapa ny",
+    activeLabel: "Aktiv",
+    inactiveLabel: "Inaktiv",
+    activateButton: "Aktivera",
+    editButton: "Redigera",
+    deleteButton: "Ta bort",
+    emptyState:
+      "Inga utvärderarkonfigurationer hittades. Skapa en för att komma igång.",
+    loadError: "Det gick inte att läsa in utvärderarkonfigurationerna.",
+    formLoadError: "Det gick inte att läsa in utvärderarkonfigurationen.",
+    activateError: "Det gick inte att aktivera utvärderarkonfigurationen.",
+    deleteError: "Det gick inte att ta bort utvärderarkonfigurationen.",
+    tableHeaderName: "Namn",
+    tableHeaderProfile: "Profil",
+    tableHeaderStatus: "Status",
+    tableHeaderActions: "Åtgärder",
 
     // Workspace: form chrome
-    editHeadline: 'Redigera utvärderare',
-    createHeadline: 'Skapa utvärderare',
-    backButton: 'Tillbaka',
-    backLabel: 'Tillbaka till listan',
+    editHeadline: "Redigera utvärderare",
+    createHeadline: "Skapa utvärderare",
+    backButton: "Tillbaka",
+    backLabel: "Tillbaka till listan",
 
     // Workspace: confirm delete
-    deleteConfirmHeadline: 'Ta bort konfiguration',
-    deleteConfirmContent: 'Är du säker på att du vill ta bort den här utvärderarkonfigurationen?',
+    deleteConfirmHeadline: "Ta bort konfiguration",
+    deleteConfirmContent:
+      "Är du säker på att du vill ta bort den här utvärderarkonfigurationen?",
 
     // Form: sections
-    generalSection: 'Allmänt',
-    aiSettingsSection: 'AI-inställningar',
-    propertyFilterSection: 'Egenskapsfilter',
-    promptSection: 'Prompt',
+    generalSection: "Allmänt",
+    aiSettingsSection: "AI-inställningar",
+    propertyFilterSection: "Egenskapsfilter",
+    promptSection: "Prompt",
 
     // Form: fields
-    nameLabel: 'Namn',
-    namePlaceholder: 'Ange ett namn…',
-    nameRequired: 'Namn krävs.',
-    descriptionLabel: 'Beskrivning',
-    descriptionHelp: 'Valfri sammanfattning som visas i konfigurationslistan.',
-    documentTypeLabel: 'Dokumenttyp',
-    documentTypeHelp: 'Den dokumenttyp som denna utvärderarkonfiguration gäller för.',
-    documentTypeRequired: 'Dokumenttyp krävs.',
-    documentTypePlaceholder: 'Sök efter namn…',
-    documentTypeAliasPrefix: 'Alias:',
-    documentTypeAliasError: 'Det gick inte att hämta alias för den valda dokumenttypen.',
-    profileLabel: 'AI-profil',
-    profileHelp: 'Den Umbraco.AI-chattprofil som används vid utvärdering av sidor.',
-    profileRequired: 'AI-profil krävs.',
-    contextLabel: 'AI-kontext',
-    contextHelp: 'Valfri Umbraco.AI-kontext som ska infogas tillsammans med prompten.',
-    propertiesLabel: 'Egenskaper att utvärdera',
-    propertiesHelp: 'Alla egenskaper ingår som standard. Avmarkera de du vill exkludera från utvärderingen.',
-    propertyReferenceHeading: 'Dokumenttypsegenskaper',
-    propertyReferenceHelp: 'Referens för att skapa din prompt. Exkluderade egenskaper (överstrukna) skickas inte till AI:n.',
-    propertyExcludedTooltip: 'Exkluderad från utvärdering',
-    promptFinalHeading: 'Slutgiltig prompt',
-    promptFinalHelp: 'Detta är prompten som skickas till AI:n när utvärderaren körs.',
-    promptLabel: 'Utvärderingsprompt',
-    promptHelp: 'Prompten som skickas till AI:n för att utvärdera sidinnehållet.',
-    promptRequired: 'Prompttext krävs.',
-    validationBanner: 'Åtgärda följande innan du sparar:',
-    saveButton: 'Spara',
-    savingButton: 'Sparar…',
-    cancelButton: 'Avbryt',
-    validationRequired: 'Detta fält är obligatoriskt.',
+    nameLabel: "Namn",
+    namePlaceholder: "Ange ett namn…",
+    nameRequired: "Namn krävs.",
+    descriptionLabel: "Beskrivning",
+    descriptionHelp: "Valfri sammanfattning som visas i konfigurationslistan.",
+    documentTypeLabel: "Dokumenttyp",
+    documentTypeHelp:
+      "Den dokumenttyp som denna utvärderarkonfiguration gäller för.",
+    documentTypeRequired: "Dokumenttyp krävs.",
+    documentTypePlaceholder: "Sök efter namn…",
+    documentTypeAliasPrefix: "Alias:",
+    documentTypeAliasError:
+      "Det gick inte att hämta alias för den valda dokumenttypen.",
+    profileLabel: "AI-profil",
+    profileHelp:
+      "Den Umbraco.AI-chattprofil som används vid utvärdering av sidor.",
+    profileRequired: "AI-profil krävs.",
+    contextLabel: "AI-kontext",
+    contextHelp:
+      "Valfri Umbraco.AI-kontext som ska infogas tillsammans med prompten.",
+    propertiesLabel: "Egenskaper att utvärdera",
+    propertiesHelp:
+      "Alla egenskaper ingår som standard. Avmarkera de du vill exkludera från utvärderingen.",
+    propertyReferenceHeading: "Dokumenttypsegenskaper",
+    propertyReferenceHelp:
+      "Referens för att skapa din prompt. Exkluderade egenskaper (överstrukna) skickas inte till AI:n.",
+    propertyExcludedTooltip: "Exkluderad från utvärdering",
+    promptFinalHeading: "Slutgiltig prompt",
+    promptFinalHelp:
+      "Detta är prompten som skickas till AI:n när utvärderaren körs.",
+    promptLabel: "Utvärderingsprompt",
+    promptHelp:
+      "Prompten som skickas till AI:n för att utvärdera sidinnehållet.",
+    promptRequired: "Prompttext krävs.",
+    validationBanner: "Åtgärda följande innan du sparar:",
+    saveButton: "Spara",
+    savingButton: "Sparar…",
+    cancelButton: "Avbryt",
+    validationRequired: "Detta fält är obligatoriskt.",
 
     // Form: dimensional scoring
-    scoringLabel: 'Aktivera poängsättning',
-    scoringHelp: 'Be AI:n att betygsätta sidan på en skala 1–5 utifrån dimensionerna som anges i din prompt.',
-    recommendationsLabel: 'Aktivera rekommendationer',
-    recommendationsHelp: 'Visa AI-genererade rekommendationsknappar bredvid kontrollresultat som har en kopplad egenskap.',
+    scoringLabel: "Aktivera poängsättning",
+    scoringHelp:
+      "Be AI:n att betygsätta sidan på en skala 1–5 utifrån dimensionerna som anges i din prompt.",
+    recommendationsLabel: "Aktivera rekommendationer",
+    recommendationsHelp:
+      "Visa AI-genererade rekommendationsknappar bredvid kontrollresultat som har en kopplad egenskap.",
   },
 
   promoNotice: {
-    headline: 'Se hur AI tolkar ditt varumärkesbudskap',
-    body: 'Få en gratis AI-driven analys av din webbplats. Se hur din webbplats positionering, budskap och värde tolkas av AI.',
-    body2: 'Vår fullständiga utvärderingstjänst granskar din webbplats, rapporterar vad AI tror att ditt varumärke representerar och identifierar specifika problem och möjligheter med konkreta rekommendationer.',
-    linkText: 'Få din kostnadsfria varumärkesanalys av webbplatsen',
+    headline: "Se hur AI tolkar ditt varumärkesbudskap",
+    body: "Få en gratis AI-driven analys av din webbplats. Se hur din webbplats positionering, budskap och värde tolkas av AI.",
+    body2:
+      "Vår fullständiga utvärderingstjänst granskar din webbplats, rapporterar vad AI tror att ditt varumärke representerar och identifierar specifika problem och möjligheter med konkreta rekommendationer.",
+    linkText: "Få din kostnadsfria varumärkesanalys av webbplatsen",
   },
 
   promptBuilder: {
-    openButton: 'Öppna promptbyggare',
-    closeButton: 'Stäng promptbyggare',
-    title: 'Promptbyggare',
-    categoriesLabel: 'Checklistekategorier',
-    categoriesHelpText: 'Välj de kategorier som ska ingå i den genererade prompten. Varje kategori lägger till utvärderingskriterier som AI:n kommer att kontrollera mot ditt sidinnehåll.',
-    siteContextLabel: 'Webbplatskontext (valfritt)',
-    siteContextPlaceholder: 'Beskriv webbplatsens syfte, målgrupp eller varumärkesriktlinjer…',
-    generateButton: 'Generera promptutkast',
-    usePromptButton: 'Använd den här prompten',
-    propertiesLabel: 'Dokumenttypsegenskaper',
-    generatedDraftLabel: 'Genererat utkast',
-    loadError: 'Det gick inte att läsa in dokumenttypsegenskaper.',
-    categoryRequiredFields: 'Obligatoriska fält',
-    categoryMetadataSeo: 'Metadata och SEO',
-    categoryContentQuality: 'Innehållskvalitet',
-    categorySchemaStructuredData: 'Schema och strukturerad data',
-    categoryAccessibilityVisibility: 'Tillgänglighet och synlighet',
-    categoryCallsToAction: 'Uppmaningar till handling',
+    openButton: "Öppna promptbyggare",
+    closeButton: "Stäng promptbyggare",
+    title: "Promptbyggare",
+    categoriesLabel: "Checklistekategorier",
+    categoriesHelpText:
+      "Välj de kategorier som ska ingå i den genererade prompten. Varje kategori lägger till utvärderingskriterier som AI:n kommer att kontrollera mot ditt sidinnehåll.",
+    siteContextLabel: "Webbplatskontext (valfritt)",
+    siteContextPlaceholder:
+      "Beskriv webbplatsens syfte, målgrupp eller varumärkesriktlinjer…",
+    generateButton: "Generera promptutkast",
+    usePromptButton: "Använd den här prompten",
+    propertiesLabel: "Dokumenttypsegenskaper",
+    generatedDraftLabel: "Genererat utkast",
+    loadError: "Det gick inte att läsa in dokumenttypsegenskaper.",
+    categoryRequiredFields: "Obligatoriska fält",
+    categoryMetadataSeo: "Metadata och SEO",
+    categoryContentQuality: "Innehållskvalitet",
+    categorySchemaStructuredData: "Schema och strukturerad data",
+    categoryAccessibilityVisibility: "Tillgänglighet och synlighet",
+    categoryCallsToAction: "Uppmaningar till handling",
   },
   // 006: Copilot frontend tools and the evaluate_page server tool (Umbraco.AI admin labels: uaiTool_{toolName}Label)
   uaiTool: {
-    evaluateCurrentPageLabel: 'Utvärdera aktuell sida',
+    evaluateCurrentPageLabel: "Utvärdera aktuell sida",
     evaluateCurrentPageDescription:
-      'Utvärderar sidan som är öppen i redigeraren med dess Page Evaluator-kontroller och använder värdena på skärmen för det språk som visas.',
-    recommendPageValuesLabel: 'Rekommendera värden för sidan',
+      "Utvärderar sidan som är öppen i redigeraren med dess Page Evaluator-kontroller och använder värdena på skärmen för det språk som visas.",
+    recommendPageValuesLabel: "Rekommendera värden för sidan",
     recommendPageValuesDescription:
-      'Föreslår bättre värden för fält som pekas ut av kontroller som misslyckades eller gav varningar i sidans utvärdering.',
-    applyPageRecommendationLabel: 'Tillämpa sidrekommendation',
+      "Föreslår bättre värden för fält som pekas ut av kontroller som misslyckades eller gav varningar i sidans utvärdering.",
+    applyPageRecommendationLabel: "Tillämpa sidrekommendation",
     applyPageRecommendationDescription:
-      'Skriver en accepterad rekommendation i fältet efter att användaren har godkänt den. Ändringen sparas inte.',
-    evaluatePageLabel: 'Utvärdera sida',
+      "Skriver en accepterad rekommendation i fältet efter att användaren har godkänt den. Ändringen sparas inte.",
+    evaluatePageLabel: "Utvärdera sida",
     evaluatePageDescription:
-      'Utvärderar den senast sparade versionen av en sida utifrån dess id med dess Page Evaluator-kontroller.',
+      "Utvärderar den senast sparade versionen av en sida utifrån dess id med dess Page Evaluator-kontroller.",
   },
   // 006: tool scopes shown when granting tools to an agent
   uaiToolScope: {
-    pageEvaluatorReadLabel: 'Page Evaluator (läsa)',
-    pageEvaluatorReadDescription: 'Utvärdera sidor och hämta rekommenderade värden utan att ändra innehåll',
-    pageEvaluatorWriteLabel: 'Page Evaluator (skriva)',
+    pageEvaluatorReadLabel: "Page Evaluator (läsa)",
+    pageEvaluatorReadDescription:
+      "Utvärdera sidor och hämta rekommenderade värden utan att ändra innehåll",
+    pageEvaluatorWriteLabel: "Page Evaluator (skriva)",
     pageEvaluatorWriteDescription:
-      'Tillämpa accepterade rekommendationer på den öppna sidan (förberedda, inte sparade) efter att användaren har godkänt',
+      "Tillämpa accepterade rekommendationer på den öppna sidan (förberedda, inte sparade) efter att användaren har godkänt",
   },
   uaiToolScopeDomain: {
-    pageEvaluator: 'Page Evaluator',
+    pageEvaluator: "Page Evaluator",
   },
   // 006: approval prompt before the Copilot apply tool writes a value
   pageEvaluatorCopilot: {
-    applyApprovalTitle: 'Tillämpa rekommendation',
-    applyApprovalMessage: 'Skriva det rekommenderade värdet i fältet? Det förbereds i redigeraren och sparas inte.',
+    applyApprovalTitle: "Tillämpa rekommendation",
+    applyApprovalMessage:
+      "Kontrollera värdet som visas ovan. Det förbereds i redigeraren och sparas inte.",
+    // 006: Copilot tool renderers (the recommended values shown in the chat)
+    recommendationsLoading: "Hämtar rekommendationer…",
+    recommendationsHeading: "Rekommenderade värden",
+    recommendationsNone: "Inga rekommendationer returnerades.",
+    recommendationsFailed: "Det gick inte att hämta rekommendationer.",
+    recommendationsHint: "Be Copilot att tillämpa de du vill ha.",
+    notApplicableRichTextBlocks:
+      "Kan inte tillämpas automatiskt: ett inbäddat block skulle tas bort.",
+    notApplicableGeneric: "Kan inte tillämpas automatiskt i det här fältet.",
+    skippedHeading: "Överhoppade fält",
+    skippedNotFailing:
+      "ingen misslyckad kontroll eller varning nämner det här fältet",
+    skippedNotRecommendable:
+      "rekommendationer är inte tillgängliga för det här fältet",
+    skippedNoRecommendation: "ingen rekommendation returnerades",
+    applyLoading: "Förbereder ändringen…",
+    applyWillWrite: "Det här värdet skrivs in i fältet:",
+    applyStagedNote: "Förberett i redigeraren, inte sparat.",
+    applyApplied:
+      "Tillämpat (inte sparat – klicka på Spara för att behålla det).",
+    applyNotApplied: "Inte tillämpat.",
+    applyNotFound:
+      "Rekommendationen hittades inte. Be Copilot om nya rekommendationer.",
   },
   // 006: settings of the Umbraco Automate "Evaluate Page" step
   pageEvaluatorAutomate: {
-    contentKeyLabel: 'Sida',
+    contentKeyLabel: "Sida",
     contentKeyDescription:
-      'Nyckeln för sidan som ska utvärderas. Kan vara en bindning, till exempel ${ trigger.contentKey }.',
-    cultureLabel: 'Sidans språk',
+      "Nyckeln för sidan som ska utvärderas. Kan vara en bindning, till exempel ${ trigger.contentKey }.",
+    cultureLabel: "Sidans språk",
     cultureDescription:
-      'Vilken språkversion av sidan som ska utvärderas: en språkkod som sv-SE eller en bindning till utlösarens språk. Krävs för sidor som varierar per språk. E-postens språk väljs under Rapportspråk.',
-    passThresholdLabel: 'Gräns för godkänt',
-    passThresholdDescription: 'Valfritt. Den lägsta totalpoängen (1–5, samma skala som rapporten) som ger godkänt.',
-    failOnAnyFailedCheckLabel: 'Underkänn vid varje misslyckad kontroll',
+      "Vilken språkversion av sidan som ska utvärderas: en språkkod som sv-SE eller en bindning till utlösarens språk. Krävs för sidor som varierar per språk. E-postens språk väljs under Rapportspråk.",
+    passThresholdLabel: "Gräns för godkänt",
+    passThresholdDescription:
+      "Valfritt. Den lägsta totalpoängen (1–5, samma skala som rapporten) som ger godkänt.",
+    failOnAnyFailedCheckLabel: "Underkänn vid varje misslyckad kontroll",
     failOnAnyFailedCheckDescription:
-      'På som standard. En misslyckad kontroll underkänner sidan även om poängen når gränsen. Varningar gör det aldrig.',
-    reportLanguageLabel: 'Rapportspråk',
+      "På som standard. En misslyckad kontroll underkänner sidan även om poängen når gränsen. Varningar gör det aldrig.",
+    reportLanguageLabel: "Rapportspråk",
     reportLanguageDescription:
-      'Språket i den e-postade rapporten och i meddelandena. Automatiskt använder sidans språk om det stöds, annars engelska.',
+      "Språket i den e-postade rapporten och i meddelandena. Automatiskt använder sidans språk om det stöds, annars engelska.",
   },
 };

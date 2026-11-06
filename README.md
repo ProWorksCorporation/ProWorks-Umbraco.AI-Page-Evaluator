@@ -180,7 +180,9 @@ Agents that have no open page (for example an Automate "Run AI Agent" step) can 
 - **Read**: evaluate and recommend, plus `evaluate_page`
 - **Write**: apply
 
-Grant Read alone to let an agent evaluate without writing. Tool-initiated evaluations count towards the same 10-per-minute-per-user limit as the Evaluate Page button and appear in the audit log under the usual `proworks-page-evaluator` / `proworks-page-evaluator-recommend` names.
+Grant Read alone to let an agent evaluate without writing.
+
+**Keep Copilot's own write tools off this agent.** If the same agent also has Copilot's built-in **Entity write**, **Entity save** or **Entity publish** scopes, the model can bypass the Page Evaluator tools: in testing, "fix the failing checks" was handled with Copilot's `set_value` and `save_and_publish`, writing AI text and publishing the page without an approval prompt. For approval-gated fixes that are staged and never saved, grant **Page Evaluator Read/Write** (plus Content read) without those scopes, or use a separate agent for page evaluation. Tool-initiated evaluations count towards the same 10-per-minute-per-user limit as the Evaluate Page button and appear in the audit log under the usual `proworks-page-evaluator` / `proworks-page-evaluator-recommend` names.
 
 ---
 

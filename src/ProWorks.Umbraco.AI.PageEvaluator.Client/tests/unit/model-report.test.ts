@@ -51,7 +51,7 @@ describe('toModelReport', () => {
   });
 
   it('keeps scoring with a null overallScore when the AI omitted the score', () => {
-    expect(build({ overallScore: null, axisScores: null })['scoring']).toEqual({ overallScore: null, axisScores: [] });
+    expect(build({ overallScore: null, axisScores: null })['scoring']).toEqual({ scale: { min: 1, max: 5 }, overallScore: null, axisScores: [] });
   });
 
   it('returns the parseFailed shape: no checks, no scoring, nothing recommendable, a note, no raw response', () => {

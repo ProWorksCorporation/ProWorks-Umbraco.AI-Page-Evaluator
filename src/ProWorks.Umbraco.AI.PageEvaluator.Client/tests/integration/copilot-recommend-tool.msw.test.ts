@@ -5,7 +5,7 @@
 import { describe, it, expect, beforeAll, afterAll, afterEach, beforeEach } from 'vitest';
 import { setupServer } from 'msw/node';
 import { http, HttpResponse } from 'msw';
-import RecommendPageValuesToolApi from '../../src/copilot/recommend-page-values.tool.api.js';
+import RecommendPageValuesToolApi, { RECOMMEND_NEXT_STEP } from '../../src/copilot/recommend-page-values.tool.api.js';
 import { resetReportStore, snapshotOf, storeReport } from '../../src/copilot/report-store.js';
 import { getRecommendation, resetRecommendationStore } from '../../src/copilot/recommendation-store.js';
 import type { CheckResult, EvaluationReportResponse, RecommendRequest } from '../../src/shared/types.js';
@@ -294,6 +294,31 @@ describe('recommend_page_values', () => {
       canApply: false,
       applyBlockedReason: 'richTextBlocks',
     });
+  });
+
+  // Live Copilot test (2026-11-05): told only in the tool description, the model went straight from recommend to apply,
+  // and Agent.UI's approval prompt can't show the value. The result itself must tell it to show the values and wait.
+  it('tells the model to show the values and wait for the user before applying', async () => {
+    useRecommend();
+    const { tool, workspace } = setup();
+    storeFresh(workspace);
+
+    const result = await run(tool, ['metaDescription']);
+
+    expect(result['nextStep']).toBe(RECOMMEND_NEXT_STEP);
+    expect(RECOMMEND_NEXT_STEP).toContain('exactly as written');
+    expect(RECOMMEND_NEXT_STEP).toContain('Do not call apply_page_recommendation in this turn');
+  });
+
+  it('gives no apply instruction when there is nothing to apply', async () => {
+    useRecommend(() => HttpResponse.json({ recommendedValues: { metaDescription: null } }));
+    const { tool, workspace } = setup();
+    storeFresh(workspace);
+
+    const result = await run(tool, ['metaDescription']);
+
+    expect(result['recommendations']).toEqual([]);
+    expect(result).not.toHaveProperty('nextStep');
   });
 
   it('skips a field the AI returned nothing for', async () => {

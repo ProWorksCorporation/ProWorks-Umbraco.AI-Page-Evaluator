@@ -5,11 +5,12 @@
 import { describe, it, expect } from 'vitest';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { copilotToolManifests } from '../../src/entry-point.js';
-import type { PageEvaluatorFrontendToolManifest } from '../../src/copilot/types.js';
+import { copilotToolManifests, copilotToolRendererManifests } from '../../src/entry-point.js';
+import type { PageEvaluatorFrontendToolManifest, PageEvaluatorToolRendererManifest } from '../../src/copilot/types.js';
 import en from '../../src/localization/en.js';
 
 const manifests = copilotToolManifests as unknown as PageEvaluatorFrontendToolManifest[];
+const rendererManifests = copilotToolRendererManifests as unknown as PageEvaluatorToolRendererManifest[];
 
 function byToolName(toolName: string): PageEvaluatorFrontendToolManifest {
   const manifest = manifests.find((m) => m.meta.toolName === toolName);
@@ -23,6 +24,15 @@ function camel(snake: string): string {
 }
 
 const copilotDir = join(__dirname, '../../src/copilot');
+
+/** Every .ts file under `dir`, recursively. */
+function tsFilesUnder(dir: string): string[] {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) return tsFilesUnder(path);
+    return entry.name.endsWith('.ts') ? [path] : [];
+  });
+}
 
 describe('Copilot tool manifests', () => {
   it('registers three uaiAgentFrontendTool manifests with unique aliases', () => {
@@ -120,14 +130,55 @@ describe('Copilot tool manifests', () => {
     expect(l['pageEvaluatorCopilot']?.['applyApprovalMessage']).toBeTruthy();
   });
 
-  it('never imports @umbraco-ai/* from src/copilot or the entry point', () => {
-    const files = readdirSync(copilotDir)
-      .filter((f) => f.endsWith('.ts'))
-      .map((f) => join(copilotDir, f));
+  it('never imports @umbraco-ai/* from src/copilot (renderers included) or the entry point', () => {
+    const files = tsFilesUnder(copilotDir);
+    expect(files.some((f) => f.includes('renderers'))).toBe(true);
     files.push(join(__dirname, '../../src/entry-point.ts'));
     expect(files.length).toBeGreaterThan(5);
     for (const file of files) {
       expect(readFileSync(file, 'utf-8'), file).not.toMatch(/from\s+['"]@umbraco-ai\/|import\(\s*['"]@umbraco-ai\//);
     }
+  });
+});
+
+describe('Copilot tool renderer manifests', () => {
+  function rendererFor(toolName: string): PageEvaluatorToolRendererManifest {
+    const manifest = rendererManifests.find((m) => m.meta.toolName === toolName);
+    if (!manifest) throw new Error(`No renderer for ${toolName}`);
+    return manifest;
+  }
+
+  it('registers two uaiAgentToolRenderer manifests with unique aliases', () => {
+    expect(rendererManifests).toHaveLength(2);
+    expect(rendererManifests.every((m) => m.type === 'uaiAgentToolRenderer')).toBe(true);
+    expect(rendererManifests.every((m) => m.kind === undefined)).toBe(true);
+    expect(new Set(rendererManifests.map((m) => m.alias)).size).toBe(2);
+    expect(rendererManifests.every((m) => m.alias.startsWith('ProWorks.AI.PageEvaluator.ToolRenderer.'))).toBe(true);
+    const toolAliases = new Set(manifests.map((m) => m.alias));
+    expect(rendererManifests.some((m) => toolAliases.has(m.alias))).toBe(false);
+  });
+
+  it('renders recommend_page_values and apply_page_recommendation, which are our frontend tools', () => {
+    expect(rendererManifests.map((m) => m.meta.toolName).sort()).toEqual(['apply_page_recommendation', 'recommend_page_values']);
+    const toolNames = manifests.map((m) => m.meta.toolName);
+    for (const renderer of rendererManifests) expect(toolNames).toContain(renderer.meta.toolName);
+  });
+
+  it('has a label and an Umbraco icon for each renderer', () => {
+    expect(rendererFor('recommend_page_values').meta.icon).toBe('icon-lightbulb');
+    expect(rendererFor('apply_page_recommendation').meta.icon).toBe('icon-edit');
+    for (const renderer of rendererManifests) expect(renderer.meta.label?.length ?? 0).toBeGreaterThan(0);
+  });
+
+  it.each([
+    ['recommend_page_values', 'page-evaluator-copilot-recommendations'],
+    ['apply_page_recommendation', 'page-evaluator-copilot-apply'],
+  ])('%s loads its element lazily, as a custom element class', async (toolName, tag) => {
+    const { element } = rendererFor(toolName);
+    expect(typeof element).toBe('function');
+    const loaded = await (element as () => Promise<{ default: unknown; element: unknown }>)();
+    expect(typeof loaded.default).toBe('function');
+    expect(loaded.element).toBe(loaded.default);
+    expect(customElements.get(tag)).toBe(loaded.default);
   });
 });

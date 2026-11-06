@@ -19,6 +19,8 @@ export interface RecommendationInput {
   /** The viewed culture at recommend time; null for invariant documents. */
   readonly culture: string | null;
   readonly propertyAlias: string;
+  /** The field's display name, for the apply renderer; omitted when unknown (the alias is shown instead). */
+  readonly propertyName?: string;
   readonly editorAlias: string | undefined;
   /** Exactly as returned by POST /recommend. */
   readonly value: string;

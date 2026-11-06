@@ -41,6 +41,8 @@ export function toModelReport(response: EvaluationReportResponse, context: Model
   const scoring: ModelScoring | null =
     context.scoringEnabled && !parseFailed
       ? {
+          // Both the overall and axis scores use the report's 1–5 scale (live Copilot test: "3.7 / 4" without it).
+          scale: { min: 1, max: 5 },
           overallScore: response.overallScore,
           axisScores: (response.axisScores ?? []).map((axis) => ({
             name: axis.name,

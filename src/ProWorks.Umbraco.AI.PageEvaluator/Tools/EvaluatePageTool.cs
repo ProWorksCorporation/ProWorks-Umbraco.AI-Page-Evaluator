@@ -72,7 +72,7 @@ public sealed class EvaluatePageTool(
 
     /// <inheritdoc />
     public override string Description =>
-        "Evaluates the latest saved version of an Umbraco page against the site's Page Evaluator checks and returns the score and each check's result. Unsaved changes in an open editor are not included.";
+        "Evaluates the latest saved version of an Umbraco page against the site's Page Evaluator checks and returns the score (overall and per dimension, on a 1–5 scale where 5 is best) and each check's result. Unsaved changes in an open editor are not included.";
 
     /// <inheritdoc />
     protected override async Task<object> ExecuteAsync(EvaluatePageArgs args, CancellationToken cancellationToken = default)

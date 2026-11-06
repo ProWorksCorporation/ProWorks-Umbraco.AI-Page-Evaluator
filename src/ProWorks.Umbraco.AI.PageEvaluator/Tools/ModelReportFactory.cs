@@ -41,6 +41,9 @@ internal static class ModelReportFactory
         JsonObject? scoring = scoringEnabled && !parseFailed
             ? new JsonObject
             {
+                // Both the overall and axis scores use the report's 1–5 scale. Stated explicitly: without it a model
+                // guessed the maximum from the highest axis score (live Copilot test reported "3.7 / 4").
+                ["scale"] = new JsonObject { ["min"] = 1, ["max"] = 5 },
                 ["overallScore"] = report.OverallScore,
                 ["axisScores"] = new JsonArray((report.AxisScores ?? [])
                     .Select(axis => (JsonNode?)new JsonObject
