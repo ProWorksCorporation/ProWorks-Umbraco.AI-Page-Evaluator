@@ -174,6 +174,14 @@ On sites with Umbraco.AI Agent / Copilot, the package adds three Copilot tools a
 - **"Fix the failing checks."** Copilot suggests values for fields named by failed or warning checks, wherever the report would offer **Generate recommendation**, and only when the configuration has recommendations enabled.
 - **Applying a suggestion.** Copilot shows its approval prompt, then writes **exactly** the recommended value into the field (tags as separate tags, rich text with its embedded blocks kept, multilingual fields in the viewed language). The change is staged in the editor and **never saved**: the editor still clicks Save. Rich text that would lose an embedded block, read-only fields and suggestions made in another language are refused with a reason.
 
+![Copilot answering "How does this page score?" with the overall score and a per-dimension breakdown](images/Copilot-Evaluate.png)
+
+Recommendations appear in the chat as a card with every suggested value, and the approval prompt shows the exact value it will write:
+
+| Recommended values | Approval before applying |
+|---|---|
+| ![Copilot's recommended values card](images/Copilot-Recommendations.png) | ![The apply card shows the value above Approve / Deny; it is staged, not saved](images/Copilot-Apply-Approval.png) |
+
 Agents that have no open page (for example an Automate "Run AI Agent" step) can use the **`evaluate_page`** tool, which evaluates a page's latest saved version by id, as the user the agent runs as, with Browse permission checked.
 
 **Setup:** no agent gets these tools automatically. In **AI → Agents**, open the agent and grant the **Page Evaluator** tool scopes:
@@ -181,6 +189,8 @@ Agents that have no open page (for example an Automate "Run AI Agent" step) can 
 - **Write**: apply
 
 Grant Read alone to let an agent evaluate without writing.
+
+![The Page Evaluator tool scopes on an agent's Governance tab: Read (3 tools) and Write (1 tool)](images/Copilot-Agent-Scopes.png)
 
 **Keep Copilot's own write tools off this agent.** If the same agent also has Copilot's built-in **Entity write**, **Entity save** or **Entity publish** scopes, the model can bypass the Page Evaluator tools: in testing, "fix the failing checks" was handled with Copilot's `set_value` and `save_and_publish`, writing AI text and publishing the page without an approval prompt. For approval-gated fixes that are staged and never saved, grant **Page Evaluator Read/Write** (plus Content read) without those scopes, or use a separate agent for page evaluation. Tool-initiated evaluations count towards the same 10-per-minute-per-user limit as the Evaluate Page button and appear in the audit log under the usual `proworks-page-evaluator` / `proworks-page-evaluator-recommend` names.
 

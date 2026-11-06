@@ -42,6 +42,18 @@
     {
       "ImageUrl": "https://raw.githubusercontent.com/ProWorksCorporation/ProWorks-Umbraco.AI-Page-Evaluator/refs/heads/main/images/Recommendations-Section.png",
       "Caption": "Inline Property-level Recommendations in the Evaluation Report"
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/ProWorksCorporation/ProWorks-Umbraco.AI-Page-Evaluator/refs/heads/main/images/Copilot-Evaluate.png",
+      "Caption": "Copilot: \"How does this page score?\""
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/ProWorksCorporation/ProWorks-Umbraco.AI-Page-Evaluator/refs/heads/main/images/Copilot-Recommendations.png",
+      "Caption": "Copilot: recommended values for the failing checks"
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/ProWorksCorporation/ProWorks-Umbraco.AI-Page-Evaluator/refs/heads/main/images/Copilot-Apply-Approval.png",
+      "Caption": "Copilot: approve a recommendation before it is staged in the editor"
     }
   ],
   "Tags": [
