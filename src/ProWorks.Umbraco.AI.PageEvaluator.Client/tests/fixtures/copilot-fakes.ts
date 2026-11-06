@@ -35,6 +35,8 @@ export interface FakeWorkspaceOptions {
   activeCulture?: string | null;
   variants?: FakeVariant[];
   hasUnpersistedChanges?: boolean;
+  /** `getIsNew()` result: true for a page in create mode (it already has a client-generated key). */
+  isNew?: boolean;
   /** Property structures by alias; defaults to one per value alias, varying when the document varies. */
   propertyStructures?: Record<string, FakePropertyStructure>;
   /** `readOnlyGuard.getIsPermittedForVariant` result (true = the variant is read-only). */
@@ -101,6 +103,7 @@ export function fakeDocumentWorkspace(options: FakeWorkspaceOptions = {}): FakeD
     splitView: { getActiveVariants: () => [{ index: 0, culture: activeCulture, segment: null }] },
     getName: () => options.name ?? 'Home',
     getHasUnpersistedChanges: () => hasUnpersistedChanges,
+    getIsNew: () => options.isNew ?? false,
     getPropertyValue: (alias: string, variantId?: VariantIdLike) => findValue(alias, variantId)?.value,
     setPropertyValue: vi.fn((alias: string, value: unknown, variantId?: VariantIdLike): Promise<void> => {
       if (options.setPropertyValueError) return Promise.reject(options.setPropertyValueError);

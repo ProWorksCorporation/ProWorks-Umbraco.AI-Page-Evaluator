@@ -78,6 +78,25 @@ describe('resolveOpenDocument', () => {
     expect(result.ok ? null : result.failure.error.code).toBe('pageNotSaved');
   });
 
+  it('returns pageNotSaved for a page in create mode, which already has a key and no created variant', async () => {
+    // Live QS-C13 (2026-11-05): a new page has a client-generated key and its variants are "NotCreated", so without the
+    // getIsNew() check it was reported as cultureNotCreated ("no English version yet").
+    const result = await resolveOpenDocument(
+      createHost(
+        adapterSelecting(
+          documentEntity({
+            isNew: true,
+            variesByCulture: true,
+            activeCulture: 'en-US',
+            variants: [{ culture: 'en-US', state: 'NotCreated' }],
+          }),
+        ),
+      ),
+    );
+
+    expect(result.ok ? null : result.failure.error.code).toBe('pageNotSaved');
+  });
+
   it('returns cultureNotCreated when the viewed language has not been created', async () => {
     const result = await resolveOpenDocument(
       createHost(

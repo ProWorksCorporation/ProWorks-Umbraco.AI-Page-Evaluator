@@ -1,9 +1,9 @@
 import { UmbContextToken as f, UmbContextConsumerController as p } from "@umbraco-cms/backoffice/context-api";
 import { c as g } from "./capture-draft-B0O4yTps.js";
 import { c as h } from "./recommendation-store-CqanfkLM.js";
-import { A as m, N as y } from "./entry-point-DkHTLhgB.js";
+import { A as m, N as y } from "./entry-point-CGNjGQ_u.js";
 const T = 1800 * 1e3, i = /* @__PURE__ */ new Map();
-function c(e, t) {
+function d(e, t) {
   return `${e}|${t?.toLowerCase() ?? ""}`;
 }
 function u(e) {
@@ -15,10 +15,10 @@ function S(e) {
   return JSON.stringify(u(e));
 }
 function B(e, t, n, r, o) {
-  const l = t?.toLowerCase() ?? null;
-  i.set(c(e, t), {
+  const c = t?.toLowerCase() ?? null;
+  i.set(d(e, t), {
     nodeId: e,
-    culture: l,
+    culture: c,
     report: n,
     snapshot: r,
     fresh: o,
@@ -26,19 +26,19 @@ function B(e, t, n, r, o) {
   });
 }
 function F(e, t) {
-  const n = c(e, t), r = i.get(n);
+  const n = d(e, t), r = i.get(n);
   if (r && Date.now() - r.storedAt > T) {
     i.delete(n);
     return;
   }
   return r;
 }
-function E(e) {
+function w(e) {
   for (const [t, n] of i)
     n.nodeId !== e && i.delete(t);
 }
-const v = new f("UaiEntityAdapterContext");
-function d(e, t) {
+const E = new f("UaiEntityAdapterContext");
+function l(e, t) {
   return { success: !1, error: { code: e, message: t } };
 }
 const a = {
@@ -67,14 +67,14 @@ const a = {
   notApplicable: "The recommendation can't be applied automatically to this field. The user can copy it instead.",
   richTextBlocks: "The recommendation would remove or duplicate an embedded block, so it can't be applied automatically. The user can copy it instead.",
   writeFailed: "The editor didn't accept the value. The field was left unchanged."
-}, C = "GatewayTimeout", b = "GatewayUnreachable";
-function w(e) {
+}, v = "GatewayTimeout", C = "GatewayUnreachable";
+function b(e) {
   const t = e.trim();
   return t.length === 0 || /^[{[]/.test(t) || /^HTTP \d+$/.test(t) ? null : t;
 }
 function A(e, t) {
-  if (e.type === y || e.type === b) return "networkError";
-  if (e.type === C) return "providerUnavailable";
+  if (e.type === y || e.type === C) return "networkError";
+  if (e.type === v) return "providerUnavailable";
   switch (e.status) {
     case 429:
       return "rateLimited";
@@ -99,14 +99,14 @@ function k(e, t = {}) {
   if (!(e instanceof m)) return { code: "unexpected", message: a.unexpected };
   const n = A(e, t.notFound ?? "noActiveConfig");
   if (n === "guardrailBlocked") {
-    const r = w(e.detail);
+    const r = b(e.detail);
     return { code: n, message: r === null ? a.guardrailBlocked : `${a.guardrailBlocked} ${r}` };
   }
   return { code: n, message: a[n] };
 }
-function j(e, t = {}) {
+function I(e, t = {}) {
   const { code: n, message: r } = k(e, t);
-  return d(n, r);
+  return l(n, r);
 }
 const O = "document", R = [
   "getData",
@@ -122,35 +122,35 @@ function x(e) {
   return R.every((n) => typeof t[n] == "function") && typeof t.structure == "object" && typeof t.splitView == "object" && typeof t.readOnlyGuard == "object" && typeof t.propertyWriteGuard == "object";
 }
 function s(e) {
-  return { ok: !1, failure: d(e, a[e]) };
+  return { ok: !1, failure: l(e, a[e]) };
 }
 async function N(e) {
   try {
-    return await new p(e, v).asPromise();
+    return await new p(e, E).asPromise();
   } catch {
     return;
   }
 }
-async function G(e) {
+async function j(e) {
   const n = (await N(e))?.getSelectedEntity();
   if (!n || n.entityContext.entityType !== O) return s("noOpenPage");
   const r = n.workspaceContext;
   if (!x(r)) return s("noOpenPage");
   const o = g(r);
-  return o.nodeId === "" || !n.entityContext.unique ? s("pageNotSaved") : o.cultureNotCreated ? s("cultureNotCreated") : { ok: !0, document: { ...o, name: r.getName() ?? null, workspaceContext: r } };
+  return r.getIsNew?.() === !0 || o.nodeId === "" || !n.entityContext.unique ? s("pageNotSaved") : o.cultureNotCreated ? s("cultureNotCreated") : { ok: !0, document: { ...o, name: r.getName() ?? null, workspaceContext: r } };
 }
-function I(e) {
-  E(e), h(e);
+function G(e) {
+  w(e), h(e);
 }
 export {
   a as T,
-  d as a,
+  l as a,
   S as b,
   k as c,
-  I as f,
+  G as f,
   F as g,
-  G as r,
+  j as r,
   B as s,
-  j as t
+  I as t
 };
-//# sourceMappingURL=open-document-C_sv-B1Q.js.map
+//# sourceMappingURL=open-document-8E-zq2GW.js.map

@@ -3,7 +3,7 @@ import { UmbContextConsumer as h } from "@umbraco-cms/backoffice/context-api";
 import { UMB_VALIDATION_CONTEXT as E } from "@umbraco-cms/backoffice/validation";
 import { UmbVariantId as m } from "@umbraco-cms/backoffice/variant";
 import { i as R, d as T, e as V, b as w, f as O } from "./recommend-eligibility-CHWTCfzX.js";
-import { t as S, r as b, a as p, T as I } from "./open-document-C_sv-B1Q.js";
+import { t as S, r as b, a as p, T as I } from "./open-document-8E-zq2GW.js";
 import { g as P, d as v } from "./recommendation-store-CqanfkLM.js";
 const C = "Staged in the editor. The user must click Save to keep it.";
 function n(i) {
@@ -84,4 +84,4 @@ export {
   N as api,
   N as default
 };
-//# sourceMappingURL=apply-page-recommendation.tool.api-BnX-Jpu8.js.map
+//# sourceMappingURL=apply-page-recommendation.tool.api-S8K___cR.js.map

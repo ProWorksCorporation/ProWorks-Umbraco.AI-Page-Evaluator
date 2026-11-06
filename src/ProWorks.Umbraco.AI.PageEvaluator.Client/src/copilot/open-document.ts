@@ -77,7 +77,10 @@ export async function resolveOpenDocument(host: UmbControllerHost): Promise<Open
   if (!isDocumentWorkspaceContext(workspaceContext)) return fail('noOpenPage');
 
   const draft = captureDocumentDraft(workspaceContext);
-  if (draft.nodeId === '' || !selected.entityContext.unique) return fail('pageNotSaved');
+  // A page in create mode already has a client-generated key and "NotCreated" variants, so check getIsNew() first or
+  // it's reported as cultureNotCreated (live QS-C13). `?.` because the adapter types the context loosely.
+  const isNew = (workspaceContext as { getIsNew?: () => boolean | undefined }).getIsNew?.() === true;
+  if (isNew || draft.nodeId === '' || !selected.entityContext.unique) return fail('pageNotSaved');
   if (draft.cultureNotCreated) return fail('cultureNotCreated');
 
   return { ok: true, document: { ...draft, name: workspaceContext.getName() ?? null, workspaceContext } };
