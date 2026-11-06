@@ -1,7 +1,7 @@
-import { UmbConditionBase as y, umbExtensionsRegistry as h } from "@umbraco-cms/backoffice/extension-registry";
+import { UmbConditionBase as y, umbExtensionsRegistry as d } from "@umbraco-cms/backoffice/extension-registry";
 import { UMB_DOCUMENT_WORKSPACE_CONTEXT as E } from "@umbraco-cms/backoffice/document";
 import { umbHttpClient as P } from "@umbraco-cms/backoffice/http-client";
-const r = P, n = "/umbraco/management/api/v1/page-evaluator", s = [{ scheme: "bearer", type: "http" }], g = "NetworkError";
+const r = P, n = "/umbraco/management/api/v1/page-evaluator", s = [{ scheme: "bearer", type: "http" }], m = "NetworkError";
 class u extends Error {
   constructor(a, t, o = null, c = null) {
     super(`API ${a}: ${t}`), this.status = a, this.detail = t, this.category = o, this.type = c;
@@ -32,11 +32,11 @@ async function i(e) {
   try {
     a = await e();
   } catch (o) {
-    throw o instanceof TypeError ? new u(0, o.message, null, g) : o;
+    throw o instanceof TypeError ? new u(0, o.message, null, m) : o;
   }
   const { response: t } = a;
   if (t === void 0)
-    throw new u(0, A(a.error), null, g);
+    throw new u(0, A(a.error), null, m);
   return { data: a.data, error: a.error, response: t };
 }
 async function $() {
@@ -82,7 +82,7 @@ async function U(e, a) {
   );
   return l(t);
 }
-async function x(e) {
+async function S(e) {
   const a = await i(
     () => r.post({
       security: s,
@@ -92,7 +92,7 @@ async function x(e) {
   );
   return l(a);
 }
-async function S(e) {
+async function j(e) {
   const a = await i(
     () => r.delete({
       security: s,
@@ -102,7 +102,7 @@ async function S(e) {
   );
   if (!a.response.ok || a.error !== void 0) throw f(a);
 }
-async function j(e, a = null) {
+async function x(e, a = null) {
   const t = a !== null ? `?culture=${encodeURIComponent(a)}` : "", o = await i(
     () => r.get({
       security: s,
@@ -162,7 +162,7 @@ async function B(e) {
     }))
   };
 }
-const d = "ProWorks.AI.PageEvaluator.Condition.HasActiveConfig";
+const g = "ProWorks.AI.PageEvaluator.Condition.HasActiveConfig";
 class I extends y {
   constructor(a, t) {
     super(a, t), this.permitted = !1, this.consumeContext(E, (o) => {
@@ -188,7 +188,7 @@ const R = "Uai.Menu.Addons", C = [
     type: "uaiAgentFrontendTool",
     alias: "ProWorks.AI.PageEvaluator.Tool.EvaluateCurrentPage",
     name: "Page Evaluator Evaluate Current Page Tool",
-    api: () => import("./evaluate-current-page.tool.api-BOmO5pny.js"),
+    api: () => import("./evaluate-current-page.tool.api-XUvoLFDE.js"),
     meta: {
       toolName: "evaluate_current_page",
       description: "Evaluates the page open in the editor against the site's Page Evaluator checks, using the values on screen (unsaved changes included) for the language being viewed. Returns the score (overall and per dimension, on a 1–5 scale where 5 is best), each check's status and explanation, and which fields can be improved. Returns the cached result when one exists (no new AI call) unless fresh is true; do not set fresh unless the user asks for a new evaluation; if the result is marked outOfDate, tell the user and offer a fresh evaluation. To fix failing checks, always use recommend_page_values and then apply_page_recommendation; never write those fields with other editing tools (such as set_value), and never save or publish the page for this.",
@@ -210,7 +210,7 @@ const R = "Uai.Menu.Addons", C = [
     type: "uaiAgentFrontendTool",
     alias: "ProWorks.AI.PageEvaluator.Tool.RecommendPageValues",
     name: "Page Evaluator Recommend Page Values Tool",
-    api: () => import("./recommend-page-values.tool.api-LviiHtzW.js"),
+    api: () => import("./recommend-page-values.tool.api-CNslluOC.js"),
     meta: {
       toolName: "recommend_page_values",
       description: "Gets AI-recommended values for fields named by failed or warning checks in the current Page Evaluator report for the open page. Only fields listed in the report's 'recommendable' list are allowed. Use this whenever the user asks to fix or improve the failing checks, instead of editing the fields with other tools (such as set_value). Fixing is two steps: call this now, show each value to the user exactly as written and ask which to apply; then, after the user replies, call apply_page_recommendation. Never save or publish the page for this. Returns a reference for each recommendation.",
@@ -235,7 +235,7 @@ const R = "Uai.Menu.Addons", C = [
     type: "uaiAgentFrontendTool",
     alias: "ProWorks.AI.PageEvaluator.Tool.ApplyPageRecommendation",
     name: "Page Evaluator Apply Page Recommendation Tool",
-    api: () => import("./apply-page-recommendation.tool.api-S8K___cR.js"),
+    api: () => import("./apply-page-recommendation.tool.api-C1lYCbC8.js"),
     meta: {
       toolName: "apply_page_recommendation",
       description: 'Writes one accepted Page Evaluator recommendation into its field on the open page, exactly as recommended. The change is staged in the editor and NOT saved; the user must click Save. Only call this after you have shown the user the exact value in this conversation and they agreed to it in a later message; never in the same turn as recommend_page_values. Requires a reference from recommend_page_values. Applies one value per call: when the user accepts several (for example "apply both"), call this tool once for each accepted reference, one after another, without asking for new recommendations in between.',
@@ -284,7 +284,7 @@ const R = "Uai.Menu.Addons", C = [
       icon: "icon-edit"
     }
   }
-], T = C, b = _, m = [
+], T = C, b = _, h = [
   // ---------------------------------------------------------------------------
   // Localization: English default translations for all package UI strings.
   // ---------------------------------------------------------------------------
@@ -386,7 +386,7 @@ const R = "Uai.Menu.Addons", C = [
   // available when the action's conditions are evaluated.
   {
     type: "condition",
-    alias: d,
+    alias: g,
     name: "Page Evaluator Has Active Config Condition",
     api: I
   },
@@ -406,7 +406,7 @@ const R = "Uai.Menu.Addons", C = [
         match: "Umb.Workspace.Document"
       },
       {
-        alias: d
+        alias: g
       }
     ]
   },
@@ -414,7 +414,7 @@ const R = "Uai.Menu.Addons", C = [
     type: "modal",
     alias: "ProWorks.AI.PageEvaluator.Modal.Evaluation",
     name: "Page Evaluator Evaluation Modal",
-    element: () => import("./evaluation-modal.element-DPAGkpTx.js").then((e) => ({
+    element: () => import("./evaluation-modal.element-By18gvq_.js").then((e) => ({
       element: e.EvaluationModalElement
     }))
   },
@@ -439,7 +439,7 @@ const R = "Uai.Menu.Addons", C = [
     meta: {
       entityType: "evaluator-config"
     },
-    element: () => import("./evaluator-config-workspace.element-C87yB9aq.js").then(
+    element: () => import("./evaluator-config-workspace.element-BNwTDHAl.js").then(
       (e) => ({
         element: e.EvaluatorConfigWorkspaceElement
       })
@@ -459,7 +459,7 @@ const R = "Uai.Menu.Addons", C = [
     meta: {
       feature: "proworks-page-evaluator"
     },
-    api: () => import("./page-evaluator-test-entity.repository-CBsFqVxZ.js")
+    api: () => import("./page-evaluator-test-entity.repository-DhlGX6rI.js")
   },
   {
     type: "workspaceView",
@@ -476,7 +476,7 @@ const R = "Uai.Menu.Addons", C = [
         match: "ProWorks.AI.PageEvaluator.Workspace"
       }
     ],
-    element: () => import("./evaluator-form.element-D3MnxoCI.js").then((e) => ({
+    element: () => import("./evaluator-form.element-DtL45peV.js").then((e) => ({
       element: e.EvaluatorFormElement
     }))
   },
@@ -486,23 +486,19 @@ const R = "Uai.Menu.Addons", C = [
   ...T,
   ...b
 ], H = () => {
-  console.log(
-    "[ProWorks.AI.PageEvaluator] onInit called — registering",
-    m.length,
-    "extensions"
-  ), h.registerMany(m);
+  d.registerMany(h);
 }, q = () => {
-  for (const e of m)
-    h.unregister(e.alias);
+  for (const e of h)
+    d.unregister(e.alias);
 };
 export {
   u as A,
   s as B,
-  g as N,
-  j as a,
+  m as N,
+  x as a,
   $ as b,
-  x as c,
-  S as d,
+  S as c,
+  j as d,
   F as e,
   L as f,
   k as g,
@@ -518,4 +514,4 @@ export {
   D as r,
   U as u
 };
-//# sourceMappingURL=entry-point-CGNjGQ_u.js.map
+//# sourceMappingURL=entry-point-x4knHgGw.js.map

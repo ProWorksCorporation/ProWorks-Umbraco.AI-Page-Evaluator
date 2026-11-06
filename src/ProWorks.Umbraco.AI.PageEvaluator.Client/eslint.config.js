@@ -34,6 +34,8 @@ export default tseslint.config(
         'error',
         { 'ts-ignore': 'allow-with-description', minimumDescriptionLength: 10 },
       ],
+      // No debug output in the shipped backoffice bundle (QS-R1, 17.6.1): warnings and errors only.
+      'no-console': ['error', { allow: ['warn', 'error'] }],
     },
   },
 

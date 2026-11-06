@@ -1,7 +1,7 @@
 import { UmbContextToken as f, UmbContextConsumerController as p } from "@umbraco-cms/backoffice/context-api";
 import { c as g } from "./capture-draft-B0O4yTps.js";
 import { c as h } from "./recommendation-store-CqanfkLM.js";
-import { A as m, N as y } from "./entry-point-CGNjGQ_u.js";
+import { A as m, N as y } from "./entry-point-x4knHgGw.js";
 const T = 1800 * 1e3, i = /* @__PURE__ */ new Map();
 function d(e, t) {
   return `${e}|${t?.toLowerCase() ?? ""}`;
@@ -153,4 +153,4 @@ export {
   B as s,
   I as t
 };
-//# sourceMappingURL=open-document-8E-zq2GW.js.map
+//# sourceMappingURL=open-document-B6ujVz0h.js.map
