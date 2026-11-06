@@ -162,8 +162,19 @@ public class EvaluatePageToolTests
     [Fact]
     public void Description_SaysItEvaluatesTheSavedVersion()
         => Assert.Equal(
-            "Evaluates the latest saved version of an Umbraco page against the site's Page Evaluator checks and returns the score (overall and per dimension, on a 1–5 scale where 5 is best) and each check's result. Unsaved changes in an open editor are not included.",
+            "Evaluates the latest saved version of an Umbraco page against the site's Page Evaluator checks and returns the score (overall and per dimension, on a 1–5 scale where 5 is best) and each check's result. Unsaved changes in an open editor are not included. Reuses an up-to-date cached result (no new AI call) unless fresh is true; do not set fresh unless a new evaluation was explicitly asked for.",
             _sut.Description);
+
+    [Fact]
+    public void FreshDescription_SaysToSetItOnlyWhenAskedFor()
+    {
+        // Live QS-B7 (2026-11-06): with "Run a new evaluation instead of reusing…", the model in an Automate
+        // "Run AI Agent" step set fresh: true unprompted (the Copilot tool had the same problem, fixed 2026-11-05).
+        string? description = typeof(EvaluatePageArgs).GetProperty(nameof(EvaluatePageArgs.Fresh))!
+            .GetCustomAttribute<DescriptionAttribute>()?.Description;
+
+        Assert.StartsWith("Only set this to true when a new evaluation is explicitly asked for", description);
+    }
 
     [Fact]
     public void EveryArgument_HasADescription()

@@ -22,6 +22,9 @@
     <!-- 006 (owner decision D7): Umbraco Automate for the "Evaluate Page" step. 17.5.1 is the add-on's floor
          (older versions continue a run after a failed step); it supports CMS [17.6.0, 18). -->
     <PackageReference Include="Umbraco.Automate" Version="17.5.1" />
+    <!-- AI steps for Automate ("Run AI Agent" etc.; used for QS-B7). 17.1.0, not 17.2.0: 17.2.0 needs
+         Umbraco.AI.Agent >= 17.4.2, which needs Umbraco.AI 17.7.0 and would lift the TestSite off the 17.6.1 floor. -->
+    <PackageReference Include="Umbraco.AI.Automate" Version="17.1.0" />
     <!-- Pin Microsoft.Extensions.AI packages to 10.7.0, required by Umbraco.AI.Core 17.6.1
          (range [10.7.0, 11)) and Anthropic 12.29.1. All three packages must be the same version. -->
     <PackageReference Include="Microsoft.Extensions.AI" Version="10.7.0" />

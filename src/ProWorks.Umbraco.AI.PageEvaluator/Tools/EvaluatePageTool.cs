@@ -21,7 +21,7 @@ public sealed record EvaluatePageArgs(
     Guid? NodeId = null,
     [property: Description("ISO culture code, e.g. en-US. Required for pages that vary by language; ignored otherwise.")]
     string? Culture = null,
-    [property: Description("Run a new evaluation instead of reusing an up-to-date cached result.")]
+    [property: Description("Only set this to true when a new evaluation is explicitly asked for (for example \"run it again\" or \"rescore\"). Otherwise leave it out: an up-to-date cached result is reused, and a page saved since its last evaluation is evaluated again anyway.")]
     bool? Fresh = null);
 
 /// <summary>
@@ -72,7 +72,7 @@ public sealed class EvaluatePageTool(
 
     /// <inheritdoc />
     public override string Description =>
-        "Evaluates the latest saved version of an Umbraco page against the site's Page Evaluator checks and returns the score (overall and per dimension, on a 1–5 scale where 5 is best) and each check's result. Unsaved changes in an open editor are not included.";
+        "Evaluates the latest saved version of an Umbraco page against the site's Page Evaluator checks and returns the score (overall and per dimension, on a 1–5 scale where 5 is best) and each check's result. Unsaved changes in an open editor are not included. Reuses an up-to-date cached result (no new AI call) unless fresh is true; do not set fresh unless a new evaluation was explicitly asked for.";
 
     /// <inheritdoc />
     protected override async Task<object> ExecuteAsync(EvaluatePageArgs args, CancellationToken cancellationToken = default)
