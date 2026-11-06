@@ -100,7 +100,8 @@ function useHandlers(options: {
     http.get(`${BASE}/evaluate/cached/:nodeId`, ({ request }) => {
       calls.cached.push(new URL(request.url));
       const cached = options.cached ?? 'notFound';
-      if (cached === 'notFound') return HttpResponse.json({ title: 'Not cached' }, { status: 404 });
+      // "Nothing cached" is 204 No Content since 17.6.1.
+      if (cached === 'notFound') return new HttpResponse(null, { status: 204 });
       if (cached instanceof Response) return cached;
       return HttpResponse.json(cached);
     }),

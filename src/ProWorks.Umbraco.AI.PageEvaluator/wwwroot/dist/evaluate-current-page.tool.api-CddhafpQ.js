@@ -1,7 +1,7 @@
 import { UmbControllerBase as h } from "@umbraco-cms/backoffice/class-api";
-import { g as v, a as E, e as A } from "./entry-point-x4knHgGw.js";
+import { g as v, a as E, e as A } from "./entry-point-C8fxS5WI.js";
 import { r as b } from "./recommend-eligibility-CHWTCfzX.js";
-import { t as C, r as O, f as S, a as T, s as d, b as g, T as y } from "./open-document-B6ujVz0h.js";
+import { t as C, r as O, f as S, a as T, s as d, b as g, T as y } from "./open-document-B0RqJzn-.js";
 const N = "This report may not reflect the latest changes. Offer to run a fresh evaluation before recommending.", F = "The AI response couldn't be read as a report. A fresh evaluation may help.";
 function w(a) {
   if (a === null) return null;
@@ -84,4 +84,4 @@ export {
   U as api,
   U as default
 };
-//# sourceMappingURL=evaluate-current-page.tool.api-XUvoLFDE.js.map
+//# sourceMappingURL=evaluate-current-page.tool.api-CddhafpQ.js.map

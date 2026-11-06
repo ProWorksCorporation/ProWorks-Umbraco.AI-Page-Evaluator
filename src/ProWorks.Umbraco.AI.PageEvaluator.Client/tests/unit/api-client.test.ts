@@ -150,7 +150,14 @@ describe('api-client — 2xx with a parse/validation error (CMS 17.8 shape)', ()
 });
 
 describe('api-client — 404 → null branches still work', () => {
-  it('getCachedEvaluation resolves null on 404', async () => {
+  it('getCachedEvaluation resolves null on 204 (no cached result), never the empty body as a report', async () => {
+    // The CMS client resolves a 204 as a success with `data: {}`; that must not reach callers as a report.
+    httpMock.get.mockResolvedValue({ data: {}, response: new Response(null, { status: 204 }) });
+
+    await expect(getCachedEvaluation('n1', 'da-dk')).resolves.toBeNull();
+  });
+
+  it('getCachedEvaluation still resolves null on 404 (a server from before 17.6.1, or a missing page)', async () => {
     httpMock.get.mockResolvedValue({ error: { title: 'Not found' }, response: new Response(null, { status: 404 }) });
 
     await expect(getCachedEvaluation('n1', 'da-dk')).resolves.toBeNull();

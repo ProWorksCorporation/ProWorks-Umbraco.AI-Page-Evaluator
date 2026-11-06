@@ -215,6 +215,11 @@ export async function deleteConfiguration(id: string): Promise<void> {
  * the given culture), or null if none exists.
  * Call this first when opening the modal; only call evaluatePage when this returns null
  * or when the user clicks "Re-run Evaluation".
+ *
+ * "Nothing cached" is 204 No Content since 17.6.1 (it was 404, which browsers log as a failed resource). Check the
+ * status before `checkResult`: depending on its version, the CMS client resolves a 204 with `data` null or `{}`, and
+ * `{}` must never reach the modal or the Copilot tools as a report. 404 still means null too (a missing page, or a
+ * server from before 17.6.1).
  */
 export async function getCachedEvaluation(
   nodeId: string,
@@ -228,7 +233,7 @@ export async function getCachedEvaluation(
       url: `${BASE}/evaluate/cached/${encodeURIComponent(nodeId)}${query}`,
     }),
   );
-  if (result.response.status === 404) return null;
+  if (result.response.status === 204 || result.response.status === 404) return null;
   return checkResult<EvaluationReportResponse>(result);
 }
 

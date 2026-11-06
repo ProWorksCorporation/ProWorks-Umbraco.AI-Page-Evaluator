@@ -1,7 +1,7 @@
 import { UmbControllerBase as O } from "@umbraco-cms/backoffice/class-api";
-import { r as D, a as C } from "./entry-point-x4knHgGw.js";
+import { r as D, a as C } from "./entry-point-C8fxS5WI.js";
 import { c as N, a as S, b as F, i as I } from "./recommend-eligibility-CHWTCfzX.js";
-import { t as _, a as A, r as P, f as M, c as B, b as L, g as U, T as k } from "./open-document-B6ujVz0h.js";
+import { t as _, a as A, r as P, f as M, c as B, b as L, g as U, T as k } from "./open-document-B0RqJzn-.js";
 import { a as V } from "./recommendation-store-CqanfkLM.js";
 const j = "Show each recommended value to the user exactly as written and ask which ones to apply. Do not call apply_page_recommendation in this turn: wait for the user’s reply, even if they asked you to fix the checks. The approval prompt does not show the value, so the user can only judge what you show them here.";
 function G(h) {
@@ -143,4 +143,4 @@ export {
   K as api,
   K as default
 };
-//# sourceMappingURL=recommend-page-values.tool.api-CNslluOC.js.map
+//# sourceMappingURL=recommend-page-values.tool.api-DQM7u5Iq.js.map

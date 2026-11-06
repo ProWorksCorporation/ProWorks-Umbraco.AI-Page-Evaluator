@@ -96,7 +96,8 @@ function useRecommend(
       return respond(body, requests.length - 1);
     }),
     http.get(`${BASE}/evaluate/cached/:nodeId`, () =>
-      cached === null ? HttpResponse.json({ title: 'Not cached' }, { status: 404 }) : HttpResponse.json(cached),
+      // "Nothing cached" is 204 No Content since 17.6.1.
+      cached === null ? new HttpResponse(null, { status: 204 }) : HttpResponse.json(cached),
     ),
   );
   return requests;

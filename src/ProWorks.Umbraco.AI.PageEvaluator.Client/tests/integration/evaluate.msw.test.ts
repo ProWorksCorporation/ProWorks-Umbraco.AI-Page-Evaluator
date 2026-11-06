@@ -193,6 +193,12 @@ describe('error typing — gateway types and throwOnError', () => {
     expect((err as ApiError).status).toBe(503);
   });
 
+  it('resolves getCachedEvaluation to null on 204 (no cached result) through the real client', async () => {
+    server.use(http.get(`${BASE}/evaluate/cached/:nodeId`, () => new HttpResponse(null, { status: 204 })));
+
+    await expect(getCachedEvaluation(evaluateRequest.nodeId, null)).resolves.toBeNull();
+  });
+
   it('resolves getCachedEvaluation to null on 404 instead of throwing', async () => {
     server.use(
       http.get(`${BASE}/evaluate/cached/:nodeId`, () =>

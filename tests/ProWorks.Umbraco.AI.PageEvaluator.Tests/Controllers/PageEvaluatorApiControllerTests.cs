@@ -327,15 +327,17 @@ public class PageEvaluatorApiControllerTests
     }
 
     [Fact]
-    public async Task GetCachedEvaluationAsync_WhenCacheMiss_Returns404()
+    public async Task GetCachedEvaluationAsync_WhenCacheMiss_Returns204()
     {
+        // 17.6.1 (QS-R1): a cache miss is a normal outcome, not an error. It used to be 404, which the browser logs
+        // as a red "Failed to load resource" every time the modal opens on a page with nothing cached.
         var nodeId = Guid.NewGuid();
         _cacheRepository.GetAsync(nodeId, Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns((EvaluationCacheEntry?)null);
 
         IActionResult result = await _sut.GetCachedEvaluationAsync(nodeId);
 
-        Assert.IsType<NotFoundObjectResult>(result);
+        Assert.IsType<NoContentResult>(result);
     }
 
     // ---------------------------------------------------------------------------

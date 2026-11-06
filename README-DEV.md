@@ -218,7 +218,7 @@ Modal opens → GET /evaluate/cached/{nodeId}?culture={viewed culture, if the pa
         ├─ Cache hit → renders report immediately with "Last evaluated" timestamp
         │              "Re-run Evaluation" button available to force a fresh call
         │
-        └─ Cache miss (or Re-run) →
+        └─ Cache miss (204 No Content) or Re-run →
                 │
                 ▼
         Workspace action collects the viewed culture's draft values (+ invariant values)

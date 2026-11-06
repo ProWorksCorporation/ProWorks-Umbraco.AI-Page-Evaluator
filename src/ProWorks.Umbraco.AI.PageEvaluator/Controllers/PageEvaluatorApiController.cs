@@ -274,8 +274,10 @@ public sealed partial class PageEvaluatorApiController : ControllerBase
 
     /// <summary>
     /// Returns the cached evaluation report for a content node, if one exists.
-    /// Returns 404 when the content node does not exist or no cached result is available.
-    /// Returns 403 when the requesting user lacks Browse permission on the content node.
+    /// Returns 204 (no body) when there is no cached result: a normal outcome, not an error (until 17.6.0 this was a
+    /// 404, which browsers log as a failed resource every time the modal opens on an unevaluated page).
+    /// Returns 404 when the content node does not exist, 403 when the requesting user lacks Browse permission on it,
+    /// and 400 for an invalid or not-created culture.
     /// </summary>
     [HttpGet("evaluate/cached/{nodeId:guid}")]
     public async Task<IActionResult> GetCachedEvaluationAsync(
@@ -290,6 +292,7 @@ public sealed partial class PageEvaluatorApiController : ControllerBase
         return result.Status switch
         {
             ContentEvaluationStatus.Ok => Ok(result.Report),
+            ContentEvaluationStatus.NotCached => NoContent(),
             ContentEvaluationStatus.Forbidden => StatusCode(StatusCodes.Status403Forbidden,
                 new { title = "You do not have permission to view the cached evaluation for this content node." }),
             _ => RejectedResult(result),
@@ -592,7 +595,8 @@ public sealed partial class PageEvaluatorApiController : ControllerBase
     {
         ContentEvaluationStatus.InvalidCulture or ContentEvaluationStatus.CultureNotCreated
             => CultureError(ContentCultureRules.Category(result.Status), result.Message!),
-        // NodeNotFound, NotCached and NoActiveConfig: 404 { title } (the interceptor rebuilds 404 bodies anyway).
+        // NodeNotFound and NoActiveConfig: 404 { title } (the interceptor rebuilds 404 bodies anyway). NotCached never
+        // gets here: GET /evaluate/cached answers it with 204.
         _ => NotFound(new { title = result.Message }),
     };
 

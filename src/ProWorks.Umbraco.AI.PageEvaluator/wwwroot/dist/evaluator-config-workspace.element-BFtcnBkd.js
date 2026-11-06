@@ -1,8 +1,8 @@
 import { html as a, nothing as d, css as m, state as u, customElement as h } from "@umbraco-cms/backoffice/external/lit";
 import { UmbLitElement as f } from "@umbraco-cms/backoffice/lit-element";
 import { umbConfirmModal as p } from "@umbraco-cms/backoffice/modal";
-import { b as v, c as _, d as g } from "./entry-point-x4knHgGw.js";
-import "./evaluator-form.element-DtL45peV.js";
+import { b as v, c as _, d as g } from "./entry-point-C8fxS5WI.js";
+import "./evaluator-form.element-z2fxt05M.js";
 var b = Object.defineProperty, y = Object.getOwnPropertyDescriptor, l = (e, i, t, s) => {
   for (var r = s > 1 ? void 0 : s ? y(i, t) : i, n = e.length - 1, c; n >= 0; n--)
     (c = e[n]) && (r = (s ? c(i, t, r) : c(r)) || r);
@@ -355,4 +355,4 @@ o = l([
 export {
   o as EvaluatorConfigWorkspaceElement
 };
-//# sourceMappingURL=evaluator-config-workspace.element-BNwTDHAl.js.map
+//# sourceMappingURL=evaluator-config-workspace.element-BFtcnBkd.js.map
