@@ -51,9 +51,12 @@ public sealed class EFCoreAIEvaluatorConfigRepositoryTests : IDisposable
         return builder.Options;
     }
 
+    private readonly List<IEfCoreScope<UmbracoAIPageEvaluatorDbContext>> _scopes = [];
+
     private IEfCoreScope<UmbracoAIPageEvaluatorDbContext> CreateScope()
     {
         var scope = Substitute.For<IEfCoreScope<UmbracoAIPageEvaluatorDbContext>>();
+        _scopes.Add(scope);
         Stub<object?>(scope);
         Stub<AIEvaluatorConfigEntity?>(scope);
         Stub<List<AIEvaluatorConfigEntity>>(scope);
@@ -111,6 +114,52 @@ public sealed class EFCoreAIEvaluatorConfigRepositoryTests : IDisposable
     }
 
     private bool IsActive(Guid id) => Row(id)!.IsActive;
+
+    // -------------------------------------------------------------------------
+    // Every scope completes, reads included (17.6.2)
+    // -------------------------------------------------------------------------
+
+    // Live test on Umbraco Cloud (2026-11-06): inside Deploy's import transaction the EF Core scope wraps a child of
+    // Umbraco's ambient scope, and a child disposed without Complete() makes the parent un-completable
+    // (CoreScope.ChildCompleted) — the whole import was rolled back silently. Reads must complete their scope too.
+    public static TheoryData<string> ReadMethods =>
+        ["GetByIdAsync", "GetByDocumentTypeAliasAsync", "GetAllAsync", "GetActiveForDocumentTypeAsync", "AliasExistsAsync"];
+
+    [Theory]
+    [MemberData(nameof(ReadMethods))]
+    public async Task ReadMethods_CompleteTheirScope(string method)
+    {
+        Guid id = Seed("blogPost", isActive: true);
+        _scopes.Clear();
+
+        Task call = method switch
+        {
+            "GetByIdAsync" => _sut.GetByIdAsync(id),
+            "GetByDocumentTypeAliasAsync" => _sut.GetByDocumentTypeAliasAsync("blogPost"),
+            "GetAllAsync" => _sut.GetAllAsync(),
+            "GetActiveForDocumentTypeAsync" => _sut.GetActiveForDocumentTypeAsync("blogPost"),
+            "AliasExistsAsync" => _sut.AliasExistsAsync("blogPost"),
+            _ => throw new ArgumentOutOfRangeException(nameof(method)),
+        };
+        await call;
+
+        Assert.NotEmpty(_scopes);
+        foreach (IEfCoreScope<UmbracoAIPageEvaluatorDbContext> scope in _scopes)
+            scope.Received(1).Complete();
+    }
+
+    [Fact]
+    public async Task ReadMethods_CompleteTheirScope_WhenNothingIsFound()
+    {
+        _scopes.Clear();
+
+        await _sut.GetByIdAsync(Guid.NewGuid());
+        await _sut.GetActiveForDocumentTypeAsync("missing");
+
+        Assert.Equal(2, _scopes.Count);
+        foreach (IEfCoreScope<UmbracoAIPageEvaluatorDbContext> scope in _scopes)
+            scope.Received(1).Complete();
+    }
 
     // -------------------------------------------------------------------------
     // SetActiveAsync (existing)

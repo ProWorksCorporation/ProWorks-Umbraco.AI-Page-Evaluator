@@ -32,6 +32,7 @@ public sealed class EFCoreEvaluationCacheRepository : IEvaluationCacheRepository
             await db.EvaluationCache
                 .AsNoTracking()
                 .FirstOrDefaultAsync(e => e.NodeId == nodeId && e.Culture == culture, cancellationToken));
+        scope.Complete(); // reads complete too: an uncompleted child rolls back an outer Umbraco transaction (17.6.2)
 
         if (entity is null)
             return null;

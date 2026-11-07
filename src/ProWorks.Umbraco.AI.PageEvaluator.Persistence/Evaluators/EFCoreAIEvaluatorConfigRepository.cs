@@ -19,6 +19,10 @@ public sealed class EFCoreAIEvaluatorConfigRepository : IAIEvaluatorConfigReposi
         _scopeProvider = scopeProvider;
     }
 
+    // Every scope completes, reads included (17.6.2): inside an outer Umbraco transaction (a Deploy import, a content
+    // operation's notification handlers) the EF Core scope wraps a child of the ambient scope, and a child disposed
+    // without Complete() makes the whole outer transaction roll back (CoreScope.ChildCompleted).
+
     public async Task<AIEvaluatorConfig?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         using IEfCoreScope<UmbracoAIPageEvaluatorDbContext> scope = _scopeProvider.CreateScope();
@@ -26,6 +30,7 @@ public sealed class EFCoreAIEvaluatorConfigRepository : IAIEvaluatorConfigReposi
             await db.EvaluatorConfigs
                 .AsNoTracking()
                 .FirstOrDefaultAsync(e => e.Id == id, cancellationToken));
+        scope.Complete();
 
         return entity is null ? null : AIEvaluatorConfigEntityFactory.ToDomain(entity);
     }
@@ -40,6 +45,7 @@ public sealed class EFCoreAIEvaluatorConfigRepository : IAIEvaluatorConfigReposi
                 .Where(e => e.DocumentTypeAlias == documentTypeAlias)
                 .OrderByDescending(e => e.DateModified)
                 .ToListAsync(cancellationToken));
+        scope.Complete();
 
         return entities.Select(AIEvaluatorConfigEntityFactory.ToDomain).ToList();
     }
@@ -53,6 +59,7 @@ public sealed class EFCoreAIEvaluatorConfigRepository : IAIEvaluatorConfigReposi
                 .OrderBy(e => e.DocumentTypeAlias)
                 .ThenByDescending(e => e.DateModified)
                 .ToListAsync(cancellationToken));
+        scope.Complete();
 
         return entities.Select(AIEvaluatorConfigEntityFactory.ToDomain).ToList();
     }
@@ -65,6 +72,7 @@ public sealed class EFCoreAIEvaluatorConfigRepository : IAIEvaluatorConfigReposi
             await db.EvaluatorConfigs
                 .AsNoTracking()
                 .FirstOrDefaultAsync(e => e.DocumentTypeAlias == documentTypeAlias && e.IsActive, cancellationToken));
+        scope.Complete();
 
         return entity is null ? null : AIEvaluatorConfigEntityFactory.ToDomain(entity);
     }
@@ -188,8 +196,10 @@ public sealed class EFCoreAIEvaluatorConfigRepository : IAIEvaluatorConfigReposi
     public async Task<bool> AliasExistsAsync(string documentTypeAlias, CancellationToken cancellationToken = default)
     {
         using IEfCoreScope<UmbracoAIPageEvaluatorDbContext> scope = _scopeProvider.CreateScope();
-        return await scope.ExecuteWithContextAsync(async db =>
+        bool exists = await scope.ExecuteWithContextAsync(async db =>
             await db.EvaluatorConfigs.AnyAsync(e => e.DocumentTypeAlias == documentTypeAlias, cancellationToken));
+        scope.Complete();
+        return exists;
     }
 
     // -------------------------------------------------------------------------
