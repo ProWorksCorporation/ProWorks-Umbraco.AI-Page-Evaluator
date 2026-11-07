@@ -9,6 +9,7 @@ using ProWorks.Umbraco.AI.PageEvaluator.Evaluators;
 using ProWorks.Umbraco.AI.PageEvaluator.Notifications;
 using ProWorks.Umbraco.AI.PageEvaluator.Persistence.Configuration;
 using ProWorks.Umbraco.AI.PageEvaluator.Services;
+using ProWorks.Umbraco.AI.PageEvaluator.Services.Localization;
 using ProWorks.Umbraco.AI.PageEvaluator.Tests;
 using Umbraco.AI.Extensions;
 using Umbraco.AI.Startup.Configuration;
@@ -38,7 +39,17 @@ public sealed class PageEvaluatorComposer : IComposer
 
         // Application services.
         builder.Services.AddScoped<IAIEvaluatorConfigService, AIEvaluatorConfigService>();
+        // 006 contracts/deploy-artifact.md §1.2: the deploy-only write path, used only by the Deploy add-on's
+        // connector (which resolves it through a DI scope: connectors are singletons).
+        builder.Services.AddScoped<IEvaluatorConfigImportService, EvaluatorConfigImportService>();
         builder.Services.AddScoped<IPageEvaluationService, PageEvaluationService>();
+        // 006 research R1: node → permission → culture → cache → evaluate, shared by the endpoints, the
+        // evaluate_page server tool and the Automate step.
+        builder.Services.AddScoped<IContentEvaluationService, ContentEvaluationService>();
+        // 006 research R4: one per-user budget (10/min) for POST /evaluate, POST /recommend and the
+        // evaluate_page server tool. A singleton so every caller shares it, with or without app.UseRateLimiter().
+        builder.Services.AddSingleton<IEvaluationRateLimiter>(sp =>
+            new EvaluationRateLimiter(sp.GetService<TimeProvider>() ?? TimeProvider.System));
         // Reads provider capability metadata only (no AI call); scoped like IAIProfileService's consumers.
         builder.Services.AddScoped<ISamplingSupportService, SamplingSupportService>();
         // 005 FR-012: reads whether a profile has its own system prompt (Umbraco.AI 17.5+ sends it first).
@@ -50,6 +61,10 @@ public sealed class PageEvaluatorComposer : IComposer
         // FR-018a: culture-scoped content resolution. Its dependencies (IPublishedContentCache,
         // IVariationContextAccessor, IOutputExpansionStrategyAccessor) are all singletons in CMS 17.6.2.
         builder.Services.AddSingleton<ICultureAwareContentPropertyResolver, CultureAwareContentPropertyResolver>();
+        // 006 research R9: server-side text (wwwroot/lang/*.xml, area proworksPageEvaluator) for the Automate step's
+        // report, summary and errors. ILocalizedTextService is a singleton and the package files are read once.
+        // The language itself is chosen by the static ReportLanguageResolver.
+        builder.Services.AddSingleton<IPageEvaluatorTextService, PageEvaluatorTextService>();
 
         // Decorate IApiContentBuilder with cycle detection so that cyclic content graphs
         // (e.g. Block List → Content Picker → ancestor) do not cause StackOverflowException
@@ -80,10 +95,10 @@ public sealed class PageEvaluatorComposer : IComposer
                 existingBuilder.Lifetime));
         }
 
-        // Rate limiter: 10 AI evaluation requests per user per minute (per back-office user key).
-        // Partitioned by user key so each back-office user gets their own 10 req/min bucket.
-        // Falls back to IP address for unauthenticated requests.
-        // Consuming apps must call app.UseRateLimiter() in their middleware pipeline.
+        // Legacy middleware policy. Since 17.6.1 the evaluate/recommend actions no longer use it: they call the
+        // shared IEvaluationRateLimiter above, so calling app.UseRateLimiter() is no longer required. It stays
+        // registered because a host that calls app.UseRateLimiter() without the rate-limiter services fails to
+        // start, and because hosts may still reference the "PageEvaluatorEvaluate" policy name.
         builder.Services.AddRateLimiter(options =>
             options.AddPolicy("PageEvaluatorEvaluate", ctx =>
                 RateLimitPartition.GetFixedWindowLimiter(

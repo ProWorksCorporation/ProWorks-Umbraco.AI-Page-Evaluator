@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<language alias="sv" intName="Swedish" localName="Svenska" lcid="" culture="sv-SE">
+  <area alias="proworksPageEvaluator">
+    <key alias="reportTitle">Sidutvärdering</key>
+    <key alias="reportPage">Sida</key>
+    <key alias="reportLanguage">Språk</key>
+    <key alias="reportConfiguration">Konfiguration</key>
+    <key alias="reportEvaluatedAt">Utvärderad</key>
+    <key alias="reportFromCache">Återanvänd från en tidigare utvärdering av samma sparade version</key>
+    <key alias="reportOverallScore">Totalpoäng</key>
+    <key alias="reportScoreOutOf">{score} / 5</key>
+    <key alias="reportAxisScores">Poängfördelning</key>
+    <key alias="reportChecks">Kontroller</key>
+    <key alias="reportStatusPass">Godkänd</key>
+    <key alias="reportStatusFail">Underkänd</key>
+    <key alias="reportStatusWarn">Varning</key>
+    <key alias="reportVerdictPassed">Godkänd</key>
+    <key alias="reportVerdictFailed">Inte godkänd</key>
+    <key alias="reportVerdictNone">Ingen godkännanderegel angiven</key>
+    <key alias="reportVerdictScoreMissing">Inte godkänd: AI:n gav ingen totalpoäng</key>
+    <key alias="reportParseFailed">AI-svaret kunde inte formateras som en strukturerad rapport. Finjustera utvärderarens prompt för att förbättra den strukturerade utdatan.</key>
+    <key alias="reportOpenInUmbraco">Öppna i Umbraco</key>
+    <key alias="reportInvariant">Alla språk</key>
+    <key alias="summaryScored">{page}: totalpoäng {score}/5; {passed} godkända, {failed} underkända, {warnings} varningar. {verdict}.</key>
+    <key alias="summaryUnscored">{page}: {passed} godkända, {failed} underkända, {warnings} varningar. {verdict}.</key>
+    <key alias="summaryParseFailed">{page}: AI-svaret kunde inte läsas som en rapport. {verdict}.</key>
+    <key alias="errorInvalidContentKey">Sidinställningen "{value}" är inte en giltig innehållsnyckel. Bind den till utlösarens innehållsnyckel eller ange en sidas nyckel.</key>
+    <key alias="errorContentNotFound">Det finns ingen sida med nyckeln {key}.</key>
+    <key alias="errorCultureRequired">Sidan "{page}" varierar efter språk, så inställningen Sidans språk är obligatorisk.</key>
+    <key alias="errorInvalidCulture">Språket "{culture}" är inte konfigurerat på den här webbplatsen.</key>
+    <key alias="errorCultureNotCreated">Sidan "{page}" har ingen "{culture}"-version ännu, så det finns inget att utvärdera.</key>
+    <key alias="errorNoActiveConfig">Det finns ingen aktiv Page Evaluator-konfiguration för dokumenttypen "{documentType}".</key>
+    <key alias="errorThresholdNeedsScoring">En godkännandegräns är angiven, men utvärderarkonfigurationen "{config}" har poängsättning avstängd. Slå på poängsättning eller ta bort gränsen.</key>
+    <key alias="errorGuardrailBlocked">Utvärderingen blockerades av en Umbraco.AI-guardrail-policy: {message}</key>
+    <key alias="errorProviderUnavailable">AI-leverantören är tillfälligt otillgänglig. Försök igen om en stund.</key>
+    <key alias="errorProviderConfiguration">AI-anslutningen behöver åtgärdas. Kontakta din administratör för att kontrollera AI-profilens autentiseringsuppgifter eller konfiguration.</key>
+    <key alias="errorUnexpected">Utvärderingen kunde inte slutföras på grund av ett oväntat fel. Se Umbraco-loggen för mer information.</key>
+  </area>
+</language>

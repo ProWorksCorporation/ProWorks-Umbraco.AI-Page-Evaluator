@@ -8,11 +8,17 @@ Developer-facing documentation for the ProWorks Umbraco AI Page Evaluator. For i
 
 ```
 src/
-  ProWorks.Umbraco.AI.PageEvaluator/              # RCL: API controller, services, composer
+  ProWorks.Umbraco.AI.PageEvaluator/              # RCL: API controller, services, agent tools, composer
     Controllers/PageEvaluatorApiController.cs      # Management API endpoints
+    Services/ContentEvaluationService.cs          # Shared node/permission/culture checks + cache read/write (all callers)
     Services/PageEvaluationService.cs             # AI orchestration + property resolution
+    Services/EvaluationRateLimiter.cs             # Shared 10/min/user limit (endpoints + evaluate_page tool)
+    Services/EvaluatorConfigImportService.cs      # Deploy-only config import/adopt/delete
+    Services/Localization/                        # Server-side text (emailed report, step messages)
+    Tools/                                        # evaluate_page agent tool, Page Evaluator tool scopes, model report
     Composers/PageEvaluatorComposer.cs            # DI registrations
     wwwroot/dist/                                 # Compiled backoffice JS (committed; rebuild from Client after TS changes)
+    wwwroot/lang/                                 # Server-side language files (10 languages)
   ProWorks.Umbraco.AI.PageEvaluator.Client/       # TypeScript / Lit / Vite backoffice extensions
     src/
       entry-point.ts                              # Registers all extensions
@@ -21,13 +27,19 @@ src/
       evaluator-config/                           # Config list + form workspace
       prompt-builder/                             # AI prompt generation UI
       workspace-action/                           # "Evaluate Page" toolbar button
+      copilot/                                    # Copilot frontend tools (evaluate / recommend / apply)
+      shared/                                     # API client, apply helper, draft capture, recommend eligibility
   ProWorks.Umbraco.AI.PageEvaluator.Core/         # Domain models and interfaces
   ProWorks.Umbraco.AI.PageEvaluator.Persistence/  # EF Core DbContext, entities, and cache repository
   ProWorks.Umbraco.AI.PageEvaluator.Persistence.Sqlite/    # SQLite migrations
   ProWorks.Umbraco.AI.PageEvaluator.Persistence.SqlServer/ # SQL Server migrations
-  ProWorks.Umbraco.AI.PageEvaluator.TestSite/     # Umbraco 17 test site
+  ProWorks.Umbraco.AI.PageEvaluator.Automate/     # Add-on package: Umbraco Automate "Evaluate Page" step
+  ProWorks.Umbraco.AI.PageEvaluator.Deploy/       # Add-on package: Umbraco Deploy connector for evaluator configs
+  ProWorks.Umbraco.AI.PageEvaluator.TestSite/     # Umbraco 17 test site (references Umbraco Automate + the Automate add-on)
 tests/
   ProWorks.Umbraco.AI.PageEvaluator.Tests/        # xUnit unit tests (NSubstitute)
+  ProWorks.Umbraco.AI.PageEvaluator.Automate.Tests/  # Automate add-on tests
+  ProWorks.Umbraco.AI.PageEvaluator.Deploy.Tests/    # Deploy add-on tests
 ```
 
 ---
@@ -66,6 +78,8 @@ dotnet run --project src/ProWorks.Umbraco.AI.PageEvaluator.TestSite --launch-pro
 
 Open `https://localhost:44318/umbraco` in a browser.
 
+The TestSite also runs **Umbraco Automate** (for the Automate add-on). Automate keeps its data in its own database, so `appsettings.Development.json` has a second connection string (`umbracoAutomateDbDSN`, `Umbraco.Automate.sqlite.db`, git-ignored). It also configures mail under `Umbraco:CMS:Global:Smtp` as a **pickup directory** (`C:\temp\umbraco-mail`; create the folder once), so Automate's Send Email writes `.eml` files you can open in a mail client instead of sending real email. And it sets `Umbraco:CMS:WebRouting:UmbracoApplicationUrl`, because Automate runs without an HTTP request and the emailed report's "Open in Umbraco" link needs the site address.
+
 | Setting | Value |
 |---|---|
 | URL | `https://localhost:44318` |
@@ -95,7 +109,18 @@ URL=https://localhost:44318 \
 UMBRACO_USER_LOGIN=<automation user> UMBRACO_USER_PASSWORD='<password>' npm run test:e2e
 ```
 
-The server suite covers controller error handling (including the Umbraco.AI 17.1+ `Cancelled` category and culture validation), the evaluator chat executor (enforced schemas and the one-shot fallback), culture-aware content resolution, the per-culture cache repository, publish/unpublish invalidation, and the Umbraco.AI test feature. The client suite covers the API client's error typing, the rich-text block safeguard, the apply helper, the report and form elements, and localization key parity across all 10 languages.
+The server suite covers controller error handling (including the Umbraco.AI 17.1+ `Cancelled` category and culture validation), the evaluator chat executor (enforced schemas and the one-shot fallback), culture-aware content resolution, the per-culture cache repository, publish/unpublish invalidation, and the Umbraco.AI test feature. Since 17.6.1 it also covers:
+- the shared content evaluation service: check order, saved-draft evaluation and cache reuse
+- the shared rate limiter and config change notifications
+- the Deploy import service
+- the `evaluate_page` tool and the model-facing report, which must match the client's JSON fixture exactly
+- server-side language file parity
+- **write-first SQLite writes**: every evaluator-config write (backoffice save/activate/delete and the Deploy import) runs on a WAL file database with another connection committing mid-transaction (`ConcurrentCommitInterceptor`), the cause of "database is locked"
+- **no missing migration**: `MigrationSnapshotTests` fails if the SQLite or SQL Server model differs from its migration snapshot (`HasPendingModelChanges()`, no database needed)
+
+The Automate and Deploy test projects cover the step (pass rule, error categories, HTML report and summary, composer registrations) and the Deploy connector (artifact mapping, adoption, guarded deletes, composer).
+
+The client suite covers the API client's error typing, the rich-text block safeguard, the apply helper, the report and form elements, the three Copilot tools, and localization key parity across all 10 languages.
 
 **E2E prerequisites.** The suite runs against the real TestSite and mocks only the AI endpoints (`tests/e2e/helpers.ts`), so it relies on the TestSite's content and on these **active evaluator configurations**, which aren't in uSync:
 
@@ -106,6 +131,10 @@ The server suite covers controller error handling (including the Umbraco.AI 17.1
 | `contentPage` | must have **no** active config: the About Us spec checks the button is hidden |
 
 The specs don't save anything to existing content. `tags-apply.spec.ts` needs a Tags property the TestSite doesn't have, so it creates a throwaway doc type, document and evaluator config (all prefixed `ZZ E2E`) and deletes them again, even on failure.
+
+Two specs (since 17.6.1) depend on the TestSite's extra packages:
+- `copilot-tools.spec.ts` needs the Umbraco.AI Agent / Copilot packages. It reads the backoffice extension registry and checks the three Copilot tools, their scopes and the apply tool's approval prompt. It is read-only.
+- `automate-step.spec.ts` needs Umbraco Automate. Automate needs a workspace with an API user as its service account, so the spec creates `ZZ E2E Automate Service Account` and `ZZ E2E Page Evaluator Workspace` and deletes them in `finally` (leftovers from a crashed run are removed at the start). It checks "Evaluate Page" is under AI in the step picker with localized setting labels. The automation is never saved.
 
 **E2E tooling (since 17.6.0).** The suite uses `@umbraco-cms/acceptance-test-helpers` `~17.8.0`, the helpers CMS's own acceptance tests use (npm `latest` is the v18 line, hence the tilde; import it under that exact name — the README's `@umbraco/acceptance-test-helpers` is only a tsconfig alias inside the CMS repo). It replaces the deprecated `@umbraco/playwright-testhelpers` and `@umbraco/json-models-builders`. Notes:
 
@@ -138,13 +167,13 @@ cd src/ProWorks.Umbraco.AI.PageEvaluator.Client
 npm run build
 cd ../..
 
-# 2. Pack
-dotnet pack src/ProWorks.Umbraco.AI.PageEvaluator/ProWorks.Umbraco.AI.PageEvaluator.csproj \
-  --configuration Release \
-  --output ./nupkg
+# 2. Pack the main package and both add-ons (same version, released together)
+for p in ProWorks.Umbraco.AI.PageEvaluator ProWorks.Umbraco.AI.PageEvaluator.Automate ProWorks.Umbraco.AI.PageEvaluator.Deploy; do
+  dotnet pack src/$p/$p.csproj --configuration Release --output ./nupkg
+done
 ```
 
-The `.nupkg` file is written to `./nupkg/`.
+The `.nupkg` files are written to `./nupkg/`. The add-ons depend on the main package at `[<version>, 18.0.0)`. A `SetMainPackageVersionRange` target in each add-on csproj sets that range, because a project reference alone packs as `>= <version>`. Check the `.nuspec` dependencies after packing.
 
 To publish to NuGet.org:
 
@@ -154,14 +183,15 @@ dotnet nuget push ./nupkg/ProWorks.Umbraco.AI.PageEvaluator.*.nupkg \
   --source https://api.nuget.org/v3/index.json
 ```
 
-Before publishing, update the `<Version>` in
-`src/ProWorks.Umbraco.AI.PageEvaluator/ProWorks.Umbraco.AI.PageEvaluator.csproj`
-and replace `<PackageReleaseNotes>` with a brief note for that version only (lead with the main
+Before publishing, update the `<Version>` in the main csproj
+(`src/ProWorks.Umbraco.AI.PageEvaluator/ProWorks.Umbraco.AI.PageEvaluator.csproj`) **and** both add-on csproj files
+(`.Automate`, `.Deploy`); `version-sync.test.ts` checks they match the client `package.json` and `umbraco-package.json`.
+Replace each `<PackageReleaseNotes>` with a brief note for that version only (lead with the main
 change, then list key fixes briefly). Don't keep earlier versions' notes: nuget.org shows each version's own.
 
 ### Database migrations
 
-`dotnet-ef` isn't required globally; a local copy works: `dotnet tool install dotnet-ef --version 10.0.10 --tool-path ./.tools` then run `./.tools/dotnet-ef` in place of `dotnet ef`. Migrations are applied automatically at startup by `RunPageEvaluatorMigrationNotificationHandler`. On SQLite, primary-key changes rebuild the table (EF logs a non-transactional warning — expected).
+`dotnet-ef` isn't required globally; a local copy works: `dotnet tool install dotnet-ef --version 10.0.12 --tool-path ./.tools` then run `./.tools/dotnet-ef` in place of `dotnet ef`. Migrations are applied automatically at startup by `RunPageEvaluatorMigrationNotificationHandler`. On SQLite, primary-key changes rebuild the table (EF logs a non-transactional warning — expected).
 
 ```bash
 # SQLite
@@ -188,7 +218,7 @@ Modal opens → GET /evaluate/cached/{nodeId}?culture={viewed culture, if the pa
         ├─ Cache hit → renders report immediately with "Last evaluated" timestamp
         │              "Re-run Evaluation" button available to force a fresh call
         │
-        └─ Cache miss (or Re-run) →
+        └─ Cache miss (204 No Content) or Re-run →
                 │
                 ▼
         Workspace action collects the viewed culture's draft values (+ invariant values)
@@ -230,7 +260,22 @@ Modal opens → GET /evaluate/cached/{nodeId}?culture={viewed culture, if the pa
                                 would be lost) or Copy
 ```
 
-> Cache is automatically cleared for all nodes of a document type whenever its evaluator configuration is created, updated, activated, or deleted. Cache entries for individual nodes are also cleared when content is published.
+> Cache is automatically cleared for all nodes of a document type whenever its evaluator configuration is created, updated, activated, deleted or deployed. Cache entries for individual nodes are also cleared when content is published.
+
+All evaluation entry points share `IContentEvaluationService`. It applies the same checks in this order:
+1. node exists (404)
+2. Browse permission (403)
+3. culture (400)
+4. active configuration (404)
+5. the shared 10-per-minute-per-user rate limit (429)
+
+Only then is the AI called. Results are written to the same cache.
+
+- **Copilot tools** (`Client/src/copilot/`): call the endpoints above with the on-screen values, exactly like the modal. Apply stages the value through `applyRecommendedValue` after Copilot's approval prompt.
+- **`evaluate_page` agent tool** (`Tools/EvaluatePageTool.cs`): evaluates the **latest saved draft** (`EvaluateSavedAsync`) as the current backoffice user.
+- **Automate "Evaluate Page" step** (`.Automate` add-on): evaluates the saved draft as the Automate workspace's service account and is not rate limited.
+
+Saved-draft results record the page's `UpdateDate` (`SourceUpdateDate`) and are reused only while the page hasn't been saved since. On-screen results are never reused by them.
 
 ---
 
@@ -278,7 +323,7 @@ The system prompt instructs the model to respond with a strict JSON schema:
 
 `propertyAliases` links a check to one or more Umbraco properties so the UI can offer AI text recommendations for those fields. When present, the modal renders a separate recommendation box per alias. It is `null` for structural or computed checks (e.g. "page has no H1 tag") that do not map to any editable property. `overallScore` and `axisScores` are only present when dimensional scoring is enabled on the evaluator configuration.
 
-Both the evaluate and cached-evaluate responses also include a `propertyEditorAliases` map (`{ [alias]: editorAlias }`) populated by the controller at response time using `IContentTypeService`. This map is **never stored in the cache** — it is always derived fresh so it stays current if content types change. The frontend uses it to classify each property:
+Both the evaluate and cached-evaluate responses also include a `propertyEditorAliases` map (`{ [alias]: editorAlias }`) populated by `ContentEvaluationService` at response time using `IContentTypeService`. This map is **never stored in the cache** — it is always derived fresh so it stays current if content types change. The frontend uses it to classify each property:
 
 | Editor alias | Recommendation | Apply to field |
 |---|---|---|
@@ -335,6 +380,7 @@ Umbraco.AI 17.0.0 wraps every provider chat client in an `AIErrorClassifyingChat
 | No active config for document type | 404 | Modal shows "no configuration" message |
 | Guardrail policy blocked content | 422 | Modal shows guardrail reason message |
 | AI provider error (see category table above) | 502/503/500 | Modal shows the category-specific message + Retry button |
+| Per-user limit reached (10 evaluations or recommendations a minute, shared with Copilot and `evaluate_page`) | 429 (`temporaryRetryable`) | Modal shows the "try again in a moment" message |
 | Unexpected server error (not an `AIProviderException`) | 500 | Modal shows generic error + Retry button |
 
 #### POST /recommend
@@ -347,6 +393,7 @@ Umbraco.AI 17.0.0 wraps every provider chat client in an `AIErrorClassifyingChat
 | Any alias not found on document type | 400 | Recommendation button shows error state |
 | Guardrail policy blocked content | 422 | Recommendation button shows error state |
 | AI provider error (see category table above) | 502/503/500 | Recommendation button shows the category-specific message |
+| Per-user limit reached (shared with evaluate) | 429 (`temporaryRetryable`) | Recommendation button shows the "try again in a moment" message |
 | Unexpected server error (not an `AIProviderException`) | 500 | Recommendation button shows generic error state |
 
 Provider error details (`ProviderCode`, raw exception message/stack trace) are never forwarded to the client — only the classified `category` and a package-composed, non-provider-specific `title` are returned. Full detail is logged server-side (`ILogger`) for diagnostics.

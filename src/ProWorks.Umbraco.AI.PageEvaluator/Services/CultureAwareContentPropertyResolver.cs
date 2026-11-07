@@ -17,6 +17,14 @@ public interface ICultureAwareContentPropertyResolver
     /// Falls back to <paramref name="draftProperties"/> when the node is in neither the published nor the draft cache.
     /// </summary>
     IReadOnlyDictionary<string, object?> Resolve(Guid nodeId, string? culture, IReadOnlyDictionary<string, object?> draftProperties);
+
+    /// <summary>
+    /// Returns the node's <b>latest saved draft</b> as Delivery API values for <paramref name="culture"/>
+    /// (<see langword="null"/> for invariant content): reads only the draft cache (<c>preview: true</c>), even when
+    /// the node is published in the culture, and applies no draft overlay (006 research R2). Returns an empty
+    /// dictionary when the node isn't in the draft cache.
+    /// </summary>
+    IReadOnlyDictionary<string, object?> ResolveSaved(Guid nodeId, string? culture);
 }
 
 /// <inheritdoc cref="ICultureAwareContentPropertyResolver" />
@@ -91,6 +99,24 @@ internal sealed class CultureAwareContentPropertyResolver : ICultureAwareContent
             resolved.Count, nodeId, culture ?? "invariant", draftOverrides);
 
         return merged;
+    }
+
+    public IReadOnlyDictionary<string, object?> ResolveSaved(Guid nodeId, string? culture)
+    {
+        IPublishedContent? content = _contentCache.GetById(true, nodeId);
+        if (content is null)
+        {
+            _logger.LogDebug("[PageEvaluator] Node {NodeId} not in the draft cache — nothing to evaluate.", nodeId);
+            return new Dictionary<string, object?>();
+        }
+
+        IDictionary<string, object?> resolved = MapForCulture(content, culture);
+
+        _logger.LogDebug(
+            "[PageEvaluator] Resolved {Resolved} saved-draft properties for node {NodeId} (culture {Culture}).",
+            resolved.Count, nodeId, culture ?? "invariant");
+
+        return new Dictionary<string, object?>(resolved);
     }
 
     private IDictionary<string, object?> MapForCulture(IPublishedContent content, string? culture)

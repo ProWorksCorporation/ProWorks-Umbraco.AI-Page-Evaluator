@@ -29,6 +29,7 @@ public static class AIEvaluatorConfigEntityFactory
             PropertyAliases = DeserializePropertyAliases(entity.PropertyAliases),
             ScoringEnabled = entity.ScoringEnabled,
             RecommendationsEnabled = entity.RecommendationsEnabled,
+            IsDeployManaged = entity.IsDeployManaged,
         };
 
     /// <summary>Maps a domain model to a new EFCore entity (for inserts).</summary>
@@ -51,6 +52,7 @@ public static class AIEvaluatorConfigEntityFactory
             PropertyAliases = SerializePropertyAliases(domain.PropertyAliases),
             ScoringEnabled = domain.ScoringEnabled,
             RecommendationsEnabled = domain.RecommendationsEnabled,
+            IsDeployManaged = domain.IsDeployManaged,
         };
 
     /// <summary>Applies domain model changes onto an existing tracked EFCore entity (for updates).</summary>
@@ -69,9 +71,10 @@ public static class AIEvaluatorConfigEntityFactory
         entity.PropertyAliases = SerializePropertyAliases(domain.PropertyAliases);
         entity.ScoringEnabled = domain.ScoringEnabled;
         entity.RecommendationsEnabled = domain.RecommendationsEnabled;
+        entity.IsDeployManaged = domain.IsDeployManaged;
     }
 
-    private static string? SerializePropertyAliases(List<string>? aliases)
+    internal static string? SerializePropertyAliases(List<string>? aliases)
         => aliases is { Count: > 0 } ? JsonSerializer.Serialize(aliases) : null;
 
     private static List<string>? DeserializePropertyAliases(string? json)

@@ -10,7 +10,7 @@
     "SyncContributorsFromRepository": false
   },
   "Category": "Artificial Intelligence",
-  "Description": "An Umbraco 17 backoffice package that adds an Evaluate Page button to the content editor toolbar. When clicked, it sends the current page's content to an AI model and returns a structured quality report directly inside the backoffice, including scored checks, warnings, and actionable suggestions.",
+  "Description": "An Umbraco 17 backoffice package that adds an Evaluate Page button to the content editor toolbar. When clicked, it sends the current page's content to an AI model and returns a structured quality report directly inside the backoffice, including scored checks, warnings, and actionable suggestions. Copilot can evaluate the open page and apply recommendations after approval, and optional add-ons add an Umbraco Automate \"Evaluate Page\" step and Umbraco Deploy support.",
   "DiscussionForumUrl": "https://github.com/ProWorksCorporation/ProWorks-Umbraco.AI-Page-Evaluator/issues",
   "DocumentationUrl": "https://github.com/ProWorksCorporation/ProWorks-Umbraco.AI-Page-Evaluator",
   "LicenseTypes": ["Free"],
@@ -21,7 +21,17 @@
   "LookingForContributors": true,
   "LookingForMaintainer": false,
   "PackagesByAuthor": [],
-  "RelatedPackages": [],
+  "RelatedPackages": [
+    {
+      "PackageId": "ProWorks.Umbraco.AI.PageEvaluator.Automate",
+      "Description": "Adds an Evaluate Page step to Umbraco Automate: review-before-release and publish-if-passing flows with an email-ready report.",
+      "GroupTitle": "Add-ons"
+    },
+    {
+      "PackageId": "ProWorks.Umbraco.AI.PageEvaluator.Deploy",
+      "Description": "Umbraco Deploy support: evaluator configurations move between environments with their AI profile and context."
+    }
+  ],
   "Screenshots": [
     {
       "ImageUrl": "https://raw.githubusercontent.com/ProWorksCorporation/ProWorks-Umbraco.AI-Page-Evaluator/refs/heads/main/images/Evaluate-Page-Button.png",
@@ -42,13 +52,28 @@
     {
       "ImageUrl": "https://raw.githubusercontent.com/ProWorksCorporation/ProWorks-Umbraco.AI-Page-Evaluator/refs/heads/main/images/Recommendations-Section.png",
       "Caption": "Inline Property-level Recommendations in the Evaluation Report"
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/ProWorksCorporation/ProWorks-Umbraco.AI-Page-Evaluator/refs/heads/main/images/Copilot-Evaluate.png",
+      "Caption": "Copilot: \"How does this page score?\""
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/ProWorksCorporation/ProWorks-Umbraco.AI-Page-Evaluator/refs/heads/main/images/Copilot-Recommendations.png",
+      "Caption": "Copilot: recommended values for the failing checks"
+    },
+    {
+      "ImageUrl": "https://raw.githubusercontent.com/ProWorksCorporation/ProWorks-Umbraco.AI-Page-Evaluator/refs/heads/main/images/Copilot-Apply-Approval.png",
+      "Caption": "Copilot: approve a recommendation before it is staged in the editor"
     }
   ],
   "Tags": [
     "backoffice",
     "ai",
     "umbraco.ai",
-    "editorial experience"
+    "editorial experience",
+    "copilot",
+    "automate",
+    "deploy"
   ],
   "VideoUrl": ""
 }

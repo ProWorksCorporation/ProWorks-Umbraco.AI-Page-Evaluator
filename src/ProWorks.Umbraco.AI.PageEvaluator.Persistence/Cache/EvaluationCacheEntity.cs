@@ -33,4 +33,10 @@ public sealed class EvaluationCacheEntity
     public required string ReportJson { get; set; }
 
     public DateTime CachedAt { get; set; }
+
+    /// <summary>
+    /// The node's <c>UpdateDate</c> (UTC) when the result came from a saved-draft evaluation; <see langword="null"/>
+    /// for on-screen evaluations and pre-17.6.1 rows.
+    /// </summary>
+    public DateTime? SourceUpdateDate { get; set; }
 }

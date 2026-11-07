@@ -27,6 +27,10 @@ An Umbraco 17 backoffice package that adds an **Evaluate Page** button to the co
 - **Reliable structured output**: evaluations and recommendations ask the AI provider to enforce the expected JSON structure where it supports it, with an automatic one-time fallback to the tolerant parser for models that reject it
 - **Security hardened**: admin-only config management, generic error responses (provider details are never leaked to the client), prompt injection defense, and per-user audit trail
 - **Umbraco.AI Test Support**: fully supports multi-run tests and results evaluation to compare evaluations across models and package releases.
+- **Copilot tools** (17.6.1): evaluate the open page, get check-based recommendations and apply one with approval, without leaving Copilot (see [Copilot and agents](#copilot-and-agents))
+- **Umbraco Automate step** (17.6.1, optional add-on): an "Evaluate Page" step for review-before-release and publish-if-passing flows, with an email-ready report (see [Automate](#automate))
+- **Umbraco Deploy support** (17.6.1, optional add-on): evaluator configurations move between environments with their AI profile and context (see [Deploy](#deploy))
+- **One evaluation limit for every caller**: 10 evaluations or recommendations per minute per user, shared by the button, Copilot and agent tools. Since 17.6.1 it no longer depends on the host calling `app.UseRateLimiter()`
 
 ---
 
@@ -159,6 +163,77 @@ The evaluation report (and the raw AI output shown when a response can't be read
 The evaluator asks for deterministic output (`temperature = 0`) so that re-running an evaluation on unchanged content gives the same scores. Since Umbraco.AI 17.3, providers declare which models accept that setting and Umbraco.AI silently drops it for the ones that don't — for example OpenAI's reasoning models (o-series, GPT-5) and newer Claude models. On those models, scores can differ between re-runs of the same page.
 
 The package tells administrators when this applies: the evaluator configuration screen shows a notice under the AI profile picker when the selected profile's model ignores the setting. For the most repeatable scores, use a profile whose model supports temperature. Since 17.6.0 the report itself no longer shows this notice, so content editors aren't worried by something they can't act on; the API still returns `samplingSettingsIgnored` with each report.
+
+---
+
+## Copilot and agents
+
+On sites with Umbraco.AI Agent / Copilot, the package adds three Copilot tools and one agent tool. No extra package is needed, and sites without the Agent packages ignore them. Editors can ask Copilot:
+
+- **"How does this page score?"** Copilot evaluates the page that's open, using the values on screen (unsaved changes included) for the language being viewed, exactly like **Evaluate Page**. It returns the cached result when there is one and says when that result may be out of date. A fresh evaluation updates the cache, so the Evaluate Page report shows the same result.
+- **"Fix the failing checks."** Copilot suggests values for fields named by failed or warning checks, wherever the report would offer **Generate recommendation**, and only when the configuration has recommendations enabled.
+- **Applying a suggestion.** Copilot shows its approval prompt, then writes **exactly** the recommended value into the field (tags as separate tags, rich text with its embedded blocks kept, multilingual fields in the viewed language). The change is staged in the editor and **never saved**: the editor still clicks Save. Rich text that would lose an embedded block, read-only fields and suggestions made in another language are refused with a reason.
+
+![Copilot answering "How does this page score?" with the overall score and a per-dimension breakdown](images/Copilot-Evaluate.png)
+
+Recommendations appear in the chat as a card with every suggested value, and the approval prompt shows the exact value it will write:
+
+| Recommended values | Approval before applying |
+|---|---|
+| ![Copilot's recommended values card](images/Copilot-Recommendations.png) | ![The apply card shows the value above Approve / Deny; it is staged, not saved](images/Copilot-Apply-Approval.png) |
+
+Agents that have no open page (for example an Automate "Run AI Agent" step) can use the **`evaluate_page`** tool, which evaluates a page's latest saved version by id, as the user the agent runs as, with Browse permission checked.
+
+**Setup:** no agent gets these tools automatically. In **AI → Agents**, open the agent and grant the **Page Evaluator** tool scopes:
+- **Read**: evaluate and recommend, plus `evaluate_page`
+- **Write**: apply
+
+Grant Read alone to let an agent evaluate without writing.
+
+![The Page Evaluator tool scopes on an agent's Governance tab: Read (3 tools) and Write (1 tool)](images/Copilot-Agent-Scopes.png)
+
+**Keep Copilot's own write tools off this agent.** If the same agent also has Copilot's built-in **Entity write**, **Entity save** or **Entity publish** scopes, the model can bypass the Page Evaluator tools: in testing, "fix the failing checks" was handled with Copilot's `set_value` and `save_and_publish`, writing AI text and publishing the page without an approval prompt. For approval-gated fixes that are staged and never saved, grant **Page Evaluator Read/Write** (plus Content read) without those scopes, or use a separate agent for page evaluation. Tool-initiated evaluations count towards the same 10-per-minute-per-user limit as the Evaluate Page button and appear in the audit log under the usual `proworks-page-evaluator` / `proworks-page-evaluator-recommend` names.
+
+---
+
+## Automate
+
+The optional **ProWorks.Umbraco.AI.PageEvaluator.Automate** package adds an **Evaluate Page** step to [Umbraco Automate](https://umbraco.com/products/add-ons/automate/) 17.5.1+ (earlier Automate versions carry on after a failed step, so a failed evaluation could still be followed by a publish). The step evaluates the latest saved version of a page with its active evaluator configuration and outputs the overall score, a `passed` verdict, check counts and titles, a plain-text summary and an email-ready HTML report, in any of the package's 10 languages.
+
+```bash
+dotnet add package ProWorks.Umbraco.AI.PageEvaluator.Automate
+```
+
+![An Automate flow with the Evaluate Page step: evaluate, email the report, request approval, then publish or notify the editor](images/Automate-Evaluate-Page-Flow.png)
+
+Two typical flows:
+
+- **Flow 1, review before release:** Content Saved → Evaluate Page → Send Email (body `${ steps.evaluate.reportHtml }`) → Request Approval → Switch on `approved` → Publish Content / Notify Editor. The gate only holds when release goes through the automation, e.g. when editors don't have the Publish permission.
+- **Flow 2, publish pages that pass:** Content Saved → Evaluate Page with a **Pass threshold** (the report's 1–5 scale) → Switch on `${ steps.evaluate.passed }` → Publish Content, or Send Email + Request Approval → Publish / Notify Editor. **Fail on any failed check** is on by default (warnings never fail a page), and a threshold with no score in the report never passes. Branch on `passed` rather than comparing the score in a numeric Switch: Automate parses numbers with the server's culture, so `3.5` vs `3,5` matters.
+
+On multilingual sites, Publish Content's **Cultures** field takes fixed culture codes (e.g. `en-US,da-DK`), not bindings: `${ trigger.cultures[0] }` there fails with `InvalidCulture`.
+
+Before the first flow: give your user group the **Automation** section, make the workspace's service account an **API user**, and configure Umbraco's mail settings under `Umbraco:CMS:Global:Smtp` (Send Email fails without them). The workspace's service account needs Browse on the pages (and Publish for flows that publish), and the report's "Open in Umbraco" link needs `Umbraco:CMS:WebRouting:UmbracoApplicationUrl`. ![The Evaluate Page step's outputs in the binding picker](images/Automate-Evaluate-Page-Binding.png)
+
+Settings, outputs, error categories and both flows step by step: [Automate package README](src/ProWorks.Umbraco.AI.PageEvaluator.Automate/README.nuget.md).
+
+---
+
+## Deploy
+
+The optional **ProWorks.Umbraco.AI.PageEvaluator.Deploy** package adds [Umbraco Deploy](https://umbraco.com/products/add-ons/deploy/) support (through Umbraco.AI.Deploy 17.3.1+). Evaluator configurations become Deploy schema items: each one, active or inactive, is written to `umbraco/Deploy/Revision` and moves to the next environment with its AI profile and context, like a document type. Install it on **every** environment.
+
+```bash
+dotnet add package ProWorks.Umbraco.AI.PageEvaluator.Deploy
+```
+
+- **What moves:** name, description, document type, AI profile and context (as dependencies), prompt, selected fields, scoring and recommendation settings, and the active state. Each environment keeps its own record fields (created date and creator; a deployed change counts as an edit with a blank modifier) and its own cached evaluations, which are cleared for the affected document types after a deploy.
+- **The source's active state wins:** activating a configuration deactivates any other active one for that document type on the target; deploying an inactive configuration never activates another.
+- **First deploy:** a single hand-made target configuration with the same document type and name (ignoring case and surrounding spaces) is adopted rather than duplicated. With several matches none is adopted, the configuration is added as new, and a warning is logged.
+- **Deletes** reach an environment only when it runs Deploy's schema clean-up (`Umbraco:Deploy:Settings:PostDeploySchemaOperation: CleanSchema`, a `deploy-clean` trigger or the schema dashboard), and only configurations that came from a deploy are removed, never hand-made ones.
+- **Automations** using the Evaluate Page step move with Automate's own Deploy support (`Umbraco.Deploy.Automate`).
+
+Details: [Deploy package README](src/ProWorks.Umbraco.AI.PageEvaluator.Deploy/README.nuget.md).
 
 ---
 

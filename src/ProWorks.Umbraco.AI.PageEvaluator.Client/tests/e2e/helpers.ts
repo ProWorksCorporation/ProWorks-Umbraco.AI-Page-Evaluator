@@ -43,11 +43,9 @@ function json(route: Route, status: number, body: unknown): Promise<void> {
   return route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
 }
 
-/** No cached result: the modal falls through to POST /evaluate. */
+/** No cached result (204 No Content since 17.6.1): the modal falls through to POST /evaluate. */
 export async function mockNoCachedEvaluation(page: Page): Promise<void> {
-  await page.route(`**${API}/evaluate/cached/**`, (route) =>
-    json(route, 404, { type: 'Error', title: 'No cached evaluation', status: 404 }),
-  );
+  await page.route(`**${API}/evaluate/cached/**`, (route) => route.fulfill({ status: 204 }));
 }
 
 export async function mockCachedEvaluation(page: Page, report: Record<string, unknown>): Promise<void> {

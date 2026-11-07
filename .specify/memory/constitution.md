@@ -1,6 +1,46 @@
 <!--
 SYNC IMPACT REPORT
 ==================
+Version change: 1.4.0 → 1.5.0
+Bump rationale: MINOR — the "Package Version Constraints (NON-NEGOTIABLE)" section gains new
+  mandatory ranges for the two add-on packages introduced by 006-copilot-automate-deploy
+  (ProWorks.Umbraco.AI.PageEvaluator.Automate and .Deploy, both 17.6.1), and Principle IV's
+  unimplementable minimum-version manifest rule is reworded.
+
+Approval: the add-on ranges Umbraco.Automate.Core [17.5.1, 18.0.0) and Umbraco.AI.Deploy
+  [17.3.1, 18.0.0) were explicitly approved by the maintainer (Jason Prothero) on 2026-11-03,
+  before implementation (006 tasks T001, analysis finding K2). Per Governance, this amendment PR
+  still requires a second maintainer's approval before merge.
+
+Changes:
+  - Package Version Constraints:
+      - NEW: add-on packages declare their own platform ranges and depend on the main package
+        [17.6.1, 18.0.0); Umbraco.Automate.Core [17.5.1, 18.0.0) (older Automate versions continue
+        a run after a non-retryable step failure, so a failed evaluation could still publish);
+        Umbraco.AI.Deploy [17.3.1, 18.0.0) (the release compatible with Umbraco.AI 17.6.1).
+  - Technology Stack: Package Distribution mentions the optional add-on packages.
+  - Principle IV (006 analysis finding C1, approved by the maintainer on 2026-11-03): the rule
+    "manifests MUST declare a `conditions` entry specifying the minimum required Umbraco version"
+    could not be followed — the Umbraco 17.8 backoffice has no version condition (checked against
+    every `Umb.Condition.*` alias in the 17.8.0 source), and no manifest in the package declared
+    one. Reworded: the minimum version is enforced by the NuGet ranges and the client
+    `peerDependencies`; manifests declare only the conditions they depend on. This narrows an
+    unimplementable rule rather than removing a principle, so the bump stays MINOR.
+
+Removed sections: None
+Modified principles: IV (minimum-version rule reworded; see above)
+
+Templates reviewed:
+  ✅ .specify/templates/plan-template.md — no change needed.
+  ✅ .specify/templates/spec-template.md — no change needed.
+  ✅ .specify/templates/tasks-template.md — no change needed.
+
+Deferred TODOs: None.
+-->
+
+<!--
+PRIOR SYNC IMPACT REPORT (v1.3.0 → v1.4.0, retained for history)
+==================
 Version change: 1.3.0 → 1.4.0
 Bump rationale: MINOR — the "Package Version Constraints (NON-NEGOTIABLE)" section is materially
   changed (EF Core pin, CMS/Umbraco.AI range floors) and the Technology Stack is updated for the
@@ -248,8 +288,11 @@ point and MUST NOT mutate global state outside the manifest lifecycle. Specific 
   exports (`@umbraco-cms/backoffice/*`).
 - Cross-extension communication MUST use the Umbraco Context API (`UmbContextToken` /
   `UmbContextConsumer`); direct component-to-component method calls are forbidden.
-- Extension manifests MUST declare a `conditions` entry specifying the minimum required
-  Umbraco version for each registered extension.
+- The minimum supported Umbraco version MUST be enforced by the package's dependency ranges
+  (NuGet ranges on the RCL and add-ons; `peerDependencies` in the client `package.json`), not by
+  manifest conditions: the Umbraco 17 backoffice has no version condition. Extension manifests
+  MUST declare the `conditions` they actually depend on (e.g. `Umb.Condition.WorkspaceAlias`,
+  custom visibility conditions) and no others.
 - AI provider credentials MUST be kept server-side; the browser-side extension MUST call
   a custom Umbraco API controller — direct browser-to-AI-provider calls with credentials
   are forbidden.
@@ -345,7 +388,8 @@ can cause symbol conflicts with CMS internals.
   `IChatClient` or `IAIChatClientFactory` directly is FORBIDDEN. Direct browser-to-provider
   credential usage is forbidden.
 - **Package Distribution**: Primary artefact is a NuGet package containing the compiled
-  JS; npm publishing is secondary and optional
+  JS; npm publishing is secondary and optional. Optional integrations ship as separate add-on
+  NuGet packages (`.Automate`, `.Deploy`) released at the same version as the main package
 - **Browser Support**: Evergreen browsers only — Chrome, Edge, Firefox, Safari (current
   and current−1)
 - **Accessibility**: WCAG 2.1 AA compliance is REQUIRED for all custom UI components
@@ -375,6 +419,15 @@ testing against the full Umbraco.AI ecosystem. Upgrading past these pins has cau
   (`Umbraco.Cms.*` `[17.8.0, 18.0.0)`, `Umbraco.AI.Core`/`Umbraco.AI.Startup` `[17.6.1, 18.0.0)`).
   The Core/Persistence project references are `PrivateAssets="all"`, so without these the NuGet
   package declares no CMS dependency and resolves CMS packages to Umbraco.AI's lower floor.
+- **Add-on package ranges** (approved 2026-11-03): each add-on declares its own platform range and
+  depends on the main package `[17.6.1, 18.0.0)` (same version line as the add-on).
+  - `ProWorks.Umbraco.AI.PageEvaluator.Automate` MUST depend on `Umbraco.Automate.Core`
+    `[17.5.1, 18.0.0)`. Earlier Automate versions continue a run after a non-retryable step
+    failure, so an "Evaluate → Publish" flow could publish after a failed evaluation.
+  - `ProWorks.Umbraco.AI.PageEvaluator.Deploy` MUST depend on `Umbraco.AI.Deploy`
+    `[17.3.1, 18.0.0)` (the release compatible with Umbraco.AI 17.6.1; its version does not track
+    Umbraco.AI's).
+  - The main package MUST NOT reference Automate or Deploy packages.
 
 ## Development Workflow & Quality Gates
 
@@ -418,4 +471,4 @@ removes or redefines a Core Principle.
 All PRs and code reviews MUST verify compliance with each Core Principle. Complexity
 violations MUST be documented in the Complexity Tracking table of the relevant feature plan.
 
-**Version**: 1.4.0 | **Ratified**: 2026-03-30 | **Last Amended**: 2026-11-02
+**Version**: 1.5.0 | **Ratified**: 2026-03-30 | **Last Amended**: 2026-11-03

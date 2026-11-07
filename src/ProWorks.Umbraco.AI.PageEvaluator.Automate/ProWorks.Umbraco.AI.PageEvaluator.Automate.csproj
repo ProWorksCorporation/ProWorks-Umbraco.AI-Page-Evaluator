@@ -1,0 +1,54 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>ProWorks.Umbraco.AI.PageEvaluator.Automate</RootNamespace>
+    <AssemblyName>ProWorks.Umbraco.AI.PageEvaluator.Automate</AssemblyName>
+    <Description>Umbraco Automate &quot;Evaluate Page&quot; step for the ProWorks AI Page Evaluator: evaluates a page with its active evaluator configuration and outputs a score, pass/fail and an email-ready report.</Description>
+    <!-- NuGet packaging: same version line as the main package (FR-042) -->
+    <PackageId>ProWorks.Umbraco.AI.PageEvaluator.Automate</PackageId>
+    <Version>17.6.1</Version>
+    <Authors>ProWorks, Jason Prothero</Authors>
+    <Company>ProWorks Corporation</Company>
+    <PackageTags>umbraco;umbraco-marketplace;umbraco-cms;umbraco-ai;ai;page-evaluator;automate</PackageTags>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Copyright>Copyright (c) $([System.DateTime]::UtcNow.ToString(`yyyy`)) ProWorks Corporation</Copyright>
+    <PackageReadmeFile>README.nuget.md</PackageReadmeFile>
+    <PackageProjectUrl>https://github.com/ProWorksCorporation/ProWorks-Umbraco.AI-Page-Evaluator</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/ProWorksCorporation/ProWorks-Umbraco.AI-Page-Evaluator</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReleaseNotes>17.6.1: First release. Adds an "Evaluate Page" step to Umbraco Automate 17.5.1+: evaluates the latest saved version of a page with its active evaluator configuration and outputs the score, a pass/fail verdict (threshold and "fail on any failed check"), check counts, a summary and an email-ready HTML report in 10 languages.</PackageReleaseNotes>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.nuget.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The main package. Packs as a dependency on ProWorks.Umbraco.AI.PageEvaluator; the range is
+         capped below 18.0.0 by the SetMainPackageVersionRange target (research R11). -->
+    <ProjectReference Include="..\ProWorks.Umbraco.AI.PageEvaluator\ProWorks.Umbraco.AI.PageEvaluator.csproj" />
+    <!-- Core.dll ships inside the main package's lib/, so it is a compile reference only. -->
+    <ProjectReference Include="..\ProWorks.Umbraco.AI.PageEvaluator.Core\ProWorks.Umbraco.AI.PageEvaluator.Core.csproj" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Floor 17.5.1 (constitution 1.5.0): Automate 17.0.0/17.5.0 continue a run after a non-retryable step failure, so a failed evaluation could still be followed by a Publish step. -->
+    <PackageReference Include="Umbraco.Automate.Core" Version="[17.5.1, 18.0.0)" />
+  </ItemGroup>
+
+  <!-- A ProjectReference packs as ">= 17.6.1" with no upper bound; cap it at the next major
+       (constitution 1.5.0: add-ons depend on the main package [17.6.1, 18.0.0)). -->
+  <Target Name="SetMainPackageVersionRange" AfterTargets="_GetProjectReferenceVersions">
+    <ItemGroup>
+      <_ProjectReferencesWithVersions Update="@(_ProjectReferencesWithVersions)"
+                                      Condition="'%(Filename)' == 'ProWorks.Umbraco.AI.PageEvaluator'"
+                                      ProjectVersion="[$(Version), 18.0.0)" />
+    </ItemGroup>
+  </Target>
+
+</Project>

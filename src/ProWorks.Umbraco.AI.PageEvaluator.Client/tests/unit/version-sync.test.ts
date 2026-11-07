@@ -35,4 +35,15 @@ describe('package version sync', () => {
   it('the RCL <Version> matches the client package.json version', () => {
     expect(readCsprojVersion(join(rclRoot, 'ProWorks.Umbraco.AI.PageEvaluator.csproj'))).toBe(clientVersion);
   });
+
+  // 006 FR-042: the add-on packages ship at the same version as the main package.
+  it.each(['Automate', 'Deploy'])('the %s add-on <Version> matches the client package.json version', (addOn) => {
+    const csproj = join(
+      clientRoot,
+      '..',
+      `ProWorks.Umbraco.AI.PageEvaluator.${addOn}`,
+      `ProWorks.Umbraco.AI.PageEvaluator.${addOn}.csproj`,
+    );
+    expect(readCsprojVersion(csproj)).toBe(clientVersion);
+  });
 });

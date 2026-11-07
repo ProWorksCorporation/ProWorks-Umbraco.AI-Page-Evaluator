@@ -23,4 +23,12 @@ public sealed class EvaluationCacheEntry
 
     /// <summary>UTC timestamp when this result was cached.</summary>
     public DateTime CachedAt { get; init; }
+
+    /// <summary>
+    /// UTC <c>IContent.UpdateDate</c> of the node, captured before its properties were resolved, when this result
+    /// came from a saved-draft evaluation (server tool, Automate step). <see langword="null"/> when the result came
+    /// from on-screen values (Evaluate Page button, Copilot) and for every row cached before 17.6.1.
+    /// A saved-draft evaluation reuses the entry only when this equals the node's current <c>UpdateDate</c>.
+    /// </summary>
+    public DateTime? SourceUpdateDate { get; init; }
 }

@@ -5,7 +5,8 @@ import { recommend, ApiError } from '../shared/api-client.js';
 import { localizationKeyForError } from '../shared/error-category.js';
 import type { RecommendRequest } from '../shared/types.js';
 import type { RecommendationState } from './recommendation-state.js';
-import { canApplyRichText } from '../shared/rte-blocks.js';
+import { canApply, canRecommend, type EligibilityReport } from '../shared/recommend-eligibility.js';
+import { currentMarkup, recommendInputProperties } from '../shared/recommend-input.js';
 import { isRichTextEditor } from '../shared/apply-value.js';
 
 /** Detail of the `page-evaluator-rec-apply` / `page-evaluator-rec-apply-failed` events. */
@@ -506,82 +507,22 @@ export class EvaluationReportElement extends UmbLitElement {
     `;
   }
 
-  private static readonly _FULL_RECOMMEND_EDITORS = new Set([
-    'Umbraco.TextBox',
-    'Umbraco.TextArea',
-    'Umbraco.Markdown',
-    'Umbraco.Tags',
-    // Rich text: Apply builds a { markup, blocks } value (FR-016); _canApply adds the embedded-block check.
-    'Umbraco.RichText',
-    'Umbraco.TinyMCE',
-  ]);
+  /** The parts of the report the shared eligibility rules read (FR-016; 006 FR-005). */
+  private get _eligibility(): EligibilityReport {
+    return {
+      propertyEditorAliases: this.propertyEditorAliases,
+      additionalRecommendableEditorAliases: this.additionalRecommendableEditorAliases,
+    };
+  }
 
-  /**
-   * Returns true when a recommendation can be shown for the given property alias.
-   * Checks the known editor alias first; falls back to a value heuristic when no
-   * editor info is available (e.g. the backoffice did not supply propertyEditorAliases).
-   */
+  /** True when a recommendation can be shown for `alias` (shared with the Copilot tools). */
   private _canRecommend(alias: string): boolean {
-    const editorAlias = this.propertyEditorAliases[alias];
-    if (editorAlias !== undefined) {
-      return (
-        EvaluationReportElement._FULL_RECOMMEND_EDITORS.has(editorAlias) ||
-        this._isAdditionalEditor(editorAlias)
-      );
-    }
-    // Fallback: raw value heuristic when no editor info is available.
-    const value = this.properties[alias];
-    if (typeof value !== 'string') return false;
-    const trimmed = value.trimStart();
-    if (trimmed.length === 0) return true;
-    return trimmed[0] !== '{' && trimmed[0] !== '[' && !trimmed.startsWith('umb://');
+    return canRecommend(alias, this._eligibility, this.properties[alias]);
   }
 
-  /**
-   * Returns true when the Apply button should be shown for the given property alias and recommendation.
-   * Rich text is applicable only when the recommendation keeps every embedded block placeholder of the
-   * current value exactly once (FR-016). Editors listed in additionalRecommendableEditorAliases are
-   * treated as full recommend (apply supported).
-   */
+  /** True when Apply is shown for `alias` and `recommended` (rich text also needs the embedded-block check). */
   private _canApply(alias: string, recommended: string | null): boolean {
-    const editorAlias = this.propertyEditorAliases[alias];
-    if (isRichTextEditor(editorAlias)) {
-      return recommended !== null && canApplyRichText(this._currentMarkup(alias), recommended);
-    }
-    if (editorAlias !== undefined) {
-      return (
-        EvaluationReportElement._FULL_RECOMMEND_EDITORS.has(editorAlias) ||
-        this._isAdditionalEditor(editorAlias)
-      );
-    }
-    // Fallback: only allow apply when the value looks like plain text.
-    const value = this.properties[alias];
-    if (typeof value !== 'string') return false;
-    const trimmed = value.trimStart();
-    if (trimmed.length === 0) return true;
-    return trimmed[0] !== '{' && trimmed[0] !== '[' && !trimmed.startsWith('umb://');
-  }
-
-  private _isAdditionalEditor(editorAlias: string): boolean {
-    return this.additionalRecommendableEditorAliases.some(
-      (a) => a.toLowerCase() === editorAlias.toLowerCase()
-    );
-  }
-
-  /** The current rich-text markup of `alias` (the `.markup` of a `{ markup, blocks }` value), or ''. */
-  private _currentMarkup(alias: string): string {
-    const raw = this.properties[alias];
-    if (typeof raw === 'string') return raw;
-    if (typeof raw === 'object' && raw !== null && 'markup' in raw && typeof raw.markup === 'string') {
-      return raw.markup;
-    }
-    return '';
-  }
-
-  /** The string sent to /recommend as a property's current value (rich text → its markup). */
-  private _recommendInputValue(alias: string, value: unknown): string {
-    if (isRichTextEditor(this.propertyEditorAliases[alias])) return this._currentMarkup(alias);
-    return typeof value === 'string' ? value : JSON.stringify(value ?? '');
+    return canApply(alias, recommended, this.properties[alias], this._eligibility);
   }
 
   private _resolveCurrentValue(alias: string): string {
@@ -589,7 +530,7 @@ export class EvaluationReportElement extends UmbLitElement {
     if (raw === null || raw === undefined) return '';
     if (typeof raw === 'string') return raw;
     if (Array.isArray(raw)) return raw.join(', ');
-    if (isRichTextEditor(this.propertyEditorAliases[alias])) return this._currentMarkup(alias);
+    if (isRichTextEditor(this.propertyEditorAliases[alias])) return currentMarkup(raw);
     return '';
   }
 
@@ -780,9 +721,7 @@ export class EvaluationReportElement extends UmbLitElement {
       propertyAliases: check.propertyAliases,
       checkLabel: check.label,
       checkExplanation: check.explanation ?? null,
-      properties: Object.fromEntries(
-        Object.entries(this.properties).map(([k, v]) => [k, this._recommendInputValue(k, v)]),
-      ),
+      properties: recommendInputProperties(this.properties, this.propertyEditorAliases),
     };
 
     try {

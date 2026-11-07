@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<language alias="nb" intName="Norwegian Bokmål" localName="norsk bokmål" lcid="" culture="nb-NO">
+  <area alias="proworksPageEvaluator">
+    <key alias="reportTitle">Sideevaluering</key>
+    <key alias="reportPage">Side</key>
+    <key alias="reportLanguage">Språk</key>
+    <key alias="reportConfiguration">Konfigurasjon</key>
+    <key alias="reportEvaluatedAt">Evaluert</key>
+    <key alias="reportFromCache">Gjenbrukt fra en tidligere evaluering av den samme lagrede versjonen</key>
+    <key alias="reportOverallScore">Samlet poengsum</key>
+    <key alias="reportScoreOutOf">{score} / 5</key>
+    <key alias="reportAxisScores">Poengfordeling</key>
+    <key alias="reportChecks">Kontroller</key>
+    <key alias="reportStatusPass">Bestått</key>
+    <key alias="reportStatusFail">Mislyktes</key>
+    <key alias="reportStatusWarn">Advarsel</key>
+    <key alias="reportVerdictPassed">Bestått</key>
+    <key alias="reportVerdictFailed">Ikke bestått</key>
+    <key alias="reportVerdictNone">Ingen regel for bestått angitt</key>
+    <key alias="reportVerdictScoreMissing">Ikke bestått: AI-en ga ingen samlet poengsum</key>
+    <key alias="reportParseFailed">AI-svaret kunne ikke formateres som en strukturert rapport. Finjuster evaluatorprompten for å forbedre den strukturerte utdataen.</key>
+    <key alias="reportOpenInUmbraco">Åpne i Umbraco</key>
+    <key alias="reportInvariant">Alle språk</key>
+    <key alias="summaryScored">{page}: samlet poengsum {score}/5; {passed} bestått, {failed} mislyktes, {warnings} advarsler. {verdict}.</key>
+    <key alias="summaryUnscored">{page}: {passed} bestått, {failed} mislyktes, {warnings} advarsler. {verdict}.</key>
+    <key alias="summaryParseFailed">{page}: AI-svaret kunne ikke leses som en rapport. {verdict}.</key>
+    <key alias="errorInvalidContentKey">Sideinnstillingen "{value}" er ikke en gyldig innholdsnøkkel. Bind den til utløserens innholdsnøkkel, eller skriv inn nøkkelen til en side.</key>
+    <key alias="errorContentNotFound">Det finnes ingen side med nøkkelen {key}.</key>
+    <key alias="errorCultureRequired">Siden "{page}" varierer etter språk, så innstillingen Sidens språk er påkrevd.</key>
+    <key alias="errorInvalidCulture">Språket "{culture}" er ikke konfigurert på dette nettstedet.</key>
+    <key alias="errorCultureNotCreated">Siden "{page}" har ingen "{culture}"-versjon ennå, så det er ingenting å evaluere.</key>
+    <key alias="errorNoActiveConfig">Det finnes ingen aktiv Page Evaluator-konfigurasjon for dokumenttypen "{documentType}".</key>
+    <key alias="errorThresholdNeedsScoring">Det er angitt en grense for bestått, men evaluatorkonfigurasjonen "{config}" har poenggivning slått av. Slå på poenggivning eller fjern grensen.</key>
+    <key alias="errorGuardrailBlocked">Evalueringen ble blokkert av en Umbraco.AI-guardrail-policy: {message}</key>
+    <key alias="errorProviderUnavailable">AI-leverandøren er midlertidig utilgjengelig. Prøv igjen om et øyeblikk.</key>
+    <key alias="errorProviderConfiguration">AI-tilkoblingen trenger oppmerksomhet. Kontakt administratoren for å kontrollere AI-profilens legitimasjon eller konfigurasjon.</key>
+    <key alias="errorUnexpected">Evalueringen kunne ikke fullføres på grunn av en uventet feil. Se Umbraco-loggen for detaljer.</key>
+  </area>
+</language>

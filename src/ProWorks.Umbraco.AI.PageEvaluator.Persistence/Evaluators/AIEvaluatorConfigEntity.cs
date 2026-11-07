@@ -63,4 +63,10 @@ public sealed class AIEvaluatorConfigEntity
     /// Default true; pre-existing rows are backfilled with true by the migration default.
     /// </summary>
     public bool RecommendationsEnabled { get; set; } = true;
+
+    /// <summary>
+    /// Whether a Deploy import created or adopted this configuration (only those may be removed by Deploy's schema
+    /// clean-up). Default false; pre-existing rows are backfilled with false by the migration default.
+    /// </summary>
+    public bool IsDeployManaged { get; set; }
 }

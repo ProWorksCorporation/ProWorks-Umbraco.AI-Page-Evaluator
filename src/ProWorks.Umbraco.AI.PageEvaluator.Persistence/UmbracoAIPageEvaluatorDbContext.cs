@@ -56,6 +56,9 @@ public sealed class UmbracoAIPageEvaluatorDbContext : DbContext
             // Optimistic concurrency: EF Core adds WHERE Version = @old to UPDATE statements.
             entity.Property(e => e.Version).IsConcurrencyToken();
 
+            // 006: set by Deploy imports only; existing rows are backfilled with false.
+            entity.Property(e => e.IsDeployManaged).IsRequired().HasDefaultValue(false);
+
             // Composite index used by the active-config lookup and list queries.
             entity.HasIndex(e => new { e.DocumentTypeAlias, e.IsActive })
                 .HasDatabaseName("IX_umbracoAIEvaluatorConfig_DocumentTypeAlias_IsActive");
@@ -66,6 +69,9 @@ public sealed class UmbracoAIPageEvaluatorDbContext : DbContext
             // One row per (node, culture); '' = invariant/legacy (003-upgrade-umbraco-17-6 FR-018d).
             entity.HasKey(e => new { e.NodeId, e.Culture });
             entity.Property(e => e.Culture).HasMaxLength(64).HasDefaultValue(string.Empty);
+
+            // 006: the node's UpdateDate for saved-draft results; null for on-screen results and pre-17.6.1 rows.
+            entity.Property(e => e.SourceUpdateDate).IsRequired(false);
         });
     }
 }

@@ -24,6 +24,7 @@ using Umbraco.AI.Core.Profiles;
 using Umbraco.AI.Core.Providers.Errors;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Core.Web;
 using Umbraco.Cms.Web.Common.Authorization;
 using ProWorks.Umbraco.AI.PageEvaluator.Tests.TestData;
 using Xunit;
@@ -50,6 +51,8 @@ public class PageEvaluatorApiControllerTests
     private readonly ISamplingSupportService _samplingSupport = Substitute.For<ISamplingSupportService>();
     private readonly ILanguageService _languageService = Substitute.For<ILanguageService>();
     private readonly IProfileSystemPromptService _profileSystemPrompt = Substitute.For<IProfileSystemPromptService>();
+    private readonly IEvaluationRateLimiter _rateLimiter = Substitute.For<IEvaluationRateLimiter>();
+    private readonly IUmbracoContextFactory _umbracoContextFactory = Substitute.For<IUmbracoContextFactory>();
     private readonly PageEvaluatorApiController _sut;
 
     public PageEvaluatorApiControllerTests()
@@ -62,11 +65,26 @@ public class PageEvaluatorApiControllerTests
             .AuthorizeAsync(Arg.Any<ClaimsPrincipal>(), Arg.Any<object?>(), Arg.Any<string>())
             .Returns(AuthorizationResult.Success());
 
+        // 006: an active config exists unless a test says otherwise (the evaluate flow now looks it up before the
+        // AI call, for the rate-limit gate). Tests that need "no config" set null explicitly.
+        _configService.GetActiveForDocumentTypeAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(BuildConfig("blogPost"));
+
+        // 006: the per-user limit allows every request unless a test says otherwise.
+        _rateLimiter.TryAcquire(Arg.Any<string>()).Returns(true);
+
+        // 006 research R1: the evaluate/cached flow lives in the real ContentEvaluationService, built from the
+        // same substitutes so the existing assertions on the evaluation service and cache still apply.
+        var contentEvaluation = new ContentEvaluationService(
+            _contentService, _languageService, _configService, _evaluationService, _cacheRepository,
+            _contentTypeService, _umbracoContextFactory, _options,
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<ContentEvaluationService>.Instance);
+
         _sut = new PageEvaluatorApiController(
-            _evaluationService, _configService, _profileService, _contextService,
+            contentEvaluation, _rateLimiter, _configService, _profileService, _contextService,
             _contentTypeService, _cacheRepository, _logger,
             _contentService, _authorizationService,
-            new EvaluatorChatExecutor(_chatService, _profileService, new StructuredOutputSupportCache(), Microsoft.Extensions.Logging.Abstractions.NullLogger<EvaluatorChatExecutor>.Instance), _propertyEditorSchemaService, _options, _samplingSupport, _languageService, _profileSystemPrompt);
+            new EvaluatorChatExecutor(_chatService, _profileService, new StructuredOutputSupportCache(), Microsoft.Extensions.Logging.Abstractions.NullLogger<EvaluatorChatExecutor>.Instance), _propertyEditorSchemaService, _samplingSupport, _languageService, _profileSystemPrompt);
         _sut.ControllerContext = new ControllerContext
         {
             HttpContext = new DefaultHttpContext(),
@@ -309,15 +327,17 @@ public class PageEvaluatorApiControllerTests
     }
 
     [Fact]
-    public async Task GetCachedEvaluationAsync_WhenCacheMiss_Returns404()
+    public async Task GetCachedEvaluationAsync_WhenCacheMiss_Returns204()
     {
+        // 17.6.1 (QS-R1): a cache miss is a normal outcome, not an error. It used to be 404, which the browser logs
+        // as a red "Failed to load resource" every time the modal opens on a page with nothing cached.
         var nodeId = Guid.NewGuid();
         _cacheRepository.GetAsync(nodeId, Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns((EvaluationCacheEntry?)null);
 
         IActionResult result = await _sut.GetCachedEvaluationAsync(nodeId);
 
-        Assert.IsType<NotFoundObjectResult>(result);
+        Assert.IsType<NoContentResult>(result);
     }
 
     // ---------------------------------------------------------------------------
@@ -1027,11 +1047,16 @@ public class PageEvaluatorApiControllerTests
 
     private PageEvaluatorApiController BuildSut(IOptions<PageEvaluatorOptions> options)
     {
+        // 006: the options reach the response through ContentEvaluationService.
+        var contentEvaluation = new ContentEvaluationService(
+            _contentService, _languageService, _configService, _evaluationService, _cacheRepository,
+            _contentTypeService, _umbracoContextFactory, options,
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<ContentEvaluationService>.Instance);
         var sut = new PageEvaluatorApiController(
-            _evaluationService, _configService, _profileService, _contextService,
+            contentEvaluation, _rateLimiter, _configService, _profileService, _contextService,
             _contentTypeService, _cacheRepository, _logger,
             _contentService, _authorizationService,
-            new EvaluatorChatExecutor(_chatService, _profileService, new StructuredOutputSupportCache(), Microsoft.Extensions.Logging.Abstractions.NullLogger<EvaluatorChatExecutor>.Instance), _propertyEditorSchemaService, options, _samplingSupport, _languageService, _profileSystemPrompt);
+            new EvaluatorChatExecutor(_chatService, _profileService, new StructuredOutputSupportCache(), Microsoft.Extensions.Logging.Abstractions.NullLogger<EvaluatorChatExecutor>.Instance), _propertyEditorSchemaService, _samplingSupport, _languageService, _profileSystemPrompt);
         sut.ControllerContext = _sut.ControllerContext;
         return sut;
     }
@@ -1205,17 +1230,17 @@ public class PageEvaluatorApiControllerTests
     // T051: Rate limiting attribute
     // ---------------------------------------------------------------------------
 
-    [Fact]
-    public void EvaluateAsync_HasEnableRateLimitingAttribute()
+    // 006 research R4 replaced the endpoint-only [EnableRateLimiting("PageEvaluatorEvaluate")] policy with the shared
+    // IEvaluationRateLimiter, called in the action (see "Shared rate limit" below).
+    [Theory]
+    [InlineData(nameof(PageEvaluatorApiController.EvaluateAsync))]
+    [InlineData(nameof(PageEvaluatorApiController.RecommendAsync))]
+    public void EvaluateAndRecommend_NoLongerUseTheMiddlewarePolicy(string action)
     {
-        var method = typeof(PageEvaluatorApiController).GetMethod(
-            nameof(PageEvaluatorApiController.EvaluateAsync),
-            BindingFlags.Public | BindingFlags.Instance);
+        var method = typeof(PageEvaluatorApiController).GetMethod(action, BindingFlags.Public | BindingFlags.Instance);
         Assert.NotNull(method);
 
-        var attr = method!.GetCustomAttribute<EnableRateLimitingAttribute>();
-        Assert.NotNull(attr);
-        Assert.Equal("PageEvaluatorEvaluate", attr!.PolicyName);
+        Assert.Null(method!.GetCustomAttribute<EnableRateLimitingAttribute>());
     }
 
     [Fact]
@@ -2959,5 +2984,183 @@ public class PageEvaluatorApiControllerTests
             .GetValue(captured!);
         Assert.Equal("proworks-page-evaluator-recommend", Field("_alias"));
         Assert.Equal("ProWorks Page Evaluator — Recommendations", Field("_name"));
+    }
+
+    // ---------------------------------------------------------------------------
+    // Shared rate limit (006 research R4, contracts/management-api.md §2)
+    // ---------------------------------------------------------------------------
+
+    private void GivenRecommendableMetaDescription()
+    {
+        var propType = Substitute.For<IPropertyType>();
+        propType.Alias.Returns("metaDescription");
+        propType.PropertyEditorAlias.Returns("Umbraco.TextBox");
+        var ct = Substitute.For<IContentType>();
+        ct.CompositionPropertyTypes.Returns(new[] { propType });
+        _contentTypeService.Get(Arg.Any<string>()).Returns(ct);
+        _propertyEditorSchemaService.SupportsSchema(Arg.Any<string>()).Returns(false);
+    }
+
+    private static void AssertTooManyRequests(IActionResult result)
+    {
+        var obj = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(StatusCodes.Status429TooManyRequests, obj.StatusCode);
+        string json = Json(obj);
+        Assert.Contains("\"type\":\"Error\"", json);
+        Assert.Contains("\"title\":\"Too many evaluation requests. Please wait a minute and try again.\"", json);
+        Assert.Contains("\"status\":429", json);
+        Assert.Contains("\"category\":\"temporaryRetryable\"", json);
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_WhenTheLimitIsExhausted_Returns429_WithoutAnAiCall()
+    {
+        _rateLimiter.TryAcquire(Arg.Any<string>()).Returns(false);
+
+        IActionResult result = await _sut.EvaluateAsync(new EvaluatePageRequest { NodeId = Guid.NewGuid(), Properties = new() });
+
+        AssertTooManyRequests(result);
+        await _evaluationService.DidNotReceiveWithAnyArgs().EvaluateAsync(default, default!, default!, default, default);
+        await _cacheRepository.DidNotReceiveWithAnyArgs().SaveAsync(default!, default);
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_ChargesTheLimitToTheCurrentUser()
+    {
+        _evaluationService.EvaluateAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
+            .Returns(EvaluationReport.Parsed(new EvaluationScore(1, 1), [], null));
+        string userKey = _sut.ControllerContext.HttpContext.User.FindFirst("sub")!.Value;
+
+        await _sut.EvaluateAsync(new EvaluatePageRequest { NodeId = Guid.NewGuid(), Properties = new() });
+
+        _rateLimiter.Received(1).TryAcquire(userKey);
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_ChecksNodeCultureAndPermissionBeforeTheLimit()
+    {
+        _rateLimiter.TryAcquire(Arg.Any<string>()).Returns(false);
+
+        // 404
+        var missing = Guid.NewGuid();
+        _contentService.GetById(missing).Returns((IContent?)null);
+        Assert.IsType<NotFoundObjectResult>(await _sut.EvaluateAsync(new EvaluatePageRequest { NodeId = missing, Properties = new() }));
+
+        // 400
+        var varying = Guid.NewGuid();
+        GivenVaryingContent(varying, "da-DK");
+        GivenLanguages("da-DK");
+        Assert.IsType<BadRequestObjectResult>(await _sut.EvaluateAsync(new EvaluatePageRequest { NodeId = varying, Culture = "fr-FR", Properties = new() }));
+
+        // 403
+        _authorizationService
+            .AuthorizeAsync(Arg.Any<ClaimsPrincipal>(), Arg.Any<object?>(), Arg.Any<string>())
+            .Returns(AuthorizationResult.Failed());
+        Assert.Equal(403, Assert.IsType<ObjectResult>(await _sut.EvaluateAsync(new EvaluatePageRequest { NodeId = Guid.NewGuid(), Properties = new() })).StatusCode);
+
+        _rateLimiter.DidNotReceiveWithAnyArgs().TryAcquire(default!);
+    }
+
+    [Fact]
+    public async Task RecommendAsync_WhenTheLimitIsExhausted_Returns429_WithoutAnAiCall()
+    {
+        GivenRecommendableMetaDescription();
+        _rateLimiter.TryAcquire(Arg.Any<string>()).Returns(false);
+
+        IActionResult result = await _sut.RecommendAsync(
+            new RecommendRequest { NodeId = Guid.NewGuid(), PropertyAliases = ["metaDescription"], CheckLabel = "c" });
+
+        AssertTooManyRequests(result);
+        await _chatService.DidNotReceiveWithAnyArgs().GetChatResponseAsync(default(Action<AIChatBuilder>)!, default!, default);
+    }
+
+    [Fact]
+    public async Task RecommendAsync_ChecksNodeCultureAndPermissionBeforeTheLimit()
+    {
+        GivenRecommendableMetaDescription();
+        _rateLimiter.TryAcquire(Arg.Any<string>()).Returns(false);
+
+        var missing = Guid.NewGuid();
+        _contentService.GetById(missing).Returns((IContent?)null);
+        Assert.IsType<NotFoundObjectResult>(await _sut.RecommendAsync(
+            new RecommendRequest { NodeId = missing, PropertyAliases = ["metaDescription"] }));
+
+        var varying = Guid.NewGuid();
+        GivenVaryingContent(varying, "da-DK");
+        GivenLanguages("da-DK");
+        Assert.IsType<BadRequestObjectResult>(await _sut.RecommendAsync(
+            new RecommendRequest { NodeId = varying, Culture = "fr-FR", PropertyAliases = ["metaDescription"] }));
+
+        _authorizationService
+            .AuthorizeAsync(Arg.Any<ClaimsPrincipal>(), Arg.Any<object?>(), Arg.Any<string>())
+            .Returns(AuthorizationResult.Failed());
+        Assert.Equal(403, Assert.IsType<ObjectResult>(await _sut.RecommendAsync(
+            new RecommendRequest { NodeId = Guid.NewGuid(), PropertyAliases = ["metaDescription"] })).StatusCode);
+
+        _rateLimiter.DidNotReceiveWithAnyArgs().TryAcquire(default!);
+    }
+
+    [Fact]
+    public async Task GetCachedEvaluationAsync_DoesNotUseTheLimit()
+    {
+        _rateLimiter.TryAcquire(Arg.Any<string>()).Returns(false);
+        var nodeId = Guid.NewGuid();
+        _cacheRepository.GetAsync(nodeId, string.Empty, Arg.Any<CancellationToken>()).Returns(CachedEntry(nodeId, string.Empty));
+
+        Assert.IsType<OkObjectResult>(await _sut.GetCachedEvaluationAsync(nodeId));
+        _rateLimiter.DidNotReceiveWithAnyArgs().TryAcquire(default!);
+    }
+
+    // ---------------------------------------------------------------------------
+    // savedSinceEvaluation (006 data-model §1, contracts/management-api.md §1)
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public async Task GetCachedEvaluationAsync_IncludesSavedSinceEvaluation()
+    {
+        var nodeId = Guid.NewGuid();
+        var content = Substitute.For<IContent>();
+        content.ContentType.Alias.Returns("blogPost");
+        content.UpdateDate.Returns(DateTime.UtcNow);
+        _contentService.GetById(nodeId).Returns(content);
+        _cacheRepository.GetAsync(nodeId, string.Empty, Arg.Any<CancellationToken>()).Returns(new EvaluationCacheEntry
+        {
+            NodeId = nodeId,
+            DocumentTypeAlias = "blogPost",
+            Report = EvaluationReport.Parsed(new EvaluationScore(1, 1), [], null),
+            CachedAt = DateTime.UtcNow.AddHours(-1), // the page was saved after it was evaluated
+        });
+
+        IActionResult result = await _sut.GetCachedEvaluationAsync(nodeId);
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        Assert.True(Assert.IsType<EvaluationReport>(ok.Value).SavedSinceEvaluation);
+        Assert.Contains("\"SavedSinceEvaluation\":true", Json(ok));
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_IncludesSavedSinceEvaluation_False()
+    {
+        _evaluationService.EvaluateAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<IReadOnlyDictionary<string, object?>>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
+            .Returns(EvaluationReport.Parsed(new EvaluationScore(1, 1), [], null));
+
+        IActionResult result = await _sut.EvaluateAsync(new EvaluatePageRequest { NodeId = Guid.NewGuid(), Properties = new() });
+
+        var ok = Assert.IsType<OkObjectResult>(result);
+        Assert.False(Assert.IsType<EvaluationReport>(ok.Value).SavedSinceEvaluation);
+        Assert.Contains("\"SavedSinceEvaluation\":false", Json(ok));
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_WhenNoActiveConfigBeforeTheAiCall_Returns404_WithoutUsingTheLimit()
+    {
+        _configService.GetActiveForDocumentTypeAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns((AIEvaluatorConfig?)null);
+
+        IActionResult result = await _sut.EvaluateAsync(new EvaluatePageRequest { NodeId = Guid.NewGuid(), Properties = new() });
+
+        Assert.IsType<NotFoundObjectResult>(result);
+        _rateLimiter.DidNotReceiveWithAnyArgs().TryAcquire(default!);
+        await _evaluationService.DidNotReceiveWithAnyArgs().EvaluateAsync(default, default!, default!, default, default);
     }
 }

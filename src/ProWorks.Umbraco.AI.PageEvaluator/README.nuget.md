@@ -35,6 +35,9 @@ Upgrade the CMS and Umbraco.AI first, then this package (on an older CMS the ins
 - Warns on the configuration screen when the selected AI profile has its own system prompt, which Umbraco.AI 17.5+ sends ahead of the evaluator's instructions; the evaluator's own format, language and tone rules are marked as taking precedence, but a dedicated profile with no system prompt gives the most predictable results
 - Shows Umbraco.AI's AI disclosure notice with evaluator output, following the site's Always / Dismissible / Off setting (default Always)
 - Localized "could not reach" message when the network drops, instead of a technical error
+- Copilot tools: evaluate the open page, get check-based recommendations and apply one after approval. Values are staged in the editor and never saved. Grant the **Page Evaluator** Read/Write tool scopes per agent in AI → Agents.
+- `evaluate_page` agent tool: evaluates a page's latest saved version by id, for agents without an open page
+- Optional add-ons: **ProWorks.Umbraco.AI.PageEvaluator.Automate** (an "Evaluate Page" step for Umbraco Automate) and **ProWorks.Umbraco.AI.PageEvaluator.Deploy** (Umbraco Deploy support for evaluator configurations)
 
 ## About ProWorks
 

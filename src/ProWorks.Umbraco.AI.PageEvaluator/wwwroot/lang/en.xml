@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!-- ProWorks AI Page Evaluator: server-side text (Automate "Evaluate Page" step report, summary and errors).
+     The key set is defined by this file; every other language file must define exactly the same keys
+     with the same {tokens} (ServerLocalizationKeysTests). -->
+<language alias="en" intName="English (UK)" localName="English (UK)" lcid="" culture="en-GB">
+  <area alias="proworksPageEvaluator">
+    <!-- HTML report -->
+    <key alias="reportTitle">Page Evaluation</key>
+    <key alias="reportPage">Page</key>
+    <key alias="reportLanguage">Language</key>
+    <key alias="reportConfiguration">Configuration</key>
+    <key alias="reportEvaluatedAt">Evaluated</key>
+    <key alias="reportFromCache">Reused from an earlier evaluation of the same saved version</key>
+    <key alias="reportOverallScore">Overall Score</key>
+    <key alias="reportScoreOutOf">{score} / 5</key>
+    <key alias="reportAxisScores">Score Breakdown</key>
+    <key alias="reportChecks">Checks</key>
+    <key alias="reportStatusPass">Pass</key>
+    <key alias="reportStatusFail">Fail</key>
+    <key alias="reportStatusWarn">Warning</key>
+    <key alias="reportVerdictPassed">Passed</key>
+    <key alias="reportVerdictFailed">Not passed</key>
+    <key alias="reportVerdictNone">No pass rule set</key>
+    <key alias="reportVerdictScoreMissing">Not passed: the AI gave no overall score</key>
+    <key alias="reportParseFailed">The AI response could not be formatted as a structured report. Refine the evaluator prompt to improve structured output.</key>
+    <key alias="reportOpenInUmbraco">Open in Umbraco</key>
+    <key alias="reportInvariant">All languages</key>
+    <!-- Plain-text summary -->
+    <key alias="summaryScored">{page}: overall score {score}/5; {passed} passed, {failed} failed, {warnings} warnings. {verdict}.</key>
+    <key alias="summaryUnscored">{page}: {passed} passed, {failed} failed, {warnings} warnings. {verdict}.</key>
+    <key alias="summaryParseFailed">{page}: the AI response could not be read as a report. {verdict}.</key>
+    <!-- Step errors -->
+    <key alias="errorInvalidContentKey">The page setting "{value}" is not a valid content key. Bind it to the trigger's content key or enter a page key.</key>
+    <key alias="errorContentNotFound">No page with the key {key} exists.</key>
+    <key alias="errorCultureRequired">The page "{page}" varies by language, so the Page language setting is required.</key>
+    <key alias="errorInvalidCulture">The language "{culture}" is not configured on this site.</key>
+    <key alias="errorCultureNotCreated">The page "{page}" has no "{culture}" version yet, so there is nothing to evaluate.</key>
+    <key alias="errorNoActiveConfig">No active Page Evaluator configuration exists for the document type "{documentType}".</key>
+    <key alias="errorThresholdNeedsScoring">A pass threshold is set, but the evaluator configuration "{config}" has scoring turned off. Turn scoring on or clear the threshold.</key>
+    <key alias="errorGuardrailBlocked">The evaluation was blocked by an Umbraco.AI guardrail policy: {message}</key>
+    <key alias="errorProviderUnavailable">The AI provider is temporarily unavailable. Please try again in a moment.</key>
+    <key alias="errorProviderConfiguration">The AI connection needs attention. Contact your administrator to check the AI profile's credentials or configuration.</key>
+    <key alias="errorUnexpected">The evaluation could not be completed because of an unexpected error. Check the Umbraco log for details.</key>
+  </area>
+</language>

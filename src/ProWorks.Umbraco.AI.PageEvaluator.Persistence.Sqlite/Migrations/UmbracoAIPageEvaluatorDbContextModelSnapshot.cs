@@ -15,7 +15,7 @@ namespace ProWorks.Umbraco.AI.PageEvaluator.Persistence.Sqlite.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "10.0.10");
+            modelBuilder.HasAnnotation("ProductVersion", "10.0.12");
 
             modelBuilder.Entity("ProWorks.Umbraco.AI.PageEvaluator.Persistence.Cache.EvaluationCacheEntity", b =>
                 {
@@ -38,6 +38,9 @@ namespace ProWorks.Umbraco.AI.PageEvaluator.Persistence.Sqlite.Migrations
 
                     b.Property<string>("ReportJson")
                         .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("SourceUpdateDate")
                         .HasColumnType("TEXT");
 
                     b.HasKey("NodeId", "Culture");
@@ -74,6 +77,11 @@ namespace ProWorks.Umbraco.AI.PageEvaluator.Persistence.Sqlite.Migrations
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsDeployManaged")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(false);
 
                     b.Property<Guid?>("ModifiedByUserId")
                         .HasColumnType("TEXT");

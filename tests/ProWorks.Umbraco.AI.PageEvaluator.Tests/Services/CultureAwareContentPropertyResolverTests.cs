@@ -192,6 +192,102 @@ public class CultureAwareContentPropertyResolverTests
         Assert.Equal(1, innerBuilds);
     }
 
+    // ---------------------------------------------------------------------------
+    // ResolveSaved — latest saved draft (006 research R2)
+    // ---------------------------------------------------------------------------
+
+    [Fact]
+    public void ResolveSaved_ReadsOnlyTheDraft_EvenWhenPublishedInTheCulture()
+    {
+        IPublishedContent published = Content(publishedInCulture: true);
+        IPublishedContent draft = Content();
+        _contentCache.GetById(false, _nodeId).Returns(published);
+        _contentCache.GetById(true, _nodeId).Returns(draft);
+        _strategy.MapContentProperties(published).Returns(new Dictionary<string, object?> { ["title"] = "Published" });
+        _strategy.MapContentProperties(draft).Returns(new Dictionary<string, object?> { ["title"] = "Saved draft" });
+
+        IReadOnlyDictionary<string, object?> result = CreateSut().ResolveSaved(_nodeId, "da-dk");
+
+        Assert.Equal("Saved draft", result["title"]);
+        _contentCache.DidNotReceive().GetById(false, _nodeId);
+        _contentCache.Received(1).GetById(true, _nodeId);
+    }
+
+    [Fact]
+    public void ResolveSaved_AppliesNoDraftOverlay()
+    {
+        IPublishedContent draft = Content();
+        _contentCache.GetById(true, _nodeId).Returns(draft);
+        var mapped = new Dictionary<string, object?>
+        {
+            ["title"] = "Saved title",
+            ["picker"] = "resolved picker",
+        };
+        _strategy.MapContentProperties(draft).Returns(mapped);
+
+        IReadOnlyDictionary<string, object?> result = CreateSut().ResolveSaved(_nodeId, null);
+
+        Assert.Equal(mapped.OrderBy(kv => kv.Key), result.OrderBy(kv => kv.Key));
+    }
+
+    [Fact]
+    public void ResolveSaved_SetsTheVariationContext_AndRestoresItAfterwards()
+    {
+        var original = new VariationContext("en-us");
+        _variationContextAccessor.VariationContext = original;
+        IPublishedContent draft = Content();
+        _contentCache.GetById(true, _nodeId).Returns(draft);
+        string? cultureDuringMapping = null;
+        _strategy.MapContentProperties(draft).Returns(_ =>
+        {
+            cultureDuringMapping = _variationContextAccessor.VariationContext?.Culture;
+            return new Dictionary<string, object?> { ["title"] = "Hej" };
+        });
+
+        CreateSut().ResolveSaved(_nodeId, "da-dk");
+
+        Assert.Equal("da-dk", cultureDuringMapping);
+        Assert.Same(original, _variationContextAccessor.VariationContext);
+    }
+
+    [Fact]
+    public void ResolveSaved_RestoresTheVariationContext_EvenWhenMappingThrows()
+    {
+        var original = new VariationContext("en-us");
+        _variationContextAccessor.VariationContext = original;
+        IPublishedContent draft = Content();
+        _contentCache.GetById(true, _nodeId).Returns(draft);
+        _strategy.MapContentProperties(draft).Returns(_ => throw new InvalidOperationException("boom"));
+
+        Assert.Throws<InvalidOperationException>(() => CreateSut().ResolveSaved(_nodeId, "da-dk"));
+
+        Assert.Same(original, _variationContextAccessor.VariationContext);
+    }
+
+    [Fact]
+    public void ResolveSaved_FallsBackToPerPropertyDeliveryValues_WhenNoExpansionStrategyIsAvailable()
+    {
+        // No HTTP request (Automate background run): the accessor has no strategy.
+        _strategyAccessor.TryGetValue(out Arg.Any<IOutputExpansionStrategy?>())
+            .Returns(call => { call[0] = null; return false; });
+        IPublishedContent draft = Content();
+        var property = Substitute.For<IPublishedProperty>();
+        property.Alias.Returns("title");
+        property.GetDeliveryApiValue(false, "da-dk", null).Returns("Dansk titel");
+        draft.Properties.Returns(new[] { property });
+        _contentCache.GetById(true, _nodeId).Returns(draft);
+
+        Assert.Equal("Dansk titel", CreateSut().ResolveSaved(_nodeId, "da-dk")["title"]);
+    }
+
+    [Fact]
+    public void ResolveSaved_ReturnsAnEmptyDictionary_WhenTheNodeIsNotInTheDraftCache()
+    {
+        _contentCache.GetById(true, _nodeId).Returns((IPublishedContent?)null);
+
+        Assert.Empty(CreateSut().ResolveSaved(_nodeId, "da-dk"));
+    }
+
     private sealed class TestVariationContextAccessor : IVariationContextAccessor
     {
         public VariationContext? VariationContext { get; set; }

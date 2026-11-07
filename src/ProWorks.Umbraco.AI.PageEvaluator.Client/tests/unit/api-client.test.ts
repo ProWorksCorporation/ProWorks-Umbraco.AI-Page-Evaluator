@@ -35,6 +35,7 @@ import {
   recommend,
   updateConfiguration,
 } from '../../src/shared/api-client.js';
+import { localizationKeyForError } from '../../src/shared/error-category.js';
 import type {
   CreateEvaluatorConfigRequest,
   EvaluatePageRequest,
@@ -149,7 +150,14 @@ describe('api-client — 2xx with a parse/validation error (CMS 17.8 shape)', ()
 });
 
 describe('api-client — 404 → null branches still work', () => {
-  it('getCachedEvaluation resolves null on 404', async () => {
+  it('getCachedEvaluation resolves null on 204 (no cached result), never the empty body as a report', async () => {
+    // The CMS client resolves a 204 as a success with `data: {}`; that must not reach callers as a report.
+    httpMock.get.mockResolvedValue({ data: {}, response: new Response(null, { status: 204 }) });
+
+    await expect(getCachedEvaluation('n1', 'da-dk')).resolves.toBeNull();
+  });
+
+  it('getCachedEvaluation still resolves null on 404 (a server from before 17.6.1, or a missing page)', async () => {
     httpMock.get.mockResolvedValue({ error: { title: 'Not found' }, response: new Response(null, { status: 404 }) });
 
     await expect(getCachedEvaluation('n1', 'da-dk')).resolves.toBeNull();
@@ -177,5 +185,30 @@ describe('api-client — 404 → null branches still work', () => {
         throwOnError: false,
       }),
     );
+  });
+});
+
+describe('api-client — 429 from the shared evaluation limit (006 contracts/management-api.md §2)', () => {
+  const tooMany = {
+    type: 'Error',
+    title: 'Too many evaluation requests. Please wait a minute and try again.',
+    status: 429,
+    category: 'temporaryRetryable',
+  };
+
+  it.each([
+    ['evaluatePage', () => evaluatePage(evaluateRequest)],
+    ['recommend', () => recommend(recommendRequest)],
+  ])('%s rejects with ApiError(429, temporaryRetryable) → the existing retry message', async (_name, invoke) => {
+    httpMock.post.mockResolvedValue({ error: tooMany, response: new Response(null, { status: 429 }) });
+
+    const err = await rejectionOf(invoke());
+
+    expect(err).toBeInstanceOf(ApiError);
+    const apiError = err as ApiError;
+    expect(apiError.status).toBe(429);
+    expect(apiError.category).toBe('temporaryRetryable');
+    expect(apiError.type).toBe('Error');
+    expect(localizationKeyForError(apiError, 'evaluatePage_aiErrorMessage')).toBe('evaluatePage_temporaryRetryableMessage');
   });
 });

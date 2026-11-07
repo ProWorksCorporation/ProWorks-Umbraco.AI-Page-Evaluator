@@ -1079,6 +1079,127 @@ public class PageEvaluationServiceTests
     }
 
     // ---------------------------------------------------------------------------
+    // EvaluateSavedAsync — latest saved draft (006 research R2)
+    // ---------------------------------------------------------------------------
+
+    private const string MinimalReportJson =
+        """{"score":{"passed":1,"total":1},"checks":[{"checkNumber":1,"status":"Pass","label":"T","explanation":null}],"suggestions":null}""";
+
+    private (Func<string> UserMessage, Func<string?> Alias) CaptureChatCall()
+    {
+        IEnumerable<ChatMessage>? messages = null;
+        Action<AIChatBuilder>? configure = null;
+        _chatService.GetChatResponseAsync(
+                Arg.Do<Action<AIChatBuilder>>(c => configure = c),
+                Arg.Do<IEnumerable<ChatMessage>>(msgs => messages = msgs.ToList()),
+                Arg.Any<CancellationToken>())
+            .Returns(new ChatResponse(new ChatMessage(ChatRole.Assistant, MinimalReportJson)));
+
+        return (
+            () => messages!.First(m => m.Role == ChatRole.User).Text!,
+            () =>
+            {
+                var builder = new AIChatBuilder();
+                configure!(builder);
+                return (string?)typeof(AIChatBuilder)
+                    .GetField("_alias", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
+                    .GetValue(builder);
+            });
+    }
+
+    [Fact]
+    public async Task EvaluateSavedAsync_UsesResolveSaved_NotTheDraftOverlay()
+    {
+        const string documentTypeAlias = "blogPost";
+        var nodeId = Guid.NewGuid();
+        _configService.GetActiveForDocumentTypeAsync(documentTypeAlias, Arg.Any<CancellationToken>())
+            .Returns(BuildConfig(documentTypeAlias));
+        _propertyResolver.ResolveSaved(nodeId, "da-dk")
+            .Returns(new Dictionary<string, object?> { ["title"] = "Saved draft title" });
+        var (userMessage, _) = CaptureChatCall();
+
+        EvaluationReport report = await _sut.EvaluateSavedAsync(nodeId, documentTypeAlias, "da-dk");
+
+        Assert.False(report.ParseFailed);
+        Assert.Contains("Saved draft title", userMessage());
+        _propertyResolver.Received(1).ResolveSaved(nodeId, "da-dk");
+        _propertyResolver.DidNotReceive().Resolve(Arg.Any<Guid>(), Arg.Any<string?>(), Arg.Any<IReadOnlyDictionary<string, object?>>());
+    }
+
+    [Fact]
+    public async Task EvaluateSavedAsync_AppliesThePropertyAliasesFilter()
+    {
+        const string documentTypeAlias = "blogPost";
+        var nodeId = Guid.NewGuid();
+        var config = BuildConfig(documentTypeAlias);
+        config.PropertyAliases = ["title", "summary"];
+        _configService.GetActiveForDocumentTypeAsync(documentTypeAlias, Arg.Any<CancellationToken>()).Returns(config);
+        _propertyResolver.ResolveSaved(nodeId, null).Returns(new Dictionary<string, object?>
+        {
+            ["title"] = "My Post",
+            ["summary"] = "A summary",
+            ["secretField"] = "Should not appear",
+        });
+        var (userMessage, _) = CaptureChatCall();
+
+        await _sut.EvaluateSavedAsync(nodeId, documentTypeAlias, null);
+
+        Assert.Contains("title", userMessage());
+        Assert.Contains("summary", userMessage());
+        Assert.DoesNotContain("secretField", userMessage());
+    }
+
+    [Fact]
+    public async Task EvaluateSavedAsync_StripsHtmlAndTruncates_LikeEvaluateAsync()
+    {
+        const string documentTypeAlias = "blogPost";
+        var nodeId = Guid.NewGuid();
+        _configService.GetActiveForDocumentTypeAsync(documentTypeAlias, Arg.Any<CancellationToken>())
+            .Returns(BuildConfig(documentTypeAlias));
+        string longText = new('x', 3000);
+        _propertyResolver.ResolveSaved(nodeId, null).Returns(new Dictionary<string, object?>
+        {
+            ["body"] = "<p>Hello <strong>world</strong></p>",
+            ["content"] = longText,
+        });
+        var (userMessage, _) = CaptureChatCall();
+
+        await _sut.EvaluateSavedAsync(nodeId, documentTypeAlias, null);
+
+        Assert.Contains("Hello", userMessage());
+        Assert.DoesNotContain("<strong>", userMessage());
+        Assert.Contains("[...truncated]", userMessage());
+        Assert.DoesNotContain(longText, userMessage());
+    }
+
+    [Fact]
+    public async Task EvaluateSavedAsync_UsesTheSameExecutorAlias()
+    {
+        const string documentTypeAlias = "blogPost";
+        var nodeId = Guid.NewGuid();
+        _configService.GetActiveForDocumentTypeAsync(documentTypeAlias, Arg.Any<CancellationToken>())
+            .Returns(BuildConfig(documentTypeAlias));
+        _propertyResolver.ResolveSaved(nodeId, null).Returns(new Dictionary<string, object?>());
+        var (_, alias) = CaptureChatCall();
+
+        await _sut.EvaluateSavedAsync(nodeId, documentTypeAlias, null);
+
+        Assert.Equal("proworks-page-evaluator", alias());
+    }
+
+    [Fact]
+    public async Task EvaluateSavedAsync_WhenNoActiveConfig_ThrowsInvalidOperationException()
+    {
+        const string documentTypeAlias = "unknownType";
+        _configService.GetActiveForDocumentTypeAsync(documentTypeAlias, Arg.Any<CancellationToken>())
+            .Returns((AIEvaluatorConfig?)null);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => _sut.EvaluateSavedAsync(Guid.NewGuid(), documentTypeAlias, null));
+        _propertyResolver.DidNotReceive().ResolveSaved(Arg.Any<Guid>(), Arg.Any<string?>());
+    }
+
+    // ---------------------------------------------------------------------------
     // Helpers
     // ---------------------------------------------------------------------------
 
