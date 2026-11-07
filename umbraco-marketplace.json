@@ -21,7 +21,17 @@
   "LookingForContributors": true,
   "LookingForMaintainer": false,
   "PackagesByAuthor": [],
-  "RelatedPackages": [],
+  "RelatedPackages": [
+    {
+      "PackageId": "ProWorks.Umbraco.AI.PageEvaluator.Automate",
+      "Description": "Adds an Evaluate Page step to Umbraco Automate: review-before-release and publish-if-passing flows with an email-ready report.",
+      "GroupTitle": "Add-ons"
+    },
+    {
+      "PackageId": "ProWorks.Umbraco.AI.PageEvaluator.Deploy",
+      "Description": "Umbraco Deploy support: evaluator configurations move between environments with their AI profile and context."
+    }
+  ],
   "Screenshots": [
     {
       "ImageUrl": "https://raw.githubusercontent.com/ProWorksCorporation/ProWorks-Umbraco.AI-Page-Evaluator/refs/heads/main/images/Evaluate-Page-Button.png",

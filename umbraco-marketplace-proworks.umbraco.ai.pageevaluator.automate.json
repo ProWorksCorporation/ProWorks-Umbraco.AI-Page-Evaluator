@@ -21,7 +21,16 @@
   "LookingForContributors": true,
   "LookingForMaintainer": false,
   "PackagesByAuthor": [],
-  "RelatedPackages": [],
+  "RelatedPackages": [
+    {
+      "PackageId": "ProWorks.Umbraco.AI.PageEvaluator",
+      "Description": "Required: the Page Evaluator itself. Adds an Evaluate Page button that scores the page against your own AI checks, with recommendations you can apply, Copilot tools and an agent tool."
+    },
+    {
+      "PackageId": "ProWorks.Umbraco.AI.PageEvaluator.Deploy",
+      "Description": "Umbraco Deploy support: evaluator configurations move between environments with their AI profile and context."
+    }
+  ],
   "Screenshots": [
     {
       "ImageUrl": "https://raw.githubusercontent.com/ProWorksCorporation/ProWorks-Umbraco.AI-Page-Evaluator/refs/heads/main/images/Automate-Evaluate-Page-Flow.png",
