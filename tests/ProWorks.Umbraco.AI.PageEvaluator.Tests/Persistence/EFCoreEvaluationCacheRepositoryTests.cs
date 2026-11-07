@@ -34,9 +34,12 @@ public sealed class EFCoreEvaluationCacheRepositoryTests : IDisposable
         _sut = new EFCoreEvaluationCacheRepository(scopeProvider);
     }
 
+    private readonly List<IEfCoreScope<UmbracoAIPageEvaluatorDbContext>> _scopes = [];
+
     private IEfCoreScope<UmbracoAIPageEvaluatorDbContext> CreateScope()
     {
         var scope = Substitute.For<IEfCoreScope<UmbracoAIPageEvaluatorDbContext>>();
+        _scopes.Add(scope);
         scope.ExecuteWithContextAsync(Arg.Any<Func<UmbracoAIPageEvaluatorDbContext, Task<EvaluationCacheEntity?>>>())
             .Returns(call => Run(call.Arg<Func<UmbracoAIPageEvaluatorDbContext, Task<EvaluationCacheEntity?>>>()));
         scope.ExecuteWithContextAsync(Arg.Any<Func<UmbracoAIPageEvaluatorDbContext, Task<object?>>>())
@@ -64,6 +67,23 @@ public sealed class EFCoreEvaluationCacheRepositoryTests : IDisposable
     {
         using var db = new UmbracoAIPageEvaluatorDbContext(_options);
         return db.EvaluationCache.Count();
+    }
+
+    [Fact]
+    public async Task GetAsync_CompletesItsScope_WithAndWithoutAHit()
+    {
+        // 17.6.2: a scope disposed without Complete() inside an outer Umbraco transaction (e.g. a Deploy import or a
+        // content operation's notification handlers) makes that transaction roll back (CoreScope.ChildCompleted).
+        var nodeId = Guid.NewGuid();
+        await _sut.SaveAsync(Entry(nodeId, "", "x"));
+        _scopes.Clear();
+
+        await _sut.GetAsync(nodeId, "");
+        await _sut.GetAsync(Guid.NewGuid(), "");
+
+        Assert.Equal(2, _scopes.Count);
+        foreach (IEfCoreScope<UmbracoAIPageEvaluatorDbContext> scope in _scopes)
+            scope.Received(1).Complete();
     }
 
     [Fact]

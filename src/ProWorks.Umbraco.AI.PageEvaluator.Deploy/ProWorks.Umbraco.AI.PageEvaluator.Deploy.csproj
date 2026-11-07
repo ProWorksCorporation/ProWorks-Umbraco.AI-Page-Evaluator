@@ -10,7 +10,7 @@
     <Description>Umbraco Deploy support for ProWorks AI Page Evaluator configurations: deploys evaluator configurations between environments with their AI profile and context dependencies.</Description>
     <!-- NuGet packaging: same version line as the main package (FR-042) -->
     <PackageId>ProWorks.Umbraco.AI.PageEvaluator.Deploy</PackageId>
-    <Version>17.6.1</Version>
+    <Version>17.6.2</Version>
     <Authors>ProWorks, Jason Prothero</Authors>
     <Company>ProWorks Corporation</Company>
     <PackageTags>umbraco;umbraco-marketplace;umbraco-cms;umbraco-ai;ai;page-evaluator;deploy</PackageTags>
@@ -21,7 +21,7 @@
     <PackageProjectUrl>https://github.com/ProWorksCorporation/ProWorks-Umbraco.AI-Page-Evaluator</PackageProjectUrl>
     <RepositoryUrl>https://github.com/ProWorksCorporation/ProWorks-Umbraco.AI-Page-Evaluator</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <PackageReleaseNotes>17.6.1: First release. Adds Umbraco Deploy support (Umbraco.AI.Deploy 17.3.1+) for evaluator configurations: they move between environments with their AI profile and context, adopt matching hand-made configurations on the first deploy, apply the source's active state, clear affected cached evaluations, and are removed by Deploy's schema clean-up when deleted at the source.</PackageReleaseNotes>
+    <PackageReleaseNotes>17.6.2: Fixes Umbraco Deploy imports of evaluator configurations being silently rolled back: read-only database scopes now complete, so they no longer cancel the surrounding Deploy (or other) transaction. Requires the main package 17.6.2. 17.6.1: First release. Adds Umbraco Deploy support (Umbraco.AI.Deploy 17.3.1+) for evaluator configurations: they move between environments with their AI profile and context, adopt matching hand-made configurations on the first deploy, apply the source's active state, clear affected cached evaluations, and are removed by Deploy's schema clean-up when deleted at the source.</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>

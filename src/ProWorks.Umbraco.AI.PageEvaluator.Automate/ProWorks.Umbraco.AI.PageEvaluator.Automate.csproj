@@ -10,7 +10,7 @@
     <Description>Umbraco Automate &quot;Evaluate Page&quot; step for the ProWorks AI Page Evaluator: evaluates a page with its active evaluator configuration and outputs a score, pass/fail and an email-ready report.</Description>
     <!-- NuGet packaging: same version line as the main package (FR-042) -->
     <PackageId>ProWorks.Umbraco.AI.PageEvaluator.Automate</PackageId>
-    <Version>17.6.1</Version>
+    <Version>17.6.2</Version>
     <Authors>ProWorks, Jason Prothero</Authors>
     <Company>ProWorks Corporation</Company>
     <PackageTags>umbraco;umbraco-marketplace;umbraco-cms;umbraco-ai;ai;page-evaluator;automate</PackageTags>
@@ -21,7 +21,7 @@
     <PackageProjectUrl>https://github.com/ProWorksCorporation/ProWorks-Umbraco.AI-Page-Evaluator</PackageProjectUrl>
     <RepositoryUrl>https://github.com/ProWorksCorporation/ProWorks-Umbraco.AI-Page-Evaluator</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <PackageReleaseNotes>17.6.1: First release. Adds an "Evaluate Page" step to Umbraco Automate 17.5.1+: evaluates the latest saved version of a page with its active evaluator configuration and outputs the score, a pass/fail verdict (threshold and "fail on any failed check"), check counts, a summary and an email-ready HTML report in 10 languages.</PackageReleaseNotes>
+    <PackageReleaseNotes>17.6.2: Fixes Umbraco Deploy imports of evaluator configurations being silently rolled back: read-only database scopes now complete, so they no longer cancel the surrounding Deploy (or other) transaction. No changes in the step itself. 17.6.1: First release. Adds an "Evaluate Page" step to Umbraco Automate 17.5.1+: evaluates the latest saved version of a page with its active evaluator configuration and outputs the score, a pass/fail verdict (threshold and "fail on any failed check"), check counts, a summary and an email-ready HTML report in 10 languages.</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
