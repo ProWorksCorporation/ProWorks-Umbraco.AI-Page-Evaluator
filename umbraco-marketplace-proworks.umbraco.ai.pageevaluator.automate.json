@@ -15,7 +15,6 @@
   "DocumentationUrl": "https://github.com/ProWorksCorporation/ProWorks-Umbraco.AI-Page-Evaluator",
   "LicenseTypes": ["Free"],
   "IssueTrackerUrl": "https://github.com/ProWorksCorporation/ProWorks-Umbraco.AI-Page-Evaluator/issues",
-  "IsSubPackageOf": "",
   "PackageType": "Package",
   "Title": "ProWorks Umbraco.AI Page Evaluator - Automate",
   "LookingForContributors": true,
@@ -55,6 +54,5 @@
     "automate",
     "automation",
     "workflow"
-  ],
-  "VideoUrl": ""
+  ]
 }
