@@ -79,3 +79,5 @@ Automations that use the **Evaluate Page** step from `ProWorks.Umbraco.AI.PageEv
 ## More
 
 Full documentation, the main package and source: https://github.com/ProWorksCorporation/ProWorks-Umbraco.AI-Page-Evaluator
+
+Read the overview and setup walkthrough: https://www.proworks.com/blog/archive/umbraco-ai-page-evaluator/

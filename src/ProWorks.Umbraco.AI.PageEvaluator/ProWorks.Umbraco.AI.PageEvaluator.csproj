@@ -7,7 +7,7 @@
     <LangVersion>latest</LangVersion>
     <RootNamespace>ProWorks.Umbraco.AI.PageEvaluator</RootNamespace>
     <AssemblyName>ProWorks.Umbraco.AI.PageEvaluator</AssemblyName>
-    <Description>AI-powered page evaluation for the Umbraco 17 Umvbraco.AI framework: evaluates content against configurable AI prompts and displays structured results in the back-office.</Description>
+    <Description>AI-powered page evaluation for the Umbraco 17 Umbraco.AI framework: evaluates content against configurable AI prompts and displays structured results in the back-office.</Description>
     <StaticWebAssetBasePath>App_Plugins/ProWorks.AI.PageEvaluator</StaticWebAssetBasePath>
     <AddRazorSupportForMvc>false</AddRazorSupportForMvc>
     <!-- NuGet packaging -->

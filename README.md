@@ -2,7 +2,7 @@
 
 [![Downloads](https://img.shields.io/nuget/dt/ProWorks.Umbraco.AI.PageEvaluator?color=cc9900)](https://www.nuget.org/packages/ProWorks.Umbraco.AI.PageEvaluator/)
 [![NuGet](https://img.shields.io/nuget/vpre/ProWorks.Umbraco.AI.PageEvaluator?color=0273B3)](https://www.nuget.org/packages/ProWorks.Umbraco.AI.PageEvaluator)
-[![GitHub license](https://img.shields.io/github/license/ProWorksCorporation/ProWorks.Umbraco.AI.PageEvaluator?color=8AB803)](./LICENSE)
+[![GitHub license](https://img.shields.io/github/license/ProWorksCorporation/ProWorks-Umbraco.AI-Page-Evaluator?color=8AB803)](./LICENSE)
 
 An Umbraco 17 backoffice package that adds an **Evaluate Page** button to the content editor toolbar. When clicked, it sends the current page's content to an AI model and returns a structured quality report directly inside the backoffice, including scored checks, warnings, and actionable suggestions.
 
