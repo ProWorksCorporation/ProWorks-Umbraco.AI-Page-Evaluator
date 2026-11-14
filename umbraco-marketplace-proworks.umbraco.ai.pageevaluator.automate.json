@@ -10,7 +10,7 @@
     "SyncContributorsFromRepository": false
   },
   "Category": "Artificial Intelligence",
-  "Description": "Adds an \"Evaluate Page\" step to Umbraco Automate for the ProWorks Umbraco.AI Page Evaluator. The step evaluates the latest saved version of a page with its active evaluator configuration and outputs the score, a pass/fail verdict, check counts, a summary and an email-ready HTML report in 10 languages, so you can build review-before-release and publish-if-passing flows. Requires the ProWorks Umbraco.AI Page Evaluator package and Umbraco Automate 17.5.1+.",
+  "Description": "Adds an \"Evaluate Page\" step to Umbraco Automate for the ProWorks Umbraco.AI Page Evaluator. The step evaluates the latest saved version of a page with its active evaluator configuration and outputs the score, a pass/fail verdict, check counts, a summary and an email-ready HTML report in 10 languages, so you can build review-before-release and publish-if-passing flows. Requires the ProWorks Umbraco.AI Page Evaluator package and Umbraco Automate 17.5.1+. Overview and setup walkthrough: https://www.proworks.com/blog/archive/umbraco-ai-page-evaluator/",
   "DiscussionForumUrl": "https://github.com/ProWorksCorporation/ProWorks-Umbraco.AI-Page-Evaluator/issues",
   "DocumentationUrl": "https://github.com/ProWorksCorporation/ProWorks-Umbraco.AI-Page-Evaluator",
   "LicenseTypes": ["Free"],

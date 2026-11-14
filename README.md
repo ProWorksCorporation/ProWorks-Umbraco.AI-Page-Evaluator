@@ -6,6 +6,8 @@
 
 An Umbraco 17 backoffice package that adds an **Evaluate Page** button to the content editor toolbar. When clicked, it sends the current page's content to an AI model and returns a structured quality report directly inside the backoffice, including scored checks, warnings, and actionable suggestions.
 
+For an overview and setup walkthrough, read [the ProWorks blog post](https://www.proworks.com/blog/archive/umbraco-ai-page-evaluator/).
+
 ---
 
 ## Features
