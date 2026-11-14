@@ -10,7 +10,7 @@
     "SyncContributorsFromRepository": false
   },
   "Category": "Artificial Intelligence",
-  "Description": "Adds Umbraco Deploy support for ProWorks Umbraco.AI Page Evaluator configurations: they move between environments as schema items with their AI profile and context, matching hand-made configurations are adopted on the first deploy, the source's active state is applied, and affected cached evaluations are cleared. Requires the ProWorks Umbraco.AI Page Evaluator package and Umbraco.AI.Deploy 17.3.1+.",
+  "Description": "Adds Umbraco Deploy support for ProWorks Umbraco.AI Page Evaluator configurations: they move between environments as schema items with their AI profile and context, matching hand-made configurations are adopted on the first deploy, the source's active state is applied, and affected cached evaluations are cleared. Requires the ProWorks Umbraco.AI Page Evaluator package and Umbraco.AI.Deploy 17.3.1+. Overview and setup walkthrough: https://www.proworks.com/blog/archive/umbraco-ai-page-evaluator/",
   "DiscussionForumUrl": "https://github.com/ProWorksCorporation/ProWorks-Umbraco.AI-Page-Evaluator/issues",
   "DocumentationUrl": "https://github.com/ProWorksCorporation/ProWorks-Umbraco.AI-Page-Evaluator",
   "LicenseTypes": ["Free"],
